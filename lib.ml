@@ -25,6 +25,18 @@ let rec end_itlist f l =
       | [x]    -> x
       | (h::t) -> f h (end_itlist f t)
 
+let rec itlist2 f l1 l2 b =
+  match (l1,l2) with
+    ([],[]) -> b
+  | (h1::t1,h2::t2) -> f h1 h2 (itlist2 f t1 t2 b)
+  | _ -> failwith "itlist2";;
+
+let rec rev_itlist2 f l1 l2 b =
+   match (l1,l2) with
+     ([],[]) -> b
+   | (h1::t1,h2::t2) -> rev_itlist2 f t1 t2 (f h1 h2 b)
+      | _ -> failwith "rev_itlist2";;
+
 let rec last = function
   | [] -> failwith "last"
   | [h] -> h
@@ -69,13 +81,35 @@ let rec assocd_eq eq d a = function
 let rec zip s1 s2 =
   match (s1, s2) with
     | (h1 :: t1, h2 :: t2) -> (h1, h2) :: zip t1 t2
-    | _ -> []
+    | ([], []) -> []
+    | _ -> failwith "zip"
 
 let rec unzip = function
   | (a, b) :: t ->
     let r1, r2 = unzip t in
     a :: r1, b :: r2
   | [] -> [], []
+
+let rec (--) = fun m n -> if m > n then [] else m::((m + 1) -- n);;
+
+(* -------------------------------------------------------------------------- *)
+(* String operations                                                          *)
+(* -------------------------------------------------------------------------- *)
+
+let implode l = itlist (^) l "";;
+
+let explode s =
+  let rec exap n l =
+      if n < 0 then l else
+      exap (n - 1) ((String.sub s n 1)::l) in
+  exap (String.length s - 1) [];;
+
+let print_list fp sep =
+  let rec print = function
+    | [] -> ()
+    | [s] -> fp s
+    | s1 :: s2 :: rest -> fp s1; sep(); print (s2 :: rest) in
+  print
 
 (* -------------------------------------------------------------------------- *)
 (* IO operations.                                                             *)

@@ -3,22 +3,30 @@
 
 open Num
 open Lib
-(* open Interval *)
+open Interval
 
 type evaluated_const = {
   rational_v : num;
   float_v : float;
-(*  interval_v : interval; *)
+  interval_v : interval;
 }
 
 (* Operations *)
 type op_type = 
   | Op_neg
+  | Op_abs
   | Op_add
   | Op_sub
   | Op_mul
   | Op_div
   | Op_inv
+  | Op_sqrt
+  | Op_sin
+  | Op_cos
+  | Op_tan
+  | Op_exp
+  | Op_log
+  | Op_fma
   | Op_nat_pow
 
 type op_flags = {
@@ -29,11 +37,19 @@ let op_name op flags =
   let name =
     match op with
       | Op_neg -> "-"
+      | Op_abs -> "abs"
       | Op_add -> "+"
       | Op_sub -> "-"
       | Op_mul -> "*"
       | Op_div -> "/"
       | Op_inv -> "/"
+      | Op_sqrt -> "sqrt"
+      | Op_sin -> "sin"
+      | Op_cos -> "cos"
+      | Op_tan -> "tan"
+      | Op_exp -> "exp"
+      | Op_log -> "log"
+      | Op_fma -> "fma"
       | Op_nat_pow -> "^" 
   in
   if flags.op_exact then "$" ^ name else name
@@ -83,7 +99,7 @@ let print_expr fmt =
 	p "(";
 	p (op_name op flags);
 	print arg;
-	p ")"
+	p ")";
       end
     | Bin_op (op, flags, arg1, arg2) ->
       let name = op_name op flags in
@@ -93,7 +109,7 @@ let print_expr fmt =
 	  print arg1;
 	  p name;
 	  print arg2;
-	  p ")"
+	  p ")";
 	end
       else
 	begin
@@ -102,16 +118,23 @@ let print_expr fmt =
 	  print arg1;
 	  p ", ";
 	  print arg2;
-	  p ")"
+	  p ")";
 	end
-    | Gen_op (op, flags, args) -> failwith "Gen_op: not implemented"
+    | Gen_op (op, flags, args) -> 
+      let name = op_name op flags in
+      begin
+	p name;
+	p "(";
+	print_list print (fun () -> p ", ") args;
+	p ")";
+      end
   in
   print
 
 let print_expr_std = print_expr Format.std_formatter
 let print_expr_str = print_to_string print_expr
 
-(*
+
 (*
   Returns true if the given constant value can be reprsented exactly
   with a floating point number
@@ -130,4 +153,4 @@ let const_of_num n = {
   interval_v = More_num.interval_of_num n;
 }
 
-*)
+

@@ -1,7 +1,7 @@
 (* FPTaylor                                                                   *)
 (* Alexey Solovyev, University of Utah                                        *)
 
-open Taylor_form
+open Environment
 
 let main () =
   Config.print_options Format.std_formatter;
