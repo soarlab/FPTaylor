@@ -54,7 +54,7 @@ let _ = map parse_config_file cfg_files
   
 let find p = 
   try Hashtbl.find param_tbl p
-  with Not_found -> report p; failwith "Not found in parameters table"
+  with Not_found -> failwith ("Not found in parameters table: " ^ p)
     
 let findd d p =
   try Hashtbl.find param_tbl p
@@ -68,6 +68,17 @@ let stob s =
 let stoi = int_of_string
   
 let stof = float_of_string
+
+let get_option name default = findd default name
+
+let get_bool_option name default = 
+  try stob (find name) with _ -> default
+
+let get_int_option name default =
+  try stoi (find name) with _ -> default
+
+let get_float_option name default =
+  try stof (find name) with _ -> default
   
   (* General paramaters *)
 let uncertainty = stob (findd "false" "uncertainty")
@@ -77,7 +88,6 @@ let rel_error = stob (findd "false" "rel-error")
   
   (* Optimization parameters *)
 let opt = find "opt"
-let opt_algorithm = find "opt-algorithm"
 let opt_approx = stob (findd "true" "opt-approx")
   
 let print_options fmt =
@@ -90,6 +100,5 @@ let print_options fmt =
   pb "simplification" simplification;
   pb "rel-error" rel_error;
   ps "opt" opt;
-  ps "opt-algorithm" opt_algorithm;
   pb "opt-approx" opt_approx
     

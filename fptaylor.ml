@@ -5,7 +5,7 @@ open Lib
 open List
 open Parser
 
-let exprs () = Environment.env.expressions
+let exprs () = Environment.env.Environment.expressions
 
 let process_input fname =
   let _ = report ("Loading: " ^ fname) in
