@@ -56,7 +56,7 @@ let op_name op flags =
 
 let is_infix op =
   match op with
-    | Op_add | Op_mul | Op_div | Op_nat_pow -> true
+    | Op_add | Op_sub | Op_mul | Op_div | Op_nat_pow -> true
     | _ -> false
 
 (* Expression *)
@@ -107,7 +107,7 @@ let print_expr fmt =
 	begin
 	  p "(";
 	  print arg1;
-	  p name;
+	  p " "; p name; p " ";
 	  print arg2;
 	  p ")";
 	end
