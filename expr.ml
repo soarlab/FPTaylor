@@ -2,6 +2,7 @@
 (* Alexey Solovyev, University of Utah                                        *)
 
 open Num
+open List
 open Lib
 open Interval
 
@@ -72,6 +73,22 @@ type formula =
   | Lt of expr * expr
   | Eq of expr * expr
 
+let mk_neg f a = U_op (Op_neg, f, a) and
+    mk_abs f a = U_op (Op_abs, f, a) and
+    mk_sqrt f a = U_op (Op_sqrt, f, a) and
+    mk_inv f a = U_op (Op_inv, f, a) and
+    mk_sin f a = U_op (Op_sin, f, a) and
+    mk_cos f a = U_op (Op_cos, f, a) and
+    mk_tan f a = U_op (Op_tan, f, a) and
+    mk_exp f a = U_op (Op_exp, f, a) and
+    mk_log f a = U_op (Op_log, f, a) and
+    mk_add f a b = Bin_op (Op_add, f, a, b) and
+    mk_sub f a b = Bin_op (Op_sub, f, a, b) and
+    mk_mul f a b = Bin_op (Op_mul, f, a, b) and
+    mk_div f a b = Bin_op (Op_div, f, a, b) and
+    mk_nat_pow f a b = Bin_op (Op_nat_pow, f, a, b) and
+    mk_fma f a b c = Gen_op (Op_fma, f, [a; b; c])
+
 let rec eq_expr e1 e2 =
   match (e1, e2) with
     | (Const c1, Const c2) ->
@@ -88,6 +105,17 @@ let rec eq_expr e1 e2 =
       itlist (fun (a1, a2) x -> eq_expr a1 a2 && x) (zip as1 as2) true
     | _ -> false
 
+let rec vars_in_expr e =
+  match e with
+    | Var v -> [v]
+    | U_op (_, _, a1) -> 
+      vars_in_expr a1
+    | Bin_op (_, _, a1, a2) ->
+      union (vars_in_expr a1) (vars_in_expr a2)
+    | Gen_op (_, _, args) ->
+      let vs = map vars_in_expr args in
+      itlist union vs []
+    | _ -> []
 
 let print_expr fmt =
   let p = Format.pp_print_string fmt in
@@ -152,5 +180,15 @@ let const_of_num n = {
   float_v = float_of_num n;
   interval_v = More_num.interval_of_num n;
 }
+
+let const_of_int n = const_of_num (num_of_int n)
+
+
+let expr_0 = Const (const_of_int 0)
+let expr_1 = Const (const_of_int 1)
+let expr_2 = Const (const_of_int 2)
+let expr_3 = Const (const_of_int 3)
+let expr_4 = Const (const_of_int 4)
+let expr_5 = Const (const_of_int 5)
 
 
