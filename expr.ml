@@ -168,6 +168,52 @@ let z3py_print_env = {
     | _ -> false, "");
 }
 
+let ocaml_float_print_env = {
+  env_op_name = (function
+    | Op_neg -> true, "-."
+    | Op_add -> true, "+."
+    | Op_sub -> true, "-."
+    | Op_mul -> true, "*."
+    | Op_div -> true, "/."
+    | Op_abs -> true, "abs_float"
+    | Op_nat_pow -> true, "**"
+    | _ -> false, "");
+
+  env_op_infix = (function
+    | _ -> false, false);
+
+  env_print = (function
+    | Const f -> true, string_of_float f.float_v
+    | _ -> false, "");
+}
+
+let ocaml_interval_print_env = {
+  env_op_name = (function
+    | Op_neg -> true, "~-$"
+    | Op_add -> true, "+$"
+    | Op_sub -> true, "-$"
+    | Op_mul -> true, "*$"
+    | Op_div -> true, "/$"
+    | Op_abs -> true, "abs_I"
+    | Op_inv -> true, "inv_I"
+    | Op_sqrt -> true, "sqrt_I"
+    | Op_sin -> true, "sin_I"
+    | Op_cos -> true, "cos_I"
+    | Op_tan -> true, "tan_I"
+    | Op_exp -> true, "exp_I"
+    | Op_log -> true, "log_I"
+    | Op_nat_pow -> true, "**$"
+    | _ -> false, "");
+
+  env_op_infix = (function
+    | _ -> false, false);
+
+  env_print = (function
+    | Const f -> true, Format.sprintf "{low = %f; high = %f}" 
+      f.interval_v.low f.interval_v.high
+    | _ -> false, "");
+}
+
 
 let print_expr_in_env env fmt =
   let p = Format.pp_print_string fmt in

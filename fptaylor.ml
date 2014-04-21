@@ -6,8 +6,6 @@ open List
 open Parser
 open Expr
 open Expr_sym
-open Opt_nlopt
-open Opt_z3
 open Environment
 
 let exprs () = env.expressions
@@ -32,6 +30,14 @@ let z3opt e =
   let p = print_string in
   let min, max = Opt_z3.min_max_expr 0.01 var_bound_rat e in
   let _ = p (Format.sprintf "min = %f, max = %f" min max) in
+  nl()
+
+let basic_bb_opt e =
+  let nl () = Format.pp_print_newline Format.std_formatter () in
+  let _ = report "Basic BB: " in
+  let p = print_string in
+  let strs = Opt_basic_bb.min_max_expr 0.01 0.01 var_bound_float e in
+  let _ = p (String.concat "\n" strs) in
   nl()
   
 
@@ -70,6 +76,7 @@ let process_input fname =
   let _ = map (fun e -> Expr.print_expr_std e; nl ()) es' in
   let _ = map nlopt es' in
   let _ = map z3opt es' in
+(*  let _ = map basic_bb_opt es' in *)
 (*  let _ = map gradient es in *)
   let _ = nl() in
   ()

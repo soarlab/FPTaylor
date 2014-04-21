@@ -5,9 +5,9 @@ TEST_DIR = ../FPTaylor-old/tests
 TESTS = test01_sum3.txt\
 	test02_sum8.txt\
 	test03_nonlin2.txt\
-	test04_dqmom9.txt\
 	test05_nonlin1.txt\
-	test06_sums4.txt
+	test06_sums4.txt\
+	test04_dqmom9.txt\
 
 TEST = $(addprefix $(TEST_DIR)/,$(TESTS))
 
