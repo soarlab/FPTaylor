@@ -6,8 +6,35 @@ open List
 open Parser
 open Expr
 open Expr_sym
+open Opt_nlopt
+open Opt_z3
+open Environment
 
-let exprs () = Environment.env.Environment.expressions
+let exprs () = env.expressions
+
+let var_bound_float name = variable_interval false name
+
+let var_bound_rat name =
+  let v = find_variable name in
+  v.lo_bound.rational_v, v.hi_bound.rational_v
+
+let nlopt e =
+  let nl () = Format.pp_print_newline Format.std_formatter () in
+  let _ = report "NLOpt: " in
+  let p = print_string in
+  let strs = Opt_nlopt.min_max_nlopt var_bound_float e in
+  let _ = p (String.concat "\n" strs) in
+  nl()
+
+let z3opt e =
+  let nl () = Format.pp_print_newline Format.std_formatter () in
+  let _ = report "Z3: " in
+  let p = print_string in
+  let min, max = Opt_z3.min_max_expr 0.01 var_bound_rat e in
+  let _ = p (Format.sprintf "min = %f, max = %f" min max) in
+  nl()
+  
+
 
 let gradient e =
   let nl () = Format.pp_print_newline Format.std_formatter () in
@@ -37,10 +64,13 @@ let process_input fname =
   let _ = report "Original expressions: " in
   let es = exprs () in
   let _ = map (fun e -> Expr.print_expr_std e; nl ()) es in
+  let _ = map nlopt es in
   let _ = report "Simplified expressions: " in
   let es' = map Maxima.simplify es in
   let _ = map (fun e -> Expr.print_expr_std e; nl ()) es' in
-  let _ = map gradient es in
+  let _ = map nlopt es' in
+  let _ = map z3opt es' in
+(*  let _ = map gradient es in *)
   let _ = nl() in
   ()
 

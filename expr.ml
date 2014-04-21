@@ -34,32 +34,6 @@ type op_flags = {
   op_exact : bool;
 }
 
-let op_name op flags =
-  let name =
-    match op with
-      | Op_neg -> "-"
-      | Op_abs -> "abs"
-      | Op_add -> "+"
-      | Op_sub -> "-"
-      | Op_mul -> "*"
-      | Op_div -> "/"
-      | Op_inv -> "/"
-      | Op_sqrt -> "sqrt"
-      | Op_sin -> "sin"
-      | Op_cos -> "cos"
-      | Op_tan -> "tan"
-      | Op_exp -> "exp"
-      | Op_log -> "log"
-      | Op_fma -> "fma"
-      | Op_nat_pow -> "^" 
-  in
-  if flags.op_exact then "$" ^ name else name
-
-let is_infix op =
-  match op with
-    | Op_add | Op_sub | Op_mul | Op_div | Op_nat_pow -> true
-    | _ -> false
-
 (* Expression *)
 type expr =
   | Const of evaluated_const
@@ -117,50 +91,135 @@ let rec vars_in_expr e =
       itlist union vs []
     | _ -> []
 
-let print_expr fmt =
+type print_env = {
+  env_op_name : op_type -> bool * string;
+  env_op_infix : op_type -> bool * bool;
+  env_print : expr -> bool * string;
+}
+
+let def_print_env = {
+  env_op_name = (fun _ -> false, "");
+  env_op_infix = (fun _ -> false, false);
+  env_print = (fun _ -> false, "");
+}
+
+let op_name_in_env env op flags =
+  let b, str = env.env_op_name op in
+  if b then str else
+    let name = 
+      match op with
+	| Op_neg -> "-"
+	| Op_abs -> "abs"
+	| Op_add -> "+"
+	| Op_sub -> "-"
+	| Op_mul -> "*"
+	| Op_div -> "/"
+	| Op_inv -> "/"
+	| Op_sqrt -> "sqrt"
+	| Op_sin -> "sin"
+	| Op_cos -> "cos"
+	| Op_tan -> "tan"
+	| Op_exp -> "exp"
+	| Op_log -> "log"
+	| Op_fma -> "fma"
+	| Op_nat_pow -> "^" 
+    in
+    if flags.op_exact then "$" ^ name else name
+
+let is_infix_in_env env op =
+  let b, r = env.env_op_infix op in
+  if b then r else
+    match op with
+      | Op_add | Op_sub | Op_mul | Op_div | Op_nat_pow -> true
+      | _ -> false
+
+let op_name = op_name_in_env def_print_env
+
+let is_infix = is_infix_in_env def_print_env
+
+let c_print_env = {
+  env_op_name = (function
+    | Op_abs -> true, "fabs"
+    | Op_nat_pow -> true, "pow"
+    | _ -> false, "");
+
+  env_op_infix = (function
+    | Op_nat_pow -> true, false
+    | _ -> false, false);
+
+  env_print = (function
+    | Const f -> true, string_of_float f.float_v
+    | _ -> false, "");
+}
+
+let z3py_print_env = {
+  env_op_name = (fun op ->
+    match op with
+      | Op_nat_pow -> true, "**"
+      | Op_abs | Op_sin | Op_cos | Op_tan | Op_exp | Op_log
+	-> failwith ("z3py: " ^ op_name op {op_exact = false} ^ " is not supported")
+      | _ -> false, "");
+
+  env_op_infix = (function
+    | _ -> false, false);
+
+  env_print = (function
+    | Const f -> true, string_of_num f.rational_v
+    | _ -> false, "");
+}
+
+
+let print_expr_in_env env fmt =
   let p = Format.pp_print_string fmt in
-  let rec print = function
-    | Const f -> p (string_of_num f.rational_v)
-    | Var v -> p v
-    | U_op (op, flags, arg) ->
-      begin
-	p "(";
-	p (op_name op flags);
-	print arg;
-	p ")";
-      end
-    | Bin_op (op, flags, arg1, arg2) ->
-      let name = op_name op flags in
-      if is_infix op then
-	begin
-	  p "(";
-	  print arg1;
-	  p " "; p name; p " ";
-	  print arg2;
-	  p ")";
-	end
-      else
-	begin
-	  p name;
-	  p "(";
-	  print arg1;
-	  p ", ";
-	  print arg2;
-	  p ")";
-	end
-    | Gen_op (op, flags, args) -> 
-      let name = op_name op flags in
-      begin
-	p name;
-	p "(";
-	print_list print (fun () -> p ", ") args;
-	p ")";
-      end
+  let rec print e =
+    let b, str = env.env_print e in
+    if b then p str else
+      match e with
+	| Const f -> p (string_of_num f.rational_v)
+	| Var v -> p v
+	| U_op (op, flags, arg) ->
+	  begin
+	    p "(";
+	    p (op_name_in_env env op flags);
+	    print arg;
+	    p ")";
+	  end
+	| Bin_op (op, flags, arg1, arg2) ->
+	  let name = op_name_in_env env op flags in
+	  if is_infix_in_env env op then
+	    begin
+	      p "(";
+	      print arg1;
+	      p " "; p name; p " ";
+	      print arg2;
+	      p ")";
+	    end
+	  else
+	    begin
+	      p name;
+	      p "(";
+	      print arg1;
+	      p ", ";
+	      print arg2;
+	      p ")";
+	    end
+	| Gen_op (op, flags, args) -> 
+	  let name = op_name_in_env env op flags in
+	  begin
+	    p name;
+	    p "(";
+	    print_list print (fun () -> p ", ") args;
+	    p ")";
+	  end
   in
   print
 
+let print_expr = print_expr_in_env def_print_env
+
 let print_expr_std = print_expr Format.std_formatter
 let print_expr_str = print_to_string print_expr
+
+let print_expr_str_in_env env = print_to_string (print_expr_in_env env)
 
 
 (*
