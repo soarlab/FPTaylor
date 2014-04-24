@@ -67,13 +67,8 @@ let find_variable name =
 let find_definition name =
   Hashtbl.find env.definitions name
 
-let variable_interval uncertainty_flag name =
-  let v = find_variable name in 
-  if uncertainty_flag then {
-    low = (v.lo_bound.interval_v -$ v.uncertainty.interval_v).low;
-    high = (v.hi_bound.interval_v +$ v.uncertainty.interval_v).high;
-  }
-  else {
+let variable_interval name =
+  let v = find_variable name in {
     low = v.lo_bound.interval_v.low;
     high = v.hi_bound.interval_v.high;
   }

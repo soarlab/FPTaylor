@@ -6,11 +6,12 @@ open List
 open Parser
 open Expr
 open Expr_sym
+open Taylor_form
 open Environment
 
 let exprs () = env.expressions
 
-let var_bound_float name = variable_interval false name
+let var_bound_float name = variable_interval name
 
 let var_bound_rat name =
   let v = find_variable name in
@@ -32,6 +33,11 @@ let z3opt e =
   let _ = p (Format.sprintf "min = %f, max = %f" min max) in
   nl()
 
+let opt tol e =
+  let e' = Maxima.simplify e in
+  let min, max = Opt_z3.min_max_expr tol var_bound_rat e' in
+  min, max
+
 let basic_bb_opt e =
   let nl () = Format.pp_print_newline Format.std_formatter () in
   let _ = report "Basic BB: " in
@@ -39,8 +45,43 @@ let basic_bb_opt e =
   let strs = Opt_basic_bb.min_max_expr 0.01 0.01 var_bound_float e in
   let _ = p (String.concat "\n" strs) in
   nl()
-  
 
+let print_form f =
+  let _ = report (Format.sprintf "v0 = %s" (print_expr_str f.v0)) in
+  let _ = map (fun (i, e) -> 
+    let e' = Maxima.simplify e in
+    report (Format.sprintf "%d: %s" i (print_expr_str e'))) f.v1 in
+  let _ = report (Format.sprintf "m2 = %f" f.m2) in
+  ()
+
+let errors =
+  let abs tol (a, b) =
+    let x = abs_float a and
+	y = abs_float b in
+    (max x y) +^ tol in
+  fun eps f ->
+    let tol = 0.01 in
+    let mm =  map (fun (i, e) -> opt tol e) f.v1 in
+    let errs = map (abs tol) mm in
+    let total1 = eps *^ sum_high errs in
+    let total = total1 +^ ((f.m2 *^ eps) *^ eps) in
+    let _ = map2 (fun i (min, max) -> 
+      report (Format.sprintf "%d: %f, %f (%f)" i min max (abs tol (min, max)))) (1--length mm) mm in
+    let _ = report (Format.sprintf "eps = %e" eps) in
+    let _ = report (Format.sprintf "total1: %e, total: %e" total1 total) in
+    report ""
+
+
+let forms e =
+  let _ = report ("\nTaylor form for: " ^ print_expr_str e) in
+  let fp = {eps = 2.0 ** (-53.0); delta = 0.0; uncertainty_flag = false} in
+  let vars = var_bound_float in
+  let form' = build_form fp vars e in
+  let form = simplify_form form' in
+  let _ = print_form form in
+  let _ = report "" in
+  let _ = errors fp.eps form in
+  report ""
 
 let gradient e =
   let nl () = Format.pp_print_newline Format.std_formatter () in
@@ -60,7 +101,7 @@ let gradient e =
   let dd = map2 (fun d1 d2 -> 
     Maxima.simplify (mk_sub {op_exact=false} d1 d2)) ds dsm in
   let _ = map (fun d -> 
-    if not (eq_expr d expr_0) then failwith "Unequal derivatives" else ()) dd in
+    if not (eq_expr d const_0) then failwith "Unequal derivatives" else ()) dd in
   ()
 
 let process_input fname =
@@ -70,14 +111,15 @@ let process_input fname =
   let _ = report "Original expressions: " in
   let es = exprs () in
   let _ = map (fun e -> Expr.print_expr_std e; nl ()) es in
-  let _ = map nlopt es in
+(*  let _ = map nlopt es in *)
   let _ = report "Simplified expressions: " in
   let es' = map Maxima.simplify es in
   let _ = map (fun e -> Expr.print_expr_std e; nl ()) es' in
-  let _ = map nlopt es' in
-  let _ = map z3opt es' in
+(*  let _ = map nlopt es' in*)
+(*  let _ = map z3opt es' in*)
 (*  let _ = map basic_bb_opt es' in *)
 (*  let _ = map gradient es in *)
+  let _ = map forms es in
   let _ = nl() in
   ()
 

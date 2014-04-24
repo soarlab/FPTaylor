@@ -18,6 +18,9 @@ all:
 test:
 	./fptaylor $(TEST)
 
+check1:
+	./fptaylor $(TEST_DIR)/test01_sum3.txt
+
 clean:
 	rm -rf _build
 	rm -f fptaylor fptaylor.native

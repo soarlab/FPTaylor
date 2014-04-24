@@ -34,6 +34,8 @@ type op_flags = {
   op_exact : bool;
 }
 
+let def_flags = {op_exact = false}
+
 (* Expression *)
 type expr =
   | Const of evaluated_const
@@ -47,7 +49,9 @@ type formula =
   | Lt of expr * expr
   | Eq of expr * expr
 
-let mk_neg f a = U_op (Op_neg, f, a) and
+let mk_const c = Const c and
+    mk_var v = Var v and
+    mk_neg f a = U_op (Op_neg, f, a) and
     mk_abs f a = U_op (Op_abs, f, a) and
     mk_sqrt f a = U_op (Op_sqrt, f, a) and
     mk_inv f a = U_op (Op_inv, f, a) and
@@ -62,6 +66,23 @@ let mk_neg f a = U_op (Op_neg, f, a) and
     mk_div f a b = Bin_op (Op_div, f, a, b) and
     mk_nat_pow f a b = Bin_op (Op_nat_pow, f, a, b) and
     mk_fma f a b c = Gen_op (Op_fma, f, [a; b; c])
+
+let mk_def_neg a = U_op (Op_neg, {op_exact = true}, a) and
+    mk_def_abs a = U_op (Op_abs, {op_exact = true}, a) and
+    mk_def_sqrt a = U_op (Op_sqrt, def_flags, a) and
+    mk_def_inv a = U_op (Op_inv, def_flags, a) and
+    mk_def_sin a = U_op (Op_sin, def_flags, a) and
+    mk_def_cos a = U_op (Op_cos, def_flags, a) and
+    mk_def_tan a = U_op (Op_tan, def_flags, a) and
+    mk_def_exp a = U_op (Op_exp, def_flags, a) and
+    mk_def_log a = U_op (Op_log, def_flags, a) and
+    mk_def_add a b = Bin_op (Op_add, def_flags, a, b) and
+    mk_def_sub a b = Bin_op (Op_sub, def_flags, a, b) and
+    mk_def_mul a b = Bin_op (Op_mul, def_flags, a, b) and
+    mk_def_div a b = Bin_op (Op_div, def_flags, a, b) and
+    mk_def_nat_pow a b = Bin_op (Op_nat_pow, def_flags, a, b) and
+    mk_def_fma a b c = Gen_op (Op_fma, def_flags, [a; b; c])
+
 
 let rec eq_expr e1 e2 =
   match (e1, e2) with
@@ -124,7 +145,8 @@ let op_name_in_env env op flags =
 	| Op_fma -> "fma"
 	| Op_nat_pow -> "^" 
     in
-    if flags.op_exact then "$" ^ name else name
+(*    if flags.op_exact then "$" ^ name else name *)
+    name
 
 let is_infix_in_env env op =
   let b, r = env.env_op_infix op in
@@ -157,7 +179,7 @@ let z3py_print_env = {
     match op with
       | Op_nat_pow -> true, "**"
       | Op_abs | Op_sin | Op_cos | Op_tan | Op_exp | Op_log
-	-> failwith ("z3py: " ^ op_name op {op_exact = false} ^ " is not supported")
+	-> failwith ("z3py: " ^ op_name op def_flags ^ " is not supported")
       | _ -> false, "");
 
   env_op_infix = (function
@@ -288,12 +310,15 @@ let const_of_num n = {
 
 let const_of_int n = const_of_num (num_of_int n)
 
+let mk_int_const i = mk_const (const_of_int i)
 
-let expr_0 = Const (const_of_int 0)
-let expr_1 = Const (const_of_int 1)
-let expr_2 = Const (const_of_int 2)
-let expr_3 = Const (const_of_int 3)
-let expr_4 = Const (const_of_int 4)
-let expr_5 = Const (const_of_int 5)
+
+
+let const_0 = mk_int_const 0
+let const_1 = mk_int_const 1
+let const_2 = mk_int_const 2
+let const_3 = mk_int_const 3
+let const_4 = mk_int_const 4
+let const_5 = mk_int_const 5
 
 

@@ -4,8 +4,8 @@ open Expr
 
 let diff v =
   let rec diff = function
-    | Const _ -> expr_0
-    | Var x -> if x = v then expr_1 else expr_0
+    | Const _ -> const_0
+    | Var x -> if x = v then const_1 else const_0
     | U_op (op, f, arg) ->
       begin
 	let ( ** ) = mk_mul f and
@@ -15,11 +15,11 @@ let diff v =
 	let da = diff arg in
 	match op with
 	  | Op_neg -> neg da
-	  | Op_inv -> neg (da // (pow arg expr_2))
-	  | Op_sqrt -> da // (expr_2 ** mk_sqrt f arg)
+	  | Op_inv -> neg (da // (pow arg const_2))
+	  | Op_sqrt -> da // (const_2 ** mk_sqrt f arg)
 	  | Op_sin -> da ** mk_cos f arg
 	  | Op_cos -> neg (da ** mk_sin f arg)
-	  | Op_tan -> da // (pow (mk_cos f arg) expr_2)
+	  | Op_tan -> da // (pow (mk_cos f arg) const_2)
 	  | Op_exp -> da ** mk_exp f arg
 	  | Op_log -> da // arg
 	  | _ -> failwith ("diff: Unsupported operation: " ^ op_name op f)
@@ -37,8 +37,8 @@ let diff v =
 	  | Op_add -> da1 ++ da2
 	  | Op_sub -> da1 -- da2
 	  | Op_mul -> (da1 ** arg2) ++ (arg1 ** da2)
-	  | Op_div -> ((da1 ** arg2) -- (arg1 ** da2)) // (pow arg2 expr_2)
-	  | Op_nat_pow -> da1 ** (arg2 ** (pow arg1 (arg2 -- expr_1)))
+	  | Op_div -> ((da1 ** arg2) -- (arg1 ** da2)) // (pow arg2 const_2)
+	  | Op_nat_pow -> da1 ** (arg2 ** (pow arg1 (arg2 -- const_1)))
 	  | _ -> failwith ("diff: Unsupported operation: " ^ op_name op f)
       end
     | Gen_op (op, f, args) ->

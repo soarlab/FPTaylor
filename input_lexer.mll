@@ -11,7 +11,7 @@
 }
 
 let digit = ['0'-'9']
-let alpha = ['a'-'z' 'A'-'Z']
+let alpha = ['a'-'z' 'A'-'Z' '_']
 let id = alpha (alpha | digit)*
 let number = (digit+ ('.' digit*)?)('e'['-' '+']?digit+)?
 
