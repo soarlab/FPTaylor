@@ -21,6 +21,9 @@ test:
 check1:
 	./fptaylor $(TEST_DIR)/test01_sum3.txt
 
+check2:
+	./fptaylor $(TEST_DIR)/test08_dqmom3.txt
+
 clean:
 	rm -rf _build
 	rm -f fptaylor fptaylor.native

@@ -15,6 +15,7 @@ type taylor_form = {
 
 type float_parameters = {
   uncertainty_flag : bool;
+  size : int;
   eps : float;
   (* Should be normalized by eps^2 *)
   delta : float;
@@ -45,7 +46,7 @@ let abs_eval vars e =
 let abs_eval_v1 vars = map (fun (_, e) -> abs_eval vars e)
 
 (* rounding *)
-let rounded_form, find_index, expr_for_index, reset_index_counter =
+let rounded_form, find_index, expr_for_index, reset_index_counter, current_index =
   let counter = ref 0 in
   let exprs = ref [] in
   let find_index ex =
@@ -61,9 +62,10 @@ let rounded_form, find_index, expr_for_index, reset_index_counter =
       m2 = f.m2 +^ (fp.eps *^ f.m2) +^ sum_high (abs_eval_v1 vars f.v1) +^ fp.delta;
     }
   and expr_for_index i = rev_assoc i !exprs
-  and reset_index_counter () = exprs := []; counter := 0 
+  and reset_index_counter () = exprs := []; counter := 0
+  and current_index () = !counter
   in
-  rounded_form, find_index, expr_for_index, reset_index_counter
+  rounded_form, find_index, expr_for_index, reset_index_counter, current_index
   
 (* constant *)    
 let const_form fp e = 
@@ -173,6 +175,81 @@ let sqrt_form fp vars f =
       s0 +^ s2;
   }
 
+(* sine *)
+let sin_form fp vars f =
+  let sin_v0 = mk_def_sin f.v0 in
+  let cos_v0 = mk_def_cos f.v0 in {
+    v0 = sin_v0;
+    v1 = map (fun (i, e) -> i, mk_def_mul cos_v0 e) f.v1;
+    m2 = 
+      let x0_int = Eval.eval_interval_expr vars f.v0 in
+      let x1 = (f.m2 *^ fp.eps) :: (abs_eval_v1 vars f.v1) in
+      let xi = {low = -. fp.eps; high = fp.eps} in
+      let s1 = itlist (fun a s -> (xi *$. a) +$ s) x1 zero_I in
+      let d = sin_I (x0_int +$ s1) in
+      let r_high = (abs_I d).high in
+      let s2 = 0.5 *^ r_high *^ itlist (fun a s ->
+	sum_high (map (fun b -> a *^ b) x1) +^ s) x1 0.0 in
+      let s0 = (f.m2 *.$ abs_I (cos_I x0_int)).high in
+      s0 +^ s2;
+  }
+
+(* cosine *)
+let cos_form fp vars f =
+  let sin_v0 = mk_def_sin f.v0 in
+  let cos_v0 = mk_def_cos f.v0 in {
+    v0 = cos_v0;
+    v1 = map (fun (i, e) -> i, mk_def_neg (mk_def_mul sin_v0 e)) f.v1;
+    m2 = 
+      let x0_int = Eval.eval_interval_expr vars f.v0 in
+      let x1 = (f.m2 *^ fp.eps) :: (abs_eval_v1 vars f.v1) in
+      let xi = {low = -. fp.eps; high = fp.eps} in
+      let s1 = itlist (fun a s -> (xi *$. a) +$ s) x1 zero_I in
+      let d = cos_I (x0_int +$ s1) in
+      let r_high = (abs_I d).high in
+      let s2 = 0.5 *^ r_high *^ itlist (fun a s ->
+	sum_high (map (fun b -> a *^ b) x1) +^ s) x1 0.0 in
+      let s0 = (f.m2 *.$ abs_I (sin_I x0_int)).high in
+      s0 +^ s2;
+  }
+
+(* exp *)
+let exp_form fp vars f =
+  let exp_v0 = mk_def_exp f.v0 in {
+    v0 = exp_v0;
+    v1 = map (fun (i, e) -> i, mk_def_mul exp_v0 e) f.v1;
+    m2 = 
+      let x0_int = Eval.eval_interval_expr vars f.v0 in
+      let x1 = (f.m2 *^ fp.eps) :: (abs_eval_v1 vars f.v1) in
+      let xi = {low = -. fp.eps; high = fp.eps} in
+      let s1 = itlist (fun a s -> (xi *$. a) +$ s) x1 zero_I in
+      let d = exp_I (x0_int +$ s1) in
+      let r_high = (abs_I d).high in
+      let s2 = 0.5 *^ r_high *^ itlist (fun a s ->
+	sum_high (map (fun b -> a *^ b) x1) +^ s) x1 0.0 in
+      let s0 = (f.m2 *.$ abs_I (exp_I x0_int)).high in
+      s0 +^ s2;
+  }
+
+(* log *)
+let log_form fp vars f =
+  let log_v0 = mk_def_log f.v0 in {
+    v0 = log_v0;
+    v1 = map (fun (i, e) -> i, mk_def_div e f.v0) f.v1;
+    m2 = 
+      let x0_int = Eval.eval_interval_expr vars f.v0 in
+      let x1 = (f.m2 *^ fp.eps) :: (abs_eval_v1 vars f.v1) in
+      let xi = {low = -. fp.eps; high = fp.eps} in
+      let s1 = itlist (fun a s -> (xi *$. a) +$ s) x1 zero_I in
+      let d = inv_I (pow_I_i (x0_int +$ s1) 2) in
+      let r_high = (abs_I d).high in
+      let s2 = 0.5 *^ r_high *^ itlist (fun a s ->
+	sum_high (map (fun b -> a *^ b) x1) +^ s) x1 0.0 in
+      let s0 = (f.m2 /.$ abs_I x0_int).high in
+      s0 +^ s2;
+  }
+
+
 (* Builds a Taylor form *)
 let build_form fp vars =
   let rec build e = 
@@ -187,6 +264,10 @@ let build_form fp vars =
 	    match op with
 	      | Op_inv -> inv_form fp vars arg_form
 	      | Op_sqrt -> sqrt_form fp vars arg_form
+	      | Op_sin -> sin_form fp vars arg_form
+	      | Op_cos -> cos_form fp vars arg_form
+	      | Op_exp -> exp_form fp vars arg_form
+	      | Op_log -> exp_form fp vars arg_form
 	      | _ -> failwith 
 		("build_form: unsupported unary operation " ^ op_name op flags) in
 	  if flags.op_exact then
@@ -229,3 +310,71 @@ let build_form fp vars =
   fun e ->
     let _ = reset_index_counter() in
     build e
+
+
+
+(* constant *)    
+let const_form fp e = 
+  match e with
+    | Const c -> {
+      v0 = e;
+      v1 = if is_fp_exact fp.eps c then [] else [find_index e, e];
+      m2 = 0.0;
+    }
+    | _ -> failwith ("const_form: not a constant expression: " ^ print_expr_str e)
+
+(* variable *)
+let var_form fp e =
+  match e with
+    | Var v -> {
+      v0 = e;
+      v1 = 
+	if fp.uncertainty_flag then
+	  let vv = Environment.find_variable v in
+	  let u = vv.Environment.uncertainty.rational_v // More_num.num_of_float fp.eps in
+	  if not (u =/ Int 0) then
+	    [find_index e, mk_const (const_of_num u)]
+	  else []
+	else [];
+      m2 = 0.0
+    }
+    | _ -> failwith ("var_form: not a variable: " ^ print_expr_str e)
+
+
+(* Builds a test expression with explicit variables representing rounding effects *)
+let build_test_expr fp err_var =
+  let add_rel e =
+    let i = find_index e in
+    let v = mk_var (err_var ^ string_of_int i) in
+    mk_def_mul e (mk_def_add const_1 v) in
+  let rec build e = 
+    match e with
+      | Const c -> if is_fp_exact fp.eps c then e else add_rel e
+      | Var _ -> e
+      | U_op (Op_neg, flags, arg) -> U_op (Op_neg, flags, build arg)
+      | U_op (op, flags, arg) ->
+	let expr = U_op (op, flags, build arg) in
+	if flags.op_exact then
+	  expr
+	else
+	  add_rel expr
+      | Bin_op (op, flags, arg1, arg2) ->
+	let e_arg1 = build arg1 in
+	let e_arg2 = build arg2 in
+	let expr = Bin_op (op, flags, e_arg1, e_arg2) in
+	if flags.op_exact then
+	  expr
+	else
+	  add_rel expr
+      | Gen_op (op, flags, args) ->
+	let expr = Gen_op (op, flags, map build args) in
+	if flags.op_exact then
+	  expr
+	else
+	  add_rel expr
+  in
+  fun e ->
+    let _ = reset_index_counter() in
+    let result = build e in
+    result, current_index()
+

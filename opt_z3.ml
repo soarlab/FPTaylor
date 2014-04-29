@@ -66,5 +66,6 @@ let min_max_expr tol var_bound e =
     let n = length ss in
     let v_min = float_of_string (nth ss (n - 2)) and
 	v_max = float_of_string (nth ss (n - 1)) in
-    (v_min -. tol, v_max +. tol)
+    (* Do not add the tolerance: min and max are verified bounds *)
+    (v_min, v_max)
 

@@ -8,6 +8,7 @@ open Expr
 open Expr_sym
 open Taylor_form
 open Environment
+open Log
 
 let exprs () = env.expressions
 
@@ -55,26 +56,47 @@ let print_form f =
   ()
 
 let errors =
-  let abs tol (a, b) =
+  let abs (a, b) =
     let x = abs_float a and
 	y = abs_float b in
-    (max x y) +^ tol in
+    max x y in
+  let compute_err tol i (_, e) =
+    let min, max = opt tol e in
+    let err = abs (min, max) in
+    let _ = report (Format.sprintf "%d: %f, %f (%f)" i min max err) in
+    err in
   fun eps f ->
     let tol = 0.01 in
-    let mm =  map (fun (i, e) -> opt tol e) f.v1 in
-    let errs = map (abs tol) mm in
+    let errs = map2 (compute_err tol) (1--length f.v1) f.v1 in
     let total1 = eps *^ sum_high errs in
     let total = total1 +^ ((f.m2 *^ eps) *^ eps) in
-    let _ = map2 (fun i (min, max) -> 
-      report (Format.sprintf "%d: %f, %f (%f)" i min max (abs tol (min, max)))) (1--length mm) mm in
     let _ = report (Format.sprintf "eps = %e" eps) in
-    let _ = report (Format.sprintf "total1: %e, total: %e" total1 total) in
+    let _ = report (Format.sprintf "total1: %e\ntotal: %e" total1 total) in
     report ""
 
+let create_fp_parameters fp =
+  let bits, min_exp =
+    match fp with
+      | 16 -> 10, -14
+      | 32 -> 23, -126
+      | 64 -> 52, -1022
+	(* min_exp = -16382, but this will give 0 for eta,
+	   select min_exp such that eta is the smallest positive
+	   floating point number *)
+      | 128 -> 112, -1074 - 112 - 1
+      | _ -> failwith ("Unsupported fp value: " ^ string_of_int fp) in
+  let eps = ldexp 0.5 (-bits) in
+  (* Normalize the value by eps^2 *)
+  let eta = ldexp 2.0 (min_exp + bits) in {
+    size = fp;
+    eps = eps;
+    delta = if Config.subnormal then eta else 0.0;
+    uncertainty_flag = Config.uncertainty;
+  }
 
 let forms e =
   let _ = report ("\nTaylor form for: " ^ print_expr_str e) in
-  let fp = {eps = 2.0 ** (-53.0); delta = 0.0; uncertainty_flag = false} in
+  let fp = create_fp_parameters Config.fp in
   let vars = var_bound_float in
   let form' = build_form fp vars e in
   let form = simplify_form form' in
@@ -104,9 +126,29 @@ let gradient e =
     if not (eq_expr d const_0) then failwith "Unequal derivatives" else ()) dd in
   ()
 
+let test_taylor e =
+  let _ = report "Taylor test" in
+  let fp = create_fp_parameters Config.fp in
+  let test_e, i = build_test_expr fp "e" e in
+  let _ = report (Format.sprintf "New vars: %d" i) in
+  let _ = report (print_expr_str test_e) in
+  let vs = map (fun i -> "e" ^ string_of_int i) (1--i) in
+  let ts = Maxima.taylor_coeff1 vs test_e in
+  let _ = map2 (fun v e -> report (Format.sprintf "%s: %s" v e)) vs ts in
+  let ts = map Parser.parse_expr ts in
+  let _ = report "" in
+  let form = simplify_form (build_form fp var_bound_float e) in
+  let _ = map (fun (i, e) -> report (Format.sprintf "%d: %s" 
+				       i (print_expr_str e))) form.v1 in
+  let _ = report "" in
+  let ds = map2 (fun e1 (_, e2) -> Maxima.simplify (mk_def_sub e1 e2)) ts form.v1 in
+  let _ = map (fun e -> report (print_expr_str e)) ds in
+  report ""
+
 let process_input fname =
   let nl () = Format.pp_print_newline Format.std_formatter () in
   let _ = report ("Loading: " ^ fname) in
+  let _ = open_log ("log/" ^ fname) in
   let _ = parse_file fname in
   let _ = report "Original expressions: " in
   let es = exprs () in
@@ -120,6 +162,8 @@ let process_input fname =
 (*  let _ = map basic_bb_opt es' in *)
 (*  let _ = map gradient es in *)
   let _ = map forms es in
+(*  let _ = map test_taylor es in*)
+  let _ = close_log () in
   let _ = nl() in
   ()
 

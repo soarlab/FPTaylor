@@ -298,7 +298,7 @@ let is_fp_exact eps c =
   if c.interval_v.low <> c.float_v || c.interval_v.high <> c.float_v then
     false
   else
-    let _ = issue_warning (eps <> 2.0 ** (-53.0))
+    let _ = Log.issue_warning (eps <> 2.0 ** (-53.0))
       "is_fp_exact: possible inexact result for eps <> eps64" in
     true
 	  

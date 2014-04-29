@@ -150,23 +150,3 @@ let print_to_string printer =
     let s = !sbuff in sbuff := ""; s
 
 
-let report_flag = ref true
-let warning_flag = ref true
-
-let report str =
-  if !report_flag then
-    let fmt = Format.std_formatter in
-    Format.pp_print_string fmt str; Format.pp_print_newline fmt ()
-  else
-    ()
-
-let warning str =
-  if !warning_flag then
-    let fmt = Format.std_formatter in
-    Format.pp_print_string fmt ("Warning: " ^ str); Format.pp_print_newline fmt ()
- else
-  ()
-
-let issue_warning p str =
-  if p then warning str else ()
-
