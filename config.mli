@@ -7,6 +7,7 @@ val uncertainty : bool
 val subnormal : bool
 val simplification : bool
 val fp : int
+val rounding : string
 val rel_error : bool
 val opt : string
 val opt_approx : bool

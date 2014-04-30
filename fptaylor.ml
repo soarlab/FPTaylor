@@ -37,14 +37,15 @@ let z3opt e =
 let opt tol e =
   let e' = Maxima.simplify e in
   let min, max = Opt_z3.min_max_expr tol var_bound_rat e' in
+(*  let min, max = Opt_basic_bb.min_max_expr tol tol var_bound_float e' in*)
   min, max
 
 let basic_bb_opt e =
   let nl () = Format.pp_print_newline Format.std_formatter () in
   let _ = report "Basic BB: " in
   let p = print_string in
-  let strs = Opt_basic_bb.min_max_expr 0.01 0.01 var_bound_float e in
-  let _ = p (String.concat "\n" strs) in
+  let min, max = Opt_basic_bb.min_max_expr 0.01 0.01 var_bound_float e in
+  let _ = p (Format.sprintf "min = %f, max = %f" min max) in
   nl()
 
 let print_form f =
@@ -72,7 +73,16 @@ let errors =
     let total = total1 +^ ((f.m2 *^ eps) *^ eps) in
     let _ = report (Format.sprintf "eps = %e" eps) in
     let _ = report (Format.sprintf "total1: %e\ntotal: %e" total1 total) in
-    report ""
+    if not Config.opt_approx then
+      let abs_exprs = map (fun (_, e) -> mk_def_abs e) f.v1 in
+      let full_expr = end_itlist mk_def_add abs_exprs in
+      let min, max = opt tol full_expr in
+      let _ = report (Format.sprintf "exact min, max: %f, %f" min max) in
+      let total = (eps *^ abs (min, max)) +^ ((f.m2 *^ eps) *^ eps) in
+      let _ = report (Format.sprintf "exact total: %e" total) in
+      report ""
+    else
+      report ""
 
 let create_fp_parameters fp =
   let bits, min_exp =
@@ -85,12 +95,18 @@ let create_fp_parameters fp =
 	   floating point number *)
       | 128 -> 112, -1074 - 112 - 1
       | _ -> failwith ("Unsupported fp value: " ^ string_of_int fp) in
+  let rounding =
+    match Config.rounding with
+      | "nearest" -> Nearest
+      | "directed" -> Directed
+      | _ -> failwith ("Unsupported rounding mode: " ^ Config.rounding) in
   let eps = ldexp 0.5 (-bits) in
   (* Normalize the value by eps^2 *)
   let eta = ldexp 2.0 (min_exp + bits) in {
     size = fp;
     eps = eps;
     delta = if Config.subnormal then eta else 0.0;
+    rounding = rounding;
     uncertainty_flag = Config.uncertainty;
   }
 
@@ -159,7 +175,7 @@ let process_input fname =
   let _ = map (fun e -> Expr.print_expr_std e; nl ()) es' in
 (*  let _ = map nlopt es' in*)
 (*  let _ = map z3opt es' in*)
-(*  let _ = map basic_bb_opt es' in *)
+(*  let _ = map basic_bb_opt es' in*)
 (*  let _ = map gradient es in *)
   let _ = map forms es in
 (*  let _ = map test_taylor es in*)

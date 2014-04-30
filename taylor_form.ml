@@ -7,19 +7,25 @@ open List
 open Lib
 open Expr
 
+
+type rounding = Nearest | Directed
+
+type float_parameters = {
+  uncertainty_flag : bool;
+  rounding : rounding;
+  size : int;
+  eps : float;
+  (* Should be normalized by eps^2 *)
+  delta : float;
+}
+
+
 type taylor_form = {
   v0 : expr;
   v1 : (int * expr) list;
   m2 : float;
 }
 
-type float_parameters = {
-  uncertainty_flag : bool;
-  size : int;
-  eps : float;
-  (* Should be normalized by eps^2 *)
-  delta : float;
-}
 
 let simplify_form =
   let rec add_adjacent s =
@@ -48,21 +54,36 @@ let abs_eval_v1 vars = map (fun (_, e) -> abs_eval vars e)
 (* rounding *)
 let rounded_form, find_index, expr_for_index, reset_index_counter, current_index =
   let counter = ref 0 in
-  let exprs = ref [] in
-  let find_index ex =
-    let i = assocd_eq eq_expr (-1) ex !exprs in
+  let exprs_nearest = ref [] and
+      exprs_directed = ref [] in
+  let get_expr_list rnd =
+    match rnd with
+      | Nearest -> exprs_nearest
+      | Directed -> exprs_directed in
+  let find_index rnd expr =
+    let list = get_expr_list rnd in
+    let i = assocd_eq eq_expr (-1) expr !list in
     if i > 0 then i else
       let _ = counter := !counter + 1 in
-      let _ = exprs := (ex, !counter) :: !exprs in
+      let _ = list := (expr, !counter) :: !list in
       !counter in
   let rounded_form fp vars f =
-    let i = find_index f.v0 in {
-      v0 = f.v0;
-      v1 = (i, f.v0) :: f.v1;
-      m2 = f.m2 +^ (fp.eps *^ f.m2) +^ sum_high (abs_eval_v1 vars f.v1) +^ fp.delta;
-    }
-  and expr_for_index i = rev_assoc i !exprs
-  and reset_index_counter () = exprs := []; counter := 0
+    let i = find_index fp.rounding f.v0 in 
+    match fp.rounding with
+      | Nearest -> {
+	v0 = f.v0;
+	v1 = (i, f.v0) :: f.v1;
+	m2 = f.m2 +^ (fp.eps *^ f.m2) +^ sum_high (abs_eval_v1 vars f.v1) +^ fp.delta;
+      }
+      | Directed -> {
+	v0 = f.v0;
+	v1 = (i, mk_def_mul const_2 f.v0) :: f.v1;
+	m2 = f.m2 +^ (2.0 *^ ((fp.eps *^ f.m2) +^ sum_high (abs_eval_v1 vars f.v1))) +^ fp.delta;
+      }
+  and expr_for_index i = 
+    try rev_assoc i !exprs_nearest
+    with Failure _ -> rev_assoc i !exprs_directed
+  and reset_index_counter () = exprs_nearest := []; exprs_directed := []; counter := 0
   and current_index () = !counter
   in
   rounded_form, find_index, expr_for_index, reset_index_counter, current_index
@@ -72,7 +93,8 @@ let const_form fp e =
   match e with
     | Const c -> {
       v0 = e;
-      v1 = if is_fp_exact fp.eps c then [] else [find_index e, e];
+      (* Assume that constants are always rounded to the nearest value *)
+      v1 = if is_fp_exact fp.eps c then [] else [find_index Nearest e, e];
       m2 = 0.0;
     }
     | _ -> failwith ("const_form: not a constant expression: " ^ print_expr_str e)
@@ -87,7 +109,7 @@ let var_form fp e =
 	  let vv = Environment.find_variable v in
 	  let u = vv.Environment.uncertainty.rational_v // More_num.num_of_float fp.eps in
 	  if not (u =/ Int 0) then
-	    [find_index e, mk_const (const_of_num u)]
+	    [find_index Nearest e, mk_const (const_of_num u)]
 	  else []
 	else [];
       m2 = 0.0
@@ -312,41 +334,16 @@ let build_form fp vars =
     build e
 
 
-
-(* constant *)    
-let const_form fp e = 
-  match e with
-    | Const c -> {
-      v0 = e;
-      v1 = if is_fp_exact fp.eps c then [] else [find_index e, e];
-      m2 = 0.0;
-    }
-    | _ -> failwith ("const_form: not a constant expression: " ^ print_expr_str e)
-
-(* variable *)
-let var_form fp e =
-  match e with
-    | Var v -> {
-      v0 = e;
-      v1 = 
-	if fp.uncertainty_flag then
-	  let vv = Environment.find_variable v in
-	  let u = vv.Environment.uncertainty.rational_v // More_num.num_of_float fp.eps in
-	  if not (u =/ Int 0) then
-	    [find_index e, mk_const (const_of_num u)]
-	  else []
-	else [];
-      m2 = 0.0
-    }
-    | _ -> failwith ("var_form: not a variable: " ^ print_expr_str e)
-
-
 (* Builds a test expression with explicit variables representing rounding effects *)
 let build_test_expr fp err_var =
   let add_rel e =
-    let i = find_index e in
+    let i = find_index fp.rounding e in
     let v = mk_var (err_var ^ string_of_int i) in
-    mk_def_mul e (mk_def_add const_1 v) in
+    let eps = 
+      match fp.rounding with
+	| Nearest -> v
+	| Directed -> mk_def_mul const_2 v in
+    mk_def_mul e (mk_def_add const_1 eps) in
   let rec build e = 
     match e with
       | Const c -> if is_fp_exact fp.eps c then e else add_rel e

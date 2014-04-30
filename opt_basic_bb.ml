@@ -6,7 +6,7 @@ open Expr
 let gen_bb_opt_code tolx tolfx fmt =
   let nl = Format.pp_print_newline fmt in
   let p str = Format.pp_print_string fmt str; nl() in
-  let p' = Format.pp_print_string fmt in
+(*  let p' = Format.pp_print_string fmt in*)
 
   let head () = 
     p "open Interval";
@@ -18,8 +18,12 @@ let gen_bb_opt_code tolx tolfx fmt =
     p (Format.sprintf 
 	 "  let int, fint, p, pv = B_and_b.branch_and_bound f_x f_X start_interval %f %f in"
 	 tolx tolfx);
-    p "  print_I fint; print_newline ();";
-    p "  Printf.printf \"max = %f\" pv;";
+    p "  let _ = print_I fint; print_newline ();";
+    p "          Printf.printf \"max = %f\\n\" fint.high in";
+    p (Format.sprintf
+	 "  let int, fint, p, pv = B_and_b.branch_and_bound (fun x -> -. (f_x x)) (fun x -> ~-$ (f_X x)) start_interval %f %f in" tolx tolfx);
+    p "  let _ = print_I fint; print_newline ();";
+    p "          Printf.printf \"min = %f\\n\" (-. fint.high) in";
     p "  flush stdout"; in
 
   let start_interval var_bounds =
@@ -68,7 +72,9 @@ let min_max_expr tolx tolfx var_bound e =
   let ml_name = "b_and_b/bb.ml" in
   let gen = gen_bb_opt_code tolx tolfx in
   let _ = write_to_file ml_name gen (var_bound, e) in
-  let cmd = "ocamlc -I ../INTERVAL -I b_and_b -o bb ../INTERVAL/libinterval.a ../INTERVAL/interval.cma b_and_b/pqueue.ml b_and_b/b_and_b.ml b_and_b/bb.ml" in
+  let cmd = "ocamlopt -I ../INTERVAL -I b_and_b -o bb ../INTERVAL/libinterval.a ../INTERVAL/interval.cmxa b_and_b/pqueue.ml b_and_b/b_and_b.ml " ^ ml_name in
   let _ = run_cmd cmd in
-  let ss = run_cmd "./bb" in
-  ss
+  let out = run_cmd "./bb" in
+  let min = Opt.get_float out "min = " and
+      max = Opt.get_float out "max = " in
+  min, max

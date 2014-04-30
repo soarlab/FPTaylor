@@ -88,6 +88,7 @@ let subnormal = stob (findd "true" "subnormal")
 let simplification = stob (findd "false" "simplification")
 let rel_error = stob (findd "false" "rel-error")
 let fp = stoi (findd "64" "fp")
+let rounding = findd "nearest" "rounding"
   
   (* Optimization parameters *)
 let opt = find "opt"
@@ -105,5 +106,6 @@ let print_options fmt =
   ps "opt" opt;
   pb "opt-approx" opt_approx;
   pi "fp" fp;
+  ps "rounding" rounding;
     
     

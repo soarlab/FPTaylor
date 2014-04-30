@@ -19,10 +19,14 @@ test:
 	./fptaylor $(TEST)
 
 check1:
-	./fptaylor $(TEST_DIR)/test01_sum3.txt
+	./fptaylor -c test.cfg $(TEST_DIR)/test01_sum3.txt
 
 check2:
 	./fptaylor $(TEST_DIR)/test08_dqmom3.txt
+
+jet:
+	./fptaylor $(TEST_DIR)/darulova/jet.txt
+
 
 clean:
 	rm -rf _build

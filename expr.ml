@@ -115,13 +115,13 @@ let rec vars_in_expr e =
 type print_env = {
   env_op_name : op_type -> bool * string;
   env_op_infix : op_type -> bool * bool;
-  env_print : expr -> bool * string;
+  env_print : (string -> unit) -> (expr -> unit) -> expr -> bool
 }
 
 let def_print_env = {
   env_op_name = (fun _ -> false, "");
   env_op_infix = (fun _ -> false, false);
-  env_print = (fun _ -> false, "");
+  env_print = (fun _ _ _ -> false);
 }
 
 let op_name_in_env env op flags =
@@ -169,9 +169,12 @@ let c_print_env = {
     | Op_nat_pow -> true, false
     | _ -> false, false);
 
-  env_print = (function
-    | Const f -> true, string_of_float f.float_v
-    | _ -> false, "");
+  env_print = (fun p _ e ->
+    match e with
+      | Const f -> 
+	let _ = p (string_of_float f.float_v) in
+	true
+      | _ -> false);
 }
 
 let z3py_print_env = {
@@ -185,9 +188,12 @@ let z3py_print_env = {
   env_op_infix = (function
     | _ -> false, false);
 
-  env_print = (function
-    | Const f -> true, string_of_num f.rational_v
-    | _ -> false, "");
+  env_print = (fun p _ e ->
+    match e with
+      | Const f -> 
+	let _ = p (string_of_num f.rational_v) in
+	true
+      | _ -> false);
 }
 
 let ocaml_float_print_env = {
@@ -204,9 +210,12 @@ let ocaml_float_print_env = {
   env_op_infix = (function
     | _ -> false, false);
 
-  env_print = (function
-    | Const f -> true, string_of_float f.float_v
-    | _ -> false, "");
+  env_print = (fun p _ e ->
+    match e with
+      | Const f -> 
+	let _ = p (string_of_float f.float_v) in
+	true
+      | _ -> false);
 }
 
 let ocaml_interval_print_env = {
@@ -230,18 +239,37 @@ let ocaml_interval_print_env = {
   env_op_infix = (function
     | _ -> false, false);
 
-  env_print = (function
-    | Const f -> true, Format.sprintf "{low = %f; high = %f}" 
-      f.interval_v.low f.interval_v.high
-    | _ -> false, "");
+  env_print = (fun p print e ->
+    match e with
+      | Const f -> 
+	let _ = p (Format.sprintf "{low = %f; high = %f}" 
+		     f.interval_v.low f.interval_v.high) in
+	true
+      | Bin_op (Op_nat_pow, flags, arg1, arg2) ->
+	begin
+	  match arg2 with
+	    | Const f -> 
+	      let n = f.rational_v in
+	      if is_integer_num n && n >/ Int 0 then
+		let _ =
+		  p "(pow_I_i ";
+	          print arg1;
+		  p (" (" ^ string_of_num n ^ ")");
+		  p ")" in
+		true
+	      else
+		failwith "Op_nat_pow: non-integer exponent"
+	    | _ -> failwith "Op_nat_pow: non-constant exponent"
+	end
+      | _ -> false);
 }
 
 
 let print_expr_in_env env fmt =
   let p = Format.pp_print_string fmt in
   let rec print e =
-    let b, str = env.env_print e in
-    if b then p str else
+    let b = env.env_print p print e in
+    if b then () else
       match e with
 	| Const f -> p (string_of_num f.rational_v)
 	| Var v -> p v
@@ -249,7 +277,7 @@ let print_expr_in_env env fmt =
 	  begin
 	    p "(";
 	    p (op_name_in_env env op flags);
-	    print arg;
+	    p "("; print arg; p ")";
 	    p ")";
 	  end
 	| Bin_op (op, flags, arg1, arg2) ->
