@@ -135,7 +135,7 @@ let op_name_in_env env op flags =
 	| Op_sub -> "-"
 	| Op_mul -> "*"
 	| Op_div -> "/"
-	| Op_inv -> "/"
+	| Op_inv -> "inv"
 	| Op_sqrt -> "sqrt"
 	| Op_sin -> "sin"
 	| Op_cos -> "cos"
@@ -212,6 +212,7 @@ let ocaml_float_print_env = {
 
   env_print = (fun p _ e ->
     match e with
+      | Var v -> let _ = p ("var_" ^ v) in true
       | Const f -> 
 	let _ = p (string_of_float f.float_v) in
 	true
@@ -241,6 +242,7 @@ let ocaml_interval_print_env = {
 
   env_print = (fun p print e ->
     match e with
+      | Var name -> let _ = p ("var_" ^ name) in true
       | Const f -> 
 	let _ = p (Format.sprintf "{low = %f; high = %f}" 
 		     f.interval_v.low f.interval_v.high) in

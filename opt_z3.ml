@@ -58,11 +58,13 @@ let min_max_expr tol var_bound e =
     let t = More_num.interval_of_num n in
     (t.Interval.low, t.Interval.high)
   else
-    let py_name = "min_max.py" in
+    let tmp = Lib.get_dir "tmp" in
+    let py_name = tmp ^ "/min_max.py" in
     let gen = gen_z3py_opt_code in
     let _ = write_to_file py_name gen (tol, var_bound, e) in
-(*    0.0, 0.0 *)
-    let ss = run_cmd ("python " ^ py_name) in 
+    let cmd = Format.sprintf "PYTHONPATH=\"%s\" python %s"
+      Config.base_dir py_name in
+    let ss = run_cmd cmd in
     let n = length ss in
     let v_min = float_of_string (nth ss (n - 2)) and
 	v_max = float_of_string (nth ss (n - 1)) in

@@ -19,11 +19,11 @@ let gen_bb_opt_code tolx tolfx fmt =
 	 "  let int, fint, p, pv = B_and_b.branch_and_bound f_x f_X start_interval %f %f in"
 	 tolx tolfx);
     p "  let _ = print_I fint; print_newline ();";
-    p "          Printf.printf \"max = %f\\n\" fint.high in";
+    p "          Printf.printf \"max = %0.20e\\n\" fint.high in";
     p (Format.sprintf
 	 "  let int, fint, p, pv = B_and_b.branch_and_bound (fun x -> -. (f_x x)) (fun x -> ~-$ (f_X x)) start_interval %f %f in" tolx tolfx);
     p "  let _ = print_I fint; print_newline ();";
-    p "          Printf.printf \"min = %f\\n\" (-. fint.high) in";
+    p "          Printf.printf \"min = %0.20e\\n\" (-. fint.high) in";
     p "  flush stdout"; in
 
   let start_interval var_bounds =
@@ -48,7 +48,7 @@ let gen_bb_opt_code tolx tolfx fmt =
       match vs with
 	| [] -> ()
 	| v :: rest ->
-	  p (Format.sprintf "  let %s = input_array.(%d) in" v i);
+	  p (Format.sprintf "  let var_%s = input_array.(%d) in" v i);
 	  vars (i + 1) rest in
     p "let f_x input_array = ";
     vars 0 var_names;
@@ -69,12 +69,27 @@ let gen_bb_opt_code tolx tolfx fmt =
 
 
 let min_max_expr tolx tolfx var_bound e =
-  let ml_name = "b_and_b/bb.ml" in
+  let base = Config.base_dir in
+  let tmp = Lib.get_dir "tmp" in
+  let ml_name = tmp ^ "/bb.ml" in
+  let exe_name = tmp ^ "/bb" in
+  let files = [
+    "../INTERVAL/libinterval.a";
+    "../INTERVAL/interval.cmxa";
+    "b_and_b/pqueue.ml";
+    "b_and_b/b_and_b.ml";
+  ] in
   let gen = gen_bb_opt_code tolx tolfx in
   let _ = write_to_file ml_name gen (var_bound, e) in
-  let cmd = "ocamlopt -I ../INTERVAL -I b_and_b -o bb ../INTERVAL/libinterval.a ../INTERVAL/interval.cmxa b_and_b/pqueue.ml b_and_b/b_and_b.ml " ^ ml_name in
+  let srcs = map (fun s -> base ^ s) files in
+  let cmd = Format.sprintf "ocamlopt -I %s -I %s -o %s %s %s" 
+    (base ^ "../INTERVAL")
+    (base ^ "b_and_b")
+    exe_name
+    (String.concat " " srcs) 
+    ml_name in
   let _ = run_cmd cmd in
-  let out = run_cmd "./bb" in
+  let out = run_cmd exe_name in
   let min = Opt.get_float out "min = " and
       max = Opt.get_float out "max = " in
   min, max

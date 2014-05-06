@@ -36,8 +36,11 @@ let z3opt e =
 
 let opt tol e =
   let e' = Maxima.simplify e in
-  let min, max = Opt_z3.min_max_expr tol var_bound_rat e' in
-(*  let min, max = Opt_basic_bb.min_max_expr tol tol var_bound_float e' in*)
+  let min, max =
+    match Config.opt with
+      | "z3" -> Opt_z3.min_max_expr tol var_bound_rat e'
+      | "bb" -> Opt_basic_bb.min_max_expr tol tol var_bound_float e'
+      | s -> failwith ("Unsupported optimization engine: " ^ s) in
   min, max
 
 let basic_bb_opt e =
@@ -112,6 +115,7 @@ let create_fp_parameters fp =
 
 let forms e =
   let _ = report ("\nTaylor form for: " ^ print_expr_str e) in
+  let start = Unix.gettimeofday() in
   let fp = create_fp_parameters Config.fp in
   let vars = var_bound_float in
   let form' = build_form fp vars e in
@@ -119,6 +123,8 @@ let forms e =
   let _ = print_form form in
   let _ = report "" in
   let _ = errors fp.eps form in
+  let stop = Unix.gettimeofday() in
+  let _ = report (Format.sprintf "Elapsed time: %.5f" (stop -. start)) in
   report ""
 
 let gradient e =

@@ -16,6 +16,7 @@ let id = alpha (alpha | digit)*
 let number = (digit+ ('.' digit*)?)('e'['-' '+']?digit+)?
 
 rule token = parse
+  | "//" [^ '\n']*
   | [' ' '\t'] { token lexbuf }
   | '\n' { incr_lineno lexbuf; token lexbuf }
   | "Constants" 
@@ -56,6 +57,7 @@ rule token = parse
   | "sqrt" { SQRT }
   | "min" { MIN }
   | "max" { MAX }
+  | "%e" { E_CONST }
   | "exp" { EXP }
   | "log" { LOG }
   | "cos" { COS }

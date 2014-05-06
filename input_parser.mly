@@ -15,6 +15,7 @@
 
 %token CONSTANTS VARIABLES DEFINITIONS CONSTRAINTS EXPRESSIONS
 %token INT REAL
+%token E_CONST
 
 %token ABS INV SQRT FMA
 %token MIN MAX 
@@ -133,7 +134,9 @@ expr:
   | expr DIVIDE expr { Raw_bin_op ("/", false, $1, $3) }
   | MINUS expr %prec NEG { Raw_u_op ("-", false, $2) }
   | PLUS expr %prec NEG { $2 }
+  | E_CONST POW expr { Raw_u_op ("exp", false, $3) }
   | expr POW NUMBER { Raw_bin_op ("^", false, $1, Numeral $3) }
+  | expr POW LPAREN MINUS NUMBER RPAREN { Raw_bin_op ("^", false, $1, Numeral ("-" ^ $5)) }
   | LPAREN expr RPAREN { $2 }
   | ABS LPAREN expr RPAREN { Raw_u_op ("abs", false, $3) }
   | INV LPAREN expr RPAREN { Raw_u_op ("inv", false, $3) }

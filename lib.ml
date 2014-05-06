@@ -139,6 +139,13 @@ let write_to_file fname f a =
   let _ = close_out oc in
   r
 
+(* Creates a directory if it doesn't exist and returns its name *)
+let get_dir dir_name =
+  let _ = 
+    if Sys.file_exists dir_name then ()
+    else Unix.mkdir dir_name 0o777 in
+  dir_name
+
 (* From hol_light/printer.ml *)
 let print_to_string printer =
   let sbuff = ref "" in

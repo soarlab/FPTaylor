@@ -289,7 +289,7 @@ let build_form fp vars =
 	      | Op_sin -> sin_form fp vars arg_form
 	      | Op_cos -> cos_form fp vars arg_form
 	      | Op_exp -> exp_form fp vars arg_form
-	      | Op_log -> exp_form fp vars arg_form
+	      | Op_log -> log_form fp vars arg_form
 	      | _ -> failwith 
 		("build_form: unsupported unary operation " ^ op_name op flags) in
 	  if flags.op_exact then

@@ -48,8 +48,10 @@ let parse_config_file fname =
   List.iter (fun (k, v) -> Hashtbl.replace param_tbl k v) param_values;
   ()
 
+let base_dir = Filename.dirname Sys.executable_name ^ "/../"
+
 let cfg_files, input_files = parse_args ()
-let _ = parse_config_file "default.cfg"
+let _ = parse_config_file (base_dir ^ "default.cfg")
 let _ = map parse_config_file cfg_files
   
 let find p = 
@@ -109,3 +111,4 @@ let print_options fmt =
   ps "rounding" rounding;
     
     
+

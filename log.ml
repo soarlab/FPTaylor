@@ -11,12 +11,8 @@ let open_log, close_log, append_to_log =
 	out := None;
 	fmt := None
   in
-  let create_log_dir () =
-    if Sys.file_exists "log" then ()
-    else Unix.mkdir "log" 0o777
-  in
   let open_log fname =
-    let _ = create_log_dir () in
+    let _ = Lib.get_dir "log" in
     let log_name = "log/" ^ Filename.basename fname ^ ".log" in
     let _ = close_log() in
     let c = open_out log_name in
