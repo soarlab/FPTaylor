@@ -89,26 +89,41 @@ let uncertainty = stob (findd "false" "uncertainty")
 let subnormal = stob (findd "true" "subnormal")
 let simplification = stob (findd "false" "simplification")
 let rel_error = stob (findd "false" "rel-error")
+let abs_error = stob (findd "true" "abs-error")
 let fp = stoi (findd "64" "fp")
 let rounding = findd "nearest" "rounding"
+let real_vars = stob (findd "false" "real-vars")
+let const_approx_real_vars = stob (findd "true" "const-approx-real-vars")
   
   (* Optimization parameters *)
 let opt = find "opt"
 let opt_approx = stob (findd "true" "opt-approx")
+let opt_tol = 
+  let v = stof (findd "0.01" "opt-tol") in
+  if v < 1e-10 then
+    let _ = Log.warning ("Bad opt-tol value: " ^ string_of_float v) in
+    0.01
+  else
+    v
   
 let print_options fmt =
   let pp str = Format.pp_print_string fmt str; Format.pp_print_newline fmt () in
   let ps name s = pp (Format.sprintf "%s = %s" name s) in
   let pb name b = pp (Format.sprintf "%s = %B" name b) in
-  let pi name i = pp (Format.sprintf "%s = %d" name i) in 
+  let pi name i = pp (Format.sprintf "%s = %d" name i) in
+  let pf name f = pp (Format.sprintf "%s = %f" name f) in
   pb "uncertainty" uncertainty;
   pb "subnormal" subnormal;
   pb "simplification" simplification;
+  pb "abs-error" abs_error;
   pb "rel-error" rel_error;
   ps "opt" opt;
   pb "opt-approx" opt_approx;
+  pf "opt-tol" opt_tol;
   pi "fp" fp;
   ps "rounding" rounding;
+  pb "real-vars" real_vars;
+  pb "const-approx-real-vars" const_approx_real_vars;
     
     
 

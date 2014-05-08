@@ -93,3 +93,12 @@ let is_exact str =
   let n1 = num_of_float f in
   (n0 -/ n1) =/ Int 0
 
+let is_power_of_two n =
+  let n = abs_num n in
+  if is_integer_num n && n <>/ Int 0 then
+    let k = big_int_of_num n in
+    let pred_k = Big_int.pred_big_int k in
+    let r = Big_int.and_big_int k pred_k in
+    Big_int.eq_big_int r Big_int.zero_big_int
+  else
+    false

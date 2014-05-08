@@ -244,7 +244,7 @@ let ocaml_interval_print_env = {
     match e with
       | Var name -> let _ = p ("var_" ^ name) in true
       | Const f -> 
-	let _ = p (Format.sprintf "{low = %f; high = %f}" 
+	let _ = p (Format.sprintf "{low = %.30e; high = %.30e}" 
 		     f.interval_v.low f.interval_v.high) in
 	true
       | Bin_op (Op_nat_pow, flags, arg1, arg2) ->
@@ -342,6 +342,11 @@ let const_of_int n = const_of_num (num_of_int n)
 
 let mk_int_const i = mk_const (const_of_int i)
 
+let const_of_float f = {
+  rational_v = More_num.num_of_float f;
+  float_v = f;
+  interval_v = {low = f; high = f};
+}
 
 
 let const_0 = mk_int_const 0

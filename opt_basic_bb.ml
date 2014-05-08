@@ -36,7 +36,7 @@ let gen_bb_opt_code tolx tolfx fmt =
 	  bounds (i + 1) rest in
     let n = length var_bounds in
     let strs = map 
-      (fun b -> Format.sprintf "{low = %f; high = %f}" b.low b.high) var_bounds in
+      (fun b -> Format.sprintf "{low = %.30e; high = %.30e}" b.low b.high) var_bounds in
     nl();
     p (Format.sprintf "let start_interval = Array.init %d (function" n);
     bounds 0 strs;

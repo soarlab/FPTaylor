@@ -68,18 +68,32 @@ let rounded_form, find_index, expr_for_index, reset_index_counter, current_index
       let _ = list := (expr, !counter) :: !list in
       !counter in
   let rounded_form fp vars f =
-    let i = find_index fp.rounding f.v0 in 
-    match fp.rounding with
-      | Nearest -> {
-	v0 = f.v0;
-	v1 = (i, f.v0) :: f.v1;
-	m2 = f.m2 +^ (fp.eps *^ f.m2) +^ sum_high (abs_eval_v1 vars f.v1) +^ fp.delta;
-      }
-      | Directed -> {
-	v0 = f.v0;
-	v1 = (i, mk_def_mul const_2 f.v0) :: f.v1;
-	m2 = f.m2 +^ (2.0 *^ ((fp.eps *^ f.m2) +^ sum_high (abs_eval_v1 vars f.v1))) +^ fp.delta;
-      }
+    if fp.eps = 0.0 then
+      match fp.rounding with
+	| Nearest -> {
+	  v0 = f.v0;
+	  v1 = f.v1;
+	  m2 = f.m2 +^ fp.delta
+	}
+	| Directed -> {
+	  v0 = f.v0;
+	  v1 = f.v1;
+	  m2 = f.m2 +^ (2.0 *^ fp.delta)
+	}
+    else
+      let i = find_index fp.rounding f.v0 in
+      match fp.rounding with
+	| Nearest -> {
+	  v0 = f.v0;
+	  v1 = (i, f.v0) :: f.v1;
+	  m2 = f.m2 +^ (fp.eps *^ f.m2) +^ sum_high (abs_eval_v1 vars f.v1) +^ fp.delta;
+	}
+	| Directed -> {
+	  v0 = f.v0;
+	  v1 = (i, mk_def_mul const_2 f.v0) :: f.v1;
+	  m2 = f.m2 +^ (2.0 *^ 
+			  ((fp.eps *^ f.m2) +^ sum_high (abs_eval_v1 vars f.v1) +^ fp.delta))
+	}
   and expr_for_index i = 
     try rev_assoc i !exprs_nearest
     with Failure _ -> rev_assoc i !exprs_directed
@@ -87,6 +101,20 @@ let rounded_form, find_index, expr_for_index, reset_index_counter, current_index
   and current_index () = !counter
   in
   rounded_form, find_index, expr_for_index, reset_index_counter, current_index
+
+
+(* For a given positive floating-point number f,
+   returns a floating-point number x such that
+   for any real number |r| <= f, rnd(r) = x * e with |e| <= eps
+   in the given rounding mode *)
+let eps_error fp f =
+  if f < 0.0 then failwith "eps_error: negative number"
+  else if f = 0.0 then 0.0
+  else 
+    let _, q = frexp f in
+    match fp.rounding with
+      | Nearest -> ldexp 1.0 (q - 1)
+      | Directed -> ldexp 1.0 q
   
 (* constant *)    
 let const_form fp e = 
@@ -94,7 +122,19 @@ let const_form fp e =
     | Const c -> {
       v0 = e;
       (* Assume that constants are always rounded to the nearest value *)
-      v1 = if is_fp_exact fp.eps c then [] else [find_index Nearest e, e];
+      (* TODO: directed rounding? *)
+      v1 = 
+	begin
+	  if is_fp_exact fp.eps c then [] else 
+	    let bound = (abs_I c.interval_v).high in
+	    let err = eps_error {fp with rounding = Nearest} bound in
+	    let err_expr = Const (const_of_float err) in
+	    let _ = Log.warning (Format.sprintf "Inexact constant: %s; err = %s" 
+				   (print_expr_str e) 
+				   (print_expr_str err_expr)) in
+(*	    [find_index Nearest e, e] *)
+	    [find_index Nearest e, err_expr]
+	end;
       m2 = 0.0;
     }
     | _ -> failwith ("const_form: not a constant expression: " ^ print_expr_str e)
@@ -102,18 +142,37 @@ let const_form fp e =
 (* variable *)
 let var_form fp e =
   match e with
-    | Var v -> {
-      v0 = e;
-      v1 = 
+    | Var v ->
+      let v1_uncertainty = 
 	if fp.uncertainty_flag then
 	  let vv = Environment.find_variable v in
 	  let u = vv.Environment.uncertainty.rational_v // More_num.num_of_float fp.eps in
 	  if not (u =/ Int 0) then
 	    [find_index Nearest e, mk_const (const_of_num u)]
 	  else []
-	else [];
-      m2 = 0.0
-    }
+	else [] in
+      let v1_real =
+	if Config.real_vars then
+	  begin
+	    let err_expr =
+	      if Config.const_approx_real_vars then
+		let bound = (abs_I (Environment.variable_interval v)).high in
+		let err = eps_error fp bound in
+		Const (const_of_float err) 
+	      else
+		match fp.rounding with
+		  | Nearest -> e
+		  | Directed -> mk_def_mul const_2 e in
+	    let _ = Log.warning (Format.sprintf "Inexact var: %s; err = %s"
+				   (print_expr_str e)
+				   (print_expr_str err_expr)) in
+	    [find_index fp.rounding e, err_expr]
+	  end
+	else [] in {
+	  v0 = e;
+	  v1 = v1_uncertainty @ v1_real;
+	  m2 = 0.0;
+	}
     | _ -> failwith ("var_form: not a variable: " ^ print_expr_str e)
 
 (* negation *)
@@ -271,6 +330,12 @@ let log_form fp vars f =
       s0 +^ s2;
   }
 
+let is_power_of_2_or_0 e =
+  match e with
+    | Const c -> 
+      let n = c.rational_v in
+      n =/ Int 0 || More_num.is_power_of_two n
+    | _ -> false
 
 (* Builds a Taylor form *)
 let build_form fp vars =
@@ -306,8 +371,18 @@ let build_form fp vars =
 	      (* subnormal delta is zero for addition and subtraction *)
 	      | Op_add -> add_form arg1_form arg2_form, {fp with delta = 0.0}
 	      | Op_sub -> sub_form arg1_form arg2_form, {fp with delta = 0.0}
-	      | Op_mul -> mul_form fp vars arg1_form arg2_form, fp
-	      | Op_div -> div_form fp vars arg1_form arg2_form, fp
+	      | Op_mul -> 
+		let r = mul_form fp vars arg1_form arg2_form in
+		if is_power_of_2_or_0 arg1 || is_power_of_2_or_0 arg2 then
+		  r, {fp with eps = 0.0; delta = 0.0}
+		else
+		  r, fp
+	      | Op_div -> 
+		let r = div_form fp vars arg1_form arg2_form in
+		if is_power_of_2_or_0 arg2 then
+		  r, {fp with eps = 0.0}
+		else
+		  r, fp
 	      | _ -> failwith
 		("build_form: unsupported binary operation " ^ op_name op flags) in
 	  if flags.op_exact then
