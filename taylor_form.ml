@@ -15,7 +15,7 @@ type float_parameters = {
   rounding : rounding;
   size : int;
   eps : float;
-  (* Should be normalized by eps^2 *)
+  (* Should be normalized by eps *)
   delta : float;
 }
 
@@ -23,22 +23,7 @@ type float_parameters = {
 type taylor_form = {
   v0 : expr;
   v1 : (int * expr) list;
-  m2 : float;
 }
-
-
-let simplify_form =
-  let rec add_adjacent s =
-    match s with
-      | (i, e1) :: (j, e2) :: t ->
-	if i = j then
-	  add_adjacent ((i, mk_def_add e1 e2) :: t)
-	else
-	  (i, e1) :: add_adjacent ((j, e2) :: t)
-      | _ -> s in
-  fun f ->
-    let v1 = sort (fun (i, _) (j, _) -> compare i j) f.v1 in
-    {f with v1 = add_adjacent v1}
 
 let ( +^ ) = Fpu.fadd_high and
     ( *^ ) = Fpu.fmul_high
@@ -50,6 +35,26 @@ let abs_eval vars e =
   (abs_I v).high
 
 let abs_eval_v1 vars = map (fun (_, e) -> abs_eval vars e)
+
+let fp2const f = mk_const (const_of_float f)
+
+
+let simplify_form vars =
+  let rec add_adjacent s =
+    match s with
+      | (-1, e1) :: (-1, e2) :: t ->
+	let f1 = abs_eval vars e1 and
+	    f2 = abs_eval vars e2 in
+	add_adjacent ((-1, fp2const (f1 +^ f2)) :: t)
+      | (i, e1) :: (j, e2) :: t ->
+	if i = j then
+	  add_adjacent ((i, mk_def_add e1 e2) :: t)
+	else
+	  (i, e1) :: add_adjacent ((j, e2) :: t)
+      | _ -> s in
+  fun f ->
+    let v1 = sort (fun (i, _) (j, _) -> compare i j) f.v1 in
+    {f with v1 = add_adjacent v1}
 
 (* rounding *)
 let rounded_form, find_index, expr_for_index, reset_index_counter, current_index =
@@ -72,27 +77,23 @@ let rounded_form, find_index, expr_for_index, reset_index_counter, current_index
       match fp.rounding with
 	| Nearest -> {
 	  v0 = f.v0;
-	  v1 = f.v1;
-	  m2 = f.m2 +^ fp.delta
+	  v1 = f.v1 @ [-1, fp2const (fp.eps *^ fp.delta)];
 	}
 	| Directed -> {
 	  v0 = f.v0;
-	  v1 = f.v1;
-	  m2 = f.m2 +^ (2.0 *^ fp.delta)
+	  v1 = f.v1 @ [-1, fp2const (2.0 *^ fp.eps *^ fp.delta)];
 	}
     else
       let i = find_index fp.rounding f.v0 in
+      let m2 = (fp.eps *^ sum_high (abs_eval_v1 vars f.v1)) +^ (fp.eps *^ fp.delta) in
       match fp.rounding with
 	| Nearest -> {
 	  v0 = f.v0;
-	  v1 = (i, f.v0) :: f.v1;
-	  m2 = f.m2 +^ (fp.eps *^ f.m2) +^ sum_high (abs_eval_v1 vars f.v1) +^ fp.delta;
+	  v1 = ((i, f.v0) :: f.v1) @ [-1, fp2const m2];
 	}
 	| Directed -> {
 	  v0 = f.v0;
-	  v1 = (i, mk_def_mul const_2 f.v0) :: f.v1;
-	  m2 = f.m2 +^ (2.0 *^ 
-			  ((fp.eps *^ f.m2) +^ sum_high (abs_eval_v1 vars f.v1) +^ fp.delta))
+	  v1 = ((i, mk_def_mul const_2 f.v0) :: f.v1) @ [-1, fp2const (2.0 *^ m2)];
 	}
   and expr_for_index i = 
     try rev_assoc i !exprs_nearest
@@ -135,7 +136,6 @@ let const_form fp e =
 (*	    [find_index Nearest e, e] *)
 	    [find_index Nearest e, err_expr]
 	end;
-      m2 = 0.0;
     }
     | _ -> failwith ("const_form: not a constant expression: " ^ print_expr_str e)
 
@@ -171,7 +171,6 @@ let var_form fp e =
 	else [] in {
 	  v0 = e;
 	  v1 = v1_uncertainty @ v1_real;
-	  m2 = 0.0;
 	}
     | _ -> failwith ("var_form: not a variable: " ^ print_expr_str e)
 
@@ -179,60 +178,47 @@ let var_form fp e =
 let neg_form f = {
   v0 = mk_def_neg f.v0;
   v1 = map (fun (i, e) -> i, mk_def_neg e) f.v1;
-  m2 = f.m2;
 }
 
 (* addition *)
 let add_form f1 f2 = {
   v0 = mk_def_add f1.v0 f2.v0;
   v1 = f1.v1 @ f2.v1;
-  m2 = f1.m2 +^ f2.m2;
 }
 
 (* subtraction *)
 let sub_form f1 f2 = {
   v0 = mk_def_sub f1.v0 f2.v0;
   v1 = f1.v1 @ map (fun (i, e) -> i, mk_def_neg e) f2.v1;
-  m2 = f1.m2 +^ f2.m2;
 }
 
 (* multiplication *)
 let mul_form =
   let mul1 x = map (fun (i, e) -> i, mk_def_mul x e) in
-  fun fp vars f1 f2 -> {
-    v0 = mk_def_mul f1.v0 f2.v0;
-    v1 = mul1 f1.v0 f2.v1 @ mul1 f2.v0 f1.v1;
-    m2 =
-      let x0 = abs_eval vars f1.v0 and
-	  y0 = abs_eval vars f2.v0 and
-	  x1 = abs_eval_v1 vars f1.v1 and
-	  y1 = abs_eval_v1 vars f2.v1 and
-	  x2 = f1.m2 and
-	  y2 = f2.m2 in
-      let a = (y0 *^ x2) +^ (x0 *^ y2) +^ ((x2 *^ fp.eps) *^ (y2 *^ fp.eps)) in
-      let b = (sum_high x1 *^ y2 *^ fp.eps) +^ (sum_high y1 *^ x2 *^ fp.eps) in
-      let c = itlist (fun x s ->
-	sum_high (map (fun y -> x *^ y) y1) +^ s) x1 0.0 in
-      let r = a +^ b +^ c in
-      r;
-  }
+  fun fp vars f1 f2 -> 
+    let x1 = abs_eval_v1 vars f1.v1 and
+	y1 = abs_eval_v1 vars f2.v1 in
+    let m2 = fp.eps *^ (itlist (fun x s ->
+      sum_high (map (fun y -> x *^ y) y1) +^ s) x1 0.0) in 
+    {
+      v0 = mk_def_mul f1.v0 f2.v0;
+      v1 = mul1 f1.v0 f2.v1 @ mul1 f2.v0 f1.v1 @ [-1, fp2const m2];
+    }
 
 (* reciprocal *)
-let inv_form fp vars f = {
-  v0 = mk_def_div const_1 f.v0;
-  v1 = map (fun (i, e) -> i, mk_def_neg (mk_def_div e (mk_def_mul f.v0 f.v0))) f.v1;
-  m2 = 
-    let x0_int = Eval.eval_interval_expr vars f.v0 in
-    let x1 = (f.m2 *^ fp.eps) :: (abs_eval_v1 vars f.v1) in
-    let xi = {low = -. fp.eps; high = fp.eps} in
-    let s1 = itlist (fun a s -> (xi *$. a) +$ s) x1 zero_I in
-    let d = pow_I_i (x0_int +$ s1) 3 in
-    let r_high = (abs_I (inv_I d)).high in
-    let s2 = r_high *^ itlist (fun a s ->
-      sum_high (map (fun b -> a *^ b) x1) +^ s) x1 0.0 in
-    let s0 = (f.m2 /.$ (pow_I_i x0_int 2)).high in
-    s0 +^ s2;
-}
+let inv_form fp vars f = 
+  let x0_int = Eval.eval_interval_expr vars f.v0 in
+  let xi = {low = -. fp.eps; high = fp.eps} in
+  let s1 = itlist (fun a s -> (xi *$. a) +$ s) f.v1 zero_I in
+  let d = pow_I_i (x0_int +$ s1) 3 in
+  let r_high = (abs_I (inv_I d)).high in
+  let m2 = fp.eps *^ (r_high *^ itlist (fun a s ->
+    sum_high (map (fun b -> a *^ b) x1) +^ s) x1 0.0) in
+  {
+    v0 = mk_def_div const_1 f.v0;
+    v1 = map (fun (i, e) -> i, mk_def_neg (mk_def_div e (mk_def_mul f.v0 f.v0))) f.v1
+      @ [-1, fp2const m2]
+  }
 
 (* division *)
 let div_form fp vars f1 f2 =  

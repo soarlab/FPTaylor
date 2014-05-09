@@ -145,7 +145,8 @@ let create_fp_parameters fp =
       | _ -> failwith ("Unsupported rounding mode: " ^ Config.rounding) in
   let eps = ldexp 0.5 (-bits) in
   (* Normalize the value by eps^2 *)
-  let eta = ldexp 2.0 (min_exp + bits) in {
+(*  let eta = ldexp 2.0 (min_exp + bits) in { *)
+  let eta = ldexp 1.0 min_exp in {
     size = fp;
     eps = eps;
     delta = if Config.subnormal then eta else 0.0;
