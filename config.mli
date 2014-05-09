@@ -1,4 +1,5 @@
 val base_dir : string
+(* arguments: option name -> default value *)
 val get_option : string -> string -> string
 val get_bool_option : string -> bool -> bool
 val get_int_option : string -> int -> int

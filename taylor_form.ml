@@ -208,8 +208,9 @@ let mul_form =
 (* reciprocal *)
 let inv_form fp vars f = 
   let x0_int = Eval.eval_interval_expr vars f.v0 in
+  let x1 = abs_eval_v1 vars f.v1 in
   let xi = {low = -. fp.eps; high = fp.eps} in
-  let s1 = itlist (fun a s -> (xi *$. a) +$ s) f.v1 zero_I in
+  let s1 = itlist (fun a s -> (xi *$. a) +$ s) x1 zero_I in
   let d = pow_I_i (x0_int +$ s1) 3 in
   let r_high = (abs_I (inv_I d)).high in
   let m2 = fp.eps *^ (r_high *^ itlist (fun a s ->
@@ -217,104 +218,101 @@ let inv_form fp vars f =
   {
     v0 = mk_def_div const_1 f.v0;
     v1 = map (fun (i, e) -> i, mk_def_neg (mk_def_div e (mk_def_mul f.v0 f.v0))) f.v1
-      @ [-1, fp2const m2]
+      @ [-1, fp2const m2];
   }
 
 (* division *)
 let div_form fp vars f1 f2 =  
   mul_form fp vars f1 (inv_form fp vars f2);;
 
+
 (* square root *)
 let sqrt_form fp vars f = 
-  let sqrt_v0 = mk_def_sqrt f.v0 in {
+  let x0_int = Eval.eval_interval_expr vars f.v0 in
+  let x1 = abs_eval_v1 vars f.v1 in
+  let xi = {low = -. fp.eps; high = fp.eps} in
+  let s1 = itlist (fun a s -> (xi *$. a) +$ s) x1 zero_I in
+  let d = (x0_int +$ s1) **$. 1.5 in
+  let r_high = (abs_I (inv_I d)).high in
+  let m2 = fp.eps *^ (0.125 *^ r_high *^ itlist (fun a s ->
+    sum_high (map (fun b -> a *^ b) x1) +^ s) x1 0.0) in
+  let sqrt_v0 = mk_def_sqrt f.v0 in 
+  {
     v0 = sqrt_v0;
-    v1 = map (fun (i, e) -> i, mk_def_div e (mk_def_mul const_2 sqrt_v0)) f.v1;
-    m2 = 
-      let x0_int = Eval.eval_interval_expr vars f.v0 in
-      let x1 = (f.m2 *^ fp.eps) :: (abs_eval_v1 vars f.v1) in
-      let xi = {low = -. fp.eps; high = fp.eps} in
-      let s1 = itlist (fun a s -> (xi *$. a) +$ s) x1 zero_I in
-      let d = (x0_int +$ s1) **$. 1.5 in
-      let r_high = (abs_I (inv_I d)).high in
-      let s2 = 0.125 *^ r_high *^ itlist (fun a s ->
-	sum_high (map (fun b -> a *^ b) x1) +^ s) x1 0.0 in
-      let s0 = 0.5 *^ (f.m2 /.$ sqrt_I x0_int).high in
-      s0 +^ s2;
+    v1 = map (fun (i, e) -> i, mk_def_div e (mk_def_mul const_2 sqrt_v0)) f.v1
+      @ [-1, fp2const m2];
   }
 
 (* sine *)
 let sin_form fp vars f =
+  let x0_int = Eval.eval_interval_expr vars f.v0 in
+  let x1 = abs_eval_v1 vars f.v1 in
+  let xi = {low = -. fp.eps; high = fp.eps} in
+  let s1 = itlist (fun a s -> (xi *$. a) +$ s) x1 zero_I in
+  let d = sin_I (x0_int +$ s1) in
+  let r_high = (abs_I d).high in
+  let m2 = fp.eps *^ (0.5 *^ r_high *^ itlist (fun a s ->
+    sum_high (map (fun b -> a *^ b) x1) +^ s) x1 0.0) in
   let sin_v0 = mk_def_sin f.v0 in
-  let cos_v0 = mk_def_cos f.v0 in {
+  let cos_v0 = mk_def_cos f.v0 in 
+  {
     v0 = sin_v0;
-    v1 = map (fun (i, e) -> i, mk_def_mul cos_v0 e) f.v1;
-    m2 = 
-      let x0_int = Eval.eval_interval_expr vars f.v0 in
-      let x1 = (f.m2 *^ fp.eps) :: (abs_eval_v1 vars f.v1) in
-      let xi = {low = -. fp.eps; high = fp.eps} in
-      let s1 = itlist (fun a s -> (xi *$. a) +$ s) x1 zero_I in
-      let d = sin_I (x0_int +$ s1) in
-      let r_high = (abs_I d).high in
-      let s2 = 0.5 *^ r_high *^ itlist (fun a s ->
-	sum_high (map (fun b -> a *^ b) x1) +^ s) x1 0.0 in
-      let s0 = (f.m2 *.$ abs_I (cos_I x0_int)).high in
-      s0 +^ s2;
+    v1 = map (fun (i, e) -> i, mk_def_mul cos_v0 e) f.v1
+      @ [-1, fp2const m2];
   }
 
 (* cosine *)
 let cos_form fp vars f =
+  let x0_int = Eval.eval_interval_expr vars f.v0 in
+  let x1 = abs_eval_v1 vars f.v1 in
+  let xi = {low = -. fp.eps; high = fp.eps} in
+  let s1 = itlist (fun a s -> (xi *$. a) +$ s) x1 zero_I in
+  let d = cos_I (x0_int +$ s1) in
+  let r_high = (abs_I d).high in
+  let m2 = fp.eps *^ (0.5 *^ r_high *^ itlist (fun a s ->
+    sum_high (map (fun b -> a *^ b) x1) +^ s) x1 0.0) in
   let sin_v0 = mk_def_sin f.v0 in
-  let cos_v0 = mk_def_cos f.v0 in {
+  let cos_v0 = mk_def_cos f.v0 in 
+  {
     v0 = cos_v0;
-    v1 = map (fun (i, e) -> i, mk_def_neg (mk_def_mul sin_v0 e)) f.v1;
-    m2 = 
-      let x0_int = Eval.eval_interval_expr vars f.v0 in
-      let x1 = (f.m2 *^ fp.eps) :: (abs_eval_v1 vars f.v1) in
-      let xi = {low = -. fp.eps; high = fp.eps} in
-      let s1 = itlist (fun a s -> (xi *$. a) +$ s) x1 zero_I in
-      let d = cos_I (x0_int +$ s1) in
-      let r_high = (abs_I d).high in
-      let s2 = 0.5 *^ r_high *^ itlist (fun a s ->
-	sum_high (map (fun b -> a *^ b) x1) +^ s) x1 0.0 in
-      let s0 = (f.m2 *.$ abs_I (sin_I x0_int)).high in
-      s0 +^ s2;
+    v1 = map (fun (i, e) -> i, mk_def_neg (mk_def_mul sin_v0 e)) f.v1
+      @ [-1, fp2const m2];
   }
 
 (* exp *)
 let exp_form fp vars f =
-  let exp_v0 = mk_def_exp f.v0 in {
+  let x0_int = Eval.eval_interval_expr vars f.v0 in
+  let x1 = abs_eval_v1 vars f.v1 in
+  let xi = {low = -. fp.eps; high = fp.eps} in
+  let s1 = itlist (fun a s -> (xi *$. a) +$ s) x1 zero_I in
+  let d = exp_I (x0_int +$ s1) in
+  let r_high = (abs_I d).high in
+  let m2 = fp.eps *^ (0.5 *^ r_high *^ itlist (fun a s ->
+    sum_high (map (fun b -> a *^ b) x1) +^ s) x1 0.0) in
+  let exp_v0 = mk_def_exp f.v0 in 
+  {
     v0 = exp_v0;
-    v1 = map (fun (i, e) -> i, mk_def_mul exp_v0 e) f.v1;
-    m2 = 
-      let x0_int = Eval.eval_interval_expr vars f.v0 in
-      let x1 = (f.m2 *^ fp.eps) :: (abs_eval_v1 vars f.v1) in
-      let xi = {low = -. fp.eps; high = fp.eps} in
-      let s1 = itlist (fun a s -> (xi *$. a) +$ s) x1 zero_I in
-      let d = exp_I (x0_int +$ s1) in
-      let r_high = (abs_I d).high in
-      let s2 = 0.5 *^ r_high *^ itlist (fun a s ->
-	sum_high (map (fun b -> a *^ b) x1) +^ s) x1 0.0 in
-      let s0 = (f.m2 *.$ abs_I (exp_I x0_int)).high in
-      s0 +^ s2;
+    v1 = map (fun (i, e) -> i, mk_def_mul exp_v0 e) f.v1
+      @ [-1, fp2const m2];
   }
 
 (* log *)
 let log_form fp vars f =
-  let log_v0 = mk_def_log f.v0 in {
+  let x0_int = Eval.eval_interval_expr vars f.v0 in
+  let x1 = abs_eval_v1 vars f.v1 in
+  let xi = {low = -. fp.eps; high = fp.eps} in
+  let s1 = itlist (fun a s -> (xi *$. a) +$ s) x1 zero_I in
+  let d = inv_I (pow_I_i (x0_int +$ s1) 2) in
+  let r_high = (abs_I d).high in
+  let m2 = fp.eps *^ (0.5 *^ r_high *^ itlist (fun a s ->
+    sum_high (map (fun b -> a *^ b) x1) +^ s) x1 0.0) in
+  let log_v0 = mk_def_log f.v0 in 
+  {
     v0 = log_v0;
-    v1 = map (fun (i, e) -> i, mk_def_div e f.v0) f.v1;
-    m2 = 
-      let x0_int = Eval.eval_interval_expr vars f.v0 in
-      let x1 = (f.m2 *^ fp.eps) :: (abs_eval_v1 vars f.v1) in
-      let xi = {low = -. fp.eps; high = fp.eps} in
-      let s1 = itlist (fun a s -> (xi *$. a) +$ s) x1 zero_I in
-      let d = inv_I (pow_I_i (x0_int +$ s1) 2) in
-      let r_high = (abs_I d).high in
-      let s2 = 0.5 *^ r_high *^ itlist (fun a s ->
-	sum_high (map (fun b -> a *^ b) x1) +^ s) x1 0.0 in
-      let s0 = (f.m2 /.$ abs_I x0_int).high in
-      s0 +^ s2;
+    v1 = map (fun (i, e) -> i, mk_def_div e f.v0) f.v1
+      @ [-1, fp2const m2];
   }
+
 
 let is_power_of_2_or_0 e =
   match e with

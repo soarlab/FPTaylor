@@ -33,9 +33,12 @@ let parse_config_file fname =
   let _ = Log.report ("Config: " ^ fname) in
   let split w = 
     let w = Str.global_substitute (Str.regexp "[ \t]+") (fun _ -> "") w in
+    let w = Str.global_substitute (Str.regexp "~") (fun _ -> " ") w in
     let l = Str.split (Str.regexp "=") w in 
     match l with 
-      | [param; value] -> param, value 
+      | param :: v1 :: vs -> 
+	let value = String.concat "=" (v1 :: vs) in
+	param, value 
       | _ -> 
 	Log.error ("Parameter error: " ^ w);
 	failwith "Error while parsing configuration file"

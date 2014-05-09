@@ -82,7 +82,9 @@ let min_max_expr tolx tolfx var_bound e =
   let gen = gen_bb_opt_code tolx tolfx in
   let _ = write_to_file ml_name gen (var_bound, e) in
   let srcs = map (fun s -> base ^ s) files in
-  let cmd = Format.sprintf "ocamlopt -I %s -I %s -o %s %s %s" 
+  let ocamlc = Config.get_option "bb-ocamlc" "ocamlopt" in
+  let cmd = Format.sprintf "%s -I %s -I %s -o %s %s %s" 
+    ocamlc
     (base ^ "../INTERVAL")
     (base ^ "b_and_b")
     exe_name

@@ -84,8 +84,8 @@ let gen_nlopt_code pars fmt =
     p "  nlopt_result result_max = nlopt_optimize(opt, x_max, &f_max);";
     p "  printf(\"result_min: %d\\n\", result_min);";
     p "  printf(\"result_max: %d\\n\", result_max);";
-    p "  printf(\"min: %f\\n\", f_min);";
-    p "  printf(\"max: %f\\n\", f_max);";
+    p "  printf(\"min: %.30e\\n\", f_min);";
+    p "  printf(\"max: %.30e\\n\", f_max);";
     p "  return 0;";
     p "}" in
 
@@ -97,15 +97,22 @@ let gen_nlopt_code pars fmt =
     main var_names var_bounds
 
     
-let min_max_nlopt var_bound expr =
-  let c_name = "nlopt-f.c" in
-  let gen = gen_nlopt_code nlopt_default in
+let min_max_expr ftol var_bound expr =
+  let tmp = Lib.get_dir "tmp" in
+  let c_name = tmp ^ "/nlopt-f.c" in
+  let exe_name = tmp ^ "/nlopt-f" in
+  let gen = gen_nlopt_code {nlopt_default with nl_ftol_abs = ftol} in
   let _ = write_to_file c_name gen (var_bound, expr) in
-  let cc = "gcc -std=c99 -O3 -o nlopt-f " ^ c_name ^ " -lnlopt -lm" in
-  let out = run_cmd cc in
+  let cc = Config.get_option "nlopt-cc" "gcc -std=c99 -O3" in
+  let cc_lib = Config.get_option "nlopt-lib" "-lnlopt -lm" in
+  let cmd = Format.sprintf "%s -o %s %s %s" cc exe_name c_name cc_lib in
+  let out = run_cmd cmd in
   if out <> [] then
-    let str = "Compilation ERROR: " ^ String.concat "\n" out in
+    let str = "Compilation ERROR: " ^ String.concat "\n" (cmd :: out) in
     failwith str
   else
-    let out = run_cmd "./nlopt-f" in
-    out
+    let out = run_cmd exe_name in
+    let min = Opt.get_float out "min: " and
+	max = Opt.get_float out "max: " in
+    min, max
+
