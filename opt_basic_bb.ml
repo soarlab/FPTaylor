@@ -76,7 +76,9 @@ let min_max_expr tolx tolfx var_bound e =
   let files = [
     "../INTERVAL/libinterval.a";
     "../INTERVAL/interval.cmxa";
+    "b_and_b/pqueue.mli";
     "b_and_b/pqueue.ml";
+    "b_and_b/b_and_b.mli";
     "b_and_b/b_and_b.ml";
   ] in
   let gen = gen_bb_opt_code tolx tolfx in

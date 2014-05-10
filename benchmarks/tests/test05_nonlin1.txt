@@ -1,0 +1,17 @@
+Variables
+  x in [1.00001, 2.0]
+;
+	
+Definitions
+  r1 = x - 1,
+  r2 = x * x,
+  r3 = r2 - 1,
+  r4 = r1 / r3
+;
+
+Expressions
+  r4,
+  1 / (x + 1)
+;
+
+
