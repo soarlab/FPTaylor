@@ -2,7 +2,7 @@ FPTAYLOR_HOME=../..
 ROSA_HOME=~/Work/Solvers/rosa
 GAPPA_HOME=~/Work/Solvers/gappa-1.0.0/src
 
-FPTAYLOR=$(FPTAYLOR_HOME)/fptaylor -c config.cfg
+FPTAYLOR=$(FPTAYLOR_HOME)/fptaylor -c FPTaylor/config.cfg
 ROSA=$(ROSA_HOME)/rosa --real --z3Timeout=1000
 GAPPA=$(GAPPA_HOME)/gappa
 
