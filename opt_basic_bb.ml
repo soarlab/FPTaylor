@@ -74,8 +74,8 @@ let min_max_expr tolx tolfx var_bound e =
   let ml_name = tmp ^ "/bb.ml" in
   let exe_name = tmp ^ "/bb" in
   let files = [
-    "../INTERVAL/libinterval.a";
-    "../INTERVAL/interval.cmxa";
+    "INTERVAL/libinterval.a";
+    "INTERVAL/interval.cmxa";
     "b_and_b/pqueue.mli";
     "b_and_b/pqueue.ml";
     "b_and_b/b_and_b.mli";
@@ -87,7 +87,7 @@ let min_max_expr tolx tolfx var_bound e =
   let ocamlc = Config.get_option "bb-ocamlc" "ocamlopt" in
   let cmd = Format.sprintf "%s -I %s -I %s -o %s %s %s" 
     ocamlc
-    (base ^ "../INTERVAL")
+    (base ^ "INTERVAL")
     (base ^ "b_and_b")
     exe_name
     (String.concat " " srcs) 
