@@ -3,6 +3,28 @@ open Num
 open Expr
 open List
 
+(* For a given positive floating-point number f,
+   returns the largest floating-point number 2^n such that
+   2^n <= f.
+*)
+let floor_power2 =
+  let p2 f =
+    let _, q = frexp f in
+    ldexp 1.0 (q - 1) in
+  fun f ->
+    match (classify_float f) with
+      | FP_zero -> f
+      | FP_infinite -> f
+      | FP_nan -> f
+      | FP_normal | FP_subnormal -> 
+	if f < 0.0 then -.p2 (-.f) else p2 f
+
+let floor_power2_I x = {
+  low = floor_power2 x.low;
+  high = floor_power2 x.high
+}
+
+
 (* Computes a floating-point value of an expression *)
 (* vars : string -> float is a function which associates 
    floating-point values with variable names *)
@@ -23,6 +45,7 @@ let eval_float_expr vars =
 	  | Op_tan -> tan x
 	  | Op_exp -> exp x
 	  | Op_log -> log x
+	  | Op_floor_power2 -> floor_power2 x
 	  | _ -> failwith ("eval_float_expr: Unsupported unary operation: " 
 			   ^ op_name op f)
       end
@@ -118,6 +141,7 @@ let eval_interval_expr vars =
 	  | Op_tan -> tan_I x
 	  | Op_exp -> exp_I x
 	  | Op_log -> log_I x
+	  | Op_floor_power2 -> floor_power2_I x
 	  | _ -> failwith ("eval_interval_expr: Unsupported unary operation: " 
 			   ^ op_name op f)
       end

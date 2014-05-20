@@ -86,14 +86,15 @@ let rounded_form, find_index, expr_for_index, reset_index_counter, current_index
     else
       let i = find_index fp.rounding f.v0 in
       let m2 = (fp.eps *^ sum_high (abs_eval_v1 vars f.v1)) +^ (fp.eps *^ fp.delta) in
+      let r = if Config.fp_power2_model then mk_def_floor_power2 f.v0 else f.v0 in
       match fp.rounding with
 	| Nearest -> {
 	  v0 = f.v0;
-	  v1 = ((i, f.v0) :: f.v1) @ [-1, fp2const m2];
+	  v1 = ((i, r) :: f.v1) @ [-1, fp2const m2];
 	}
 	| Directed -> {
 	  v0 = f.v0;
-	  v1 = ((i, mk_def_mul const_2 f.v0) :: f.v1) @ [-1, fp2const (2.0 *^ m2)];
+	  v1 = ((i, mk_def_mul const_2 r) :: f.v1) @ [-1, fp2const (2.0 *^ m2)];
 	}
   and expr_for_index i = 
     try rev_assoc i !exprs_nearest

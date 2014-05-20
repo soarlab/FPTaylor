@@ -94,6 +94,7 @@ let simplification = stob (findd "false" "simplification")
 let rel_error = stob (findd "false" "rel-error")
 let abs_error = stob (findd "true" "abs-error")
 let fp = stoi (findd "64" "fp")
+let fp_power2_model = stob (findd "false" "fp-power2-model")
 let rounding = findd "nearest" "rounding"
 let real_vars = stob (findd "false" "real-vars")
 let const_approx_real_vars = stob (findd "true" "const-approx-real-vars")
@@ -124,6 +125,7 @@ let print_options fmt =
   pb "opt-approx" opt_approx;
   pf "opt-tol" opt_tol;
   pi "fp" fp;
+  pb "fp-power2-model" fp_power2_model;
   ps "rounding" rounding;
   pb "real-vars" real_vars;
   pb "const-approx-real-vars" const_approx_real_vars;

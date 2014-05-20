@@ -29,6 +29,7 @@ type op_type =
   | Op_log
   | Op_fma
   | Op_nat_pow
+  | Op_floor_power2
 
 type op_flags = {
   op_exact : bool;
@@ -81,7 +82,8 @@ let mk_def_neg a = U_op (Op_neg, {op_exact = true}, a) and
     mk_def_mul a b = Bin_op (Op_mul, def_flags, a, b) and
     mk_def_div a b = Bin_op (Op_div, def_flags, a, b) and
     mk_def_nat_pow a b = Bin_op (Op_nat_pow, def_flags, a, b) and
-    mk_def_fma a b c = Gen_op (Op_fma, def_flags, [a; b; c])
+    mk_def_fma a b c = Gen_op (Op_fma, def_flags, [a; b; c]) and
+    mk_def_floor_power2 a = U_op (Op_floor_power2, def_flags, a)
 
 
 let rec eq_expr e1 e2 =
@@ -144,6 +146,7 @@ let op_name_in_env env op flags =
 	| Op_log -> "log"
 	| Op_fma -> "fma"
 	| Op_nat_pow -> "^" 
+	| Op_floor_power2 -> "floor_power2"
     in
 (*    if flags.op_exact then "$" ^ name else name *)
     name
@@ -205,6 +208,7 @@ let ocaml_float_print_env = {
     | Op_div -> true, "/."
     | Op_abs -> true, "abs_float"
     | Op_nat_pow -> true, "**"
+    | Op_floor_power2 -> true, "floor_power2"
     | _ -> false, "");
 
   env_op_infix = (function
@@ -235,6 +239,7 @@ let ocaml_interval_print_env = {
     | Op_exp -> true, "exp_I"
     | Op_log -> true, "log_I"
     | Op_nat_pow -> true, "**$"
+    | Op_floor_power2 -> true, "floor_power2_I"
     | _ -> false, "");
 
   env_op_infix = (function

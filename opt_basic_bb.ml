@@ -10,6 +10,7 @@ let gen_bb_opt_code tolx tolfx fmt =
 
   let head () = 
     p "open Interval";
+    p "open Fp";
     p "" in
 
   let tail () =
@@ -80,6 +81,7 @@ let min_max_expr tolx tolfx var_bound e =
     "b_and_b/pqueue.ml";
     "b_and_b/b_and_b.mli";
     "b_and_b/b_and_b.ml";
+    "b_and_b/fp.ml";
   ] in
   let gen = gen_bb_opt_code tolx tolfx in
   let _ = write_to_file ml_name gen (var_bound, e) in
