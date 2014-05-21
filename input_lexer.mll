@@ -73,6 +73,8 @@ rule token = parse
   | "asinh" { ASINH }
   | "atanh" { ATANH }
   | "atan2" { ATAN2 }
+  | "floor_power2" { FLOOR_POWER2 }
+  | "sym_interval" { SYM_INTERVAL }
   | id as str { ID str }
   | _ { token lexbuf }
   | eof { EOF }

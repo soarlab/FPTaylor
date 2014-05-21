@@ -89,6 +89,8 @@ let rec transform_raw_expr = function
 	| "tan" -> U_op (Op_tan, flags, e1)
 	| "exp" -> U_op (Op_exp, flags, e1)
 	| "log" -> U_op (Op_log, flags, e1)
+	| "floor_power2" -> U_op (Op_floor_power2, flags, e1)
+	| "sym_interval" -> U_op (Op_sym_interval, flags, e1)
 	| _ -> failwith ("transform_raw_expr: Unknown unary operation: " ^ str)
     end
   | Raw_bin_op (str, exact, arg1, arg2) -> 

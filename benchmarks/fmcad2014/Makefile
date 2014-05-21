@@ -3,6 +3,7 @@ ROSA_HOME=~/Work/Solvers/rosa
 GAPPA_HOME=~/Work/Solvers/gappa-1.0.0/src
 
 FPTAYLOR=$(FPTAYLOR_HOME)/fptaylor -c FPTaylor/config.cfg
+FPTAYLOR2=$(FPTAYLOR_HOME)/fptaylor -c FPTaylor/config2.cfg
 ROSA=$(ROSA_HOME)/rosa --real --z3Timeout=1000
 GAPPA=$(GAPPA_HOME)/gappa
 
@@ -15,6 +16,16 @@ taylor:
 	$(FPTAYLOR) FPTaylor/func.txt
 	$(FPTAYLOR) FPTaylor/jet.txt
 	$(FPTAYLOR) FPTaylor/turbine.txt
+
+taylor2:
+	$(FPTAYLOR2) FPTaylor/carbonGas.txt
+#	$(FPTAYLOR2) FPTaylor/doppler1.txt
+#	$(FPTAYLOR2) FPTaylor/doppler2.txt
+#	$(FPTAYLOR2) FPTaylor/doppler3.txt
+	$(FPTAYLOR2) FPTaylor/func.txt
+	$(FPTAYLOR2) FPTaylor/jet.txt
+	$(FPTAYLOR2) FPTaylor/turbine.txt
+
 
 gappa:
 	$(GAPPA) Gappa/carbonGas.g

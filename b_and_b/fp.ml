@@ -21,3 +21,10 @@ let floor_power2_I x = {
   high = floor_power2 x.high
 }
 
+let sym_interval_float f = 0.0
+
+let sym_interval_I x = 
+  let f = (abs_I x).high in {
+    low = -.f;
+    high = f;
+  }

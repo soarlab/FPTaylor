@@ -85,8 +85,13 @@ let rounded_form, find_index, expr_for_index, reset_index_counter, current_index
 	}
     else
       let i = find_index fp.rounding f.v0 in
-      let m2 = (fp.eps *^ sum_high (abs_eval_v1 vars f.v1)) +^ (fp.eps *^ fp.delta) in
-      let r = if Config.fp_power2_model then mk_def_floor_power2 f.v0 else f.v0 in
+      let s1 = fp.eps *^ sum_high (abs_eval_v1 vars f.v1) in
+      let r, m2 =
+	if Config.fp_power2_model then
+	  mk_def_floor_power2 (mk_def_add f.v0 (mk_def_sym_interval (fp2const s1))),
+	  fp.eps *^ fp.delta
+	else
+	  f.v0, s1 +^ (fp.eps *^ fp.delta) in
       match fp.rounding with
 	| Nearest -> {
 	  v0 = f.v0;

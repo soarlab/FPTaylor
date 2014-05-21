@@ -22,6 +22,7 @@
 %token EXP LOG
 %token COS SIN TAN COSH SINH TANH
 %token ACOS ASIN ATAN ACOSH ASINH ATANH ATAN2
+%token FLOOR_POWER2 SYM_INTERVAL
 
 %left PLUS MINUS
 %left MULT DIVIDE
@@ -160,6 +161,8 @@ expr:
   | ASINH LPAREN expr RPAREN { raise TODO }
   | ATANH LPAREN expr RPAREN { raise TODO }
   | ATAN2 LPAREN expr COMMA expr RPAREN { raise TODO }
+  | FLOOR_POWER2 LPAREN expr RPAREN { Raw_u_op ("floor_power2", false, $3) }
+  | SYM_INTERVAL LPAREN expr RPAREN { Raw_u_op ("sym_interval", false, $3) }
 ;
 
 %%

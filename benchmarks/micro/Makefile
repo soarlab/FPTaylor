@@ -2,13 +2,16 @@ FPTAYLOR_HOME=../..
 ROSA_HOME=~/Work/Solvers/rosa
 GAPPA_HOME=~/Work/Solvers/gappa-1.0.0/src
 
-FPTAYLOR=$(FPTAYLOR_HOME)/fptaylor -c config.cfg
+FPTAYLOR=$(FPTAYLOR_HOME)/fptaylor
 ROSA=$(ROSA_HOME)/rosa --real
 GAPPA=$(GAPPA_HOME)/gappa
 
 
 taylor:
-	$(FPTAYLOR) micro.txt
+	$(FPTAYLOR) -c config.cfg micro.txt
+
+taylor2:
+	$(FPTAYLOR) -c config2.cfg micro.txt
 
 gappa_nonlin2:
 	$(GAPPA) gappa_nonlin2.g

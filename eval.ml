@@ -24,6 +24,11 @@ let floor_power2_I x = {
   high = floor_power2 x.high
 }
 
+let sym_interval_I x = 
+  let f = (abs_I x).high in {
+    low = -.f;
+    high = f;
+  }
 
 (* Computes a floating-point value of an expression *)
 (* vars : string -> float is a function which associates 
@@ -46,6 +51,7 @@ let eval_float_expr vars =
 	  | Op_exp -> exp x
 	  | Op_log -> log x
 	  | Op_floor_power2 -> floor_power2 x
+	  | Op_sym_interval -> 0.0
 	  | _ -> failwith ("eval_float_expr: Unsupported unary operation: " 
 			   ^ op_name op f)
       end
@@ -142,6 +148,7 @@ let eval_interval_expr vars =
 	  | Op_exp -> exp_I x
 	  | Op_log -> log_I x
 	  | Op_floor_power2 -> floor_power2_I x
+	  | Op_sym_interval -> sym_interval_I x
 	  | _ -> failwith ("eval_interval_expr: Unsupported unary operation: " 
 			   ^ op_name op f)
       end
