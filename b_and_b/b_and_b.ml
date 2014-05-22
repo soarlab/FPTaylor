@@ -48,7 +48,7 @@ let branch_and_bound f_x f_X start_inter precisionx precisionfx =
       let (pv,p)= estimatormid f_x int in 
       let (_,newq)= Pqueue.insert (-.pv) (int,fint) !queue in
       queue:=newq;
-      if pv> !best_v then (best_v:= pv;best:=(int,fint,p,pv)) in
+      if pv>= !best_v then (best_v:= pv;best:=(int,fint,p,pv)) in
 
   let (_,newq)=(Pqueue.insert (-.pvi) (start_inter,fxi) !queue) in
   queue := newq;

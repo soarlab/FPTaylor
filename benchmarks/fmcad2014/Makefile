@@ -19,9 +19,11 @@ taylor:
 
 taylor2:
 	$(FPTAYLOR2) FPTaylor/carbonGas.txt
-#	$(FPTAYLOR2) FPTaylor/doppler1.txt
-#	$(FPTAYLOR2) FPTaylor/doppler2.txt
-#	$(FPTAYLOR2) FPTaylor/doppler3.txt
+# Simple branch and bound methods cannot find exact maximum:
+# use approximations
+	$(FPTAYLOR2) -c FPTaylor/approx.cfg FPTaylor/doppler1.txt
+	$(FPTAYLOR2) -c FPTaylor/approx.cfg FPTaylor/doppler2.txt
+	$(FPTAYLOR2) -c FPTaylor/approx.cfg FPTaylor/doppler3.txt
 	$(FPTAYLOR2) FPTaylor/func.txt
 	$(FPTAYLOR2) FPTaylor/jet.txt
 	$(FPTAYLOR2) FPTaylor/turbine.txt

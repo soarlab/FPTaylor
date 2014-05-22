@@ -13,7 +13,7 @@ let gen_bb_opt_code tolx tolfx fmt =
     p "open Fp";
     p "" in
 
-  let tail () =
+  let tail_b_and_b () =
     p "";
     p "let _ =";
     p (Format.sprintf 
@@ -25,6 +25,17 @@ let gen_bb_opt_code tolx tolfx fmt =
 	 "  let int, fint, p, pv = B_and_b.branch_and_bound (fun x -> -. (f_x x)) (fun x -> ~-$ (f_X x)) start_interval %f %f in" tolx tolfx);
     p "  let _ = print_I fint; print_newline ();";
     p "          Printf.printf \"min = %0.20e\\n\" (-. fint.high) in";
+    p "  flush stdout"; in
+
+  let tail_opt0 () =
+    p "";
+    p "let _ =";
+    p (Format.sprintf 
+	 "  let m, bound, c = Opt0.opt f_X start_interval %f %f in" tolx tolfx);
+    p "  let _ = Printf.printf \"max = %0.20e\\n\" m in";
+    p (Format.sprintf 
+	 "  let m, bound, c = Opt0.opt (fun x -> ~-$ (f_X x)) start_interval %f %f in" tolx tolfx);
+    p "  let _ = Printf.printf \"min = %0.20e\\n\" (-. m) in";
     p "  flush stdout"; in
 
   let start_interval var_bounds =
@@ -66,13 +77,22 @@ let gen_bb_opt_code tolx tolfx fmt =
     head();
     start_interval var_bounds;
     expr var_names e;
-    tail()
+    if Config.get_option "bb-alg" "opt0" = "opt0" then
+      tail_opt0()
+    else
+      tail_b_and_b()
 
+let counter = ref 0
 
 let min_max_expr tolx tolfx var_bound e =
+(*  let _ = counter := !counter + 1 in *)
+
   let base = Config.base_dir in
   let tmp = Lib.get_dir "tmp" in
   let ml_name = tmp ^ "/bb.ml" in
+
+(*  let ml_name = Format.sprintf "%s/bb_%d.ml" tmp !counter in *)
+
   let exe_name = tmp ^ "/bb" in
   let files = [
     "INTERVAL/libinterval.a";
@@ -81,6 +101,7 @@ let min_max_expr tolx tolfx var_bound e =
     "b_and_b/pqueue.ml";
     "b_and_b/b_and_b.mli";
     "b_and_b/b_and_b.ml";
+    "b_and_b/opt0.ml";
     "b_and_b/fp.ml";
   ] in
   let gen = gen_bb_opt_code tolx tolfx in
