@@ -73,6 +73,18 @@ let variable_interval name =
     high = v.hi_bound.interval_v.high;
   }
 
+let is_same_bounds name =
+  let v = find_variable name in
+  v.lo_bound.rational_v =/ v.hi_bound.rational_v
+
+let get_low_bound name =
+  let v = find_variable name in
+  v.lo_bound
+
+let get_high_bound name =
+  let v = find_variable name in
+  v.hi_bound
+
 (* Builds an expression from a raw expression *)
 let rec transform_raw_expr = function
   | Raw_u_op (str, exact, arg) -> 

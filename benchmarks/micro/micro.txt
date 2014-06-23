@@ -4,7 +4,8 @@ Variables
   x2 in [1.0, 2.0],
   s in [-16, 16],
   x in [1.001, 2.0],
-  y in [1.001, 2.0]
+  y in [1.001, 2.0],
+  z in [0, 999]
 ;
 	
 Definitions
@@ -18,7 +19,7 @@ Definitions
 
 Expressions
   sum,
-  (t - 1) / (t * t - 1)
-//  (x - 1) / (x * x - 1),
+  (t - 1) / (t * t - 1),
+  z / (z + 1)
 //  log(1 + exp(s))
 ;

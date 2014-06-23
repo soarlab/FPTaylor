@@ -34,6 +34,12 @@ let print_form f =
   let _ = report (Format.sprintf "v0 = %s" (print_expr_str f.v0)) in
   let _ = map (fun (i, e) -> 
     report (Format.sprintf "%d: %s" i (print_expr_str e))) f.v1 in
+  let _ = report "\nCorresponding original subexpressions:" in
+  let _ = map (fun (i, _) ->
+    if i > 0 then
+      let expr = expr_for_index i in
+      report (Format.sprintf "%d: %s" i (print_expr_str expr))
+    else ()) f.v1 in
   ()
 
 let errors =

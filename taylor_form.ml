@@ -160,15 +160,19 @@ let var_form fp e =
       let v1_real =
 	if Config.real_vars then
 	  begin
-	    let err_expr =
+	    let err_expr0 =
 	      if Config.const_approx_real_vars then
 		let bound = (abs_I (Environment.variable_interval v)).high in
 		let err = eps_error fp bound in
 		Const (const_of_float err) 
+	      else if Config.fp_power2_model then
+		mk_def_floor_power2 e
 	      else
-		match fp.rounding with
-		  | Nearest -> e
-		  | Directed -> mk_def_mul const_2 e in
+		e in
+	    let err_expr =
+	      match fp.rounding with
+		| Nearest -> err_expr0
+		| Directed -> mk_def_mul const_2 err_expr0 in
 	    let _ = Log.warning (Format.sprintf "Inexact var: %s; err = %s"
 				   (print_expr_str e)
 				   (print_expr_str err_expr)) in

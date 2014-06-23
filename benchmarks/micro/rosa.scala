@@ -16,9 +16,9 @@ object RosaBenchmarks {
       (p0 + p1) + p2
   } ensuring(res => res +/- 1e-12)
 
-  def nonlin1(x: Real): Real = {
-      require(x >< (1.001, 2.0))
-      (x - 1) / (x * x - 1)
+  def nonlin1(t: Real): Real = {
+      require(t >< (0.0, 999.0))
+      t / (t + 1)
   } ensuring(res => res +/- 1e-7)
 
   def nonlin2(x: Real, y: Real): Real = {
