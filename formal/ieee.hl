@@ -1,0 +1,791 @@
+
+(* ========================================================================= *)
+(* Formalization of IEEE-754 Standard for binary floating-point arithmetic.  *)
+(* ========================================================================= *)
+
+(* Originally developed in HOL Light, by John Harrison, University of        *)
+(* Cambridge Computer Laboratory, 1998. Ported to HOL4 by Behzad Akbarpour,  *)
+(* Concordia University, Department of Electrical and Computer Engineering,  *)
+(* February 2004.                                                            *)
+(*                                                                           *)
+(* Ported back to HOL Light by Charlie Jacobsen, University of Utah,         *)
+(* June 2014.                                                                *)
+
+(* ------------------------------------------------------------------------- *)
+(*                                                                           *)
+(* X = floating point format (exponent width:num, fraction width:num)        *)
+(* a = floating point number (sign:boolean, exponent:num, fraction:num       *)
+(*                                                                           *)
+(* ------------------------------------------------------------------------- *)
+
+(* ------------------------------------------------------------------------- *)
+(* Floating point format properties                                          *)
+(* ------------------------------------------------------------------------- *)
+
+let expwidth = define 
+`expwidth (ew:num, fw:num) = ew`;;
+
+let fracwidth = define
+`fracwidth (ew:num, fw:num) = fw`;;
+
+let wordlength = define
+`wordlength (X:num#num) = (expwidth(X) + fracwidth(X) + 1)`;;
+
+let emax  = define
+`emax (X:num#num) = ((2 EXP expwidth(X)) - 1)`;;
+
+let bias = define
+`bias (X:num#num) = (2 EXP (expwidth(X) - 1) - 1)`;;
+
+(* ------------------------------------------------------------------------- *)
+(* Predicates for the four IEEE formats.                                     *)
+(* ------------------------------------------------------------------------- *)
+
+let is_single = define
+`is_single (X:num#num) = 
+  ((expwidth(X) = 8) /\ 
+   (wordlength(X) = 32))`;;
+
+let is_double = define
+`is_double (X:num#num) = 
+  ((expwidth(X) = 11) /\ 
+   (wordlength(X) = 64))`;;
+
+let is_single_extended = define
+`is_single_extended (X:num#num) = 
+  ((expwidth(X) >= 11) /\ 
+   (wordlength(X) >= 43))`;;
+
+let is_double_extended = define
+`is_double_extended (X:num#num) = 
+  ((expwidth(X) >= 15) /\ 
+   (wordlength(X) >= 79))`;;
+
+(* ------------------------------------------------------------------------- *)
+(* Extractors for fields.                                                    *)
+(* ------------------------------------------------------------------------- *)
+
+let sign = define
+`sign (s:bool,e:num,f:num) = s`;;
+
+let exponent = define
+`exponent (s:bool,e:num,f:num) = e`;;
+
+let fraction = define
+`fraction (s:bool,e:num,f:num) = f`;;
+
+(* ------------------------------------------------------------------------- *)
+(* Partition of numbers into disjoint classes.                               *)
+(* ------------------------------------------------------------------------- *)
+
+let is_nan = define
+`is_nan (X:num#num) (a:bool#num#num) =
+  (exponent(a) = emax(X) /\ 
+   ~(fraction(a) = 0))`;;
+
+let is_infinity = define
+`is_infinity (X:num#num) (a:bool#num#num) = 
+  ((exponent(a) = emax(X)) /\ 
+     (fraction(a) = 0))`;;
+
+let is_normal = define
+`is_normal (X:num#num) (a:bool#num#num) = 
+  ((0 < exponent(a)) /\ 
+   (exponent(a) < emax(X)))`;;
+
+let is_denormal = define
+`is_denormal (X:num#num) (a:bool#num#num) = 
+  ((exponent(a) = 0) /\ 
+  ~(fraction(a) = 0))`;;
+
+let is_zero = define
+`is_zero (X:num#num) (a:bool#num#num) = 
+  ((exponent(a) = 0) /\ 
+   (fraction(a) = 0))`;;
+
+(* ------------------------------------------------------------------------- *)
+(* Other useful predicates.                                                  *)
+(* ------------------------------------------------------------------------- *)
+
+let is_valid = define
+`is_valid (X:num#num) (s:bool,e:num,f:num) =
+  ((e < 2 EXP expwidth(X)) /\ 
+   (f < 2 EXP fracwidth(X)))`;;
+
+let is_finite = define
+`is_finite (X:num#num) (a:bool#num#num) =
+  ((is_valid(X) a) /\ 
+   ((is_normal(X) a) \/ 
+    (is_denormal(X) a) \/ 
+    (is_zero(X) a)))`;;
+
+(* ------------------------------------------------------------------------- *)
+(* Some special values.                                                      *)
+(* ------------------------------------------------------------------------- *)
+
+let plus_infinity = define
+`plus_infinity (X:num#num) = (F, emax(X), 0)`;;
+
+let minus_infinity = define
+`minus_infinity (X:num#num) = (T, emax(X), 0)`;;
+
+let plus_zero = define
+`plus_zero (X:num#num) = (F, 0, 0)`;;
+
+let minus_zero = define
+`minus_zero (X:num#num) = (T, 0, 0)`;;
+
+(* largest normalized fp number *)
+let topfloat = define
+`topfloat (X:num#num) = (F,
+			 emax(X) - 1, 
+			 2 EXP fracwidth(X) - 1)`;;
+
+(* smallest normalized fp number *)
+let bottomfloat = define
+`bottomfloat (X:num#num) = (T, 
+			    emax(X) - 1,
+			    2 EXP fracwidth(X) - 1)`;;
+
+(* ------------------------------------------------------------------------- *)
+(* Negation operation on floating point values.                              *)
+(* ------------------------------------------------------------------------- *)
+
+let minus = define
+`minus (X:num#num) (a:bool#num#num) = 
+  (~sign(a),
+   exponent(a),
+   fraction(a))`;;
+
+(* ------------------------------------------------------------------------- *)
+(* Real number valuations.                                                   *)
+(* ------------------------------------------------------------------------- *)
+
+(* denormalized fp = (-1)^s  *  2^(1 - bias)         *  mantissa             *)
+(* normalized fp   = (-1)^s  *  2^(exponent - bias)  * (1 + mantissa)        *) 
+let valof = define
+`valof (X:num#num) (s:bool,e:num,f:num) =
+  (if (e = 0)
+   then
+    ((if (s) then -- &1 else &1) *
+     (&2 / &2 pow bias(X)) *
+     (&f / &2 pow fracwidth(X)))
+   else
+    ((if (s) then -- &1 else &1) *
+     (&2 pow e / &2 pow bias(X)) *
+     (&1 + &f / &2 pow fracwidth(X))))`;;
+
+  (* (if (e = 0) *)
+  (*  then *)
+  (*   ((if (s) then (--&1) else (&1)) * *)
+  (*    (&2 / &2 pow bias(X)) * *)
+  (*    (&f / &2 pow fracwidth(X))) *)
+  (*  else *)
+  (*   ((if (s) then (--&1) else (&1)) * *)
+  (*    (&2 pow e / &2 pow bias(X)) * *)
+  (*    (&1 + &f / &2 pow fracwidth(X))))`;; *)
+
+(* ------------------------------------------------------------------------- *)
+(* A few handy values.                                                       *)
+(* ------------------------------------------------------------------------- *)
+
+(* largest normalized fp number = valof(topfloat) *)
+let largest = define
+`largest (X:num#num) =
+  (&2 pow (emax(X) - 1) / &2 pow bias(X)) *
+  (&2 - inv(&2 pow fracwidth(X)))`;;
+
+(* threshold used for rounding =                                 *)
+(*      largest normalized fp number + 1/2^(fracwidth + 1)       *)
+(*                                                               *)
+(* If a real number x is bigger than threshold or smaller than   *)
+(* -threshold, we don't need to do any fancy rounding, no matter *)
+(* which rounding mode we're using--x gets rounded to positive   *)
+(* or negative fp infinity.                                      *)
+let threshold = define
+`threshold (X:num#num) =
+  (&2 pow (emax(X) - 1) / &2 pow bias(X)) *
+  (&2 - inv(&2 pow SUC(fracwidth(X))))`;;
+
+(* ulp = 2^(exponent - bias - fracwidth) *)
+let ulp = define
+`ulp (X:num#num) (a:bool#num#num) =
+  valof(X) (F:bool, exponent(a), 1) - valof(X) (F:bool, exponent(a), 0)`;;
+
+(* ------------------------------------------------------------------------- *)
+(* Enumerated type for rounding modes.                                       *)
+(* ------------------------------------------------------------------------- *)
+
+let roundmode_INDUCT, roundmode_RECURSION = define_type
+"roundmode = To_nearest | Float_to_zero | To_pinfinity | To_ninfinity";;
+
+(* ------------------------------------------------------------------------- *)
+(* Characterization of best approximation from a set of abstract values.     *)
+(* ------------------------------------------------------------------------- *)
+
+(* v: (bool#num#num) -> real     converts fp number to real number           *)
+(* s: set of (bool#num#num)      (e.g., set of all finite fp numbers)        *)
+(* x: real                       the value to get close to                   *)
+(* a: (bool#num#num)             the propsed closest value                   *)
+let is_closest = define
+`is_closest (v) (s) (x) (a) =
+  ((a IN s) /\
+   (!b. (b IN s) ==> abs(v(a) - x) <= abs(v(b) - x)))`;;
+
+(* ------------------------------------------------------------------------- *)
+(* Best approximation with a deciding preference for multiple possibilities. *)
+(* ------------------------------------------------------------------------- *)
+
+(* choose an fp number that is closest to x *)
+let closest = define
+`closest (v) (p) (s) (x) =
+  (@(a). is_closest v s x a /\
+   ((?b. is_closest v s x b /\ p(b)) ==> p(a)))`;;
+
+(* ------------------------------------------------------------------------- *)
+(* Rounding to floating point formats.                                       *)
+(* ------------------------------------------------------------------------- *)
+
+(* IEEE 754 Section 4.3                                                      *)
+let round = define
+`((round (X:num#num) (To_nearest) (x:real) =
+  (if (x <= --threshold(X)) 
+   then 
+      (minus_infinity(X))
+   else if (x >= threshold(X)) 
+   then 
+      (plus_infinity(X))
+   else 
+     (closest (valof(X)) 
+	      (\a. EVEN(fraction(a))) 
+	      { a | is_finite(X) a } 
+	      x)))                                                    /\
+
+  (round (X:num#num) (Float_to_zero) (x:real) =
+   (if (x < --largest(X)) 
+    then 
+       (bottomfloat(X))
+   else if (x > largest(X)) 
+   then 
+       (topfloat(X))
+   else 
+       (closest (valof(X)) 
+	        (\a. T)
+	        { a | is_finite(X) a /\ abs(valof(X) a) <= abs(x) } 
+	        x)))                                                  /\
+
+  (round (X:num#num) (To_pinfinity) (x:real) =
+   (if (x < --largest(X)) 
+    then 
+       (bottomfloat(X))
+    else if (x > largest(X)) 
+    then 
+       (plus_infinity(X))
+    else 
+       (closest (valof(X)) 
+	        (\a. T)
+	        { a | is_finite(X) a /\ valof(X) a >= x } 
+	        x)))                                                  /\
+
+  (round (X:num#num) (To_ninfinity) (x:real) =
+   (if (x < --largest(X)) 
+    then 
+       (minus_infinity(X))
+    else if (x > largest(X)) 
+    then 
+       (topfloat(X))
+    else 
+       (closest (valof(X)) 
+	        (\a. T)
+	        { a | is_finite(X) a /\ valof(X) a <= x } 
+	        x))))`;;
+
+(* ------------------------------------------------------------------------- *)
+(* Rounding to integer values in floating point format.                      *)
+(* ------------------------------------------------------------------------- *)
+
+let is_integral = define
+`is_integral (X:num#num) (a:bool#num#num) =
+  (is_finite(X) a /\ ?n. abs(valof(X) a) = &n)`;;
+
+let intround = define 
+`((intround (X:num#num) (To_nearest) (x:real) =
+  (if (x <= --threshold(X)) 
+   then 
+      (minus_infinity(X))
+   else if (x >= threshold(X)) 
+   then 
+      (plus_infinity(X))
+   else 
+      (closest (valof(X)) 
+	       (\a. (?n. (EVEN n) /\ (abs(valof(X) a) = &n)))
+	       { a | is_integral(X) a} 
+	       x)))                                                   /\
+
+  (intround (X:num#num) (Float_to_zero) (x:real) =
+   (if (x < --largest(X)) 
+    then 
+       (bottomfloat(X))
+    else if (x > largest(X)) 
+    then 
+       (topfloat(X))
+    else 
+       (closest (valof(X)) 
+	        (\a. T)
+	        { a | is_integral(X) a /\ abs(valof(X) a) <= abs(x) } 
+	        x)))                                                  /\
+
+  (intround (X:num#num) (To_pinfinity) (x:real) =
+   (if (x < --largest(X)) 
+    then 
+       (bottomfloat(X))
+    else if (x > largest(X)) 
+    then 
+       (plus_infinity(X))
+    else 
+       (closest (valof(X)) 
+	        (\a. T)
+	        { a | is_integral(X) a /\ valof(X) a >= x } 
+	        x)))                                                  /\
+
+  (intround (X:num#num) (To_ninfinity) (x:real) =
+   (if (x < --largest(X)) 
+    then 
+       (minus_infinity(X))
+    else if (x > largest(X)) 
+    then 
+       (topfloat(X))
+    else 
+       (closest (valof(X)) 
+	        (\a. T)
+	        { a | is_integral(X) a /\ valof(X) a <= x } 
+	        x))))`;;
+
+(* ------------------------------------------------------------------------- *)
+(* A hack for our (non-standard) treatment of NaNs.                          *)
+(* ------------------------------------------------------------------------- *)
+
+(* chooses a `random' nan *)
+let some_nan = define
+`some_nan (X:num#num) = @(a:bool#num#num). is_nan(X) a`;;
+
+(* ------------------------------------------------------------------------- *)
+(* Coercion for signs of zero results.                                       *)
+(* ------------------------------------------------------------------------- *)
+
+let zerosign = define
+`zerosign (X:num#num) (s:bool) (a:bool#num#num) = 
+  (if (is_zero(X) a) 
+   then
+     (if (s) 
+      then 
+         minus_zero(X) 
+      else 
+         plus_zero(X)) 
+   else 
+      a)`;;
+
+(* ------------------------------------------------------------------------- *)
+(* Useful mathematical operations not already in the HOL Light core.         *)
+(* ------------------------------------------------------------------------- *)
+
+unparse_as_infix("remf");;  (* in case we're re-loading *)
+
+let remf = define
+`remf (x:real) (y:real) = 
+  (let n = (closest I
+                    (\z. ?n. EVEN(n) /\ (abs(z) = &n))
+                    { z | ?n. abs(z) = &n }
+                    (x / y))
+   in
+       x - n * y)`;;
+
+parse_as_infix("remf", (500, "right"));;
+
+let root = new_definition
+  `root(n) x = @u. (&0 < x ==> &0 < u) /\ (u pow n = x)`;;
+
+let sqrt = new_definition
+  `sqrt(x) = root(2) x`;;
+
+(* ------------------------------------------------------------------------- *)
+(* Definitions of the arithmetic operations.                                 *)
+(* ------------------------------------------------------------------------- *)
+
+(* round to fp integer *)
+let fintrnd = define
+`fintrnd (X:num#num) (m:roundmode) (a:bool#num#num) =
+  (if (is_nan(X) a)
+   then
+      some_nan(X)
+   else if (is_infinity(X) a)
+   then
+      a
+   else
+      zerosign(X) (sign(a)) (intround(X) m (valof(X) a)))`;;
+
+let fadd = define
+`fadd (X:num#num) (m:roundmode) (a:bool#num#num) (b:bool#num#num) =
+  (if (is_nan(X) a) \/
+      (is_nan(X) b) \/
+      ((is_infinity(X) a) /\ (is_infinity(X) b) /\
+       (~(sign(a) = sign(b))))
+  then
+      some_nan(X)
+  else if (is_infinity(X) a)
+  then
+      a
+  else if (is_infinity(X) b)
+  then
+      b
+  else
+       zerosign(X) (if (is_zero(X) a /\ is_zero(X) b /\ (sign(a) = sign(b)))
+                    then
+	               sign(a)
+                    else if (m = To_ninfinity)
+		    then
+		       T
+		    else F)
+	           (round(X) m (valof(X) a + valof(X) b)))`;;
+
+let fsub = define
+`fsub (X:num#num) (m:roundmode) (a:bool#num#num) (b:bool#num#num) =
+  (if (is_nan(X) a \/
+       is_nan(X) b \/
+       (is_infinity(X) a /\ is_infinity(X) b /\ (sign(a) = sign(b))))
+   then
+      some_nan(X)
+   else if (is_infinity(X) a)
+   then
+      a
+   else if (is_infinity(X) b)
+   then
+      minus(X) b
+   else
+      zerosign(X) (if (is_zero(X) a /\ is_zero(X) b /\ ~(sign(a) = sign(b)))
+                   then
+	              sign(a)
+                   else if (m = To_ninfinity)
+		   then
+		      T
+		   else
+		      F)
+                  (round(X) m (valof(X) a - valof(X) b)))`;;
+
+let fmul =  define
+`fmul (X:num#num) (m:roundmode) (a:bool#num#num) (b:bool#num#num) =
+  (if (is_nan(X) a \/
+       is_nan(X) b \/
+       (is_zero(X) a /\ is_infinity(X) b) \/
+       (is_infinity(X) a /\ is_zero(X) b))
+   then
+      some_nan(X)
+   else if (is_infinity(X) a \/ is_infinity(X) b)
+   then
+      (if (sign(a) = sign(b))
+       then
+	  plus_infinity(X)
+       else
+	  minus_infinity(X))
+   else
+     zerosign(X) (if (sign(a) = sign(b))
+                  then
+                     F
+                  else
+                     T)
+                 (round(X) m (valof(X) a * valof(X) b)))`;;
+
+let fdiv = define
+`fdiv (X:num#num) (m:roundmode) (a:bool#num#num) (b:bool#num#num) =
+  (if (is_nan(X) a \/
+       is_nan(X) b \/
+       (is_zero(X) a /\ is_zero(X) b) \/
+       (is_infinity(X) a /\ is_infinity(X) b))
+   then
+      some_nan(X)
+   else if (is_infinity(X) a \/ is_zero(X) b)
+   then
+      (if (sign(a) = sign(b))
+       then
+	  plus_infinity(X)
+       else
+	  minus_infinity(X))
+   else if (is_infinity(X) b)
+   then
+      (if (sign(a) = sign(b))
+       then
+	  plus_zero(X)
+       else
+	  minus_zero(X))
+   else
+      zerosign(X) (if (sign(a) = sign(b))
+                   then
+	              F
+                   else
+	              T)
+                  (round(X) m (valof(X) a / valof(X) b)))`;;
+
+let fsqrt = define
+`fsqrt (X:num#num) (m:roundmode) (a:bool#num#num) =
+  (if (is_nan(X) a)
+   then
+      some_nan(X)
+   else if (is_zero(X) a \/
+	    (is_infinity(X) a /\ ~sign(a)))
+   then
+      a
+   else if sign(a)
+   then
+      some_nan(X)
+   else
+      zerosign(X) (sign(a)) (round(X) m (sqrt(valof(X) a))))`;;
+
+let frem = define
+`frem (X:num#num) (m:roundmode) (a:bool#num#num) (b:bool#num#num) =
+  (if (is_nan(X) a \/
+       is_nan(X) b \/
+       (is_infinity(X) a \/ is_zero(X) b))
+   then
+      some_nan(X)
+   else if (is_infinity(X) b)
+   then
+      a
+   else
+      zerosign(X) (sign(a)) (round(X) m (valof(X) a remf valof(X) b)))`;;
+
+(* ------------------------------------------------------------------------- *)
+(* Negation is specially simple.                                             *)
+(* ------------------------------------------------------------------------- *)
+
+let fneg = define
+`fneg (X:num#num) (m:roundmode) (a:bool#num#num) =
+  (~sign(a),exponent(a),fraction(a))`;;
+
+(* ------------------------------------------------------------------------- *)
+(* Comparison codes.                                                         *)
+(* ------------------------------------------------------------------------- *)
+
+let ccode =  define_type
+"ccode = Gt | Lt | Eq | Un";;
+
+(* ------------------------------------------------------------------------- *)
+(* Comparison operations.                                                    *)
+(* ------------------------------------------------------------------------- *)
+
+let fcompare = define
+`fcompare(X) a b =
+  (if (is_nan(X) a \/
+       is_nan(X) b)
+   then
+      Un
+   else if (is_infinity(X) a /\ sign(a))
+   then
+      (if (is_infinity(X) b /\ sign(b))
+       then
+	  Eq
+       else
+	  Lt)
+   else if (is_infinity(X) a /\ ~sign(a))
+   then
+      (if (is_infinity(X) b /\ ~sign(b))
+       then
+	  Eq
+       else
+	  Gt)
+   else if (is_infinity(X) b /\ sign(b))
+   then
+      Gt
+   else if (is_infinity(X) b /\ ~sign(b))
+   then
+      Lt
+   else if (valof(X) a < valof(X) b)
+   then
+      Lt
+   else if (valof(X) a = valof(X) b)
+   then
+      Eq
+   else
+      Gt)`;;
+
+let flt = define
+`flt(X) a b = (fcompare(X) a b = Lt)`;;
+
+let fle = define
+`fle(X) a b = ((fcompare(X) a b = Lt) \/ (fcompare(X) a b = Eq))`;;
+
+let fgt = define
+`fgt(X) a b = (fcompare(X) a b = Gt)`;;
+
+let fge = define
+`fge(X) a b = ((fcompare(X) a b = Gt) \/ (fcompare(X) a b = Eq))`;;
+
+let feq = define
+`feq (X) a b = (fcompare(X) a b = Eq)`;;
+
+(* ------------------------------------------------------------------------- *)
+(* Actual float type (SINGLE PRECISION) with round-to-even.                  *)
+(* ------------------------------------------------------------------------- *)
+
+let float_format = define
+`float_format = ((8:num),(23:num))`;;
+
+let flofat_tybij = new_type_definition
+    "float"
+    ("mk_float", "dest_float")
+    (prove (`(?a. (is_valid float_format a))`,
+	    EXISTS_TAC `F:bool,0:num,0:num` THEN
+	    REWRITE_TAC[float_format; is_valid; LT_0; EXP_LT_0] THEN
+	    ARITH_TAC));;
+
+let float2real = define
+`float2real (a:float) = (valof(float_format) (dest_float a))`;;
+
+let real2float = define
+`real2float (x:real) = mk_float (round(float_format) To_nearest x)`;;
+
+let float_sign = define
+`float_sign (a:float) = sign(dest_float a)`;;
+
+let float_exp = define
+`float_exp (a:float) = exponent(dest_float a)`;;
+
+let float_frac = define
+`float_frac (a:float) = fraction(dest_float a)`;;
+
+let float_ulp = define
+`float_ulp (a:float) = (ulp(float_format) (dest_float a))`;;
+
+(* ------------------------------------------------------------------------- *)
+(* Lifting of the discriminator functions.                                   *)
+(* ------------------------------------------------------------------------- *)
+
+let float_isnan = define
+`float_isnan (a:float) = (is_nan(float_format) (dest_float a))`;;
+
+let float_isinf = define
+`float_inf (a:float) = (is_infinity(float_format) (dest_float a))`;;
+
+let float_isnorm = define
+`float_isnorm (a:float) = (is_normal(float_format) (dest_float a))`;;
+
+let float_isdenorm = define
+`float_isdenorm (a:float) = (is_denormal(float_format) (dest_float a))`;;
+
+let float_iszero = define
+`float_iszero (a:float) = (is_zero(float_format) (dest_float a))`;;
+
+let float_isfinite = define
+`float_isfinite (a:float) = (float_isnorm(a) \/ 
+			     float_isdenorm(a) \/ 
+			     float_iszero(a))`;;
+
+let float_isint = define
+`float_isint (a:float) = (is_integral(float_format) (dest_float a))`;;
+
+(* ------------------------------------------------------------------------- *)
+(* Basic operations on floats.                                               *)
+(* ------------------------------------------------------------------------- *)
+
+let float_poszero = define
+`float_poszero = mk_float (plus_zero(float_format))`;;
+
+let float_negzero = define
+`float_negzero = mk_float (minus_zero(float_format))`;;
+
+let float_neginf = define
+`float_neginf = mk_float (minus_infinity(float_format))`;;
+
+let float_posinf = define
+`float_posinf = mk_float (plus_infinity(float_format))`;;
+
+(* FIXME: do we want these overloads? *)
+
+unparse_as_infix("float_add");;
+
+let float_add = define
+`float_add (a:float) (b:float) = 
+  mk_float (fadd(float_format) To_nearest (dest_float a) (dest_float b))`;;
+
+parse_as_infix("float_add", (500, "right"));;
+overload_interface("+", `float_add`);;
+
+unparse_as_infix("float_sub");;
+
+let float_sub = define
+`float_sub (a:float) (b:float) = 
+  mk_float (fsub(float_format) To_nearest (dest_float a) (dest_float b))`;;
+
+parse_as_infix("float_sub", (500, "right"));;
+overload_interface("-", `float_sub`);;
+
+unparse_as_infix("float_mul");;
+
+let float_mul = define
+`float_mul (a:float) (b:float) = 
+  mk_float (fmul(float_format) To_nearest (dest_float a) (dest_float b))`;;
+
+parse_as_infix("float_mul", (500, "right"));;
+overload_interface("*", `float_mul`);;
+
+unparse_as_infix("float_div");;
+
+let float_div = define
+`float_div (a:float) (b:float) = 
+  mk_float (fdiv(float_format) To_nearest (dest_float a) (dest_float b))`;;
+
+parse_as_infix("float_div", (500, "right"));;
+overload_interface("/", `float_div`);;
+
+unparse_as_infix("float_rem");;
+
+let float_rem = define
+`float_rem (a:float) (b:float) = 
+  mk_float (frem(float_format) To_nearest (dest_float a) (dest_float b))`;;
+
+parse_as_infix("float_rem", (500, "right"));;
+
+let float_sqrt = define
+`float_sqrt (a:float) = 
+  mk_float (fsqrt(float_format) To_nearest (dest_float a))`;;
+
+let float2intfloat = define
+`float2intfloat (a:float) = 
+  mk_float (fintrnd(float_format) To_nearest (dest_float a))`;;
+
+let float_lt = define
+`float_lt (a:float) (b:float) = 
+  (flt(float_format) (dest_float a) (dest_float b))`;;
+overload_interface("<", `float_lt`);;
+
+let float_le = define
+`float_le (a:float) (b:float) = 
+  (fle(float_format) (dest_float a) (dest_float b))`;;
+overload_interface("<=", `float_le`);;
+
+let float_gt = define
+`float_gt (a:float) (b:float) = 
+  (fgt(float_format) (dest_float a) (dest_float b))`;;
+overload_interface(">", `float_gt`);;
+
+let float_ge = define
+`float_ge (a:float) (b:float) = 
+  (fge(float_format) (dest_float a) (dest_float b))`;;
+overload_interface(">=", `float_ge`);;
+
+let float_eq = define
+`float_eq (a:float) (b:float) = 
+  (feq(float_format) (dest_float a) (dest_float b))`;;
+(* FIXME: `==' not overloadable? *)
+
+let float_neg = define
+`float_neg (a:float) = 
+  mk_float (fneg(float_format) To_nearest (dest_float a))`;;
+overload_interface("--", `float_neg`);;
+
+let float_abs = define
+`float_abs (a:float) = 
+  (if (a >= float_poszero)
+   then 
+      a 
+   else 
+      (float_neg a))`;;
