@@ -5,12 +5,11 @@
 
 needs "../fptaylor-git/formal/ieee.hl";;
 
-(* 
-   Theorem: is_closest_exists
-   
-   Idea: Restrict to finite non-empty sets S, and prove by induction
-   on S.
-*)
+(* ------------------------------------------------------------------------- *)
+(* Theorem: is_closest_exists                                                *)
+(* ------------------------------------------------------------------------- *)
+ 
+(* Restricted to finite non-empty sets S. Proved by induction on S.          *)
 let is_closest_exists = 
   prove(`!(v:A->real) (x:real) (S:A->bool). 
 	  FINITE S /\ ~(S = {}) ==> ?a. is_closest v S x a`,
@@ -56,11 +55,18 @@ let is_closest_exists =
 	    EXISTS_TAC `x':A` THEN
 	      ASM_MESON_TAC[REAL_LE_TRANS; REAL_NOT_LE; REAL_LT_IMP_LE]);;
 
-
-let closest_lemma = prove(`!(v:A->real) P S x. FINITE S /\ ~(S = {})
-			  ==> is_closest v S x (closest v P S x) /\
-			  ((?b. is_closest v S x b /\ P b) ==> P (closest v P S x))`,
-   REPEAT GEN_TAC THEN STRIP_TAC THEN REWRITE_TAC[closest] THEN
+(* ------------------------------------------------------------------------- *)
+(* Lemma: closest_lemma                                                      *)
+(* ------------------------------------------------------------------------- *)
+ 
+(* Restricted to finite non-empty S.                                         *)
+let closest_lemma = prove(
+  `!(v:A->real) P S x. 
+    FINITE S /\ ~(S = {}) ==> 
+    is_closest v S x (closest v P S x) /\ 
+    ((?b. is_closest v S x b /\ P b) ==> P (closest v P S x))`,
+  (* *)
+  REPEAT GEN_TAC THEN STRIP_TAC THEN REWRITE_TAC[closest] THEN
      CONV_TAC SELECT_CONV THEN
      ASM_CASES_TAC `?a:A. is_closest v S x a /\ P a` THENL [
        ASM_MESON_TAC[];
@@ -92,8 +98,15 @@ prove(`valof X (nextf X f) - valof X f = ulp X f`, ALL_TAC);;
 (* define (onef X) s.t. valof X (onef X) = &1 /\ is_finite X (onef X) *)
 prove(`ulp X f <= abs (valof X f) * ulp X (onef X)`, ALL_TAC);;
 
-prove(`&0 <= x ==> ?e. &0 <= e /\ e <= ulp X (onef X)
-	/\ valof X (round X Float_to_zero x) = x * (&1 - e)`, ALL_TAC);;
+(* ------------------------------------------------------------------------- *)
+(* Main Theorem: fl(x) = x * (1 + eps),  |eps| <= ulp(x)                     *) 
+(* ------------------------------------------------------------------------- *)
+
+let round_thm = prove(`!x:real. ?e:real. 
+			(abs(e) <= ulp(X) onef(X)) /\
+			(valof(X) (round(X)(Float_to_zero) x) =
+			    x * (&1 + e))`,
+		      ALL_TAC);;
 
 search[name "REAL_"];;
 REAL_ARITH_TAC;;
