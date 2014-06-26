@@ -118,7 +118,8 @@ let eps_error fp f =
   if f < 0.0 then failwith "eps_error: negative number"
   else if f = 0.0 then 0.0
   else 
-    let _, q = frexp f in
+    let s, q' = frexp f in
+    let q = if s = 0.5 then q' - 1 else q' in
     match fp.rounding with
       | Nearest -> ldexp 1.0 (q - 1)
       | Directed -> ldexp 1.0 q

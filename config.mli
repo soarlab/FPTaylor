@@ -17,6 +17,7 @@ val rel_error : bool
 val abs_error : bool
 val opt : string
 val opt_approx : bool
+val opt_exact : bool
 val opt_tol : float
 val print_options : Format.formatter -> unit
 

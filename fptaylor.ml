@@ -65,32 +65,43 @@ let errors =
 	  (i, e) :: es1, es2
   in
   let abs_error eps tol f =
-    let _ = report "\nAbsolute errors:" in
-    let v1, v2 = split f.v1 in
-    let errs1 = map (compute_err tol) v1 in
-    let errs2 = map (compute_err tol) v2 in
-    let total1 = eps *^ sum_high errs1 in
-    let total2 = eps *^ sum_high errs2 in
-    let total = total1 +^ total2 in
-    let _ = report (Format.sprintf "total1: %e\ntotal2: %e\ntotal: %e" total1 total2 total) in
-    if not Config.opt_approx then
-      let abs_exprs = map (fun (_, e) -> mk_def_abs e) v1 in
-      let full_expr' = 
-	if abs_exprs = [] then const_0 else end_itlist mk_def_add abs_exprs in
-      let full_expr = if Config.simplification then Maxima.simplify full_expr' else full_expr' in
-      let min, max = opt tol full_expr in
-      let _ = report (Format.sprintf "exact min, max: %f, %f" min max) in
-      let total = (eps *^ abs (min, max)) +^ total2 in
-      let _ = report (Format.sprintf "exact total: %e" total) in
-      ()
-    else
-      ()
+    let _ =
+      if Config.opt_approx then
+	let _ = report "Solving the approximate optimization problem" in
+	let _ = report "\nAbsolute errors:" in
+	let v1, v2 = split f.v1 in
+	let errs1 = map (compute_err tol) v1 in
+	let errs2 = map (compute_err tol) v2 in
+	let total1 = eps *^ sum_high errs1 in
+	let total2 = eps *^ sum_high errs2 in
+	let total = total1 +^ total2 in
+	let _ = report (Format.sprintf "total1: %e\ntotal2: %e\ntotal: %e" total1 total2 total) in
+	()
+      else () in
+    let _ =
+      if Config.opt_exact then
+	let _ = report "Solving the exact optimization problem" in
+	let v1, v2 = split f.v1 in
+	let errs2 = map (compute_err tol) v2 in
+	let total2 = eps *^ sum_high errs2 in
+	let abs_exprs = map (fun (_, e) -> mk_def_abs e) v1 in
+	let full_expr' = 
+	  if abs_exprs = [] then const_0 else end_itlist mk_def_add abs_exprs in
+	let full_expr = if Config.simplification then Maxima.simplify full_expr' else full_expr' in
+	let min, max = opt tol full_expr in
+	let _ = report (Format.sprintf "exact min, max: %f, %f" min max) in
+	let total = (eps *^ abs (min, max)) +^ total2 in
+	let _ = report (Format.sprintf "exact total: %e" total) in
+	()
+      else
+	() in
+    ()
   in
   let rel_error eps tol f (f_min, f_max) =
     let f_int = {low = f_min; high = f_max} in
     let rel_tol = 0.0001 in
     if (abs_I f_int).low < rel_tol then
-      report "Cannot compute relative error: values of the function are close to zero"
+      report "Cannot compute the relative error: values of the function are close to zero"
     else
       let _ = report "\nRelative errors:" in
       let v1, v2 = split f.v1 in

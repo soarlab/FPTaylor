@@ -21,6 +21,10 @@ Mr = (-Mt1 * Mv) / ((Mt1 + Mu) * (Mt1 + Mu));
   MT in [-40, 60]
     -> |r - Mr| in ? }
 
+$ MT, Mv, Mu in 20;
+$ MT in 100;
+$ Mv in 100;
+$ Mu in 100;
 
 
 

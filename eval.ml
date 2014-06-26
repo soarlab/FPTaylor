@@ -9,8 +9,11 @@ open List
 *)
 let floor_power2 =
   let p2 f =
-    let _, q = frexp f in
-    ldexp 1.0 (q - 1) in
+    let s, q = frexp f in
+    if s = 0.5 then
+      ldexp 1.0 (q - 2)
+    else
+      ldexp 1.0 (q - 1) in
   fun f ->
     match (classify_float f) with
       | FP_zero -> f

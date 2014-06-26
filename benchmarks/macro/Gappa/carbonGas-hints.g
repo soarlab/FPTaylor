@@ -21,4 +21,5 @@ Mres = (Mp + Ma * (MN / MV) * (MN / MV)) * (MV - MN * Mb) - Mk * MN * MT;
   MV in [0.1, 0.5] 
   -> |res - Mres| in ?}
 
+$ MV in 100;
 

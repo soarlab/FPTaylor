@@ -16,11 +16,12 @@ r rnd= (-t1 * v) / ((t1 + u) * (t1 + u));
 Mt1 = Mc1 + Mc2 * MT;
 Mr = (-Mt1 * Mv) / ((Mt1 + Mu) * (Mt1 + Mu));
 
-{ Mu in [-125, 125] /\
-  Mv in [15, 25000] /\
-  MT in [-40, 60]
+{ Mu in [-30, 120] /\
+  Mv in [320, 20300] /\
+  MT in [-50, 30]
     -> |r - Mr| in ? }
 
-
-
-
+$ MT, Mv, Mu in 20;
+$ MT in 100;
+$ Mv in 100;
+$ Mu in 100;

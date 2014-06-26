@@ -19,6 +19,7 @@ Mr = Mx1 + ((2*Mx1*(Mt/(Mx1*Mx1 + 1))*
   Mx2 in [-20, 5]
     -> |r - Mr| in ? }
 
-
+$ Mx1 in 500;
+$ Mx2 in 500;
 
 

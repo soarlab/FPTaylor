@@ -102,6 +102,7 @@ let const_approx_real_vars = stob (findd "true" "const-approx-real-vars")
   (* Optimization parameters *)
 let opt = find "opt"
 let opt_approx = stob (findd "true" "opt-approx")
+let opt_exact = stob (findd "false" "opt-exact")
 let opt_tol = 
   let v = stof (findd "0.01" "opt-tol") in
   if v < 1e-10 then
@@ -123,6 +124,7 @@ let print_options fmt =
   pb "rel-error" rel_error;
   ps "opt" opt;
   pb "opt-approx" opt_approx;
+  pb "opt-exact" opt_exact;
   pf "opt-tol" opt_tol;
   pi "fp" fp;
   pb "fp-power2-model" fp_power2_model;

@@ -2,32 +2,42 @@ FPTAYLOR_HOME=../..
 ROSA_HOME=~/Work/Solvers/rosa
 GAPPA_HOME=~/Work/Solvers/gappa-1.0.0/src
 
-FPTAYLOR=$(FPTAYLOR_HOME)/fptaylor -c FPTaylor/config.cfg
-FPTAYLOR2=$(FPTAYLOR_HOME)/fptaylor -c FPTaylor/config2.cfg
+FPTAYLOR=$(FPTAYLOR_HOME)/fptaylor
+FPTAYLOR_A=$(FPTAYLOR) -c FPTaylor/config-a.cfg
+FPTAYLOR_B=$(FPTAYLOR) -c FPTaylor/config-b.cfg
+FPTAYLOR_C=$(FPTAYLOR) -c FPTaylor/config-c.cfg
 ROSA=$(ROSA_HOME)/rosa --real --z3Timeout=1000
 GAPPA=$(GAPPA_HOME)/gappa
 
 
-taylor:
-	$(FPTAYLOR) FPTaylor/carbonGas.txt
-	$(FPTAYLOR) FPTaylor/doppler1.txt
-	$(FPTAYLOR) FPTaylor/doppler2.txt
-	$(FPTAYLOR) FPTaylor/doppler3.txt
-	$(FPTAYLOR) FPTaylor/func.txt
-	$(FPTAYLOR) FPTaylor/jet.txt
-	$(FPTAYLOR) FPTaylor/turbine.txt
+taylor-a:
+	$(FPTAYLOR_A) FPTaylor/carbonGas.txt
+	$(FPTAYLOR_A) FPTaylor/doppler1.txt
+	$(FPTAYLOR_A) FPTaylor/doppler2.txt
+	$(FPTAYLOR_A) FPTaylor/doppler3.txt
+	$(FPTAYLOR_A) FPTaylor/func.txt
+	$(FPTAYLOR_A) FPTaylor/turbine.txt
+	$(FPTAYLOR_A) FPTaylor/jet.txt
 
-taylor2:
-	$(FPTAYLOR2) FPTaylor/carbonGas.txt
+taylor-b:
+	$(FPTAYLOR_B) FPTaylor/carbonGas.txt
+	$(FPTAYLOR_B) FPTaylor/doppler1.txt
+	$(FPTAYLOR_B) FPTaylor/doppler2.txt
+	$(FPTAYLOR_B) FPTaylor/doppler3.txt
+	$(FPTAYLOR_B) FPTaylor/func.txt
+	$(FPTAYLOR_B) FPTaylor/turbine.txt
+	$(FPTAYLOR_B) FPTaylor/jet.txt
+
+taylor-c:
+	$(FPTAYLOR_C) FPTaylor/carbonGas.txt
 # Simple branch and bound methods cannot find exact maximum:
 # use approximations
-	$(FPTAYLOR2) -c FPTaylor/approx.cfg FPTaylor/doppler1.txt
-	$(FPTAYLOR2) -c FPTaylor/approx.cfg FPTaylor/doppler2.txt
-	$(FPTAYLOR2) -c FPTaylor/approx.cfg FPTaylor/doppler3.txt
-	$(FPTAYLOR2) FPTaylor/func.txt
-	$(FPTAYLOR2) FPTaylor/jet.txt
-	$(FPTAYLOR2) FPTaylor/turbine.txt
-
+	$(FPTAYLOR_C) -c FPTaylor/approx.cfg FPTaylor/doppler1.txt
+	$(FPTAYLOR_C) -c FPTaylor/approx.cfg FPTaylor/doppler2.txt
+	$(FPTAYLOR_C) -c FPTaylor/approx.cfg FPTaylor/doppler3.txt
+	$(FPTAYLOR_C) FPTaylor/func.txt
+	$(FPTAYLOR_C) FPTaylor/turbine.txt
+	$(FPTAYLOR_C) FPTaylor/jet.txt
 
 gappa:
 	$(GAPPA) Gappa/carbonGas.g
@@ -35,8 +45,26 @@ gappa:
 	$(GAPPA) Gappa/doppler2.g
 	$(GAPPA) Gappa/doppler3.g
 	$(GAPPA) Gappa/func.g
-	$(GAPPA) Gappa/jet.g
 	$(GAPPA) Gappa/turbine.g
+	$(GAPPA) Gappa/jet.g
+
+gappa-hints:
+	$(GAPPA) Gappa/carbonGas-hints.g
+	$(GAPPA) Gappa/doppler1-hints.g
+	$(GAPPA) Gappa/doppler2-hints.g
+	$(GAPPA) Gappa/doppler3-hints.g
+	$(GAPPA) Gappa/sine-hints.g
+	$(GAPPA) Gappa/sqroot-hints.g
+	$(GAPPA) Gappa/sineOrder3-hints.g
+	$(GAPPA) Gappa/turbine1-hints.g
+	$(GAPPA) Gappa/turbine2-hints.g
+	$(GAPPA) Gappa/turbine3-hints.g
+	$(GAPPA) Gappa/jet-hints.g
+
+# Simulation does not work: returns the same results as the verification
+rosa-sim:
+	mkdir -p generated
+	$(ROSA) --simulation --functions=sine Rosa/RosaBenchmarks.scala
 
 rosa-gas:
 	mkdir -p generated
