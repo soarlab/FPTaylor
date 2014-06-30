@@ -1,0 +1,102 @@
+(* ========================================================================== *)
+(* FLOATING POINT DEFINITIONS                                                 *)
+(* ========================================================================== *)
+
+(* References:                                                                *)
+(*                                                                            *)
+(*  [ 1 ] John Harrison, "A Machine-Checked Theory of Floating Point          *)
+(*        Arithmetic", from Lecture Notes in Computer Science, Vol. 1690,     *)
+(*        September 1999.                                                     *)
+(*  [ 2 ] David Goldberg, "What Every Computer Scientist Should Know About    *)
+(*        Floating-Point Arithmetic", from Computing Surveys, March 1991      *)
+(*        issue.                                                              *)
+(*  [ 3 ] Nicholas Higham, "Accuracy and Stability of Numerical Algorithms",  *)
+(*        Second Edition, 2002.                                               *)
+
+(* ========================================================================== *)
+
+(* -------------------------------------------------------------------------- *)
+(* Floating point format                                                      *)
+(* -------------------------------------------------------------------------- *)
+
+(* A floating point number is a real number that can be written as            *)
+(*                                                                            *)
+(*     +/- f * r^(e - p + 1)                                                  *)
+(*                                                                            *)
+(* where                                                                      *)
+(*                                                                            *)
+(*   -- f:num, r:num, e:num, p:num                                            *)
+(*   -- 0 <= f < r^p                                                          *)
+(*   -- emin <= e <= emax                                                     *)
+(*   -- r = radix; must be even integer > 1                                   *)
+(*   -- p = precision                                                         *)
+(*   -- emin <= emax; minimum and maximum possible exponents, respectively    *)
+
+let is_valid_format = define
+  `is_valid_format (r:num, p:num, emin:num, emax:num) =
+  (r > 1 /\
+     (EVEN r) /\
+     (emin <= emax))`;;
+
+let fformat_typbij = new_type_definition
+  "fformat"
+  ("mk_fformat", "dest_fformat")
+  (prove (`?(fmt:num#num#num#num). is_valid_format fmt`,
+	  EXISTS_TAC `(2:num, 0:num, 0:num, 0:num)` THEN
+	    REWRITE_TAC[is_valid_format] THEN
+	    ARITH_TAC));;
+
+let fradix = define
+  `fradix (fmt:fformat) = dest_fformat`;;
+
+let fprec = define
+  `fprec (radix:num, prec:num, emin:num, emax:num) = prec`;;
+
+let femin = define
+  `femin (radix:num, prec:num, emin:num, emax:num) = emin`;;
+
+let femax = define
+  `femax (radix:num, prec:num, emin:num, emax:num) = emax`;;
+
+(* -------------------------------------------------------------------------- *)
+(* We only care about valid formats                                           *)
+(* -------------------------------------------------------------------------- *)
+
+
+let fformat_typbij = new_type_definition
+  "fformat"
+  ("mk_fformat", "dest_fformat")
+  (prove (`?fmt. is_valid_format fmt`,
+	  REWRITE_TAC[is_valid_format] THEN
+	    EXISTS_TAC `(2:num, 0:num, 0:num, 0:num)` THEN
+	    REWRITE_TAC[fradix; femin; femax] THEN
+	    ARITH_TAC));;
+
+(* -------------------------------------------------------------------------- *)
+(* Floating point numbers are a subset of the reals                           *)
+(* -------------------------------------------------------------------------- *)
+
+(* A real number is a floating point number if it can be written per the      *)
+(* the comment in the format section above.                                   *)
+let is_float = define
+  `is_float (fmt:fformat) (x:real) =
+  (?(f:num) (e:num). 
+     (f < (fradix fmt) pow (fprec fmt)) /\
+     (emin <= e) /\
+     (e <= emax) /\
+     (abs(x) = f * ((fradix fmt) pow (e - (fprec fmt)))))`;;
+
+let float_typbij = new_type_definition
+  "float"
+  ("mk_float", "dest_float")
+  (prove (`?(x:real). is_float x`,
+	  REWRITE_TAC[is_valid_format] THEN
+	    EXISTS_TAC `(2:num, 0:num, 0:num, 0:num)` THEN
+	    REWRITE_TAC[fradix; femin; femax] THEN
+	    ARITH_TAC));;
+
+
+
+(* -------------------------------------------------------------------------- *)
+(* Injection into real numbers                                                *)
+(* -------------------------------------------------------------------------- *)
