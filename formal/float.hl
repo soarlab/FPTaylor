@@ -79,18 +79,26 @@ let is_float = define
 (* that the IEEE 754 standard states that zero is neither normal nor          *)
 (* denormal.                                                                  *)
 (*                                                                            *)
-(* The following is motivated by the definition in Goldberg.                  *)
+(* The following definition is motivated by the IEEE 754 standard and John    *)
+(* Harrison's `normalises' and `tiny'.                                        *)
 
+(* Normal fp number : an fp number whose magnitude is >= r^(emin).            *)
 let is_normal = define
   `is_normal (fmt:fformat) (x:real) =
-  (?(f:num) (e:num).
-     (frep(fmt) f e x) /\
-     ((fradix fmt) EXP ((fprec fmt) - 1) <= f))`;;
+  (is_float x /\
+     (&(fradix fmt) pow (femin fmt)) <= abs(x))`;;
 
+(* Denormal fp number: a *non-zero* fp number whose magnitudue < r^(emin).    *)
 let is_denormal = define
   `is_denormal (fmt:fformat) (x:real) =
-  (~(x = 0) /\
-     (?(f:num) (e:num).
-	(frep(fmt) f e x) /\
-	(f < (fradix fmt) EXP ((fprec fmt) - 1))))`;;
+  (~(x = &0) /\
+     is_float x /\
+     (abs(x) < &(fradix fmt) pow (femin fmt)))`;;
+     
+(* Binade: an fp number whose magnitude = r^e for emin <= e <= emax. Notice   *)
+(* that all binades are normal fp numbers.                                    *)
+let is_binade = define
+  `is_binade (fmt:fformat) (x:real) =
+  (?(f:num) (e:num).
+     (frep(fmt) f e x) /\ &f = &(fradix fmt) pow ((fprec fmt) - 1))`;;
      
