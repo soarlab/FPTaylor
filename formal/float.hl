@@ -94,16 +94,16 @@ let is_float = define
 (* Note: When the precision is 1, there are normal fp numbers but no denormal *)
 (* fp numbers.                                                                *)
 (*                                                                            *)
-(* Definition: A _binade boundary_ is an fp number whose magnitude = r^e for  *)
+(* Definition: A _phase boundary_ is an fp number whose magnitude = r^e for   *)
 (* emin <= e <= emax.                                                         *)
 (*                                                                            *)
-(* Note: All binade boundaries are normal fp numbers.                         *)
+(* Note: All phase boundaries are normal fp numbers.                          *)
 (*                                                                            *)
-(* Definition: A _binade_ is an interval of real numbers [x, y] such that     *)
-(* -- x is a binade boundary, and hence |x| = r^e for emin <= e <= emax       *)
+(* Definition: A _phase_ is an interval of real numbers [x, y] such that      *)
+(* -- x is a phase boundary, and hence |x| = r^e for emin <= e <= emax        *)
 (* -- |y| = r^(e + 1)                                                         *)
 (*                                                                            *)
-(* Note: In the final binade (when |x| = r^emax), |y| = r^(emax + 1), and is  *)
+(* Note: In the final phase (when |x| = r^emax), |y| = r^(emax + 1), and is   *)
 (* hence not an fp number.                                                    *)
 
 let is_normal = define
@@ -117,8 +117,8 @@ let is_denormal = define
      is_float(fmt) x /\
      (abs(x) < &(fradix fmt) pow (femin fmt)))`;;
      
-let is_binade_bdry = define
-  `is_binade_bdry (fmt:fformat) (x:real) =
+let is_phase_bdry = define
+  `is_phase_bdry (fmt:fformat) (x:real) =
   (?(f:num) (e:num).
      (frep(fmt) f e x) /\ 
      f = ((fradix fmt) EXP (fprec fmt)) DIV (fradix fmt))`;;
@@ -153,4 +153,3 @@ let ulp = define
 		(frep fmt f e x) /\
 		(u = ((fradix fmt) EXP (e + 1)) DIV 
 		    ((fradix fmt) EXP (fprec fmt)))))`;;
-
