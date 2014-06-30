@@ -32,6 +32,9 @@
 (*   -- r = radix; must be even integer > 1                                   *)
 (*   -- p = precision                                                         *)
 (*   -- emin <= emax; minimum and maximum possible exponents, respectively    *)
+(*                                                                            *)
+(* Note the limiting case when p = 0. The only fp number for this format      *)
+(* is 0.                                                                      *)
 
 let is_valid_format = define
   `is_valid_format (r:num, p:num, emin:num, emax:num) =
@@ -66,7 +69,8 @@ let frep = define
   ((f < (fradix fmt) EXP (fprec fmt)) /\ 
      ((femin fmt) <= e) /\
      (e <= (femax fmt)) /\
-     (abs(x) = &f * (&(fradix fmt) pow (e - (fprec fmt) + 1))))`;;
+     (abs(x) = &f * 
+	 &(fradix fmt) pow (e + 1) / &(fradix fmt) pow (fprec fmt)))`;;
   
 let is_float = define
   `is_float (fmt:fformat) (x:real) = (?(f:num) (e:num). (frep(fmt) f e x))`;;
@@ -81,24 +85,45 @@ let is_float = define
 (*                                                                            *)
 (* The following definition is motivated by the IEEE 754 standard and John    *)
 (* Harrison's `normalises' and `tiny'.                                        *)
+(*                                                                            *)
+(* Note: When the format's precision is 0, there are no normal *or* denormal  *)
+(* fp numbers, since 0 is the only fp number for this format and it is        *)
+(* neither normal nor denormal. When the precision is 1, there are normal fp  *)
+(* numbers but no denormal fp numbers.                                        *)
 
 (* Normal fp number : an fp number whose magnitude is >= r^(emin).            *)
 let is_normal = define
   `is_normal (fmt:fformat) (x:real) =
-  (is_float x /\
+  (is_float(fmt) x /\
      (&(fradix fmt) pow (femin fmt)) <= abs(x))`;;
 
 (* Denormal fp number: a *non-zero* fp number whose magnitudue < r^(emin).    *)
 let is_denormal = define
   `is_denormal (fmt:fformat) (x:real) =
   (~(x = &0) /\
-     is_float x /\
+     is_float(fmt) x /\
      (abs(x) < &(fradix fmt) pow (femin fmt)))`;;
      
-(* Binade: an fp number whose magnitude = r^e for emin <= e <= emax. Notice   *)
-(* that all binades are normal fp numbers.                                    *)
-let is_binade = define
-  `is_binade (fmt:fformat) (x:real) =
-  (?(f:num) (e:num).
-     (frep(fmt) f e x) /\ &f = &(fradix fmt) pow ((fprec fmt) - 1))`;;
+(* Binade boundary: an fp number whose magnitude = r^e for emin <= e <= emax. *)
+(* Notice that all binade boundaries are normal fp numbers. There are no      *)
+(* binade boundaries (and hence no binades) for 0 precision.                  *)
+let is_binade_bdry = define
+  `is_binade_bdry (fmt:fformat) (x:real) =
+  (~(fprec fmt = 0) /\
+     (?(f:num) (e:num).
+	(frep(fmt) f e x) /\ 
+	f = ((fradix fmt) EXP (fprec fmt)) DIV (fradix fmt)))`;;
+
+(* The largest fp number for a format = (r^p - 1) * r^(emax - p + 1).         *)
+let flargest = define
+  `flargest (fmt:fformat) = 
+  (@(x:real). (?(f:num) (e:num).
+		 (frep(fmt) f e x) /\
+		 (e = (femax fmt)) /\
+		 (f = (fradix fmt) EXP (fprec fmt) - 1)))`;;
      
+(* -------------------------------------------------------------------------- *)
+(* Units in the last place (ULPs)                                             *)
+(* -------------------------------------------------------------------------- *)
+
+(* Goal: Determine Describe the `step width' between 
