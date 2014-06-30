@@ -61,25 +61,8 @@ let femax = define
 let is_float = define
   `is_float (fmt:fformat) (x:real) =
   (?(f:num) (e:num). 
-     (f < (fradix fmt) pow (fprec fmt)) /\
-     (emin <= e) /\
-     (e <= emax) /\
-     (abs(x) = f * ((fradix fmt) pow (e - (fprec fmt)))))`;;
+     (f < (fradix fmt) EXP (fprec fmt)) /\ 
+     ((femin fmt) <= e) /\
+     (e <= (femax fmt)) /\
+     (abs(x) = &f * (&(fradix fmt) pow (e - (fprec fmt)))))`;;
 
-let fformat_typbij = new_type_definition
-  "fformat"
-  ("mk_fformat", "dest_fformat")
-  (prove (`?(x:real). is_float x`,
-	  REWRITE_TAC[is_valid_format] THEN
-	    EXISTS_TAC `(2:num, 0:num, 0:num, 0:num)` THEN
-	    REWRITE_TAC[fradix; femin; femax] THEN
-	    ARITH_TAC));;
-
-let fradix = define
-  `fradix (fmt:
-
-
-
-(* -------------------------------------------------------------------------- *)
-(* Injection into real numbers                                                *)
-(* -------------------------------------------------------------------------- *)
