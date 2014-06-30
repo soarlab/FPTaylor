@@ -90,6 +90,22 @@ let decode_exp = define
   (@(e:int). (?(f:num). (frep(fmt) f e x)))`;;
 
 (* -------------------------------------------------------------------------- *)
+(* Normalized fractions / exponents                                           *)
+(* -------------------------------------------------------------------------- *)
+
+(* A fraction f is normalized when f >= r^(p - 1).                            *)
+let decode_norm_frac = define
+  `decode_norm_frac (fmt:fformat) (x:real) =
+  (@(f:num). (?(e:int). (frep(fmt) f e x) /\ 
+		((fradix fmt) EXP ((fprec fmt) - 1) <= f)))`;;
+
+(* An exponent e is normalized when the corresponding f is normalized.        *)
+let decode_norm_exp = define
+  `decode_norm_exp (fmt:fformat) (x:real) =
+  (@(e:int). (?(f:num). (frep(fmt) f e x) /\ 
+		((fradix fmt) EXP ((fprec fmt) - 1) <= f)))`;;
+
+(* -------------------------------------------------------------------------- *)
 (* Prev / floor / next / ceiling fp numbers                                   *)
 (* -------------------------------------------------------------------------- *)
 
@@ -134,11 +150,11 @@ let ceil_fp = define
 
 (* Definition: For any real x, _ulp(x)_ is the distance between the floating  *)
 (* point numbers a, b such that a <= x < b. This will always be r^(e - p + 1) *)
-(* where e = exponent of a.                                                   *)
+(* where e = normalized exponent of a.                                        *)
 let ulp = define
   `ulp (fmt:fformat) (x:real) =
   (@(u:real). (?(e:int). 
-		(e = (decode_exp(fmt) (floor_fp(fmt) x)) /\
+		(e = (decode_norm_exp(fmt) (floor_fp(fmt) x)) /\
 		    (u = (&(fradix fmt) ipow (e - &(fprec fmt) + &1))))))`;;
 
 (* -------------------------------------------------------------------------- *)
@@ -152,7 +168,7 @@ let round = define
   `((round (fmt:fformat) (To_near) (x:real) =
 	(@(a:real). (is_closest_and(fmt)
 		       (\z. T)
-		       (\z. EVEN (decode_frac(fmt) a))
+		       (\z. EVEN (decode_norm_frac(fmt) a))
 		       x
 		       a))) /\
       
