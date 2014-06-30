@@ -93,12 +93,15 @@ let decode_exp = define
 (* Prev / floor / next / ceiling fp numbers                                   *)
 (* -------------------------------------------------------------------------- *)
 
+(* is_closest = true if a is the minimum distance from x and satisfies prop.  *)
 let is_closest = define
   `is_closest (fmt:fformat) (prop:real->bool) (x:real) (a:real) =
   (is_float(fmt) a /\
      prop a /\
      !(b:real). (is_float(fmt) b /\ prop b) ==> (abs(x - a) <= abs(x - b)))`;;
 
+(* is_closest_and = true if a is_closest to x AND if any other b is_closest   *)
+(* to x and satisfies prop2, then b = a.                                      *)
 let is_closest_and = define
   `is_closest_and (fmt:fformat) (prop:real->bool) (prop2:real->bool)
   (x:real) (a:real) =
@@ -129,7 +132,7 @@ let ceil_fp = define
 (* Units in the last place (ULPs)                                             *)
 (* -------------------------------------------------------------------------- *)
 
-(* Definition: For any real x, ulp(x) is the distance between the floating    *)
+(* Definition: For any real x, _ulp(x)_ is the distance between the floating  *)
 (* point numbers a, b such that a <= x < b. This will always be r^(e - p + 1) *)
 (* where e = exponent of a.                                                   *)
 let ulp = define
@@ -161,3 +164,25 @@ let round = define
       (round (fmt:fformat) (To_pinf) (x:real) = (ceil_fp(fmt) x)) /\
 
       (round (fmt:fformat) (To_ninf) (x:real) = (floor_fp(fmt) x)))`;;
+
+(* -------------------------------------------------------------------------- *)
+(* Relative Error                                                             *)
+(* -------------------------------------------------------------------------- *)
+
+let rerror = define
+  `rerror (a:real) (b:real) = abs((b - a) / a)`;;
+
+(* -------------------------------------------------------------------------- *)
+(* Machine Epsilon                                                            *)
+(* -------------------------------------------------------------------------- *)
+
+(* Definition: For a fformat fmt, the _machine epsilon_ is                    *)
+(*                                                                            *)
+(*      eps = (2r^(p - 1) + 1)^(-1)                                           *)
+(*                                                                            *)
+(* It will be shown that for all x:real,                                      *)
+(*                                                                            *)
+(*      (rerror (round(fmt) To_near x) x) <= eps                              *)
+
+let eps = define
+  `eps (fmt:fformat) = (&1 / &(2 * (fradix fmt) EXP ((fprec fmt) - 1) + 1))`;;
