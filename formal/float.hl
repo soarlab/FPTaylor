@@ -45,39 +45,19 @@ let fformat_typbij = new_type_definition
 	  EXISTS_TAC `(2:num, 0:num, 0:num, 0:num)` THEN
 	    REWRITE_TAC[is_valid_format] THEN
 	    ARITH_TAC));;
-
+			 
 let fradix = define
-  `fradix (fmt:fformat) = dest_fformat`;;
+  `fradix (fmt:fformat) = (FST (dest_fformat fmt))`;;
 
 let fprec = define
-  `fprec (radix:num, prec:num, emin:num, emax:num) = prec`;;
+  `fprec (fmt:fformat) = (FST (SND (dest_fformat fmt)))`;;
 
 let femin = define
-  `femin (radix:num, prec:num, emin:num, emax:num) = emin`;;
+  `femin (fmt:fformat) = (FST (SND (SND (dest_fformat fmt))))`;;
 
 let femax = define
-  `femax (radix:num, prec:num, emin:num, emax:num) = emax`;;
+  `femax (fmt:fformat) = (SND (SND (SND (dest_fformat fmt))))`;;
 
-(* -------------------------------------------------------------------------- *)
-(* We only care about valid formats                                           *)
-(* -------------------------------------------------------------------------- *)
-
-
-let fformat_typbij = new_type_definition
-  "fformat"
-  ("mk_fformat", "dest_fformat")
-  (prove (`?fmt. is_valid_format fmt`,
-	  REWRITE_TAC[is_valid_format] THEN
-	    EXISTS_TAC `(2:num, 0:num, 0:num, 0:num)` THEN
-	    REWRITE_TAC[fradix; femin; femax] THEN
-	    ARITH_TAC));;
-
-(* -------------------------------------------------------------------------- *)
-(* Floating point numbers are a subset of the reals                           *)
-(* -------------------------------------------------------------------------- *)
-
-(* A real number is a floating point number if it can be written per the      *)
-(* the comment in the format section above.                                   *)
 let is_float = define
   `is_float (fmt:fformat) (x:real) =
   (?(f:num) (e:num). 
@@ -86,14 +66,17 @@ let is_float = define
      (e <= emax) /\
      (abs(x) = f * ((fradix fmt) pow (e - (fprec fmt)))))`;;
 
-let float_typbij = new_type_definition
-  "float"
-  ("mk_float", "dest_float")
+let fformat_typbij = new_type_definition
+  "fformat"
+  ("mk_fformat", "dest_fformat")
   (prove (`?(x:real). is_float x`,
 	  REWRITE_TAC[is_valid_format] THEN
 	    EXISTS_TAC `(2:num, 0:num, 0:num, 0:num)` THEN
 	    REWRITE_TAC[fradix; femin; femax] THEN
 	    ARITH_TAC));;
+
+let fradix = define
+  `fradix (fmt:
 
 
 
