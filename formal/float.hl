@@ -30,23 +30,22 @@
 (*   -- 0 <= f < r^p                                                          *)
 (*   -- emin <= e <= emax                                                     *)
 (*   -- r = radix; must be even integer > 1                                   *)
-(*   -- p = precision                                                         *)
+(*   -- p = precision > 0 (p = 0 is possible, but leads to messy edge cases   *)
+(*      and is of little practical value)                                     *)
 (*   -- emin <= emax; minimum and maximum possible exponents, respectively    *)
-(*                                                                            *)
-(* Note the limiting case when p = 0. The only fp number for this format      *)
-(* is 0.                                                                      *)
 
 let is_valid_format = define
   `is_valid_format (r:num, p:num, emin:num, emax:num) =
   (r > 1 /\
      (EVEN r) /\
+     (p > 0) /\
      (emin <= emax))`;;
 
 let fformat_typbij = new_type_definition
   "fformat"
   ("mk_fformat", "dest_fformat")
   (prove (`?(fmt:num#num#num#num). is_valid_format fmt`,
-	  EXISTS_TAC `(2:num, 0:num, 0:num, 0:num)` THEN
+	  EXISTS_TAC `(2:num, 1:num, 0:num, 0:num)` THEN
 	    REWRITE_TAC[is_valid_format] THEN
 	    ARITH_TAC));;
 			 
@@ -86,33 +85,43 @@ let is_float = define
 (* The following definition is motivated by the IEEE 754 standard and John    *)
 (* Harrison's `normalises' and `tiny'.                                        *)
 (*                                                                            *)
-(* Note: When the format's precision is 0, there are no normal *or* denormal  *)
-(* fp numbers, since 0 is the only fp number for this format and it is        *)
-(* neither normal nor denormal. When the precision is 1, there are normal fp  *)
-(* numbers but no denormal fp numbers.                                        *)
+(* Definition: A _normal_ fp number is an fp number whose magnitude           *)
+(* is >= r^(emin).                                                            *)
+(*                                                                            *)
+(* Definition: A _denormal_ fp number is a *non-zero* fp number whose         *)
+(* magnitudue < r^(emin).                                                     *)
+(*                                                                            *)
+(* Note: When the precision is 1, there are normal fp numbers but no denormal *)
+(* fp numbers.                                                                *)
+(*                                                                            *)
+(* Definition: A _binade boundary_ is an fp number whose magnitude = r^e for  *)
+(* emin <= e <= emax.                                                         *)
+(*                                                                            *)
+(* Note: All binade boundaries are normal fp numbers.                         *)
+(*                                                                            *)
+(* Definition: A _binade_ is an interval of real numbers [x, y] such that     *)
+(* -- x is a binade boundary, and hence |x| = r^e for emin <= e <= emax       *)
+(* -- |y| = r^(e + 1)                                                         *)
+(*                                                                            *)
+(* Note: In the final binade (when |x| = r^emax), |y| = r^(emax + 1), and is  *)
+(* hence not an fp number.                                                    *)
 
-(* Normal fp number : an fp number whose magnitude is >= r^(emin).            *)
 let is_normal = define
   `is_normal (fmt:fformat) (x:real) =
   (is_float(fmt) x /\
      (&(fradix fmt) pow (femin fmt)) <= abs(x))`;;
 
-(* Denormal fp number: a *non-zero* fp number whose magnitudue < r^(emin).    *)
 let is_denormal = define
   `is_denormal (fmt:fformat) (x:real) =
   (~(x = &0) /\
      is_float(fmt) x /\
      (abs(x) < &(fradix fmt) pow (femin fmt)))`;;
      
-(* Binade boundary: an fp number whose magnitude = r^e for emin <= e <= emax. *)
-(* Notice that all binade boundaries are normal fp numbers. There are no      *)
-(* binade boundaries (and hence no binades) for 0 precision.                  *)
 let is_binade_bdry = define
   `is_binade_bdry (fmt:fformat) (x:real) =
-  (~(fprec fmt = 0) /\
-     (?(f:num) (e:num).
-	(frep(fmt) f e x) /\ 
-	f = ((fradix fmt) EXP (fprec fmt)) DIV (fradix fmt)))`;;
+  (?(f:num) (e:num).
+     (frep(fmt) f e x) /\ 
+     f = ((fradix fmt) EXP (fprec fmt)) DIV (fradix fmt))`;;
 
 (* The largest fp number for a format = (r^p - 1) * r^(emax - p + 1).         *)
 let flargest = define
@@ -121,9 +130,25 @@ let flargest = define
 		 (frep(fmt) f e x) /\
 		 (e = (femax fmt)) /\
 		 (f = (fradix fmt) EXP (fprec fmt) - 1)))`;;
-     
+
 (* -------------------------------------------------------------------------- *)
 (* Units in the last place (ULPs)                                             *)
 (* -------------------------------------------------------------------------- *)
 
-(* Goal: Determine Describe the `step width' between 
+(* Compared to other formalizations, ULPs play a smaller role in our          *)
+(* formalization. ULPs are only defined for *fp numbers* and measure what the *)
+(* words `units in the last place' mean:                                      *)
+(*                                                                            *)
+(* Definition: Given a fformat fmt with precision > 0 and an fp number x in   *)
+(* this format with                                                           *)
+(*                                                                            *)
+(*          |x| = f * r^(e - p + 1)                                           *)
+(*                                                                            *)
+(* ulp(x) = r^(e - p + 1).                                                    *)
+(*                                                                            *)
+(* Note: Machine epsilon (defined below) will be used for measuring error.    *)
+
+let ulp = define
+  `ulp (fmt:fformat) (x:real) =
+  (@(u:num)
+
