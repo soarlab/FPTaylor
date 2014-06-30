@@ -12,6 +12,7 @@
 (*        issue.                                                              *)
 (*  [ 3 ] Nicholas Higham, "Accuracy and Stability of Numerical Algorithms",  *)
 (*        Second Edition, 2002.                                               *)
+(*  [ 4 ] IEEE 754 Standard for Floating Point Arithmetic, 2008.              *)
 
 (* ========================================================================== *)
 
@@ -58,11 +59,38 @@ let femin = define
 let femax = define
   `femax (fmt:fformat) = (SND (SND (SND (dest_fformat fmt))))`;;
 
-let is_float = define
-  `is_float (fmt:fformat) (x:real) =
-  (?(f:num) (e:num). 
-     (f < (fradix fmt) EXP (fprec fmt)) /\ 
+(* frep = true if x is equal to the floating point representation given by    *)
+(* fmt, f, and e.                                                             *)
+let frep = define
+  `frep (fmt:fformat) (f:num) (e:num) (x:real) = 
+  ((f < (fradix fmt) EXP (fprec fmt)) /\ 
      ((femin fmt) <= e) /\
      (e <= (femax fmt)) /\
-     (abs(x) = &f * (&(fradix fmt) pow (e - (fprec fmt)))))`;;
+     (abs(x) = &f * (&(fradix fmt) pow (e - (fprec fmt) + 1))))`;;
+  
+let is_float = define
+  `is_float (fmt:fformat) (x:real) = (?(f:num) (e:num). (frep(fmt) f e x))`;;
 
+(* -------------------------------------------------------------------------- *)
+(* Types of floating point numbers                                            *)
+(* -------------------------------------------------------------------------- *)
+
+(* Although these definitions are intended to be general, it is worth noting  *)
+(* that the IEEE 754 standard states that zero is neither normal nor          *)
+(* denormal.                                                                  *)
+(*                                                                            *)
+(* The following is motivated by the definition in Goldberg.                  *)
+
+let is_normal = define
+  `is_normal (fmt:fformat) (x:real) =
+  (?(f:num) (e:num).
+     (frep(fmt) f e x) /\
+     ((fradix fmt) EXP ((fprec fmt) - 1) <= f))`;;
+
+let is_denormal = define
+  `is_denormal (fmt:fformat) (x:real) =
+  (~(x = 0) /\
+     (?(f:num) (e:num).
+	(frep(fmt) f e x) /\
+	(f < (fradix fmt) EXP ((fprec fmt) - 1))))`;;
+     
