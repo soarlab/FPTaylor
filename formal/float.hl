@@ -86,6 +86,12 @@ let is_closest = define
      prop a /\
      !(b:real). (is_float(fmt) b /\ prop b) ==> (abs(x - a) <= abs(x - b)))`;;
 
+let is_closest_and = define
+  `is_closest_and (fmt:fformat) (prop:real->bool) (prop2:real->bool)
+  (x:real) (a:real) =
+  (is_closest(fmt) prop x a /\
+     !(b:real) is_closest(fmt) prop x b /\ prop2(b) ==> (a = b))`;;
+
 (* prev_fp = the largest fp number y < x.                                     *)
 let prev_fp = define
   `prev_fp (fmt:fformat) (x:real) = 
@@ -126,3 +132,20 @@ let ulp = define
 
 let roundmode_INDUCT, roundmode_RECURSION = define_type
   "roundmode = To_near | To_zero | To_pinf | To_ninf";;
+
+let round = define
+  `((round (fmt:fformat) (To_near) (x:real) =
+	(@(a:real). (is_closest_and(fmt) 
+		       (\z. T) 
+		       (\z. EVEN (decode_frac(fmt) a))
+		       x
+		       a)))
+
+      (round (fmt:fformat) (To_zero) (x:real) =
+	  (if (x > 0)
+	   then floor_fp(fmt) x
+	   else ceil_fp(fmt) x))
+
+      (round (fmt:fformat) (To_pinf) (x:real) = (ceil_fp(fmt) x))
+
+      (round (fmt:fformat) (To_ninf) (x:real) = (floor_fp(fmt) x)))`;;
