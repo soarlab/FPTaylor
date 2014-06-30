@@ -13,6 +13,8 @@
 (*  [ 3 ] Nicholas Higham, "Accuracy and Stability of Numerical Algorithms",  *)
 (*        Second Edition, 2002.                                               *)
 (*  [ 4 ] IEEE 754 Standard for Floating Point Arithmetic, 2008.              *)
+(*                                                                            *)
+(* A large part of this formalization is taken from John Harrison's work.     *)
 
 (* ========================================================================== *)
 
@@ -26,26 +28,23 @@
 (*                                                                            *)
 (* where                                                                      *)
 (*                                                                            *)
-(*   -- f:num, r:num, e:num, p:num                                            *)
+(*   -- f:num, r:num, e:int, p:num                                            *)
 (*   -- 0 <= f < r^p                                                          *)
-(*   -- emin <= e <= emax                                                     *)
 (*   -- r = radix; must be even integer > 1                                   *)
 (*   -- p = precision > 0 (p = 0 is possible, but leads to messy edge cases   *)
 (*      and is of little practical value)                                     *)
-(*   -- emin <= emax; minimum and maximum possible exponents, respectively    *)
+(*                                                                            *)
+(* This formalization of floating point is more general, hence there is no    *)
+(* restriction on the exponent.                                               *)
 
 let is_valid_format = define
-  `is_valid_format (r:num, p:num, emin:num, emax:num) =
-  (r > 1 /\
-     (EVEN r) /\
-     (p > 0) /\
-     (emin <= emax))`;;
+  `is_valid_format (r:num, p:num) = (r > 1 /\ (EVEN r) /\ (p > 0))`;;
 
 let fformat_typbij = new_type_definition
   "fformat"
   ("mk_fformat", "dest_fformat")
-  (prove (`?(fmt:num#num#num#num). is_valid_format fmt`,
-	  EXISTS_TAC `(2:num, 1:num, 0:num, 0:num)` THEN
+  (prove (`?(fmt:num#num). is_valid_format fmt`,
+	  EXISTS_TAC `(2:num, 1:num)` THEN
 	    REWRITE_TAC[is_valid_format] THEN
 	    ARITH_TAC));;
 			 
@@ -53,103 +52,77 @@ let fradix = define
   `fradix (fmt:fformat) = (FST (dest_fformat fmt))`;;
 
 let fprec = define
-  `fprec (fmt:fformat) = (FST (SND (dest_fformat fmt)))`;;
+  `fprec (fmt:fformat) = (SND (dest_fformat fmt))`;;
 
-let femin = define
-  `femin (fmt:fformat) = (FST (SND (SND (dest_fformat fmt))))`;;
-
-let femax = define
-  `femax (fmt:fformat) = (SND (SND (SND (dest_fformat fmt))))`;;
+(* -------------------------------------------------------------------------- *)
+(* Floating point numbers                                                     *)
+(* -------------------------------------------------------------------------- *)
 
 (* frep = true if x is equal to the floating point representation given by    *)
 (* fmt, f, and e.                                                             *)
 let frep = define
-  `frep (fmt:fformat) (f:num) (e:num) (x:real) = 
+  `frep (fmt:fformat) (f:num) (e:int) (x:real) = 
   ((f < (fradix fmt) EXP (fprec fmt)) /\ 
-     ((femin fmt) <= e) /\
-     (e <= (femax fmt)) /\
-     (abs(x) = &f * 
-	 &(fradix fmt) pow (e + 1) / &(fradix fmt) pow (fprec fmt)))`;;
+     (abs(x) = &f * &(fradix fmt) pow (e - (fprec fmt) + 1)))`;;
   
 let is_float = define
-  `is_float (fmt:fformat) (x:real) = (?(f:num) (e:num). (frep(fmt) f e x))`;;
+  `is_float (fmt:fformat) (x:real) = (?(f:num) (e:int). (frep(fmt) f e x))`;;
+
+let decode_frac = define
+  `decode_frac (fmt:fformat) (x:real) = 
+  (@(f:num). (?(e:int). (frep(fmt) f e x)))`;;
+
+let decode_exp = define
+  `decode_frac (fmt:fformat) (x:real) = 
+  (@(e:int). (?(f:num). (frep(fmt) f e x)))`;;
 
 (* -------------------------------------------------------------------------- *)
-(* Types of floating point numbers                                            *)
+(* Prev / floor / next / ceiling fp numbers                                   *)
 (* -------------------------------------------------------------------------- *)
 
-(* Although these definitions are intended to be general, it is worth noting  *)
-(* that the IEEE 754 standard states that zero is neither normal nor          *)
-(* denormal.                                                                  *)
-(*                                                                            *)
-(* The following definition is motivated by the IEEE 754 standard and John    *)
-(* Harrison's `normalises' and `tiny'.                                        *)
-(*                                                                            *)
-(* Definition: A _normal_ fp number is an fp number whose magnitude           *)
-(* is >= r^(emin).                                                            *)
-(*                                                                            *)
-(* Definition: A _denormal_ fp number is a *non-zero* fp number whose         *)
-(* magnitudue < r^(emin).                                                     *)
-(*                                                                            *)
-(* Note: When the precision is 1, there are normal fp numbers but no denormal *)
-(* fp numbers.                                                                *)
-(*                                                                            *)
-(* Definition: A _phase boundary_ is an fp number whose magnitude = r^e for   *)
-(* emin <= e <= emax.                                                         *)
-(*                                                                            *)
-(* Note: All phase boundaries are normal fp numbers.                          *)
-(*                                                                            *)
-(* Definition: A _phase_ is an interval of real numbers [x, y] such that      *)
-(* -- x is a phase boundary, and hence |x| = r^e for emin <= e <= emax        *)
-(* -- |y| = r^(e + 1)                                                         *)
-(*                                                                            *)
-(* Note: In the final phase (when |x| = r^emax), |y| = r^(emax + 1), and is   *)
-(* hence not an fp number.                                                    *)
+let is_closest = define
+  `is_closest (fmt:fformat) (prop:real->bool) (x:real) (a:real) =
+  (is_float(fmt) a /\
+     prop a /\
+     !(b:real). (is_float(fmt) b /\ prop b) ==> (abs(x - a) <= abs(x - b)))`;;
 
-let is_normal = define
-  `is_normal (fmt:fformat) (x:real) =
-  (is_float(fmt) x /\
-     (&(fradix fmt) pow (femin fmt)) <= abs(x))`;;
+(* prev_fp = the largest fp number y < x.                                     *)
+let prev_fp = define
+  `prev_fp (fmt:fformat) (x:real) = 
+  (@(y:real). is_closest(fmt) (\z. z < x) x y)`;;
 
-let is_denormal = define
-  `is_denormal (fmt:fformat) (x:real) =
-  (~(x = &0) /\
-     is_float(fmt) x /\
-     (abs(x) < &(fradix fmt) pow (femin fmt)))`;;
-     
-let is_phase_bdry = define
-  `is_phase_bdry (fmt:fformat) (x:real) =
-  (?(f:num) (e:num).
-     (frep(fmt) f e x) /\ 
-     f = ((fradix fmt) EXP (fprec fmt)) DIV (fradix fmt))`;;
+(* floor_fp = the largest fp number y <= x.                                   *)
+let floor_fp = define
+  `floor_fp (fmt:fformat) (x:real) = 
+  (@(y:real). is_closest(fmt) (\z. z <= x) x y)`;;
 
-(* The largest fp number for a format = (r^p - 1) * r^(emax - p + 1).         *)
-let flargest = define
-  `flargest (fmt:fformat) = 
-  (@(x:real). (?(f:num) (e:num).
-		 (frep(fmt) f e x) /\
-		 (e = (femax fmt)) /\
-		 (f = (fradix fmt) EXP (fprec fmt) - 1)))`;;
+(* next_fp = the smallest fp number y > x.                                    *)
+let next_fp = define
+  `next_fp (fmt:fformat) (x:real) = 
+  (@(y:real). is_closest(fmt) (\z. z > x) x y)`;;
+
+(* ceil_fp = the smallest fp number y >= x.                                   *)
+let ceil_fp = define
+  `ceil_fp (fmt:fformat) (x:real) = 
+  (@(y:real). is_closest(fmt) (\z. x <= z) x y)`;;
 
 (* -------------------------------------------------------------------------- *)
 (* Units in the last place (ULPs)                                             *)
 (* -------------------------------------------------------------------------- *)
 
-(* Compared to other formalizations, ULPs play a smaller role in our          *)
-(* formalization. ULPs are only defined for *fp numbers* and measure what the *)
-(* words `units in the last place' mean:                                      *)
-(*                                                                            *)
-(* Definition: For an fp number x such that
-(*                                                                            *)
-(*          |x| = f * r^(e - p + 1)                                           *)
-(*                                                                            *)
-(* ulp(x) = r^(e - p + 1).                                                    *)
-(*                                                                            *)
-(* Note: Machine epsilon (defined below) will be used for measuring error.    *)
-
+(* Definition: For any real x, ulp(x) is the distance between the floating    *)
+(* point numbers a, b such that a <= x < b. This will always be r^(e - p + 1) *)
+(* where e = exponent of a.                                                   *)
 let ulp = define
   `ulp (fmt:fformat) (x:real) =
-  (@(u:num). (?(f:num) (e:num).
-		(frep fmt f e x) /\
-		(u = ((fradix fmt) EXP (e + 1)) DIV 
-		    ((fradix fmt) EXP (fprec fmt)))))`;;
+  (@(u:num). (?(e:int). 
+		(e = (decode_exp(fmt) (floor_fp(fmt) x)) /\
+		    (u = ((fradix fmt) EXP (e + 1)) DIV 
+			((fradix fmt) EXP (fprec fmt))))))`;;
+
+(* -------------------------------------------------------------------------- *)
+(* Rounding                                                                   *)
+(* -------------------------------------------------------------------------- *)
+
+let roundmode_INDUCT, roundmode_RECURSION = define_type
+  "roundmode = To_near | To_zero | To_pinf | To_ninf";;
