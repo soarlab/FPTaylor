@@ -58,12 +58,25 @@ let fprec = define
 (* Floating point numbers                                                     *)
 (* -------------------------------------------------------------------------- *)
 
+(* FIXME: How to convert from integers to naturals?                           *)
+let num_of_int = define
+  `num_of_int (i:int) = (@(n:num). &n = abs(i))`;;
+
+(* Define pow for integers, with same infix level and associativity.          *)
+unparse_as_infix("ipow");;
+let ipow = define
+  `ipow (x:real) (e:int) = 
+  (if (e < &0)
+   then (inv (x pow (num_of_int e)))
+   else (x pow (num_of_int e)))`;;
+parse_as_infix("ipow",(24,"left"));;
+
 (* frep = true if x is equal to the floating point representation given by    *)
 (* fmt, f, and e.                                                             *)
 let frep = define
   `frep (fmt:fformat) (f:num) (e:int) (x:real) = 
   ((f < (fradix fmt) EXP (fprec fmt)) /\ 
-     (abs(x) = &f * &(fradix fmt) pow (e - (fprec fmt) + 1)))`;;
+     (abs(x) = &f * &(fradix fmt) ipow (e - &(fprec fmt) + &1)))`;;
   
 let is_float = define
   `is_float (fmt:fformat) (x:real) = (?(f:num) (e:int). (frep(fmt) f e x))`;;
@@ -73,7 +86,7 @@ let decode_frac = define
   (@(f:num). (?(e:int). (frep(fmt) f e x)))`;;
 
 let decode_exp = define
-  `decode_frac (fmt:fformat) (x:real) = 
+  `decode_exp (fmt:fformat) (x:real) = 
   (@(e:int). (?(f:num). (frep(fmt) f e x)))`;;
 
 (* -------------------------------------------------------------------------- *)
@@ -90,7 +103,7 @@ let is_closest_and = define
   `is_closest_and (fmt:fformat) (prop:real->bool) (prop2:real->bool)
   (x:real) (a:real) =
   (is_closest(fmt) prop x a /\
-     !(b:real) is_closest(fmt) prop x b /\ prop2(b) ==> (a = b))`;;
+     !(b:real). is_closest(fmt) prop x b /\ prop2(b) ==> (a = b))`;;
 
 (* prev_fp = the largest fp number y < x.                                     *)
 let prev_fp = define
@@ -121,10 +134,9 @@ let ceil_fp = define
 (* where e = exponent of a.                                                   *)
 let ulp = define
   `ulp (fmt:fformat) (x:real) =
-  (@(u:num). (?(e:int). 
+  (@(u:real). (?(e:int). 
 		(e = (decode_exp(fmt) (floor_fp(fmt) x)) /\
-		    (u = ((fradix fmt) EXP (e + 1)) DIV 
-			((fradix fmt) EXP (fprec fmt))))))`;;
+		    (u = (&(fradix fmt) ipow (e - &(fprec fmt) + &1))))))`;;
 
 (* -------------------------------------------------------------------------- *)
 (* Rounding                                                                   *)
@@ -135,17 +147,17 @@ let roundmode_INDUCT, roundmode_RECURSION = define_type
 
 let round = define
   `((round (fmt:fformat) (To_near) (x:real) =
-	(@(a:real). (is_closest_and(fmt) 
-		       (\z. T) 
+	(@(a:real). (is_closest_and(fmt)
+		       (\z. T)
 		       (\z. EVEN (decode_frac(fmt) a))
 		       x
-		       a)))
-
+		       a))) /\
+      
       (round (fmt:fformat) (To_zero) (x:real) =
-	  (if (x > 0)
-	   then floor_fp(fmt) x
-	   else ceil_fp(fmt) x))
+	  (if (x > &0)
+	   then (floor_fp(fmt) x)
+	   else (ceil_fp(fmt) x))) /\
 
-      (round (fmt:fformat) (To_pinf) (x:real) = (ceil_fp(fmt) x))
+      (round (fmt:fformat) (To_pinf) (x:real) = (ceil_fp(fmt) x)) /\
 
       (round (fmt:fformat) (To_ninf) (x:real) = (floor_fp(fmt) x)))`;;
