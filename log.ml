@@ -13,7 +13,7 @@ let open_log, close_log, append_to_log =
   in
   let open_log fname =
     let _ = Lib.get_dir "log" in
-    let log_name = "log/" ^ Filename.basename fname ^ ".log" in
+    let log_name = Filename.concat "log" (Filename.basename fname ^ ".log") in
     let _ = close_log() in
     let c = open_out log_name in
     out := Some c;

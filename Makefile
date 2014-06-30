@@ -1,34 +1,67 @@
-LIBS = unix,str,nums,interval
-INTERVAL_DIR = $(shell pwd)/INTERVAL
+ML = ocamlc
+OPT_ML = ocamlopt
+INTERVAL_DIR = INTERVAL
+INCLUDE=$(INTERVAL_DIR)
 
-TEST_DIR = benchmarks/tests
-TESTS = test01_sum3.txt\
-	test02_sum8.txt\
-	test03_nonlin2.txt\
-	test05_nonlin1.txt\
-	test06_sums4.txt
+SRC=	lib.ml\
+	log.ml\
+	config.mli\
+	config.ml\
+	more_num.ml\
+	rounding.ml\
+	expr.ml\
+	eval.ml\
+	environment.ml\
+	input_parser.mli\
+	input_parser.ml\
+	input_lexer.ml\
+	parser.ml\
+	test.ml
 
+OBJ_BYTE0 = $(SRC:.ml=.cmo)
+OBJ_BYTE = $(OBJ_BYTE0:.mli=.cmi)
+
+OBJ_NATIVE = $(OBJ_BYTE:.cmo=.cmx)
 
 TEST = $(addprefix $(TEST_DIR)/,$(TESTS))
 
-all:
+all: compile-interval compile-byte
+	$(ML) -o fptaylor -I $(INCLUDE) \
+		unix.cma str.cma nums.cma \
+		$(INTERVAL_DIR)/chcw.o interval.cma $(INTERVAL_DIR)/libinterval.a \
+		$(SRC:.ml=.cmo)
+
+compile-interval:
 	cd $(INTERVAL_DIR); $(MAKE)
-	ocamlbuild -cflags '-I $(INTERVAL_DIR)' -lflags '-I $(INTERVAL_DIR) $(INTERVAL_DIR)/libinterval.a' -libs $(LIBS) fptaylor.byte #fptaylor.native
-	mv fptaylor.byte fptaylor
 
-test:
-	./fptaylor $(TEST)
+compile-byte: $(OBJ_BYTE)
+	@echo "FPTaylor compiled (bytecode)"
 
-dqmom9:
-	./fptaylor $(TEST_DIR)/test04_dqmom9.txt
+compile-native: $(OBJ_NATIVE)
+	@echo "FPTaylor compiled (native)"
 
-check1:
-	./fptaylor -c test.cfg $(TEST_DIR)/test01_sum3.txt
+input_lexer.ml: input_lexer.mll
+	ocamllex input_lexer.mll
 
-check2:
-	./fptaylor $(TEST_DIR)/test08_dqmom3.txt
+input_parser.ml input_parser.mli: input_parser.mly
+	ocamlyacc input_parser.mly
+
+%.cmi : %.mli
+	$(ML) -c -I $(INCLUDE) $^
+
+%.cmo : %.ml
+	$(ML) -c -I $(INCLUDE) $^
+
+%.cmx : %.ml
+	$(OPT_ML) -c -I $(INCLUDE) $^
+
+clean-interval:
+	cd $(INTERVAL_DIR); $(MAKE) clean
 
 clean:
 	rm -rf _build tmp log
 	rm -f fptaylor fptaylor.native
-	rm -f *~ *.cmo *.cmi *.pyc
+	rm -f input_parser.ml input_parser.mli input_lexer.ml input_lexer.mli
+	rm -f *~ *.o *.cmo *.cmi *.cmx *.pyc
+
+clean-all: clean-interval clean

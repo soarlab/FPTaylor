@@ -40,7 +40,9 @@ let eval_float_expr vars =
   let rec eval = function
     | Const c -> c.float_v
     | Var v -> vars v
-    | U_op (op, f, arg) ->
+    | Rounding _ as expr -> failwith ("eval_float_expr: Rounding is not supported: " ^
+					 print_expr_str expr)
+    | U_op (op, arg) ->
       begin
 	let x = eval arg in
 	match op with
@@ -56,9 +58,9 @@ let eval_float_expr vars =
 	  | Op_floor_power2 -> floor_power2 x
 	  | Op_sym_interval -> 0.0
 	  | _ -> failwith ("eval_float_expr: Unsupported unary operation: " 
-			   ^ op_name op f)
+			   ^ op_name op)
       end
-    | Bin_op (op, f, arg1, arg2) ->
+    | Bin_op (op, arg1, arg2) ->
       begin
 	let x1 = eval arg1 and
 	    x2 = eval arg2 in
@@ -69,15 +71,15 @@ let eval_float_expr vars =
 	  | Op_div -> x1 /. x2
 	  | Op_nat_pow -> x1 ** x2
 	  | _ -> failwith ("eval_float_expr: Unsupported binary operation: " 
-			   ^ op_name op f)
+			   ^ op_name op)
       end
-    | Gen_op (op, f, args) ->
+    | Gen_op (op, args) ->
       begin
 	let xs = map eval args in
 	match (op, xs) with
 	  | (Op_fma, [a;b;c]) -> a *. b +. c
 	  | _ -> failwith ("eval_float_expr: Unsupported general operation: " 
-			   ^ op_name op f)
+			   ^ op_name op)
       end
   in
   eval
@@ -93,7 +95,9 @@ let eval_num_expr vars =
   let rec eval = function
     | Const c -> c.rational_v
     | Var v -> vars v
-    | U_op (op, f, arg) ->
+    | Rounding _ as expr -> failwith ("eval_num_expr: Rounding is not supported: " ^
+					 print_expr_str expr)
+    | U_op (op, arg) ->
       begin
 	let x = eval arg in
 	match op with
@@ -101,9 +105,9 @@ let eval_num_expr vars =
 	  | Op_abs -> abs_num x
 	  | Op_inv -> one // x
 	  | _ -> failwith ("eval_num_expr: Unsupported unary operation: " 
-			   ^ op_name op f)
+			   ^ op_name op)
       end
-    | Bin_op (op, f, arg1, arg2) ->
+    | Bin_op (op, arg1, arg2) ->
       begin
 	let x1 = eval arg1 and
 	    x2 = eval arg2 in
@@ -114,15 +118,15 @@ let eval_num_expr vars =
 	  | Op_div -> x1 // x2
 	  | Op_nat_pow -> x1 **/ x2
 	  | _ -> failwith ("eval_num_expr: Unsupported binary operation: " 
-			   ^ op_name op f)
+			   ^ op_name op)
       end
-    | Gen_op (op, f, args) ->
+    | Gen_op (op, args) ->
       begin
 	let xs = map eval args in
 	match (op, xs) with
 	  | (Op_fma, [a;b;c]) -> (a */ b) +/ c
 	  | _ -> failwith ("eval_num_expr: Unsupported general operation: " 
-			   ^ op_name op f)
+			   ^ op_name op)
       end
   in
   eval
@@ -137,7 +141,9 @@ let eval_interval_expr vars =
   let rec eval = function
     | Const c -> c.interval_v
     | Var v -> vars v
-    | U_op (op, f, arg) ->
+    | Rounding _ as expr -> failwith ("eval_interval_expr: Rounding is not supported: " ^
+					 print_expr_str expr)
+    | U_op (op, arg) ->
       begin
 	let x = eval arg in
 	match op with
@@ -153,9 +159,9 @@ let eval_interval_expr vars =
 	  | Op_floor_power2 -> floor_power2_I x
 	  | Op_sym_interval -> sym_interval_I x
 	  | _ -> failwith ("eval_interval_expr: Unsupported unary operation: " 
-			   ^ op_name op f)
+			   ^ op_name op)
       end
-    | Bin_op (op, f, arg1, arg2) ->
+    | Bin_op (op, arg1, arg2) ->
       begin
 	let x1 = eval arg1 in
 	match op with
@@ -170,15 +176,15 @@ let eval_interval_expr vars =
 	  | Op_div -> x1 /$ eval arg2
 	  | Op_nat_pow -> x1 **$. (eval_float_const_expr arg2)
 	  | _ -> failwith ("eval_interval_expr: Unsupported binary operation: " 
-			   ^ op_name op f)
+			   ^ op_name op)
       end
-    | Gen_op (op, f, args) ->
+    | Gen_op (op, args) ->
       begin
 	let xs = map eval args in
 	match (op, xs) with
 	  | (Op_fma, [a;b;c]) -> (a *$ b) +$ c
 	  | _ -> failwith ("eval_interval_expr: Unsupported general operation: " 
-			   ^ op_name op f)
+			   ^ op_name op)
       end
   in
   eval
