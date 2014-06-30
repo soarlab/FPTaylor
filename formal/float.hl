@@ -139,8 +139,7 @@ let flargest = define
 (* formalization. ULPs are only defined for *fp numbers* and measure what the *)
 (* words `units in the last place' mean:                                      *)
 (*                                                                            *)
-(* Definition: Given a fformat fmt with precision > 0 and an fp number x in   *)
-(* this format with                                                           *)
+(* Definition: For an fp number x such that
 (*                                                                            *)
 (*          |x| = f * r^(e - p + 1)                                           *)
 (*                                                                            *)
@@ -150,5 +149,8 @@ let flargest = define
 
 let ulp = define
   `ulp (fmt:fformat) (x:real) =
-  (@(u:num)
+  (@(u:num). (?(f:num) (e:num).
+		(frep fmt f e x) /\
+		(u = ((fradix fmt) EXP (e + 1)) DIV 
+		    ((fradix fmt) EXP (fprec fmt)))))`;;
 
