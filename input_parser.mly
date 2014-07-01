@@ -84,9 +84,9 @@ variable:
       { add_variable $1 $2 $5 $7 }
 ;
 
-var_type: /* empty */ { mk_value_type 0 }
-  | INT { mk_value_type 0 }
-  | REAL { mk_value_type 0 }
+var_type: /* empty */ { real_type }
+  | INT { real_type }
+  | REAL { real_type }
   | FLOAT { mk_value_type $1 }
 ;
 
@@ -131,11 +131,19 @@ next_expressions: /* empty */ {}
   | COMMA expressions {}
 ;
 
+pos_neg_number:
+  NUMBER { $1 }
+  | MINUS NUMBER { ("-" ^ $2) }
+;
+
 rnd:
-  RND LPAREN NUMBER COMMA ID COMMA NUMBER RPAREN
+  RND LPAREN NUMBER COMMA ID COMMA NUMBER COMMA pos_neg_number COMMA pos_neg_number RPAREN
+  { create_explicit_rounding (int_of_string $3) ($5) 
+      (float_of_string $7) (int_of_string $9) (int_of_string $11) }
+  | RND LPAREN NUMBER COMMA ID COMMA NUMBER RPAREN
   { create_rounding (int_of_string $3) ($5) (float_of_string $7) }
-  | RND LPAREN NUMBER COMMA NUMBER COMMA NUMBER RPAREN
-      { create_rounding (int_of_string $3) ($5) (float_of_string $7) }
+  | RND LPAREN NUMBER COMMA ID RPAREN
+      { create_rounding (int_of_string $3) ($5) 1.0 }
   | RND_PAR
       { create_rounding (fst $1) (snd $1) 1.0 }
 ;

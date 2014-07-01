@@ -54,7 +54,12 @@ let parse_config_file fname =
 let base_dir = Filename.dirname Sys.executable_name
 
 let cfg_files, input_files = parse_args ()
-let _ = parse_config_file (Filename.concat base_dir "default.cfg")
+let _ = 
+  try
+    parse_config_file (Filename.concat base_dir "default.cfg")
+  with _ ->
+    Log.error "Cannot open default.cfg"
+
 let _ = map parse_config_file cfg_files
   
 let find p = 
@@ -93,14 +98,14 @@ let subnormal = stob (findd "true" "subnormal")
 let simplification = stob (findd "false" "simplification")
 let rel_error = stob (findd "false" "rel-error")
 let abs_error = stob (findd "true" "abs-error")
-let fp = stoi (findd "64" "fp")
+(*let fp = stoi (findd "64" "fp")*)
 let fp_power2_model = stob (findd "false" "fp-power2-model")
-let rounding = findd "nearest" "rounding"
-let real_vars = stob (findd "false" "real-vars")
+(*let rounding = findd "nearest" "rounding"*)
+(*let real_vars = stob (findd "false" "real-vars")*)
 let const_approx_real_vars = stob (findd "true" "const-approx-real-vars")
   
   (* Optimization parameters *)
-let opt = find "opt"
+let opt = findd "bb" "opt"
 let opt_approx = stob (findd "true" "opt-approx")
 let opt_exact = stob (findd "false" "opt-exact")
 let opt_tol = 
@@ -126,10 +131,10 @@ let print_options fmt =
   pb "opt-approx" opt_approx;
   pb "opt-exact" opt_exact;
   pf "opt-tol" opt_tol;
-  pi "fp" fp;
+(*  pi "fp" fp;*)
   pb "fp-power2-model" fp_power2_model;
-  ps "rounding" rounding;
-  pb "real-vars" real_vars;
+(*  ps "rounding" rounding;*)
+(*  pb "real-vars" real_vars;*)
   pb "const-approx-real-vars" const_approx_real_vars;
     
     

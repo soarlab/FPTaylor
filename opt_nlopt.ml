@@ -99,8 +99,8 @@ let gen_nlopt_code pars fmt =
     
 let min_max_expr ftol var_bound expr =
   let tmp = Lib.get_dir "tmp" in
-  let c_name = tmp ^ "/nlopt-f.c" in
-  let exe_name = tmp ^ "/nlopt-f" in
+  let c_name = Filename.concat tmp "nlopt-f.c" in
+  let exe_name = Filename.concat tmp "nlopt-f" in
   let gen = gen_nlopt_code {nlopt_default with nl_ftol_abs = ftol} in
   let _ = write_to_file c_name gen (var_bound, expr) in
   let cc = Config.get_option "nlopt-cc" "gcc -std=c99 -O3" in

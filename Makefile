@@ -16,7 +16,14 @@ SRC=	lib.ml\
 	input_parser.ml\
 	input_lexer.ml\
 	parser.ml\
-	test.ml
+	rounding_simpl.ml\
+	taylor_form.ml\
+	maxima.ml\
+	opt.ml\
+	opt_basic_bb.ml\
+	opt_z3.ml\
+	opt_nlopt.ml\
+	fptaylor.ml
 
 OBJ_BYTE0 = $(SRC:.ml=.cmo)
 OBJ_BYTE = $(OBJ_BYTE0:.mli=.cmi)
@@ -28,7 +35,7 @@ TEST = $(addprefix $(TEST_DIR)/,$(TESTS))
 all: compile-interval compile-byte
 	$(ML) -o fptaylor -I $(INCLUDE) \
 		unix.cma str.cma nums.cma \
-		$(INTERVAL_DIR)/chcw.o interval.cma $(INTERVAL_DIR)/libinterval.a \
+		$(INTERVAL_DIR)/chcw.o interval.cma \
 		$(SRC:.ml=.cmo)
 
 compile-interval:

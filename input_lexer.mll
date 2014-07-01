@@ -56,16 +56,20 @@ rule token = parse
   | "float64" { FLOAT(64) }
   | "float128" { FLOAT(128) }
   | "rnd" { RND }
+  | "rnd16_ne" | "rnd16" { RND_PAR(16, "ne") }
+  | "rnd16_0" { RND_PAR(16, "zero") }
+  | "rnd16_down" { RND_PAR(16, "down") }
+  | "rnd16_up" { RND_PAR(16, "up") }
   | "rnd32_ne" | "rnd32" { RND_PAR(32, "ne") }
-  | "rnd32_0" { RND_PAR(32, "0") }
+  | "rnd32_0" { RND_PAR(32, "zero") }
   | "rnd32_down" { RND_PAR(32, "down") }
   | "rnd32_up" { RND_PAR(32, "up") }
   | "rnd64_ne" | "rnd64" { RND_PAR(64, "ne") }
-  | "rnd64_0" { RND_PAR(64, "0") }
+  | "rnd64_0" { RND_PAR(64, "zero") }
   | "rnd64_down" { RND_PAR(64, "down") }
   | "rnd64_up" { RND_PAR(64, "up") }
   | "rnd128_ne" | "rnd128" { RND_PAR(128, "ne") }
-  | "rnd128_0" { RND_PAR(128, "0") }
+  | "rnd128_0" { RND_PAR(128, "zero") }
   | "rnd128_down" { RND_PAR(128, "down") }
   | "rnd128_up" { RND_PAR(128, "up") }
   | "inv" { INV }

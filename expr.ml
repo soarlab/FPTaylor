@@ -64,7 +64,9 @@ let mk_const c = Const c and
     mk_mul a b = Bin_op (Op_mul, a, b) and
     mk_div a b = Bin_op (Op_div, a, b) and
     mk_nat_pow a b = Bin_op (Op_nat_pow, a, b) and
-    mk_fma a b c = Gen_op (Op_fma, [a; b; c])
+    mk_fma a b c = Gen_op (Op_fma, [a; b; c]) and
+    mk_floor_power2 a = U_op (Op_floor_power2, a) and
+    mk_sym_interval a = U_op (Op_sym_interval, a)
 
 let rec eq_expr e1 e2 =
   match (e1, e2) with
