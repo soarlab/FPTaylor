@@ -15,6 +15,11 @@ let maxima cmd =
     let _ = close_in fd; Sys.remove tmp in
     data;;
 
+let test_maxima () =
+  try 
+    let _ = maxima "factor(x * x - y * y)" in true
+  with _ -> false
+   
 let maxima_expr str =
   let out = maxima str in
   Parser.parse_expr out;;

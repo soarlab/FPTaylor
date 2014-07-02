@@ -5,8 +5,6 @@ INCLUDE=$(INTERVAL_DIR)
 
 SRC=	lib.ml\
 	log.ml\
-	config.mli\
-	config.ml\
 	more_num.ml\
 	rounding.ml\
 	expr.ml\
@@ -16,14 +14,23 @@ SRC=	lib.ml\
 	input_parser.ml\
 	input_lexer.ml\
 	parser.ml\
+	maxima.ml\
+	config.mli\
+	config.ml\
 	rounding_simpl.ml\
 	taylor_form.ml\
-	maxima.ml\
 	opt.ml\
 	opt_basic_bb.ml\
 	opt_z3.ml\
 	opt_nlopt.ml\
 	fptaylor.ml
+
+TEST_DIR=benchmarks/tests
+TESTS=	test01_sum3.txt\
+	test02_sum8.txt\
+	test03_nonlin2.txt\
+	test05_nonlin1.txt\
+	test06_sums4.txt
 
 OBJ_BYTE0 = $(SRC:.ml=.cmo)
 OBJ_BYTE = $(OBJ_BYTE0:.mli=.cmi)
@@ -37,6 +44,9 @@ all: compile-interval compile-byte
 		unix.cma str.cma nums.cma \
 		$(INTERVAL_DIR)/chcw.o interval.cma \
 		$(SRC:.ml=.cmo)
+
+tests:
+	./fptaylor $(TEST)
 
 compile-interval:
 	cd $(INTERVAL_DIR); $(MAKE)

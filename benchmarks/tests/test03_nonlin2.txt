@@ -1,10 +1,10 @@
 Variables
-  x in [0.0, 1.0],
-  y in [-1.0, -0.1]
+  float64 x in [0.0, 1.0],
+  float64 y in [-1.0, -0.1]
 ;
 	
 Definitions
-  z = (x + y) / (x - y)
+  z rnd64= (x + y) / (x - y)
 ;
   
 

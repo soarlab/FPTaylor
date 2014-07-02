@@ -95,7 +95,17 @@ let get_float_option name default =
   (* General paramaters *)
 let uncertainty = stob (findd "false" "uncertainty")
 let subnormal = stob (findd "true" "subnormal")
-let simplification = stob (findd "false" "simplification")
+let simplification = 
+  let v = stob (findd "false" "simplification") in
+  if v && not (Maxima.test_maxima()) then
+    let _ = 
+      Log.error "A computer algebra system Maxima is not installed.";
+      Log.error "Simplifications are disabled.";
+      Log.error "Go to http://maxima.sourceforge.net/ to install Maxima." in
+    false
+  else
+    v
+
 let rel_error = stob (findd "false" "rel-error")
 let abs_error = stob (findd "true" "abs-error")
 (*let fp = stoi (findd "64" "fp")*)
