@@ -30,7 +30,7 @@ taylor-b:
 
 taylor-c:
 	$(FPTAYLOR_C) FPTaylor/carbonGas.txt
-# Simple branch and bound methods cannot find exact maximum:
+# A simple branch and bound method cannot find exact maximum;
 # use approximations
 	$(FPTAYLOR_C) -c FPTaylor/approx.cfg FPTaylor/doppler1.txt
 	$(FPTAYLOR_C) -c FPTaylor/approx.cfg FPTaylor/doppler2.txt

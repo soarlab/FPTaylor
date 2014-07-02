@@ -1,6 +1,6 @@
 open Format
 
-let open_log, close_log, append_to_log =
+let open_log, close_log, append_to_log, log_fmt =
   let out = ref None in
   let fmt = ref None in
   let close_log () =
@@ -26,9 +26,12 @@ let open_log, close_log, append_to_log =
 	pp_print_string fmt str;
 	pp_print_newline fmt ()
   in
+  let log_fmt () = !fmt
+  in
   open_log,
   close_log,
-  append_to_log
+  append_to_log,
+  log_fmt
 
 
 let report_flag = ref true

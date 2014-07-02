@@ -42,7 +42,7 @@ type env = {
   variables : (string, var_def) Hashtbl.t;
   definitions : (string, definition) Hashtbl.t;
   mutable constraints : formula list;
-  mutable expressions : expr list;
+  mutable expressions : (string * expr) list;
 }
 
 let env = {
@@ -214,21 +214,28 @@ let add_definition name raw =
   if Hashtbl.mem env.definitions name then
     failwith ("Definition " ^ name ^ " is already defined")
   else
+    let expr = transform_raw_expr raw in
     let d = {
       def_name = name;
-      def_expr = transform_raw_expr raw
+      def_expr = expr;
     } in
-    Hashtbl.add env.definitions name d
+    let _ = Hashtbl.add env.definitions name d in
+    expr
 
 (* Adds a constraint to the environment *)
 let add_constraint raw =
   let c = transform_raw_formula raw in
   env.constraints <- c :: env.constraints
 
+(* Adds a named expression to the environment. Also creates the corresponding definition. *)
+let add_expression_with_name name raw =
+  let expr = add_definition name raw in
+  env.expressions <- env.expressions @ [(name, expr)]
+
 (* Adds an expression to the environment *)
 let add_expression raw =
-  let e = transform_raw_expr raw in
-  env.expressions <- e :: env.expressions
+  let name = "Expression " ^ string_of_int (length env.expressions + 1) in
+  add_expression_with_name name raw
 
 (* Prints a raw expression *)
 let print_raw_expr fmt =

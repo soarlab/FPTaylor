@@ -124,11 +124,17 @@ constr:
 ;
 
 expressions:
-  expr next_expressions { add_expression $1 }
+  expression next_expressions {}
 ;
 
 next_expressions: /* empty */ {}
   | COMMA expressions {}
+;
+
+expression:
+  ID EQ expr { add_expression_with_name $1 $3 }
+  | ID rnd EQ expr { add_expression_with_name $1 (apply_raw_rounding $2 $4) }
+  | expr { add_expression $1 }
 ;
 
 pos_neg_number:

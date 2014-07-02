@@ -117,7 +117,7 @@ let const_rnd_form rnd e =
 				   (print_expr_str e) 
 				   (print_expr_str err_expr)) in
 	    (* TODO: subnormal constants (a very rare case) *)
-	    [e, mk_err_var (find_index (mk_rounding rnd e)) rnd.eps_exp]
+	    [err_expr, mk_err_var (find_index (mk_rounding rnd e)) rnd.eps_exp]
 	end;
     }
     | _ -> failwith ("const_rnd_form: not a constant: " ^ print_expr_str e)

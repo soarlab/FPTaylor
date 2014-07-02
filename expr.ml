@@ -264,10 +264,8 @@ let print_expr_in_env env fmt =
 	| Var v -> p v
 	| Rounding (rnd, arg) ->
 	  begin
-	    p "(";
 	    p (rounding_to_string rnd);
 	    p "("; print arg; p ")";
-	    p ")";
 	  end
 	| U_op (op, arg) ->
 	  begin

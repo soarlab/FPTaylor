@@ -12,6 +12,44 @@ open Taylor_form
 open Log
 
 
+type problem_info = {
+  name : string;
+  real_min : float;
+  real_max : float;
+  abs_error_approx : float option;
+  abs_error_exact : float option;
+  rel_error_approx : float option;
+  rel_error_exact : float option;
+  elapsed_time : float;
+}
+
+let default_problem_info = {
+  name = "NONE";
+  real_min = 0.0;
+  real_max = 0.0;
+  abs_error_approx = None;
+  abs_error_exact = None;
+  rel_error_approx = None;
+  rel_error_exact = None;
+  elapsed_time = 0.0;
+}
+
+let print_problem_info =
+  let print_opt str = function
+    | None -> ()
+    | Some v -> report (Printf.sprintf "%s: %e" str v) in
+  fun pi ->
+    report "-------------------------------------------------------------------------------";
+    report (Printf.sprintf "Problem: %s\n" pi.name);
+    report (Printf.sprintf "Bounds (without rounding): [%e, %e]" pi.real_min pi.real_max);
+    print_opt "Absolute error (approximate)" pi.abs_error_approx;
+    print_opt "Absolute error (exact)" pi.abs_error_exact;
+    print_opt "Relative error (approximate)" pi.rel_error_approx;
+    print_opt "Relative error (exact)" pi.rel_error_exact;
+    report (Printf.sprintf "\nElapsed time: %.5f\n" pi.elapsed_time)
+  
+
+
 let exprs () = env.expressions
 
 let var_bound_float name = variable_interval name
@@ -85,28 +123,24 @@ let errors =
 	  (e, err) :: es1, es2
   in
   let abs_error tol f =
-    let _ =
+    let v1, v2 = split f.v1 in
+    let bounds2 = map (compute_bound tol) v2 in
+    let total2', exp2 = sum_high bounds2 in
+    let total2 = get_eps exp2 *^ total2' in
+    let err_approx =
       if Config.opt_approx then
-	let _ = report "Solving the approximate optimization problem" in
+	let _ = report "\nSolving the approximate optimization problem" in
 	let _ = report "\nAbsolute errors:" in
-	let v1, v2 = split f.v1 in
 	let bounds1 = map (compute_bound tol) v1 in
-	let bounds2 = map (compute_bound tol) v2 in
-	let total1', exp1 = sum_high bounds1 and
-	    total2', exp2 = sum_high bounds2 in
-	let total1 = get_eps exp1 *^ total1' and
-	    total2 = get_eps exp2 *^ total2' in
+	let total1', exp1 = sum_high bounds1 in
+	let total1 = get_eps exp1 *^ total1' in
 	let total = total1 +^ total2 in
 	let _ = report (Format.sprintf "total1: %e\ntotal2: %e\ntotal: %e" total1 total2 total) in
-	()
-      else () in
-    let _ =
+	Some total
+      else None in
+    let err_exact =
       if Config.opt_exact then
-	let _ = report "Solving the exact optimization problem" in
-	let v1, v2 = split f.v1 in
-	let bounds2 = map (compute_bound tol) v2 in
-	let total2', exp2 = sum_high bounds2 in
-	let total2 = get_eps exp2 *^ total2' in
+	let _ = report "\nSolving the exact optimization problem" in
 	let abs_exprs = map (fun (e, err) -> mk_abs e, err.exp) v1 in
 	let full_expr', exp = sum_symbolic abs_exprs in
 	let full_expr = if Config.simplification then Maxima.simplify full_expr' else full_expr' in
@@ -114,85 +148,113 @@ let errors =
 	let _ = report (Format.sprintf "exact min, max (exp = %d): %f, %f" exp min max) in
 	let total = (get_eps exp *^ abs (min, max)) +^ total2 in
 	let _ = report (Format.sprintf "exact total: %e" total) in
-	()
-      else
-	() in
-    ()
+	Some total
+      else None in
+    err_approx, err_exact
   in
-(*  let rel_error eps tol f (f_min, f_max) =
+  let rel_error tol f (f_min, f_max) =
     let f_int = {low = f_min; high = f_max} in
     let rel_tol = 0.0001 in
     if (abs_I f_int).low < rel_tol then
-      report "Cannot compute the relative error: values of the function are close to zero"
+      let _ = report "\nCannot compute the relative error: values of the function are close to zero" in
+      None, None
     else
-      let _ = report "\nRelative errors:" in
       let v1, v2 = split f.v1 in
-      let v1 = map (fun (i, e) -> i, mk_def_div e f.v0) v1 in
+      let v1 = map (fun (e, err) -> mk_div e f.v0, err) v1 in
       let v1 = 
-	if Config.simplification then map (fun (i, e) -> i, Maxima.simplify e) v1 else v1 in
-      let errs1 = map (compute_err tol) v1 in
-      let errs2 = map (compute_err tol) v2 in
-      let total1 = eps *^ sum_high errs1 in
-      let b2 = ((eps *^ sum_high errs2) /.$ abs_I f_int).high in
-      let total = total1 +^ b2 in
-      let _ = report (Format.sprintf "rel-total1: %e\nrel-total: %e" total1 total) in
-      if not Config.opt_approx then
-	let abs_exprs = map (fun (_, e) -> mk_def_abs e) v1 in
-	let full_expr' = 
-	  if abs_exprs = [] then const_0 else end_itlist mk_def_add abs_exprs in
-	let full_expr = if Config.simplification then Maxima.simplify full_expr' else full_expr' in
-	let min, max = opt tol full_expr in
-	let _ = report (Format.sprintf "exact min-rel, max-rel: %f, %f" min max) in
-	let total = (eps *^ abs (min, max)) +^ b2 in
-	let _ = report (Format.sprintf "exact total-rel: %e" total) in
-	()
-      else
-	()
-  in*)
-  fun f ->
+	if Config.simplification then map (fun (e, err) -> Maxima.simplify e, err) v1 else v1 in
+      let bounds2 = map (compute_bound tol) v2 in
+      let total2', exp2 = sum_high bounds2 in
+      let total2 = get_eps exp2 *^ total2' in
+      let b2 = (total2 /.$ abs_I f_int).high in
+      let err_approx =
+	if Config.opt_approx then
+	  let _ = report "\nSolving the approximate optimization probelm" in
+	  let _ = report "\nRelative errors:" in
+	  let bounds1 = map (compute_bound tol) v1 in
+	  let total1', exp1 = sum_high bounds1 in
+	  let total1 = get_eps exp1 *^ total1' in
+	  let total = total1 +^ b2 in
+	  let _ = report (Format.sprintf "rel-total1: %e\nrel-total2: %e\nrel-total: %e" total1 b2 total) in
+	  Some total
+	else None in
+      let err_exact =
+	if Config.opt_exact then
+	  let _ = report "\nSolving the exact optimization problem" in
+	  let abs_exprs = map (fun (e, err) -> mk_abs e, err.exp) v1 in
+	  let full_expr', exp = sum_symbolic abs_exprs in
+	  let full_expr = if Config.simplification then Maxima.simplify full_expr' else full_expr' in
+	  let min, max = opt tol full_expr in
+	  let _ = report (Format.sprintf "exact min-rel, max-rel (exp = %d): %f, %f" exp min max) in
+	  let total = (get_eps exp *^ abs (min, max)) +^ b2 in
+	  let _ = report (Format.sprintf "exact total-rel: %e" total) in
+	  Some total
+	else None in
+      err_approx, err_exact
+  in
+  fun pi form ->
     let tol = Config.opt_tol in
-    let f_min, f_max = opt tol f.v0 in
+    let f_min, f_max = opt tol form.v0 in
     let _ = report (Format.sprintf "bounds: [%e, %e]" f_min f_max) in
-    let _ = if Config.abs_error then abs_error tol f else () in
-(*    let _ = if Config.rel_error then rel_error eps tol f (f_min, f_max) else () in*)
-    report ""
+    let pi = {pi with real_min = f_min; real_max = f_max} in
+    let pi =
+      if Config.opt_approx || Config.opt_exact then
+	let abs_approx, abs_exact = 
+	  if Config.abs_error then abs_error tol form else None, None in
+	let rel_approx, rel_exact = 
+	  if Config.rel_error then rel_error tol form (f_min, f_max) else None, None in
+	{pi with 
+	  abs_error_approx = abs_approx;
+	  abs_error_exact = abs_exact;
+	  rel_error_approx = rel_approx;
+	  rel_error_exact = rel_exact
+	}
+      else pi in
+    let _ = report "" in
+    pi
 
-let compute_form e =
-  let vars = var_bound_float in
-  let form' = build_form vars e in
-  let form = simplify_form vars form' in
-  let form = 
-    if Config.simplification then {
-      v0 = Maxima.simplify form.v0;
-      v1 = map (fun (e, err) -> (if err.index < 0 then e else Maxima.simplify e), err) form.v1;
-    }
-    else
-      form in
-  let _ = print_form form in
-  let _ = report "" in
-  let _ = errors form in
-  ()
-
-
-let forms e =
-  let _ = report ("\nTaylor form for: " ^ print_expr_str e) in
+let compute_form pi e =
+  let _ = report "\n*************************************" in
+  let _ = report ("Taylor form for: " ^ print_expr_str e) in
   let start = Unix.gettimeofday() in
-  let e = Rounding_simpl.simplify_rounding e in
-  let _ = 
+  let pi = 
     try
-      compute_form e
-    with Failure msg -> error msg in
+      let e = Rounding_simpl.simplify_rounding e in
+      let _ = report ("\nSimplified rounding: " ^ print_expr_str e) in
+      let vars = var_bound_float in
+      let form' = build_form vars e in
+      let form = simplify_form vars form' in
+      let form = 
+	if Config.simplification then {
+	  v0 = Maxima.simplify form.v0;
+	  v1 = map (fun (e, err) -> (if err.index < 0 then e else Maxima.simplify e), err) form.v1;
+	}
+	else
+	  form in
+      let _ = print_form form in
+      let _ = report "" in
+      let pi = errors pi form in
+      pi
+    with Failure msg -> let _ = error msg in pi
+  in
   let stop = Unix.gettimeofday() in
   let _ = report (Format.sprintf "Elapsed time: %.5f" (stop -. start)) in
-  report ""
+  {pi with elapsed_time = stop -. start}
 
 
 let process_input fname =
   let _ = report ("Loading: " ^ fname) in
   let _ = open_log (Filename.concat "log" fname) in
+  let _ =
+    match log_fmt() with
+      | Some fmt -> Config.print_options fmt
+      | _ -> () in
   let _ = parse_file fname in
-  let es = exprs () in
-  let _ = map forms es in
+  let names, es = unzip (exprs ()) in
+  let problems0 = map (fun name -> {default_problem_info with name = name}) names in
+  let problems = map2 compute_form problems0 es in
+  let _ = report "*************************************\n" in
+  let _ = map print_problem_info problems in
   let _ = close_log () in
   report ""
 
