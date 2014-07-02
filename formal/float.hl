@@ -38,7 +38,7 @@
 (* restriction on the exponent.                                               *)
 
 let is_valid_format = define
-  `is_valid_format (r:num, p:num) = (r > 1 /\ (EVEN r) /\ (p > 0))`;;
+  `is_valid_format (r:num, p:num) = (1 < r /\ (EVEN r) /\ (0 < p))`;;
 
 let fformat_typbij = new_type_definition
   "fformat"
@@ -58,16 +58,12 @@ let fprec = define
 (* Floating point numbers                                                     *)
 (* -------------------------------------------------------------------------- *)
 
-(* FIXME: How to convert from integers to naturals?                           *)
-let num_of_int = define
-  `num_of_int (i:int) = (@(n:num). &n = abs(i))`;;
-
 (* Define pow for integers, with same infix level and associativity.          *)
 unparse_as_infix("ipow");;
 let ipow = define
   `ipow (x:real) (e:int) = 
   (if (e < &0)
-   then (inv (x pow (num_of_int e)))
+   then (inv (x pow (num_of_int (--e))))
    else (x pow (num_of_int e)))`;;
 parse_as_infix("ipow",(24,"left"));;
 
@@ -94,16 +90,24 @@ let decode_exp = define
 (* -------------------------------------------------------------------------- *)
 
 (* A fraction f is normalized when f >= r^(p - 1).                            *)
+let is_norm_frac = define
+  `is_norm_frac (fmt:fformat) (f:num) (x:real) = 
+  (?(e:int). (frep(fmt) f e x) /\ 
+     ((fradix fmt) EXP ((fprec fmt) - 1) <= f))`;;
+
 let decode_norm_frac = define
   `decode_norm_frac (fmt:fformat) (x:real) =
-  (@(f:num). (?(e:int). (frep(fmt) f e x) /\ 
-		((fradix fmt) EXP ((fprec fmt) - 1) <= f)))`;;
+  (@(f:num). is_norm_frac(fmt) f x)`;;
 
 (* An exponent e is normalized when the corresponding f is normalized.        *)
+let is_norm_exp = define
+  `is_norm_exp (fmt:fformat) (e:int) (x:real) =
+  (?(f:num). (frep(fmt) f e x) /\ 
+     ((fradix fmt) EXP ((fprec fmt) - 1) <= f))`;;
+
 let decode_norm_exp = define
   `decode_norm_exp (fmt:fformat) (x:real) =
-  (@(e:int). (?(f:num). (frep(fmt) f e x) /\ 
-		((fradix fmt) EXP ((fprec fmt) - 1) <= f)))`;;
+  (@(e:int). is_norm_exp(fmt) e x)`;;
 
 (* -------------------------------------------------------------------------- *)
 (* Prev / floor / next / ceiling fp numbers                                   *)

@@ -4,3 +4,136 @@
 
 needs "float.hl";;
 
+(* -------------------------------------------------------------------------- *)
+(* Lemma. All fformats are valid.                                             *)
+(* -------------------------------------------------------------------------- *)
+
+let FFORMAT_SPLIT = TAUT `!(fmt:fformat). 
+  (dest_fformat fmt) = (FST (dest_fformat fmt), SND (dest_fformat fmt))`;;
+
+let FFORMAT_VALID = prove(`!(fmt:fformat). is_valid_format (dest_fformat fmt)`,
+			  REWRITE_TAC[fformat_typbij]);;
+
+let FFORMAT_RADIX_LT_1 =
+  prove(`!(fmt:fformat). 1 < (fradix fmt)`,
+	GEN_TAC THEN
+	  REWRITE_TAC[fradix] THEN
+	  ASSUME_TAC (
+	    ONCE_REWRITE_RULE [is_valid_format] (
+	      ONCE_REWRITE_RULE [FFORMAT_SPLIT] FFORMAT_VALID)) THEN
+	  ASM_REWRITE_TAC[]);;
+
+(* -------------------------------------------------------------------------- *)
+(* Lemma. For any integer i, r^i > 0.                                         *)
+(* -------------------------------------------------------------------------- *)
+
+let NUM_OF_INT_EXISTS =
+  prove(`!(i:int). &0 <= i ==> ?n. num_of_int(i) = n`,
+	GEN_TAC THEN
+	  DISCH_THEN(fun thm -> 
+		       ASSUME_TAC(MATCH_MP INT_OF_NUM_OF_INT thm)) THEN
+	  ASSUME_TAC(REWRITE_RULE
+		       [num_of_int]
+		       (ASSUME `&(num_of_int i) = i`)) THEN
+	  ASSUME_TAC(CONV_RULE
+		       SELECT_CONV
+		       (ASSUME `&(@n. &n = (i:int)) = i`)) THEN
+	  CHOOSE_TAC (GSYM(ASSUME `?n. &n = (i:int)`)) THEN
+	  ONCE_ASM_REWRITE_TAC[] THEN
+	  REWRITE_TAC[NUM_OF_INT_OF_NUM] THEN
+	  EXISTS_TAC `(n:num)` THEN
+	  ARITH_TAC);;
+
+let IPOW_POS =
+  prove(`!(x:real) (i:int). &0 < x ==> &0 < x ipow i`,
+	REPEAT GEN_TAC THEN
+	  DISCH_TAC THEN
+	  REWRITE_TAC[ipow] THEN
+	  COND_CASES_TAC THENL [
+	    MATCH_MP_TAC REAL_LT_INV THEN
+	      ASSUME_TAC (MP
+			    (ARITH_RULE `(i:int) < &0 ==> &0 <= (--i)`)
+			    (ASSUME `(i:int) < &0`)) THEN
+	      ASSUME_TAC (MATCH_MP
+			    NUM_OF_INT_EXISTS
+			    (ASSUME `&0 <= (--(i:int))`)) THEN
+	      CHOOSE_TAC (ASSUME `?n. num_of_int(--(i:int)) = n`) THEN
+	      ASM_REWRITE_TAC[] THEN
+	      MATCH_MP_TAC REAL_POW_LT THEN
+	      ASM_REWRITE_TAC[];
+	      ALL_TAC] THEN
+	  
+	  ASSUME_TAC (MP
+			(ARITH_RULE `~((i:int) < &0) ==> &0 <= i`)
+			(ASSUME `~((i:int) < &0)`)) THEN
+	  ASSUME_TAC (MATCH_MP
+			NUM_OF_INT_EXISTS
+			(ASSUME `&0 <= (i:int)`)) THEN
+	  CHOOSE_TAC (ASSUME `?n. num_of_int(i:int) = n`) THEN
+	  ASM_REWRITE_TAC[] THEN
+	  MATCH_MP_TAC REAL_POW_LT THEN
+	  ASM_REWRITE_TAC[]);;
+			    
+let RADIX_IPOW_POS =
+  prove(`!(fmt:fformat) (i:int). &0 < &(fradix fmt) ipow i`,
+	REPEAT GEN_TAC THEN
+	  MATCH_MP_TAC IPOW_POS THEN
+	  ASSUME_TAC (MATCH_MP
+			(ARITH_RULE `1 < x ==> 0 < x`)
+			(SPEC `fmt:fformat` FFORMAT_RADIX_LT_1)) THEN
+
+	  ASSUME_TAC (EQ_MP 
+			(GSYM (SPECL 
+				 [`0:num`;`(fradix fmt):num`] 
+				 REAL_OF_NUM_LT))
+			(ASSUME `0 < (fradix fmt)`)) THEN
+	  ASM_REWRITE_TAC[]);;
+
+(* -------------------------------------------------------------------------- *)
+(* Lemma. For real numbers a, b, if a * b > 0 and b > 0, then a > 0.          *)
+(* -------------------------------------------------------------------------- *)
+
+let REAL_MUL_POS_POS_LT = 
+  prove(`!(a:real) (b:real). &0 < a * b /\ &0 < b ==> &0 < a`,
+	(* Strip universals *)
+	REPEAT GEN_TAC THEN
+	  (* X /\ Y ==> Z rewrite to X ==> Y ==> Z *)
+	  REWRITE_TAC[IMP_CONJ] THEN
+	  (* Use equational mp to infer a > 0 /\ b > 0  \/  a < 0 /\ b < 0. *)
+	  (*   thm = 0 < a * b.                                             *)
+	  DISCH_THEN(fun thm -> 
+		       ASSUME_TAC 
+			 (EQ_MP 
+			    (SPECL [`a:real`; `b:real`] REAL_MUL_POS_LT) 
+			    thm)) THEN
+	  ASM_ARITH_TAC);;
+
+(* -------------------------------------------------------------------------- *)
+(* Lemma. If x is a non-zero fp number, then its fraction is non-zero.        *)
+(* -------------------------------------------------------------------------- *)
+
+let FLOAT_NONZERO_FRAC =
+  prove(`!(fmt:fformat) (x:real) (f:num) (e:int).
+	  ~(x = &0) /\ (frep(fmt) f e x) ==> ~(f = 0)`,
+	REPEAT GEN_TAC THEN
+	  REWRITE_TAC[IMP_CONJ] THEN
+	  DISCH_THEN(fun thm -> 
+		       
+		       EQ_MP (SPEC `x:real` REAL_ABS_NZ) thm))
+	  REWRITE_TAC[frep; IMP_CONJ] THEN
+	  DISCH_TAC THEN
+
+
+(* -------------------------------------------------------------------------- *)
+(* Theorem. If x is a non-zero fp number, then there exists a unique          *)
+(* normalized fraction and exponent for x.                                    *)
+(* -------------------------------------------------------------------------- *)
+
+let FLOAT_NORMALIZED_FRAC_EXISTS =
+  prove(`!(fmt:fformat) (x:real). 
+	  ~(x = &0) /\ (is_float(fmt) x) ==> ?(f:num). (is_norm_frac(fmt) f x)`,
+
+
+
+       );;
+
