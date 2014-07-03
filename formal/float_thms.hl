@@ -32,6 +32,10 @@ let INT_TO_NUM =
         ONCE_REWRITE_TAC[REWRITE_RULE [GSYM NUM_OF_INT] thm]) THEN
 	EXISTS_TAC `(num_of_int x)` THEN REWRITE_TAC[NUM_OF_INT_OF_NUM]);;
 
+let IPOW_FROM_POW =
+  prove(`!(P:((real->num->real)->bool)). P(pow) ==> P(ipow)`,
+  
+
 (* Lemma. For all x > 0, x^i > 0.                                             *)
 let IPOW_POS =
   prove(`!(x:real) (i:int). &0 < x ==> &0 < x ipow i`,
@@ -52,62 +56,30 @@ let IPOW_POS =
        	  ASM_REWRITE_TAC[] THEN MATCH_MP_TAC REAL_POW_LT THEN 
           ASM_REWRITE_TAC[]);;
 
+(* Lemma. For all y > 0, there is an n > 0 such that 1 / n < y.               *)
 let REAL_ARCH_DIV = 
-  prove(`!(y:real). &0 < y ==> ?(n:num). ~(n = 0) /\ (&1 / &n) < y`,
-	GEN_TAC THEN
-	  DISCH_THEN(fun thm -> 
-		       (CHOOSE_TAC
-			  (SPEC `&1` (MATCH_MP REAL_ARCH thm)))) THEN
-	  EXISTS_TAC `n:num` THEN
-	  SUBGOAL_THEN `~(n = 0)` ASSUME_TAC THENL [
-	    ASSUME_TAC(MP
-			 (ARITH_RULE `&1 < &n * y ==> &0 < &n * y`)
-			 (ASSUME `&1 < &n * y`)) THEN
-	      ASSUME_TAC(EQ_MP
-			   (SPECL [`(&n):real`; `y:real`] REAL_MUL_POS_LT)
-			   (ASSUME `&0 < &n * y`)) THEN
-	      REWRITE_TAC[ARITH_RULE `~(n = 0) <=> 0 < n`] THEN
-	      REWRITE_TAC[GSYM(REAL_OF_NUM_LT)] THEN
-	      ASM_ARITH_TAC THEN
-	      ALL_TAC]
+  prove(`!(y:real). &0 < y ==> ?(n:num). &0 < &n /\ (&1 / &n) < y`,
+	GEN_TAC THEN DISCH_THEN(fun thm -> (CHOOSE_TAC (SPEC `&1` 
+        (MATCH_MP REAL_ARCH thm)))) THEN EXISTS_TAC `n:num` THEN
+	
+	SUBGOAL_THEN `&0 < &n` ASSUME_TAC THENL [
 
+	  SUBGOAL_THEN `&0 < &n * y` ASSUME_TAC THENL [ASM_ARITH_TAC; ALL_TAC] 
 	  THEN
-	  ASM_REWRITE_TAC[] THEN
-	  
-	  
-	  
-	  
 
-(*    ("REAL_LE_INV2", |- !x y. &0 < x /\ x <= y ==> inv y <= inv x); *)
-(*    ("REAL_LE_INV", |- !x. &0 <= x ==> &0 <= inv x); *)
-(*    ("REAL_LE_LINV", |- !x y. &0 < y /\ inv y <= x ==> inv x <= y);
-   ("REAL_LE_RINV", |- !x y. &0 < x /\ x <= inv y ==> y <= inv x);
-   ("REAL_LT_INV", |- !x. &0 < x ==> &0 < inv x);
-   ("REAL_LT_INV2", |- !x y. &0 < x /\ x < y ==> inv y < inv x);
-   ("REAL_LT_INV_EQ", |- !x. &0 < inv x <=> &0 < x);
-   ("REAL_LT_LINV", |- !x y. &0 < y /\ inv y < x ==> inv x < y);
-   ("REAL_LT_RINV", |- !x y. &0 < x /\ x < inv y ==> y < inv x);
-   ("REAL_MUL_LINV", |- !x. ~(x = &0) ==> inv x * x = &1);
-   ("REAL_MUL_LINV_UNIQ", |- !x y. x * y = &1 ==> inv y = x);
-   ("REAL_MUL_RINV", |- !x. ~(x = &0) ==> x * inv x = &1);
-   ("REAL_MUL_RINV_UNIQ", |- !x y. x * y = &1 ==> inv x = y);
-   ("REAL_POW_INV", |- !x n. inv x pow n = inv (x pow n));
+	  ASSUME_TAC (REWRITE_RULE [REAL_MUL_POS_LT] (ASSUME `&0 < &n * y`))
+	  THEN ASM_ARITH_TAC; ALL_TAC] THEN
 
-   ("REAL_ARCH", |- !x. &0 < x ==> (!y. ?n. y < &n * x));
-   ("REAL_ARCH_LT", |- !x. ?n. x < &n);
-   ("REAL_ARCH_SIMPLE", |- !x. ?n. x <= &n)]
-
-let REAL_MUL_RINV = prove
- (`!x. ~(x = &0) ==> (x * inv(x) = &1)`,
-
-
-let REAL_LE_LDIV_EQ = prove
- (`!x y z. &0 < z ==> (x / z <= y <=> x <= y * z)`,
-
-
-*)
+	ASM_REWRITE_TAC[] THEN REWRITE_TAC[UNDISCH(SPECL 
+	[`&1 / &n`; `y:real`; `(&n):real`] (GSYM REAL_LT_LMUL_EQ))] THEN
+	REWRITE_TAC[real_div] THEN GEN_REWRITE_TAC (RATOR_CONV o
+        RAND_CONV o RAND_CONV o ONCE_DEPTH_CONV) [REAL_MUL_LID] THEN
 	
-	
+	SUBGOAL_THEN `~(&n = &0)` (fun thm -> REWRITE_TAC[MATCH_MP 
+        REAL_MUL_RINV thm]) THENL [ASM_ARITH_TAC; ALL_TAC] THEN
+
+	ASM_REWRITE_TAC[]);;
+
 (* Lemma. For all x > 1, y > 0, there is an i such that x^i < y.              *)
 let IPOW_LT =
   prove(`!(x:real) (y:real). ?(i:int). x ipow i < y`,
