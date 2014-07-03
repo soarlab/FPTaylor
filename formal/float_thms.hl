@@ -16,66 +16,99 @@ let FFORMAT_VALID = prove(`!(fmt:fformat). is_valid_format (dest_fformat fmt)`,
 
 let FFORMAT_RADIX_LT_1 =
   prove(`!(fmt:fformat). 1 < (fradix fmt)`,
-	GEN_TAC THEN 
-	  REWRITE_TAC[fradix] THEN 
-	  ASSUME_TAC (
-	    ONCE_REWRITE_RULE [is_valid_format] (
-	      ONCE_REWRITE_RULE [FFORMAT_SPLIT] FFORMAT_VALID)) THEN
+	GEN_TAC THEN REWRITE_TAC[fradix] THEN 
+	  ASSUME_TAC (REWRITE_RULE [is_valid_format] 
+			(ONCE_REWRITE_RULE [FFORMAT_SPLIT] FFORMAT_VALID)) THEN
 	  ASM_REWRITE_TAC[]);;
 
 (* -------------------------------------------------------------------------- *)
 (* Useful properties of ipow                                                  *)
 (* -------------------------------------------------------------------------- *)
 
-let NUM_OF_INT_EXISTS =
-  prove(`!(i:int). &0 <= i ==> ?n. num_of_int(i) = n`,
-	GEN_TAC THEN
-	  DISCH_THEN(fun thm -> 
-		       ASSUME_TAC(MATCH_MP INT_OF_NUM_OF_INT thm)) THEN
-	  ASSUME_TAC(REWRITE_RULE
-		       [num_of_int]
-		       (ASSUME `&(num_of_int i) = i`)) THEN
-	  ASSUME_TAC(CONV_RULE
-		       SELECT_CONV
-		       (ASSUME `&(@n. &n = (i:int)) = i`)) THEN
-	  CHOOSE_TAC (GSYM(ASSUME `?n. &n = (i:int)`)) THEN
-	  ONCE_ASM_REWRITE_TAC[] THEN
-	  REWRITE_TAC[NUM_OF_INT_OF_NUM] THEN
-	  EXISTS_TAC `(n:num)` THEN
-	  ARITH_TAC);;
+(* Lemma. Every non-negative integer has a natural number analog.             *)
+let INT_TO_NUM = 
+  prove(`!(x:int). &0 <= x ==> ?(n:num). num_of_int(x) = n`,
+	GEN_TAC THEN DISCH_THEN(fun thm -> 
+        ONCE_REWRITE_TAC[REWRITE_RULE [GSYM NUM_OF_INT] thm]) THEN
+	EXISTS_TAC `(num_of_int x)` THEN REWRITE_TAC[NUM_OF_INT_OF_NUM]);;
 
 (* Lemma. For all x > 0, x^i > 0.                                             *)
 let IPOW_POS =
   prove(`!(x:real) (i:int). &0 < x ==> &0 < x ipow i`,
-	REPEAT GEN_TAC THEN
-	  DISCH_TAC THEN
-	  REWRITE_TAC[ipow] THEN
-	  COND_CASES_TAC THENL [
-	    MATCH_MP_TAC REAL_LT_INV THEN
-	      ASSUME_TAC (MP
-			    (ARITH_RULE `(i:int) < &0 ==> &0 <= (--i)`)
-			    (ASSUME `(i:int) < &0`)) THEN
-	      ASSUME_TAC (MATCH_MP
-			    NUM_OF_INT_EXISTS
-			    (ASSUME `&0 <= (--(i:int))`)) THEN
-	      CHOOSE_TAC (ASSUME `?n. num_of_int(--(i:int)) = n`) THEN
-	      ASM_REWRITE_TAC[] THEN
-	      MATCH_MP_TAC REAL_POW_LT THEN
-	      ASM_REWRITE_TAC[];
-	      ALL_TAC] THEN
-	  
-	  ASSUME_TAC (MP
-			(ARITH_RULE `~((i:int) < &0) ==> &0 <= i`)
-			(ASSUME `~((i:int) < &0)`)) THEN
-	  ASSUME_TAC (MATCH_MP
-			NUM_OF_INT_EXISTS
-			(ASSUME `&0 <= (i:int)`)) THEN
-	  CHOOSE_TAC (ASSUME `?n. num_of_int(i:int) = n`) THEN
-	  ASM_REWRITE_TAC[] THEN
-	  MATCH_MP_TAC REAL_POW_LT THEN
-	  ASM_REWRITE_TAC[]);;
+	REPEAT GEN_TAC THEN DISCH_TAC THEN REWRITE_TAC[ipow] THEN
+	COND_CASES_TAC THENL [
+	  SUBGOAL_THEN `&0 <= --(i:int)` (fun thm -> CHOOSE_TAC (MATCH_MP
+                                          INT_TO_NUM thm)) THENL [
+	    MATCH_MP_TAC (ARITH_RULE `(i:int) < &0 ==> &0 <= --i`) THEN
+            ASM_REWRITE_TAC[];
+            ALL_TAC] 
+          THEN
+	  ASM_REWRITE_TAC[REAL_LT_INV_EQ] THEN MATCH_MP_TAC REAL_POW_LT THEN
+          ASM_REWRITE_TAC[];
+          ALL_TAC]
+          THEN
+          CHOOSE_TAC (MATCH_MP INT_TO_NUM (MATCH_MP (ARITH_RULE 
+          `~((i:int) < &0) ==> &0 <= i`) (ASSUME `~((i:int) < &0)`))) THEN
+       	  ASM_REWRITE_TAC[] THEN MATCH_MP_TAC REAL_POW_LT THEN 
+          ASM_REWRITE_TAC[]);;
 
-(* Lemma. For all x > 0, y > 0, there is an i such that x^i < y.              *)
+let REAL_ARCH_DIV = 
+  prove(`!(y:real). &0 < y ==> ?(n:num). ~(n = 0) /\ (&1 / &n) < y`,
+	GEN_TAC THEN
+	  DISCH_THEN(fun thm -> 
+		       (CHOOSE_TAC
+			  (SPEC `&1` (MATCH_MP REAL_ARCH thm)))) THEN
+	  EXISTS_TAC `n:num` THEN
+	  SUBGOAL_THEN `~(n = 0)` ASSUME_TAC THENL [
+	    ASSUME_TAC(MP
+			 (ARITH_RULE `&1 < &n * y ==> &0 < &n * y`)
+			 (ASSUME `&1 < &n * y`)) THEN
+	      ASSUME_TAC(EQ_MP
+			   (SPECL [`(&n):real`; `y:real`] REAL_MUL_POS_LT)
+			   (ASSUME `&0 < &n * y`)) THEN
+	      REWRITE_TAC[ARITH_RULE `~(n = 0) <=> 0 < n`] THEN
+	      REWRITE_TAC[GSYM(REAL_OF_NUM_LT)] THEN
+	      ASM_ARITH_TAC THEN
+	      ALL_TAC]
+
+	  THEN
+	  ASM_REWRITE_TAC[] THEN
+	  
+	  
+	  
+	  
+
+(*    ("REAL_LE_INV2", |- !x y. &0 < x /\ x <= y ==> inv y <= inv x); *)
+(*    ("REAL_LE_INV", |- !x. &0 <= x ==> &0 <= inv x); *)
+(*    ("REAL_LE_LINV", |- !x y. &0 < y /\ inv y <= x ==> inv x <= y);
+   ("REAL_LE_RINV", |- !x y. &0 < x /\ x <= inv y ==> y <= inv x);
+   ("REAL_LT_INV", |- !x. &0 < x ==> &0 < inv x);
+   ("REAL_LT_INV2", |- !x y. &0 < x /\ x < y ==> inv y < inv x);
+   ("REAL_LT_INV_EQ", |- !x. &0 < inv x <=> &0 < x);
+   ("REAL_LT_LINV", |- !x y. &0 < y /\ inv y < x ==> inv x < y);
+   ("REAL_LT_RINV", |- !x y. &0 < x /\ x < inv y ==> y < inv x);
+   ("REAL_MUL_LINV", |- !x. ~(x = &0) ==> inv x * x = &1);
+   ("REAL_MUL_LINV_UNIQ", |- !x y. x * y = &1 ==> inv y = x);
+   ("REAL_MUL_RINV", |- !x. ~(x = &0) ==> x * inv x = &1);
+   ("REAL_MUL_RINV_UNIQ", |- !x y. x * y = &1 ==> inv x = y);
+   ("REAL_POW_INV", |- !x n. inv x pow n = inv (x pow n));
+
+   ("REAL_ARCH", |- !x. &0 < x ==> (!y. ?n. y < &n * x));
+   ("REAL_ARCH_LT", |- !x. ?n. x < &n);
+   ("REAL_ARCH_SIMPLE", |- !x. ?n. x <= &n)]
+
+let REAL_MUL_RINV = prove
+ (`!x. ~(x = &0) ==> (x * inv(x) = &1)`,
+
+
+let REAL_LE_LDIV_EQ = prove
+ (`!x y z. &0 < z ==> (x / z <= y <=> x <= y * z)`,
+
+
+*)
+	
+	
+(* Lemma. For all x > 1, y > 0, there is an i such that x^i < y.              *)
 let IPOW_LT =
   prove(`!(x:real) (y:real). ?(i:int). x ipow i < y`,
 	
@@ -87,18 +120,9 @@ let IPOW_LT =
 
 let RADIX_IPOW_POS =
   prove(`!(fmt:fformat) (i:int). &0 < &(fradix fmt) ipow i`,
-	REPEAT GEN_TAC THEN
-	  MATCH_MP_TAC IPOW_POS THEN
-	  ASSUME_TAC (MATCH_MP
-			(ARITH_RULE `1 < x ==> 0 < x`)
-			(SPEC `fmt:fformat` FFORMAT_RADIX_LT_1)) THEN
-
-	  ASSUME_TAC (EQ_MP 
-			(GSYM (SPECL 
-				 [`0:num`;`(fradix fmt):num`] 
-				 REAL_OF_NUM_LT))
-			(ASSUME `0 < (fradix fmt)`)) THEN
-	  ASM_REWRITE_TAC[]);;
+	REPEAT GEN_TAC THEN MATCH_MP_TAC IPOW_POS THEN
+        MATCH_MP_TAC (ARITH_RULE `&1 < x ==> &0 < x`) THEN
+        REWRITE_TAC[REAL_OF_NUM_LT] THEN REWRITE_TAC[FFORMAT_RADIX_LT_1]);;
 
 (* -------------------------------------------------------------------------- *)
 (* Lemma. If x is a non-zero fp number, then its fraction is non-zero.        *)
@@ -107,30 +131,26 @@ let RADIX_IPOW_POS =
 let NONZERO_FRAC =
   prove(`!(fmt:fformat) (x:real) (f:num) (e:int).
 	  ~(x = &0) /\ (frep(fmt) f e x) ==> 0 < f`,
-	REWRITE_TAC[frep] THEN
-	REPEAT GEN_TAC THEN
-	  STRIP_TAC THEN
-	  ASSUME_TAC(REWRITE_RULE
-		       [REAL_ABS_NZ]
-		       (ASSUME `~(x = &0)`)) THEN
-	  REWRITE_TAC[GSYM(REAL_OF_NUM_LT)] THEN
-	  ASSUME_TAC(MATCH_MP
-		       (ARITH_RULE `&0 < a /\ a = b ==> &0 < b`)
-		       (CONJ
-			  (ASSUME `&0 < abs x`)
-			  (ASSUME 
-			     `abs x = &f * &(fradix fmt) ipow 
-			      (e - &(fprec fmt) + &1)`))) THEN
-	  ASSUME_TAC(EQ_MP
-		       (SPECL [`&f`; `&(fradix fmt) ipow 
-				 (e - &(fprec fmt) + &1)`] REAL_MUL_POS_LT)
-		       (ASSUME `&0 < &f * &(fradix fmt) ipow 
-			  (e - &(fprec fmt) + &1)`)) THEN
-	  ASSUME_TAC (SPECL [`fmt:fformat`;
-			     `(e - &(fprec fmt) + &1):int`]
-			RADIX_IPOW_POS) THEN
-	  ASM_ARITH_TAC);;
+	REPEAT GEN_TAC THEN REWRITE_TAC[frep] THEN STRIP_TAC THEN
+	
+	SUBGOAL_THEN `&0 < abs(x)` ASSUME_TAC THENL [
+	  ASM_ARITH_TAC; ALL_TAC] THEN 
 
+	SUBGOAL_THEN `&f * &(fradix fmt) ipow (e - &(fprec fmt) + &1) = abs(x)`
+	ASSUME_TAC THENL [
+	  ASM_REWRITE_TAC[]; ALL_TAC] THEN
+
+	SUBGOAL_THEN `&0 < &f * &(fradix fmt) ipow (e - &(fprec fmt) + &1)`
+        ASSUME_TAC THENL [
+	  ONCE_ASM_REWRITE_TAC[] THEN ASM_REWRITE_TAC[]; ALL_TAC] THEN
+
+	ASSUME_TAC (REWRITE_RULE [REAL_MUL_POS_LT]
+        (ASSUME `&0 < &f * &(fradix fmt) ipow (e - &(fprec fmt) + &1)`)) THEN
+	  
+	ASSUME_TAC (SPECL [`fmt:fformat`; `(e - &(fprec fmt) + &1):int`]
+	RADIX_IPOW_POS) THEN
+
+	REWRITE_TAC[GSYM(REAL_OF_NUM_LT)] ASM_ARITH_TAC);;
 
 (* -------------------------------------------------------------------------- *)
 (* Theorem. If x is a non-zero fp number, then there exists a unique          *)
