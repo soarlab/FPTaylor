@@ -18,6 +18,7 @@ taylor-a:
 	$(FPTAYLOR_A) FPTaylor/func.txt
 	$(FPTAYLOR_A) FPTaylor/turbine.txt
 	$(FPTAYLOR_A) FPTaylor/jet.txt
+	find log -name *.log -exec awk '/---/,0' '{}' \;
 
 taylor-b:
 	$(FPTAYLOR_B) FPTaylor/carbonGas.txt
@@ -27,6 +28,7 @@ taylor-b:
 	$(FPTAYLOR_B) FPTaylor/func.txt
 	$(FPTAYLOR_B) FPTaylor/turbine.txt
 	$(FPTAYLOR_B) FPTaylor/jet.txt
+	find log -name *.log -exec awk '/---/,0' '{}' \;
 
 taylor-c:
 	$(FPTAYLOR_C) FPTaylor/carbonGas.txt
@@ -38,6 +40,10 @@ taylor-c:
 	$(FPTAYLOR_C) FPTaylor/func.txt
 	$(FPTAYLOR_C) FPTaylor/turbine.txt
 	$(FPTAYLOR_C) FPTaylor/jet.txt
+	find log -name *.log -exec awk '/---/,0' '{}' \;
+
+show:
+	find log -name *.log -exec awk '/---/,0' '{}' \;
 
 gappa:
 	$(GAPPA) Gappa/carbonGas.g
