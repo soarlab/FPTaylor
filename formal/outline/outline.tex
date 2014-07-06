@@ -1,10 +1,104 @@
 \documentclass{article}
-\usepackage{amsmath,amssymb,fouriernc,parskip}
+\usepackage{amsmath,amssymb,fouriernc,parskip,amsthm}
+\usepackage{hyperref}
+\hypersetup{
+  citecolor=red,
+  colorlinks=true
+}
+
 \begin{document}
+\theoremstyle{definition}
+\newtheorem{thm}{Theorem}[section]
+\newtheorem{lem}[thm]{Lemma}
+
+\section{Normalized Fractions/Exponents}
+
+\begin{lem}
+\label{pow}
+Let
+\begin{equation*}
+S = \left \{ \; i \in \mathbb{Z}^{\geq 0} \; | \; r^{p - 1} \leq f \cdot r^i 
+\; \right \}
+\end{equation*}
+Then
+\begin{equation*}
+\forall r, f, p \in \mathbb{N} \; . f > 0 \; \wedge \; p > 0 \; 
+\Longrightarrow \; \exists i^* \in S \; . \forall i \in S \; . \; i^* \leq i
+\end{equation*}
+\begin{proof} Assume the antecedent. Since $f > 0$, $f \geq 1$. Moreover, 
+$p > 0$, so $p - 1 \geq 0$ and $r^{p - 1} \leq f \cdot r^{p - 1}$. It follows
+that $p - 1 \in S$. From the Well-Ordering Principle, $S$ has a smallest
+element $i^*$. 
+\end{proof}
+\end{lem}
+
+\begin{lem}
+\label{posfrac}
+\begin{equation*}
+\forall x \in \mathbb{R}, f \in \mathbb{N}, e \in \mathbb{Z} \; . \; 
+x \neq 0 \; \wedge \; frep(f,e,x) \; \Longrightarrow \; f > 0
+\end{equation*}
+\begin{proof} Assume the antecedent. Expanding the defn of $frep$, we know
+\begin{equation*}
+|x| = f \cdot r^{(e - p + 1)}
+\end{equation*}
+Since $x \neq 0$, $|x| > 0$. $r^{(e - p + 1)}$ is always positive, so $f > 0$.
+\end{proof}
+\end{lem}
+
+\begin{thm}
+\label{normfrac}
+\begin{equation*}
+\forall x \in \mathbb{R} \; . \; x \neq 0 \; \wedge \; is\_float(x) \; 
+\Longrightarrow \; \exists f' \in \mathbb{N} \; . \; is\_norm\_frac(f', x)
+\end{equation*}
+\begin{proof} Assume $is\_float(x)$ and $x \neq 0$. From the defn of
+$is\_float$, we know there exists $f \in \mathbb{N}$ and $e \in \mathbb{Z}$
+such that $frep(f, e, x)$. From ~\ref{posfrac}, we know $f > 0$.
+
+Also, from the defn of $frep$, we know
+\begin{equation*}
+f < r^p \; \wedge \; |x| = f \cdot r^{(e - p + 1)}
+\end{equation*}
+From ~\ref{pow}, we know there is a smallest integer $i^*$ such that
+$r^{p - 1} \leq f \cdot r^{i^*}$. We also know that $f \cdot r^{i^*} < r^p$
+(if it wasn't, we could cancel r on both sides and obtain a smaller
+$i$, contradicting the definition of $i^*$). Take $f' = f \cdot r^{i^*}$.
+It immediately follows that $f' \geq r^{p - 1}$. If we also take
+$e' = e - i^*$, then
+\begin{align*}
+f' \cdot r^{e' - p + 1} &= f \cdot r^{i^*} \cdot r^{e - i^* - p + 1}\\
+&= f \cdot r^{e - p + 1}\\
+&= |x|
+\end{align*}
+and so $is\_norm\_frac(f', x)$ is true.
+\end{proof}
+\end{thm}
+
+\subsection{Comments}
+
+The proof for existence of normalized exponents is similar. Do we need 
+uniqueness of normalized fractions/exponents? I think for now, probably not.
+
+\section{largest/smallest}
+
+\begin{thm}
+\label{largestexists}
+\begin{align*}
+&\forall x \in \mathbb{R}, P:\mathbb{R} \to Bool \; . \\
+&\qquad \big [ \; \exists y \in \mathbb{R} \; . \;
+is\_float(y) \; \wedge \; P(y) \; \big ] \; \wedge \\
+& \qquad \Big [ \; \exists b \in \mathbb{R} \; . \; 
+b \neq 0 \; \wedge \; \big [ \; \forall y \in \mathbb{R} \; . 
+\; is\_float(y) \; \wedge \; P(y) \; 
+\Longrightarrow \; y \leq b \; \big ] \; \Big ] \; \Longrightarrow \\
+& \qquad \exists y \in \mathbb{R} \; . \; is\_largest(P, y)
+\end{align*}
+\begin{proof} Assume the antecedent. 
 
 
-
-
+\end{proof}
+\end{thm}
 
 
 \end{document}
