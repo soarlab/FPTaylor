@@ -77,14 +77,6 @@ let frep = define
 let is_float = define
   `is_float (fmt:fformat) (x:real) = (?(f:num) (e:int). (frep(fmt) f e x))`;;
 
-let decode_frac = define
-  `decode_frac (fmt:fformat) (x:real) = 
-  (@(f:num). (?(e:int). (frep(fmt) f e x)))`;;
-
-let decode_exp = define
-  `decode_exp (fmt:fformat) (x:real) = 
-  (@(e:int). (?(f:num). (frep(fmt) f e x)))`;;
-
 (* -------------------------------------------------------------------------- *)
 (* Normalized fractions / exponents                                           *)
 (* -------------------------------------------------------------------------- *)
@@ -110,80 +102,71 @@ let decode_norm_exp = define
   (@(e:int). is_norm_exp(fmt) e x)`;;
 
 (* -------------------------------------------------------------------------- *)
-(* Prev / floor / next / ceiling fp numbers                                   *)
+(* Largest / smallest fp numbers, subject to conditions                       *)
 (* -------------------------------------------------------------------------- *)
 
-(* is_closest = true if a is the minimum distance from x and satisfies prop.  *)
-let is_closest = define
-  `is_closest (fmt:fformat) (prop:real->bool) (x:real) (a:real) =
-  (is_float(fmt) a /\
-     prop a /\
-     !(b:real). (is_float(fmt) b /\ prop b) ==> (abs(x - a) <= abs(x - b)))`;;
+let is_largest = define
+  `is_largest (fmt:fformat) (prop:real->bool) (fp:real)
+  (is_float(fmt) fp /\ prop fp /\ 
+     (!(fp':real). is_float(fmt) fp' /\ prop fp' ==> fp' <= fp)))`;;
 
-(* is_closest_and = true if a is_closest to x AND if any other b is_closest   *)
-(* to x and satisfies prop2, then b = a.                                      *)
-let is_closest_and = define
-  `is_closest_and (fmt:fformat) (prop:real->bool) (prop2:real->bool)
-  (x:real) (a:real) =
-  (is_closest(fmt) prop x a /\
-     !(b:real). is_closest(fmt) prop x b /\ prop2(b) ==> (a = b))`;;
+let largest = define
+  `largest (fmt:fformat) (prop:real->bool) = 
+  (@(fp:real). is_largest(fmt) prop fp)
 
-(* prev_fp = the largest fp number y < x.                                     *)
-let prev_fp = define
-  `prev_fp (fmt:fformat) (x:real) = 
-  (@(y:real). is_closest(fmt) (\z. z < x) x y)`;;
+let is_smallest = define
+  `is_smallest (fmt:fformat) (prop:real->bool) (fp:real)
+  (is_float(fmt) fp /\ prop fp /\ 
+     (!(fp':real). is_float(fmt) fp' /\ prop fp' ==> fp <= fp')))`;;
 
-(* floor_fp = the largest fp number y <= x.                                   *)
-let floor_fp = define
-  `floor_fp (fmt:fformat) (x:real) = 
-  (@(y:real). is_closest(fmt) (\z. z <= x) x y)`;;
-
-(* next_fp = the smallest fp number y > x.                                    *)
-let next_fp = define
-  `next_fp (fmt:fformat) (x:real) = 
-  (@(y:real). is_closest(fmt) (\z. z > x) x y)`;;
-
-(* ceil_fp = the smallest fp number y >= x.                                   *)
-let ceil_fp = define
-  `ceil_fp (fmt:fformat) (x:real) = 
-  (@(y:real). is_closest(fmt) (\z. x <= z) x y)`;;
+let smallest = define
+  `smallest (fmt:fformat) (prop:real->bool) = 
+  (@(fp:real). is_smallest(fmt) prop fp)
 
 (* -------------------------------------------------------------------------- *)
 (* Units in the last place (ULPs)                                             *)
 (* -------------------------------------------------------------------------- *)
 
-(* Definition: For any real x, _ulp(x)_ is the distance between the floating  *)
-(* point numbers a, b such that a <= x < b. This will always be r^(e - p + 1) *)
-(* where e = normalized exponent of a.                                        *)
+(* Definition: For any real non-zero x, _ulp(x)_ is the distance between the  *)
+(* floating point numbers a, b such that a <= x < b. This will always be      *)
+(* r^(e - p + 1) where e = normalized exponent of a.                          *)
 let ulp = define
   `ulp (fmt:fformat) (x:real) =
-  (@(u:real). (?(e:int). 
-		(e = (decode_norm_exp(fmt) (floor_fp(fmt) x)) /\
-		    (u = (&(fradix fmt) ipow (e - &(fprec fmt) + &1))))))`;;
+  ((largest(fmt) (\fp. fp <= x)) - (smallest(fmt) (\fp. x < fp)))
 
 (* -------------------------------------------------------------------------- *)
 (* Rounding                                                                   *)
 (* -------------------------------------------------------------------------- *)
 
+let closer = define
+  `closer (x:real) (y:real) (z:real) = (abs(x - z) < abs(y - z))`;;
+  
 let roundmode_INDUCT, roundmode_RECURSION = define_type
   "roundmode = To_near | To_zero | To_pinf | To_ninf";;
 
 let round = define
   `((round (fmt:fformat) (To_near) (x:real) =
-	(@(a:real). (is_closest_and(fmt)
-		       (\z. T)
-		       (\z. EVEN (decode_norm_frac(fmt) a))
-		       x
-		       a))) /\
+	(let lo = (smallest(fmt) (\fp. x <= fp))
+	 and hi = (largest(fmt) (\fp. fp <= x))
+	 in
+	   (if closer lo hi x
+	    then lo
+	    else (if closer hi lo x
+		  then hi
+		  else (if EVEN (decode_norm_frac(fmt) lo)
+			then lo
+			else hi)))))
       
       (round (fmt:fformat) (To_zero) (x:real) =
 	  (if (x > &0)
-	   then (floor_fp(fmt) x)
-	   else (ceil_fp(fmt) x))) /\
+	   then (largest(fmt) (\fp. fp <= x))
+	   else (smallest(fmt) (\fp. x <= fp))))
 
-      (round (fmt:fformat) (To_pinf) (x:real) = (ceil_fp(fmt) x)) /\
+      (round (fmt:fformat) (To_pinf) (x:real) =
+	  (smallest(fmt) (\fp. x <= fp)))
 
-      (round (fmt:fformat) (To_ninf) (x:real) = (floor_fp(fmt) x)))`;;
+      (round (fmt:fformat) (To_ninf) (x:real) =
+	  (largest(fmt) (\fp. fp <= x))))
 
 (* -------------------------------------------------------------------------- *)
 (* Relative Error                                                             *)
