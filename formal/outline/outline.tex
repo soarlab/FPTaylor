@@ -47,11 +47,13 @@ Since $x \neq 0$, $|x| > 0$. $r^{(e - p + 1)}$ is always positive, so $f > 0$.
 \end{lem}
 
 \begin{thm}
-\label{normfrac}
-\begin{equation*}
-\forall x \in \mathbb{R} \; . \; x \neq 0 \; \wedge \; is\_float(x) \; 
-\Longrightarrow \; \exists f' \in \mathbb{N} \; . \; is\_norm\_frac(f', x)
-\end{equation*}
+\label{normexists}
+\begin{align*}
+&\forall x \in \mathbb{R} \; . \; x \neq 0 \; \wedge \; is\_float(x) \; 
+\Longrightarrow \\
+& \qquad \exists f' \in \mathbb{N}, e' \in \mathbb{Z} \; . \; 
+is\_norm\_frac(f', x) \; \wedge \; is\_norm\_exp(e', x)
+\end{align*}
 \begin{proof} Assume $is\_float(x)$ and $x \neq 0$. From the defn of
 $is\_float$, we know there exists $f \in \mathbb{N}$ and $e \in \mathbb{Z}$
 such that $frep(f, e, x)$. From ~\ref{posfrac}, we know $f > 0$.
@@ -71,34 +73,213 @@ f' \cdot r^{e' - p + 1} &= f \cdot r^{i^*} \cdot r^{e - i^* - p + 1}\\
 &= f \cdot r^{e - p + 1}\\
 &= |x|
 \end{align*}
-and so $is\_norm\_frac(f', x)$ is true.
+and so $is\_norm\_frac(f', x)$ is true and $is\_norm\_exp(e', x)$ is true.
 \end{proof}
 \end{thm}
 
-\subsection{Comments}
+\begin{lem}
+\label{normbound}
+\begin{equation*}
+\forall x \in \mathbb{R} \; . \; x \neq 0 \; \wedge \; is\_float(x) \;
+\Longrightarrow \; r^{ne(x)} \leq |x| < r^{ne(x) + 1}
+\end{equation*}
+(where $ne(x)$ is an abbreviation for $decode\_norm\_exp(x)$).
+\begin{proof} Assume the antecedent. Because $x$ is a non-zero float, we
+know from ~\ref{normexists} that $x$ has a normalized fraction and exponent
+$f$ and $e$ with $r^{p - 1} \leq f < r^p$. Multiply all three by the positive
+value $r^{e - p + 1}$ to get $r^e \leq |x| < r^{e + 1}$.
+\end{proof}
+\end{lem}
 
-The proof for existence of normalized exponents is similar. Do we need 
-uniqueness of normalized fractions/exponents? I think for now, probably not.
+\begin{lem}
+\label{expupper}
+\begin{equation*}
+\forall x \in \mathbb{R}, i \in \mathbb{Z} \; . 
+\; x \neq 0 \; \wedge \; is\_float(x) \; \wedge \; |x| \leq r^i
+\Longrightarrow \; ne(x) < i
+\end{equation*}
+\begin{proof} Assume the antecedent. Because $x$ is a non-zero float,
+from ~\ref{normbound} we know
+\begin{equation*}
+r^{ne(x)} \leq |x| < r^i
+\end{equation*}
+From the monotonicty of pow, we can conlude $ne(x) < i$.
+\end{proof}
+\end{lem}
 
 \section{largest/smallest}
 
-\begin{thm}
-\label{largestexists}
+\begin{lem}
+\label{realpow1}
+\begin{equation*}
+\forall n, r \in \mathbb{N} \; . \; r > 1 \; \Longrightarrow \;
+\exists i \in \mathbb{Z} \; . \; r^i > n
+\end{equation*}
+\begin{proof} Let $r > 1$. The proof is by induction on $n$.
+
+\textsc{Base case.} For $n = 0, 1$, take $i = 1$.
+
+\textsc{Inductive step.} Assume there is an $i$ such that $r^i > n$, and
+consider $n + 1$:
 \begin{align*}
-&\forall x \in \mathbb{R}, P:\mathbb{R} \to Bool \; . \\
-&\qquad \big [ \; \exists y \in \mathbb{R} \; . \;
-is\_float(y) \; \wedge \; P(y) \; \big ] \; \wedge \\
-& \qquad \Big [ \; \exists b \in \mathbb{R} \; . \; 
-b \neq 0 \; \wedge \; \big [ \; \forall y \in \mathbb{R} \; . 
-\; is\_float(y) \; \wedge \; P(y) \; 
-\Longrightarrow \; y \leq b \; \big ] \; \Big ] \; \Longrightarrow \\
-& \qquad \exists y \in \mathbb{R} \; . \; is\_largest(P, y)
+n + 1 &< r^i + 1 \tag{induction hyp}\\
+&< r^i + r \tag{$r > 1$}\\
+&\leq r^{i'} + r^{i'} \tag{$i' = max(i, 1)$, monotonicity of pow}\\
+&= 2r^{i'}\\
+&\leq r \cdot r^{i'} \tag{$r \geq 2$}\\
+&= r^{i' + 1}
 \end{align*}
-\begin{proof} Assume the antecedent. 
+So, take $i = i' + 1$, and we're done.
+\end{proof}
+\end{lem}
 
+\begin{lem}
+\label{realpow2}
+\begin{equation*}
+\forall r \in \mathbb{N}, x \in \mathbb{R}^{\geq 0} \; . \; r > 1 \; 
+\Longrightarrow \; \exists i \in \mathbb{Z} \; . \; r^i > x
+\end{equation*}
+\begin{proof} Let $x$ and $r > 1$. From the archimedean property (available
+in HOL light), we know
+there is an $n$ such that $n > x$. From ~\ref{realpow1}, there is an $i$
+such that $r^i > n > x$.
+\end{proof}
+\end{lem}
 
+\begin{lem}
+\label{realpow3}
+\begin{equation*}
+\forall r \in \mathbb{N}, x \in \mathbb{R^+} \; . \; r > 1 \; \Longrightarrow \;
+\exists i \in \mathbb{Z} \; . \; r^i < x
+\end{equation*}
+\begin{proof} Let $x$ and $r > 1$. Since $x > 0$,
+$inv(x) > 0$, and from ~\ref{realpow2}, there is an $i'$ such that
+$r^{i'} > inv(x)$. Then, multiplying by $x$ and $r^{-i'}$ on both sides (both are
+positive):
+\begin{equation*}
+x > r^{-i'}
+\end{equation*}
+Take $i = i'$.
+\end{proof}
+\end{lem}
+
+\begin{lem}
+\label{realbetw}
+\begin{equation*}
+\forall x \in \mathbb{R} \; . \; \exists u, v \in \mathbb{Z} \; . \;
+v = u + 1 \; \wedge \; u \leq x < v
+\end{equation*}
+\begin{proof} Let $x \in \mathbb{R}$.
+\begin{itemize}
+\item If $x > 0$, let $S = \{ \; n \in \mathbb{N} \; | \; x < n \; \}$.
+From the archimedean property (REAL\_ARCH), we know $S$ is non-empty,
+and so from the well-ordering property (num\_WOP), $S$ has a least element
+$n^*$. Since $n^* > x > 0$, $n^* - 1 < n^*$, and hence $n^* - 1 \leq x$.
+Take $u = n^* - 1$ and $v = n^*$.
+\item If $x < 0$, get $u', v'$ for $-x > 0$ such that $u' \leq -x < v'$. Then
+$-v' < x \leq -u'$. If $x = -u'$, take $u = -u'$ and $v = -u' + 1$. If
+$x < -u'$, take $v = -u'$ and $u = -u' - 1 \geq -v'$. (I'm guessing the
+real arithmetic decision procedures could take over from here ...).
+\item If $x = 0$, take $u = 0$ and $v = 1$.
+\end{itemize}
+\end{proof}
+\end{lem}
+
+\begin{lem}
+\label{intmax}
+\begin{equation*}
+\forall S \subset \mathbb{Z}, b \in \mathbb{R} \; . \;
+ S \neq \emptyset \; \wedge \; \big [ \; \forall s \in S \; . \; s \leq b \;
+\big ] \; \Longrightarrow \; \exists s^* \in S \; . \; \forall s \in S \; . \;
+s \leq s^*
+\end{equation*}
+\begin{proof} Assume the antecedent. Because $S \neq \emptyset$ and
+there is an upper bound $b$ for $S$, $sup(S)$ exists.
+\begin{itemize}
+\item If $sup(S) \in S$, take $s^* = sup(S)$ (from the HOL-light defn of 
+$sup$, the result will follow).
+\item Otherwise, $sup(S) \notin S$. From ~\ref{realbetw}, there are
+$u, v \in \mathbb{Z}$ with $u \leq sup(S) < v$.
+\begin{itemize}
+\item If $u = sup(S)$, then
+\begin{itemize}
+\item If $u \in S$, then $sup(S) \in S$, contradiction.
+\item If $u \notin S$, then consider $u - 1$. If $u - 1 \geq s$ for all
+$s \in S$, then we get a contradiction in the defn of sup. Otherwise, if
+there is some $s \in S$ with $s > u - 1$, then $s \geq u = sup(S)$
+(INT\_GT\_DISCRETE). If $s = sup(S)$, then $sup(S) \in S$, contradiction.
+Otherwise, $s > sup(S)$, also a contradiction.
+\end{itemize}
+\item If $u < sup(S)$, then if for all $s \in S$, $s \leq u$, we get a 
+contradiction in defn of sup. Otherwise, there is some $s \in S$ with
+$s > u$, so $s \geq u + 1 = v > sup(S)$, contradiction.
+\end{itemize}
+\end{itemize}
+\end{proof}
+\end{lem}
+
+\begin{lem}
+\label{intmin}
+\begin{equation*}
+\forall S \subset \mathbb{Z}, b \in \mathbb{R} \; . \;
+ S \neq \emptyset \; \wedge \; \big [ \; \forall s \in S \; . \; s \geq b \;
+\big ] \; \Longrightarrow \; \exists s^* \in S \; . \; \forall s \in S \; . \;
+s \geq s^*
+\end{equation*}
+\begin{proof} Assume the antecedent, and take $S' = -S$. Since $S \neq 
+\emptyset$, $S' \neq \emptyset$. Also, since $b \leq s$ for all $s \in S$,
+$b' = -b \geq -s$ for all $s \in S$, hence $b'$ is an upper bound for
+$-S$. From ~\ref{intmax}, we know there is an $s^* \in S'$ with
+$s^* \geq s'$ for all $s' \in S'$. This in turn means $-s^* \leq -s'$ for all
+$s' \in S'$, and $s^* = -s^*$ is the minimum for $S$ (probably some tedious
+details to sort out here).
+\end{proof}
+\end{lem}
+
+\begin{thm}
+\label{maxabsexists}
+\begin{equation*}
+\forall S \subset F, b \in \mathbb{R}^+ \; . \; S \neq \emptyset \; \wedge \;
+\big [ \; \forall s \in S \; . \; |s| \leq b \; \big ] \;
+\Longrightarrow \exists s^* \in S \; . \; \forall s \in S \; . \; |s| \leq |s^*|
+\end{equation*}
+\begin{proof} Assume the antecedent. If $S = \{0\}$, then $s^* = 0$ and we're
+done. Otherwise, assume there is $s \neq 0$ in $S$. Take $S' = \{ \; s \in S \;
+| s \neq 0 \; \}$.
+
+From ~\ref{realpow2}, we know there is an integer $i$ with $r^i > b$. 
+This implies that $|s| < r^i$ for all $s \in S'$. From ~\ref{expupper}, we
+know $ne(s) < i$ for all $s \in S'$. Let
+\begin{equation*}
+Exp = \{ \; e \; | \; \exists s \in S' \; . \; e = ne(s) \; \}
+\end{equation*}
+$i$ is therefore an upper bound for $Exp$. From ~\ref{intmax}, there is a
+maximal element $e^*$ in $Exp$.
+
+Next, take
+\begin{equation*}
+Frac = \{ \; f \; | \; \exists s \in S' \; . \; f = nf(s) \; \wedge \;
+ne(s) = e^* \; \}
+\end{equation*}
+Since $f < r^p$ for all $f \in Frac$, from ~\ref{intmax}, there is a maximal
+element $f^* \in Frac$. Take $s^* = f^* \cdot r^{e^* - p + 1}$.
+
+Consider any $s \in S'$. We know $ne(s) \leq e^*$. If $ne(s) < e^*$, then
+\begin{align*}
+|s| &= nf(s) \cdot r^{ne(s) - p + 1}\\
+& < r^p \cdot r^{ne(s) - p + 1}\\
+&\leq r^{e^*}\\
+& = r^{p - 1} \cdot r^{e^* - p + 1}\\
+& \leq f^* \cdot r^{e^* - p + 1}\\
+& = |s^*|
+\end{align*}
+If $ne(s) = e^*$, then, since $nf(s) \leq f^*$,
+\begin{equation*}
+|s| = nf(s) \cdot r^{e^* - p + 1} \leq f^* \cdot r^{e^* - p + 1} = |s^*|
+\end{equation*}
+Finally, since $f^* > 0$, $|s^*| > 0$, so the claim is true for $s = 0$, and
+hence true for all $s \in S$.
 \end{proof}
 \end{thm}
-
 
 \end{document}

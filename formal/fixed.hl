@@ -1,0 +1,108 @@
+(* ========================================================================== *)
+(* FIXED POINT DEFINITIONS                                                    *)
+(* ========================================================================== *)
+
+needs "ipow.hl";;
+
+(* -------------------------------------------------------------------------- *)
+(* Fixed point format                                                         *)
+(* -------------------------------------------------------------------------- *)
+
+(* A fixed point number is a real number that can be written as               *)
+(*                                                                            *)
+(*     +/- f * r^(e - p + 1)                                                  *)
+(*                                                                            *)
+(* where                                                                      *)
+(*                                                                            *)
+(*   -- f:num, r:num, e:int, p:num                                            *)
+(*   -- 0 <= f < r^p                                                          *)
+(*   -- r = radix; must be even integer > 1                                   *)
+(*                                                                            *)
+(* r, e, and p are fixed.                                                     *)
+
+let is_valid_format = define
+  `is_valid_format (r:num, p:num, e:int) = (1 < r /\ (EVEN r) /\ (0 < p))`;;
+
+let fformat_typbij = new_type_definition
+  "fformat"
+  ("mk_fformat", "dest_fformat")
+  (prove (`?(fmt:num#num). is_valid_format fmt`,
+	  EXISTS_TAC `(2:num, 1:num, 0)` THEN
+	    REWRITE_TAC[is_valid_format] THEN
+	    ARITH_TAC));;
+			 
+let fr = define
+  `fr (fmt:fformat) = (FST (dest_fformat fmt))`;;
+
+let fp = define
+  `fp (fmt:fformat) = (SND (dest_fformat fmt))`;;
+
+let fe = define
+  `fe (fmt:fformat) = (SND (dest_fformat fmt))`;;
+
+let is_frac = define
+  `is_frac (fmt:fformat) (x:real) (f:num) = 
+  ((f < (fr fmt) EXP (fp fmt) /\ 
+      abs(x) = &f * &(fr fmt) ipow ((fe fmt) - &(fp fmt) + &1)))`;;
+
+let ff = define
+  `ff (fmt:fformat) (x:real) = (@(f:num) . is_frac(fmt) x f)`;;
+
+let is_fixed = define
+  `is_fixed (fmt:fformat) (x:real) = (?(f:num) . is_frac(fmt) x f)`;;
+
+(* -------------------------------------------------------------------------- *)
+(* Largest / smallest, subject to conditions                                  *)
+(* -------------------------------------------------------------------------- *)
+
+let is_largest = define
+  `is_largest (fmt:fformat) (prop:real->bool) (fp:real)
+  (is_fixed(fmt) fp /\ prop fp /\ 
+     (!(fp':real). is_fixed(fmt) fp' /\ prop fp' ==> fp' <= fp)))`;;
+
+let largest = define
+  `largest (fmt:fformat) (prop:real->bool) = 
+  (@(fp:real). is_largest(fmt) prop fp)
+
+let is_smallest = define
+  `is_smallest (fmt:fformat) (prop:real->bool) (fp:real)
+  (is_fixed(fmt) fp /\ prop fp /\ 
+     (!(fp':real). is_fixed(fmt) fp' /\ prop fp' ==> fp <= fp')))`;;
+
+let smallest = define
+  `smallest (fmt:fformat) (prop:real->bool) = 
+  (@(fp:real). is_smallest(fmt) prop fp)
+
+(* -------------------------------------------------------------------------- *)
+(* Fixed point rounding                                                       *)
+(* -------------------------------------------------------------------------- *)
+
+let closer = define
+  `closer (x:real) (y:real) (z:real) = (abs(x - z) < abs(y - z))`;;
+
+let roundmode_INDUCT, roundmode_RECURSION = define_type
+  "roundmode = To_near | To_zero | To_pinf | To_ninf";;
+
+let round = define
+  `((round (fmt:fformat) (To_near) (x:real) =
+	(let lo = (smallest(fmt) (\fp. x <= fp))
+	 and hi = (largest(fmt) (\fp. fp <= x))
+	 in
+	   (if closer lo hi x
+	    then lo
+	    else (if closer hi lo x
+		  then hi
+		  else (if EVEN (ff(fmt) lo)
+			then lo
+			else hi)))))
+      
+      (round (fmt:fformat) (To_zero) (x:real) =
+	  (if (x > &0)
+	   then (largest(fmt) (\fp. fp <= x))
+	   else (smallest(fmt) (\fp. x <= fp))))
+
+      (round (fmt:fformat) (To_pinf) (x:real) =
+	  (smallest(fmt) (\fp. x <= fp)))
+
+      (round (fmt:fformat) (To_ninf) (x:real) =
+	  (largest(fmt) (\fp. fp <= x))))`;;
