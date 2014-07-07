@@ -15,7 +15,7 @@ needs "ipow.hl";;
 (* where                                                                      *)
 (*                                                                            *)
 (*   -- f:num, r:num, e:int, p:num                                            *)
-(*   -- 0 <= f < r^p                                                          *)
+(*   -- 0 <= f < r^(p - 1)                                                    *)
 (*   -- r = radix; must be even integer > 1                                   *)
 (*                                                                            *)
 (* r, e, and p are fixed.                                                     *)
@@ -42,8 +42,8 @@ let fe = define
 
 let is_frac = define
   `is_frac (fmt:fformat) (x:real) (f:num) = 
-  ((f < (fr fmt) EXP (fp fmt) /\ 
-      abs(x) = &f * &(fr fmt) ipow ((fe fmt) - &(fp fmt) + &1)))`;;
+  ((f < (fr fmt) EXP ((fp fmt) - 1) /\ 
+      abs(x) = &f * &(fr fmt) ipow (&(fe fmt) - &(fp fmt) + &1)))`;;
 
 let ff = define
   `ff (fmt:fformat) (x:real) = (@(f:num) . is_frac(fmt) x f)`;;
@@ -52,26 +52,40 @@ let is_fixed = define
   `is_fixed (fmt:fformat) (x:real) = (?(f:num) . is_frac(fmt) x f)`;;
 
 (* -------------------------------------------------------------------------- *)
-(* Largest / smallest, subject to conditions                                  *)
+(* Helpful constants                                                          *)
 (* -------------------------------------------------------------------------- *)
 
-let is_largest = define
-  `is_largest (fmt:fformat) (prop:real->bool) (fp:real)
-  (is_fixed(fmt) fp /\ prop fp /\ 
-     (!(fp':real). is_fixed(fmt) fp' /\ prop fp' ==> fp' <= fp)))`;;
+(* largest fraction                                                           *)
+let fmax = define
+  `fmax (fmt:fformat) = ((fr fmt) EXP ((fp fmt) - 1))`;;
 
-let largest = define
-  `largest (fmt:fformat) (prop:real->bool) = 
-  (@(fp:real). is_largest(fmt) prop fp)
+(* largest fixed point magnitude = fmax * r^(e - p + 1)                       *)
+let flargest = define
+  `flargest (fmt:fformat) = (&(fmax fmt) * 
+			     &(ff fmt) ipow ((fe fmt) - &(fp fmt) + &1))`;;
 
-let is_smallest = define
-  `is_smallest (fmt:fformat) (prop:real->bool) (fp:real)
-  (is_fixed(fmt) fp /\ prop fp /\ 
-     (!(fp':real). is_fixed(fmt) fp' /\ prop fp' ==> fp <= fp')))`;;
+(* fixed point ulp                                                            *)
+let fulp = define
+  `fulp (fmt:fformat) = (&(ffmt) ipow ((fe fmt) - &(fp fmt) + &1))`;;
 
-let smallest = define
-  `smallest (fmt:fformat) (prop:real->bool) = 
-  (@(fp:real). is_smallest(fmt) prop fp)
+(* fixed point infinity                                                       *)
+let finf = define
+  `finf (fmt:fformat) = ((flargest fmt) + (fulp fmt))`;;
+
+let fixed = define
+  `fixed (fmt:fformat) = { x | is_fixed(fmt) x }`;;
+
+(* -------------------------------------------------------------------------- *)
+(* Greatest / least                                                           *)
+(* -------------------------------------------------------------------------- *)
+
+(* Simple wrappers around sup / inf                                           *)
+
+let greatest = define 
+  `greatest (fmt:fformat) (S:real->bool) = sup(S INTER fixed);;
+
+let least = define 
+  `least (fmt:fformat) (S:real->bool) = inf(S INTER fixed);;
 
 (* -------------------------------------------------------------------------- *)
 (* Fixed point rounding                                                       *)
@@ -85,24 +99,40 @@ let roundmode_INDUCT, roundmode_RECURSION = define_type
 
 let round = define
   `((round (fmt:fformat) (To_near) (x:real) =
-	(let lo = (smallest(fmt) (\fp. x <= fp))
-	 and hi = (largest(fmt) (\fp. fp <= x))
-	 in
-	   (if closer lo hi x
-	    then lo
-	    else (if closer hi lo x
-		  then hi
-		  else (if EVEN (ff(fmt) lo)
-			then lo
-			else hi)))))
+	(if (x > ((flargest fmt) + (fulp fmt) / 2))
+	 then 
+	   (finf fmt)
+	 else if (x < --((flargest fmt) + (fulp fmt) / 2))
+	 then 
+	   --(finf fmt)
+	 else if (x > (flargest fmt))
+	 then
+	   (flargest fmt)
+	 else if (x < --(flargest fmt))
+	 then
+	   --(flargest fmt)
+	 else
+	   (let lo = (greatest(fmt) (\fp. fp <= x))
+	    and hi = (least(fmt) (\fp. x <= fp))
+	    in
+	      (if (closer lo hi x)
+	       then 
+		 lo
+	       else if (closer hi lo x)
+	       then 
+		 hi
+	       else if (EVEN (ff(fmt) lo))
+		 lo
+	       else
+		 hi)))) /\
       
       (round (fmt:fformat) (To_zero) (x:real) =
 	  (if (x > &0)
-	   then (largest(fmt) (\fp. fp <= x))
-	   else (smallest(fmt) (\fp. x <= fp))))
+	   then (greatest(fmt) (\fp. fp <= x))
+	   else (least(fmt) (\fp. x <= fp)))) /\
 
       (round (fmt:fformat) (To_pinf) (x:real) =
-	  (smallest(fmt) (\fp. x <= fp)))
+	  (least(fmt) (\fp. x <= fp))) /\
 
       (round (fmt:fformat) (To_ninf) (x:real) =
-	  (largest(fmt) (\fp. fp <= x))))`;;
+	  (greatest(fmt) (\fp. fp <= x))))`;;
