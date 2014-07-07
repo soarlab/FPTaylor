@@ -73,7 +73,8 @@ let finf = define
   `finf (fmt:fformat) = ((flargest fmt) + (fulp fmt))`;;
 
 let fixed = define
-  `fixed (fmt:fformat) = { x | is_fixed(fmt) x }`;;
+  `fixed (fmt:fformat) = ({ x | is_fixed(fmt) x } UNION 
+			    { finf(fmt), --finf(fmt) })`;;
 
 (* -------------------------------------------------------------------------- *)
 (* Greatest / least                                                           *)
@@ -99,32 +100,20 @@ let roundmode_INDUCT, roundmode_RECURSION = define_type
 
 let round = define
   `((round (fmt:fformat) (To_near) (x:real) =
-	(if (x > ((flargest fmt) + (fulp fmt) / 2))
-	 then 
-	   (finf fmt)
-	 else if (x < --((flargest fmt) + (fulp fmt) / 2))
-	 then 
-	   --(finf fmt)
-	 else if (x > (flargest fmt))
-	 then
-	   (flargest fmt)
-	 else if (x < --(flargest fmt))
-	 then
-	   --(flargest fmt)
-	 else
-	   (let lo = (greatest(fmt) (\fp. fp <= x))
-	    and hi = (least(fmt) (\fp. x <= fp))
-	    in
-	      (if (closer lo hi x)
-	       then 
-		 lo
-	       else if (closer hi lo x)
-	       then 
-		 hi
-	       else if (EVEN (ff(fmt) lo))
-		 lo
-	       else
-		 hi)))) /\
+	(let lo = (greatest(fmt) (\fp. fp <= x))
+	 and hi = (least(fmt) (\fp. x <= fp))
+	 in
+	   (if (closer lo hi x)
+	    then 
+	      lo
+	    else if (closer hi lo x)
+	    then 
+	      hi
+	    else if (EVEN (ff(fmt) lo))
+	    then
+	      lo
+	    else
+	      hi))) /\
       
       (round (fmt:fformat) (To_zero) (x:real) =
 	  (if (x > &0)

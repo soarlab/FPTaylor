@@ -15,7 +15,7 @@ Fix a valid fixed point format $fmt$, and let $Fixed$ be the set of all
 fixed point numbers in this format (i.e., the set of all real numbers $x$ for 
 which $is\_fixed(fmt,x)$ is true).
 
-\section{Greatest/least}
+\section{Rounding}
 
 \begin{lem}
 \label{fixedfinite}
@@ -64,5 +64,40 @@ s^* \leq s
 \begin{proof} (Similar)
 \end{proof}
 \end{lem}
+
+\begin{thm}
+\label{rndnearisnear}
+\begin{align*}
+&\forall x \in \mathbb{R}, s \in Fixed \; . \; |x| \leq finf \; \wedge \;
+s = round(to\_nearest, x) \; \Longrightarrow \\
+&\qquad \Big [ \; \forall s' \in Fixed \; . \; \neg closer(s, s', x) \; 
+\Longrightarrow
+\; \big(\neg closer(s', s, x) \; \wedge \; even(ff(s)) \big) \; \Big ]
+\end{align*}
+\begin{proof} Assume the antecedent. Because $|x| \leq finf$,
+\begin{align*}
+S_1 &= \{ \; s \in Fixed \; | \; s \leq x \; \}\\
+S_2 &= \{ \; s \in Fixed \; | \; s \geq x \; \}
+\end{align*}
+are non-empty ($-finf \in S_1$ and $finf \in S_2$). From ~\ref{greatestexists}
+and ~\ref{leastexists}, there is a maximal $s_1 \in S_1$ and minimal $s_2 \in 
+S_2$ (lo and hi respectively in the HOL light script).
+
+Suppose $s_1$ is closer to $x$ than $s_2$ (this, in turn, means we can rewrite
+$s$ to $s_1$). Assume there is an $s' \in Fixed$ with $\neg closer(s, s', x)$.
+If $s' = s_2$ or $s' = s_1$, we get a contradiction. Otherwise, $s' \leq x$
+or $s' \geq x$. In either case, we have $s' < s_1$ or $s' > s_2$, in which case
+$closer(s, s', x)$, a contradiction.
+
+Proof is similar when $s_2$ is closer.
+
+Suppose $s_1$ and $s_2$ are at the same distance. If $ff s_1$ is even, then
+$s = s_1$. Assume there is an $s' \in Fixed$ with $\neg closer(s, s', x)$.
+If $s' = s_1$, contradiction. If $s' = s_2$, then $\neg closer(s', s, x)$,
+and $ff s_1$ is even; OK. Otherwise, $s' < s_1$ or $s' > s_2$, in which case
+we get a contradiction. If $ff s_1$ is not even, then $ff s_2$ is even
+(property of $\mathbb{N}$), and the proof is similar.
+\end{proof}
+\end{thm}
 
 \end{document}
