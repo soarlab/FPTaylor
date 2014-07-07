@@ -24,6 +24,30 @@ object ApproximationBenchmarks {
     (- (t1) *v) / ((t1 + u)*(t1 + u))
   } ensuring(res => res +/- 1e-1)
 
+  def rigidBody1(x1: Real, x2: Real, x3: Real): Real = {
+    require(x1 >< (-15, 15) && x2 >< (-15, 15) && x3 >< (-15, 15))
+
+    -x1*x2 - 2*x2*x3 - x1 - x3
+  } ensuring(res => res +/- 1e-1)
+
+  def rigidBody2(x1: Real, x2: Real, x3: Real): Real = {
+    require(x1 >< (-15, 15) && x2 >< (-15, 15) && x3 >< (-15, 15))
+
+    2*x1*x2*x3 + 3*x3*x3 - x2*x1*x2*x3 + 3*x3*x3 - x2
+  } ensuring(res => res +/- 1e-1)
+
+  def verhulst(r: Real, K: Real, x: Real): Real = {
+    require(r >= 4.0 && r <= 4.0 && K >= 1.11 && K <= 1.11 && x >< (0.1, 0.3))
+
+    (r*x) / (1 + (x/K))
+  } ensuring(res => res +/- 1e-1)
+
+  def predatorPrey(r: Real, K: Real, x: Real): Real = {
+    require(r >= 4.0 && r <= 4.0 && K >= 1.11 && K <= 1.11 && x >< (0.1, 0.3))
+
+    (r*x*x) / (1 + (x/K)*(x/K))
+  } ensuring(res => res +/- 1e-1)
+
   def jetEngine(x1: Real, x2: Real): Real = {
     require(x1 >< (-5, 5) && x2 >< (-20, 5))
 
