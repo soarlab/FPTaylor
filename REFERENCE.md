@@ -4,7 +4,15 @@
 
     fptaylor input_file_name
 
-See *Input file format* [Input file format][] for the description of the input file format. FPTaylor reads the input file and analyzes expressions defined in this file. All operations in input files are assumed to be over real numbers. FPTaylor models floating-point arithmetic with rounding operations. The basic analysis which FPTaylor performs is the following. Suppose, the input file contains an expression `expr` containing some variables (for simplicity, assume that is depends on one variable `x`) and some rounding operations. FPTaylor constructs another expression `expr'` without rounding operations and estimates the maximum value of the difference `|expr - expr'|` over all possible values of `x` (this is the absolute round-off error of `expr`). FPTaylor also can estimate the value of `|(expr - expr') / expr|` (the relative round-off error of `expr`) if it finds that `expr` is never equal to 0 for all values of `x` and if the option for computing relative errors is turned on.
+See *Input file format* for the description of the input file format. FPTaylor reads the input file and analyzes expressions defined in this file. All operations in input files are assumed to be over real numbers. FPTaylor models floating-point arithmetic with rounding operations. The basic analysis which FPTaylor performs is the following. Suppose the input file contains an expression `expr` containing some variables (for simplicity, assume that is depends on one variable `x`) and some rounding operations. FPTaylor constructs another expression `expr'` without rounding operations and estimates the maximum value of the difference 
+
+    `|expr - expr'|` 
+
+over all possible values of `x` (this is the absolute round-off error of `expr`). FPTaylor also can estimate the value of 
+
+    `|(expr - expr') / expr|` 
+
+(the relative round-off error of `expr`) if it finds that `expr` is never equal to 0 for all values of `x` and if the option for computing relative errors is turned on.
 
 It is possible to invoke FPTaylor with several files. In this case, FPTaylor analyzes expressions in all input files in sequence.
 
@@ -242,7 +250,7 @@ Empty lines and lines containing `*` are ignored. Example:
 
     rel-error = false
 
-Below important options are described. Other options can be found in `default.cfg`.
+Important options are described below. Other options can be found in `default.cfg`.
 
 ### `abs-error`
 
@@ -272,7 +280,7 @@ If true, then approximate optimization problems are solved by FPTaylor optimizat
 
 Possible values: `true`, `false`.
 
-If true, then exact optimization problems are solved by FPTaylor optimization backend. These exact problems are harder than approximate optimization problems. Some optimization backends may not support exact optimization problems.
+If true, then exact optimization problems are solved by FPTaylor optimization backends. These exact problems are harder than approximate optimization problems. Some optimization backends may not support exact optimization problems.
 
 
 ### `opt`
@@ -281,7 +289,7 @@ Possible values: `bb`, `z3`, and `nlopt`.
 
 Specifies the optimization backend of FPTaylor.
 
-- `bb` is the default optimization backend implemented in FPTaylor. It supports all FPTaylor operations and the improved rounding model. OCaml compiler must be installed in order to use this optimization backend.
+- `bb` is the default optimization backend implemented in FPTaylor. It supports all FPTaylor operations and the improved rounding model. [OCaml](http://ocaml.org) compiler must be installed in order to use this optimization backend.
 - `z3` is the optimization backend based on [Z3 SMT solver](http://z3.codeplex.com). Z3 must be installed and its Python binding must work. This optimization backend does not support transcendental functions, exact optimization problems, and the improved rounding model.
 - `nlopt` is the optimization backend based on the [NLOpt optimization library](http://ab-initio.mit.edu/wiki/index.php/NLopt). This optimization backend may yield unsound results but it is fast and is a good choice for getting solid preliminary results. This optimization backend does not support the improved rounding model (will be corrected in future releases of FPTaylor).
 
