@@ -1,22 +1,22 @@
 # FPTaylor Reference Manual
 
-**FPTaylor** is a tool for estimation of round-off errors of floating-point computations. The following commands invokes **FPTaylor** on a given input file
+**FPTaylor** is a tool for estimation of round-off errors of floating-point computations. The following command invokes FPTaylor on a given input file
 
     fptaylor input_file_name
 
-See *Input file format* for the description of the input file format. **FPTaylor** reads the input file and analyzes expressions defined in this file. All operations in input files are assumed to be over real numbers. **FPTaylor** models floating-point arithmetic with rounding operations. The basic analysis which **FPTaylor** performs is the following. Suppose, the input file contains an expression `expr` containing some variables (for simplicity, assume that is depends on one variable `x`) and some rounding operations. **FPTaylor** constructs another expression `expr'` without rounding operations and estimates the maximum value of the difference `|expr - expr'|` over all possible values of `x` (this is the absolute round-off error of `expr`). **FPTaylor** also can estimate the value of `|(expr - expr') / expr|` (the relative round-off error of `expr`) if it finds that `expr` is never equal to 0 for all values of `x` and if the option for computing relative errors is turned on.
+See *Input file format* [Input file format][] for the description of the input file format. FPTaylor reads the input file and analyzes expressions defined in this file. All operations in input files are assumed to be over real numbers. FPTaylor models floating-point arithmetic with rounding operations. The basic analysis which FPTaylor performs is the following. Suppose, the input file contains an expression `expr` containing some variables (for simplicity, assume that is depends on one variable `x`) and some rounding operations. FPTaylor constructs another expression `expr'` without rounding operations and estimates the maximum value of the difference `|expr - expr'|` over all possible values of `x` (this is the absolute round-off error of `expr`). FPTaylor also can estimate the value of `|(expr - expr') / expr|` (the relative round-off error of `expr`) if it finds that `expr` is never equal to 0 for all values of `x` and if the option for computing relative errors is turned on.
 
-It is possible to invoke **FPTaylor** with several files. In this case, **FPTaylor** analyzes expressions in all input files in sequence.
+It is possible to invoke FPTaylor with several files. In this case, FPTaylor analyzes expressions in all input files in sequence.
 
-Special configuration files can be used to pass parameters to **FPTaylor**. To invoke **FPTaylor** with given configuration files, use the following command
+Special configuration files can be used to pass parameters to FPTaylor. To invoke FPTaylor with given configuration files, use the following command
 
     fptaylor [-c config_file1 [-c config_file2 ...]] input_file1 [input_file2 ...]
 
-If several configuration files are provided, options in the second configuration file will override options in the first file, and so on. The default configuration file `default.cfg` is always loaded first. See the section *Options* for a complete description of available options in **FPTaylor**.
+If several configuration files are provided, options in the second configuration file will override options in the first file, and so on. The default configuration file `default.cfg` is always loaded first. See the section *Options* for a complete description of available options in FPTaylor.
 
 
 ## Input file format
-Each **FPTaylor** input files consists of several sections: *Constants*, *Variables*, *Definitions*, *Expressions*. The section *Constants* defines constants. The section *Variables* defines variables. The section *Definitions* contains named expressions (definitions). The section *Expressions* contains expressions for analysis. The most important sections are *Variables* and *Expressions*. Sections must be defined in the order: *Constants*, *Variables*, *Definitions*, *Expressions*. Any section may be omitted. **FPTaylor** will not produce any result for an input file without the *Expressions* section.
+Each **FPTaylor** input files consists of several sections: *Constants*, *Variables*, *Definitions*, *Expressions*. The section *Constants* defines constants. The section *Variables* defines variables. The section *Definitions* contains named expressions (definitions). The section *Expressions* contains expressions for analysis. The most important sections are *Variables* and *Expressions*. Sections must be defined in the order: *Constants*, *Variables*, *Definitions*, *Expressions*. Any section may be omitted. FPTaylor will not produce any result for an input file without the *Expressions* section.
 
 ### Constants
 
@@ -57,7 +57,7 @@ Variables can be of the following types:
 
 Names of variables should be different from names of constants.
 
-All variables must be bounded. Bounds are given as rational constant expressions (support for irrational bounds will be added in future versions of **FPTaylor**).
+All variables must be bounded. Bounds are given as rational constant expressions (support for irrational bounds will be added in future versions of FPTaylor).
 
 Example:
 
@@ -155,7 +155,7 @@ All operations in **FPTaylor** are assumed to be over real numbers. Floating-poi
 3. `*` multiplication
 4. `/` division
 5. `sqrt` square root
-6. `fma` (deprecated). `fma(a,b,c)` is equivalent to `a * b + c`. In early versions of **FPTaylor** this operation corresponded to `rnd(a * b + c)` with the appropriately selected rounding operator.
+6. `fma` (deprecated). `fma(a,b,c)` is equivalent to `a * b + c`. In early versions of FPTaylor this operation corresponded to `rnd(a * b + c)` with the appropriately selected rounding operator.
 
 ### Transcendental operations
 
@@ -164,7 +164,7 @@ All operations in **FPTaylor** are assumed to be over real numbers. Floating-poi
 3. `exp` exponent
 4. `log` logarithm
 
-Other transcendental functions will be added to **FPTaylor** soon. Transcendental functions may be not supported by some optimization backends of **FPTaylor**. The default optimization backend (interval branch and bound, `bb`) supports all operations.
+Other transcendental functions will be added to FPTaylor soon. Transcendental functions may be not supported by some optimization backends of FPTaylor. The default optimization backend (interval branch and bound, `bb`) supports all operations.
 
 
 ## Rounding
@@ -248,13 +248,13 @@ Below important options are described. Other options can be found in `default.cf
 
 Possible values: `true`, `false`.
 
-If the value is true, then **FPTaylor** computes absolute round-off errors of expressions.
+If the value is true, then FPTaylor computes absolute round-off errors of expressions.
 
 ### `rel-error`
 
 Possible values: `true`, `false`.
 
-If the value is true, then **FPTaylor** computes relative round-off errors of expressions. If the value of an expression can be very close to 0, then **FPTaylor** issues a warning and does not compute the relative error.
+If the value is true, then FPTaylor computes relative round-off errors of expressions. If the value of an expression can be very close to 0, then FPTaylor issues a warning and does not compute the relative error.
 
 ### `fp-power2-model`
 
@@ -279,9 +279,9 @@ If true, then exact optimization problems are solved by FPTaylor optimization ba
 
 Possible values: `bb`, `z3`, and `nlopt`.
 
-Specifies the optimization backend of **FPTaylor**.
+Specifies the optimization backend of FPTaylor.
 
-- `bb` is the default optimization backend implemented in **FPTaylor**. It supports all **FPTaylor** operations and the improved rounding model. OCaml compiler must be installed in order to use this optimization backend.
+- `bb` is the default optimization backend implemented in FPTaylor. It supports all FPTaylor operations and the improved rounding model. OCaml compiler must be installed in order to use this optimization backend.
 - `z3` is the optimization backend based on [Z3 SMT solver](http://z3.codeplex.com). Z3 must be installed and its Python binding must work. This optimization backend does not support transcendental functions, exact optimization problems, and the improved rounding model.
 - `nlopt` is the optimization backend based on the [NLOpt optimization library](http://ab-initio.mit.edu/wiki/index.php/NLopt). This optimization backend may yield unsound results but it is fast and is a good choice for getting solid preliminary results. This optimization backend does not support the improved rounding model (will be corrected in future releases of FPTaylor).
 
