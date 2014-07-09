@@ -1,8 +1,0 @@
-(* Define pow for integers, with same infix level and associativity.          *)
-unparse_as_infix("ipow");;
-let ipow = define
-  `ipow (x:real) (e:int) = 
-  (if (e < &0)
-   then (inv (x pow (num_of_int (--e))))
-   else (x pow (num_of_int e)))`;;
-parse_as_infix("ipow",(24,"left"));;

@@ -5,11 +5,16 @@
   citecolor=red,
   colorlinks=true
 }
-
+\title{Fixed Point}
+\date{}
+\author{}
 \begin{document}
 \theoremstyle{definition}
 \newtheorem{thm}{Theorem}[section]
 \newtheorem{lem}[thm]{Lemma}
+\newtheorem{defn}[thm]{Definition}
+
+\maketitle
 
 Fix a valid fixed point format $fmt$, and let $Fixed$ be the set of all 
 fixed point numbers in this format (i.e., the set of all real numbers $x$ for 
@@ -40,64 +45,118 @@ We have shown $Fixed \subset f(I)$. $Fixed$ is therefore finite. (FINITE\_IMAGE)
 \end{proof}
 \end{lem}
 
+\begin{defn}
+\label{bounds}
+For any $x \in \mathbb{R}$, let
+\begin{align*}
+S_x^- &= \{ \; s \in Fixed \; | \; s \leq x \; \}\\
+S_x^+ &= \{ \; s \in Fixed \; | \; s \geq x \; \}
+\end{align*}
+and $x^- = \sup{\big ( \; S_x^- \; \big )}$, $x^+ = \inf{\big ( \; S_x^+ \; 
+\big )}$.
+\end{defn}
+
 \begin{lem}
-\label{greatestexists}
+\label{bounddistance}
 \begin{equation*}
-\forall S \subset Fixed \; . \; S \neq \emptyset \;
-\Longrightarrow \; \exists s^* \in S \; . \; \forall s \in S \; . \;
-s \leq s^*
+\forall x \in \mathbb{R} \; . \; |x| \leq finf \;
+\Longrightarrow \; x^- + fulp \geq x^+
 \end{equation*}
-\begin{proof} Assume the antecedent. From ~\ref{fixedfinite}, $Fixed$ is
-finite; since $S \subset Fixed$, $S$ is also finite. Since $S$ is non-empty,
-there is a maximal element $s^* \in S$\\
-(SUP\_UNIQUE\_FINITE).
+\begin{proof} Assume the antecedent. Since $|x| \leq finf$, $S_x^-$ and
+$S_x^+$ are non-empty (they contain $-finf$ and $finf$ respectively).
+Hence, $x^-$ and $x^+$ are maximal and minimal elements of $S_x^-$ and
+$S_x^+$, respectively (SUP\_UNIQUE\_FINITE).
+
+Let $s = x^- + fulp > x^-$. $s$ is a fixed point number with fraction
+$ff(x^-) + 1$. Either $s \leq x$ or $s \geq x$. If $s \leq x$, then
+$s \leq x^-$ by defn of $x^-$, which is impossible. If $s \geq x$, then
+$s \geq x^+$.
 \end{proof}
 \end{lem}
 
 \begin{lem}
-\label{leastexists}
+\label{boundbetw}
 \begin{equation*}
-\forall S \subset Fixed \; . \; S \neq \emptyset \;
-\Longrightarrow \; \exists s^* \in S \; . \; \forall s \in S \; . \;
-s^* \leq s
+\forall x \in \mathbb{R} \; . \; |x| \leq finf \;
+\Longrightarrow \; 
+\forall s \in Fixed \; . \; s \leq x^- \; \vee \; s \geq x^+
 \end{equation*}
-\begin{proof} (Similar)
+\begin{proof} Assume the antecedent. Since $|x| \leq finf$,
+$x^- + fulp \geq x^+$ from ~\ref{bounddistance}. Suppose
+$s > x^-$ and $s < x^+$. Either $s < x^- + fulp$ or $s \geq x^- + fulp$.
+If $s < x^- + fulp$, then
+\begin{equation*}
+ff(x^-) \cdot r^{e - p + 1} < ff(s) \cdot r^{e - p + 1} < (ff(x^-) + 1) \cdot
+r^{e - p + 1}
+\end{equation*}
+Since $r^{e - p + 1} > 0$, canceling it gives
+\begin{equation*}
+ff(x^-) < ff(s) < ff(x^-) + 1
+\end{equation*}
+a contradiction. If $s \geq x^- + fulp$, then $s \geq x^+$, contradiction.
 \end{proof}
 \end{lem}
 
 \begin{thm}
-\label{rndnearisnear}
+\label{rndnear}
 \begin{align*}
-&\forall x \in \mathbb{R}, s \in Fixed \; . \; |x| \leq finf \; \wedge \;
-s = round(to\_nearest, x) \; \Longrightarrow \\
-&\qquad \Big [ \; \forall s' \in Fixed \; . \; \neg closer(s, s', x) \; 
+&\forall x \in \mathbb{R} \; . \; |x| \leq finf \;
+\Longrightarrow \\
+& \quad \Big [ \; \forall s^* \in Fixed \; . \; s^* = round(to\_nearest,x) \; 
+\Longleftrightarrow \\
+& \quad \Big [ \; \forall s' \in Fixed \; . \; 
+\neg closer(s^*, s', x) \; 
 \Longrightarrow
-\; \big(\neg closer(s', s, x) \; \wedge \; even(ff(s)) \big) \; \Big ]
+\; \big(\neg closer(s', s^*, x) \; \wedge \; even(ff(s^*)) \big) \; \Big ]
+\; \Big ]
 \end{align*}
-\begin{proof} Assume the antecedent. Because $|x| \leq finf$,
-\begin{align*}
-S_1 &= \{ \; s \in Fixed \; | \; s \leq x \; \}\\
-S_2 &= \{ \; s \in Fixed \; | \; s \geq x \; \}
-\end{align*}
-are non-empty ($-finf \in S_1$ and $finf \in S_2$). From ~\ref{greatestexists}
-and ~\ref{leastexists}, there is a maximal $s_1 \in S_1$ and minimal $s_2 \in 
-S_2$ (lo and hi respectively in the HOL light script).
+\begin{proof} Assume the antecedent. $round(to\_nearest,x)$ is either
+$x^-$ or $x^+$, with the corresponding assumptions and properties
+(SUP\_UNIQUE\_FINITE again).
 
-Suppose $s_1$ is closer to $x$ than $s_2$ (this, in turn, means we can rewrite
-$s$ to $s_1$). Assume there is an $s' \in Fixed$ with $\neg closer(s, s', x)$.
-If $s' = s_2$ or $s' = s_1$, we get a contradiction. Otherwise, $s' \leq x$
-or $s' \geq x$. In either case, we have $s' < s_1$ or $s' > s_2$, in which case
-$closer(s, s', x)$, a contradiction.
+Suppose $round(to\_nearest, x) = x^-$, so $s^* = x^-$. 
 
-Proof is similar when $s_2$ is closer.
+Suppose $closer(x^-, x^+,x)$ is true. Suppose there is an $s' \in Fixed$
+with $\neg closer(s^*, s', x)$. If $s' = x^-$, contradiction. If
+$s' = x^+$, contradiction. Otherwise, from ~\ref{boundbetw}, $s' < x^-$
+or $s' > x^+$. In either case, contradiction (I'm assuming arith rule
+can take over here).
 
-Suppose $s_1$ and $s_2$ are at the same distance. If $ff s_1$ is even, then
-$s = s_1$. Assume there is an $s' \in Fixed$ with $\neg closer(s, s', x)$.
-If $s' = s_1$, contradiction. If $s' = s_2$, then $\neg closer(s', s, x)$,
-and $ff s_1$ is even; OK. Otherwise, $s' < s_1$ or $s' > s_2$, in which case
-we get a contradiction. If $ff s_1$ is not even, then $ff s_2$ is even
-(property of $\mathbb{N}$), and the proof is similar.
+Suppose $closer(x^-, x^+,x)$ is false, but $ff(x^-)$ is true, so
+again $s^* = x^-$. Suppose there is an $s' \in Fixed$
+with $\neg closer(s^*, s', x)$. If $s' = x^-$, contradiction. If
+$s' = x^+$, then $\neg closer(s', s^*, x)$ and $ff(s^*)$; OK. Otherwise, 
+from ~\ref{boundbetw}, $s' < x^-$ or $s' > x^+$. In either case, contradiction.
+
+The proof is similar for $x^+$.
 \end{proof}
 \end{thm}
+
+The proofs for other rounding modes are similar.
+
+\begin{thm}
+\label{abserror}
+\begin{equation*}
+\forall x \in \mathbb{R} \; . \; |x| \leq finf \; \Longrightarrow \;
+|round(to\_nearest, x) - x| \leq fulp/2
+\end{equation*}
+\begin{proof} Assume the antecedent. Since $|x| \leq finf$, 
+$x^-$ and $x^+$ have the desired property that $x^- \leq x$ and
+$x \leq x^+$.
+
+Suppose $round(to\_nearest,x) = x^-$ (with the corresponding assumptions).
+Either $x > x^-$ or $x = x^-$. If $x = x^-$, the error is zero. If $x > x^-$,
+then $x^- < x \leq x^+$ and $|x^- - x| \leq |x^+ - x|$. It then follows
+(I'm thinking arith rule can do it) that $|x^-  - x| \leq |x^+ - x^-| / 2$.
+From ~\ref{bounddistance}, $|x^+ - x^-| \leq fulp$, whence $|x^- - x| \leq 
+fulp/2$.
+
+The proof for $x^+$ is similar.
+\end{proof}
+\end{thm}
+
+The proof for the other rounding modes is similar, but easier, and the
+bound on the absolute error is $fulp$ instead of $fulp/2$.
+
 
 \end{document}

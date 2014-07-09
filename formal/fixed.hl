@@ -2,7 +2,7 @@
 (* FIXED POINT DEFINITIONS                                                    *)
 (* ========================================================================== *)
 
-needs "ipow.hl";;
+needs "common.hl";;
 
 (* -------------------------------------------------------------------------- *)
 (* Fixed point format                                                         *)
@@ -59,18 +59,17 @@ let is_fixed = define
 let fmax = define
   `fmax (fmt:fformat) = ((fr fmt) EXP ((fp fmt) - 1))`;;
 
-(* largest fixed point magnitude = fmax * r^(e - p + 1)                       *)
-let flargest = define
-  `flargest (fmt:fformat) = (&(fmax fmt) * 
-			     &(ff fmt) ipow ((fe fmt) - &(fp fmt) + &1))`;;
-
 (* fixed point ulp                                                            *)
 let fulp = define
-  `fulp (fmt:fformat) = (&(ffmt) ipow ((fe fmt) - &(fp fmt) + &1))`;;
+  `fulp (fmt:fformat) = (&(fr ffmt) ipow ((fe fmt) - &(fp fmt) + &1))`;;
 
 (* fixed point infinity                                                       *)
 let finf = define
-  `finf (fmt:fformat) = ((flargest fmt) + (fulp fmt))`;;
+  `finf (fmt:fformat) = (&(fr ffmt) ipow (fe fmt))`;;
+
+(* largest fixed point magnitude = finf - fulp                                *)
+let flargest = define
+  `flargest (fmt:fformat) = ((finf fmt) - (fulp fmt))`;;
 
 let fixed = define
   `fixed (fmt:fformat) = ({ x | is_fixed(fmt) x } UNION 
@@ -125,3 +124,4 @@ let round = define
 
       (round (fmt:fformat) (To_ninf) (x:real) =
 	  (greatest(fmt) (\fp. fp <= x))))`;;
+
