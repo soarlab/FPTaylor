@@ -115,7 +115,10 @@ let flround = define
    and e = (greatest_exp(fmt) x)
    and y = (greatest_rem(fmt) x)
    in
-     (if (&0 < x)
+     (if (x = &0)
+      then
+	&0
+      else if (&0 < x)
       then
 	(m * &(flr fmt) ipow e + 
 	   (fround((flr fmt), (flp fmt), e) mode y))
