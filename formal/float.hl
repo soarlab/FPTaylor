@@ -14,7 +14,7 @@
 (*        Second Edition, 2002.                                               *)
 (*  [ 4 ] IEEE 754 Standard for Floating Point Arithmetic, 2008.              *)
 (*                                                                            *)
-(* A large part of this formalization is taken from John Harrison's work.     *)
+(* A large part of this formalization is based on John Harrison's work.       *)
 
 (* ========================================================================== *)
 
@@ -22,84 +22,74 @@
 (* Floating point format                                                      *)
 (* -------------------------------------------------------------------------- *)
 
-(* A floating point number is a real number that can be written as            *)
+(* Fix r:num > 1 and even, p:num > 0. A floating point number is a real       *)
+(* number that can be written as                                              *)
 (*                                                                            *)
-(*     +/- f * r^(e - p + 1)                                                  *)
+(*     +/- (m * r^e + y)                                                      *)
 (*                                                                            *)
 (* where                                                                      *)
 (*                                                                            *)
-(*   -- f:num, r:num, e:int, p:num                                            *)
-(*   -- 0 <= f < r^p                                                          *)
-(*   -- r = radix; must be even integer > 1                                   *)
-(*   -- p = precision > 0 (p = 0 is possible, but leads to messy edge cases   *)
-(*      and is of little practical value)                                     *)
+(*   -- e is an integer                                                       *)
+(*   -- y is a fixed point number with exponent e, radix r, and precision p   *)
+(*   -- m is a natural number (short for most significant digit) with         *)
+(*      0 < m < r (notice for r = 2, m is always 1)                           *)
 (*                                                                            *)
-(* This formalization of floating point is more general, hence there is no    *)
-(* restriction on the exponent.                                               *)
+(* There is no restriction on the exponent (makes the formalization more      *)
+(* general).                                                                  *)
+(*                                                                            *)
+(* An alternative representation for floating point numbers is                *)
+(*                                                                            *)
+(*   +/- f * r^(e - p + 1)                                                    *)
+(*                                                                            *)
+(* where 0 <= f < r^p. The fraction is normalized when r^(p - 1) <= f < r^p.  *)
+(* Suppose |x| = f * r^(e - p + 1) with f normalized; then                    *)
+(*                                                                            *)
+(*   f = m * r^(p - 1) + B * r^(p - 2) + C * r^(p - 3) + ...                  *)
+(*                                                                            *)
+(* with 0 < m < r. It then follows that                                       *)
+(*                                                                            *)
+(*   f * r^(e - p + 1) = m * r^e + (B * r^(p - 2) + ...) * r^(e - p + 1)      *)
+(*                     = m * r^e + f' * r^(e - p + 1)                         *)
+(*                     = m * r^e + y                                          *)
+(*                                                                            *)
+(* Notice that 0 <= f' < r^(p - 1), so y is a fixed point number with radix   *)
+(* r, precision p, and exponent e. This shows any floating point number in    *)
+(* the common format can be written in our format, and moreover, that the     *)
+(* corresponding exponent e in our format is always normalized.               *)
 
-let is_valid_format = define
-  `is_valid_format (r:num, p:num) = (1 < r /\ (EVEN r) /\ (0 < p))`;;
+let is_valid_flformat = define
+  `is_valid_flformat (r:num, p:num) = (1 < r /\ (EVEN r) /\ (0 < p))`;;
 
-let fformat_typbij = new_type_definition
-  "fformat"
-  ("mk_fformat", "dest_fformat")
-  (prove (`?(fmt:num#num). is_valid_format fmt`,
+let flformat_typbij = new_type_definition
+  "flformat"
+  ("mk_flformat", "dest_flformat")
+  (prove (`?(fmt:num#num). is_valid_flformat fmt`,
 	  EXISTS_TAC `(2:num, 1:num)` THEN
-	    REWRITE_TAC[is_valid_format] THEN
+	    REWRITE_TAC[is_valid_flformat] THEN
 	    ARITH_TAC));;
-			 
-let fradix = define
-  `fradix (fmt:fformat) = (FST (dest_fformat fmt))`;;
 
-let fprec = define
-  `fprec (fmt:fformat) = (SND (dest_fformat fmt))`;;
+let flr = define
+  `flr (fmt:flformat) = (FST (dest_flformat fmt))`;;
 
-(* -------------------------------------------------------------------------- *)
-(* Floating point numbers                                                     *)
-(* -------------------------------------------------------------------------- *)
+let flp = define
+  `flp (fmt:fformat) = (SND (dest_flformat fmt))`;;
 
-(* Define pow for integers, with same infix level and associativity.          *)
-unparse_as_infix("ipow");;
-let ipow = define
-  `ipow (x:real) (e:int) = 
-  (if (e < &0)
-   then (inv (x pow (num_of_int (--e))))
-   else (x pow (num_of_int e)))`;;
-parse_as_infix("ipow",(24,"left"));;
+let is_msd_and_exp = define
+  `is_exp (fmt:flformat) (x:real) (m:num) (e:int) =
+  (?(y:real) . ((is_fixed((flr(fmt), flp(fmt), e)) y) /\
+		  x = &m * &(flr fmt) ipow e + y))`;;
 
-(* frep = true if x is equal to the floating point representation given by    *)
-(* fmt, f, and e.                                                             *)
-let frep = define
-  `frep (fmt:fformat) (f:num) (e:int) (x:real) = 
-  ((f < (fradix fmt) EXP (fprec fmt)) /\ 
-     (abs(x) = &f * &(fradix fmt) ipow (e - &(fprec fmt) + &1)))`;;
-  
+let flm = define
+  `flm (fmt:flformat) (x:real) =
+  (@(m:num) . ?:(e:int) . is_msd_and_exp(fmt) x m e)`;;
+
+let fle = define
+  `fle (fmt:flformat) (x:real) =
+  (@(e:int) . ?:(m:num) . is_msd_and_exp(fmt) x m e)`;;
+
 let is_float = define
-  `is_float (fmt:fformat) (x:real) = (?(f:num) (e:int). (frep(fmt) f e x))`;;
-
-(* -------------------------------------------------------------------------- *)
-(* Normalized fractions / exponents                                           *)
-(* -------------------------------------------------------------------------- *)
-
-(* A fraction f is normalized when f >= r^(p - 1).                            *)
-let is_norm_frac = define
-  `is_norm_frac (fmt:fformat) (f:num) (x:real) = 
-  (?(e:int). (frep(fmt) f e x) /\ 
-     ((fradix fmt) EXP ((fprec fmt) - 1) <= f))`;;
-
-let decode_norm_frac = define
-  `decode_norm_frac (fmt:fformat) (x:real) =
-  (@(f:num). is_norm_frac(fmt) f x)`;;
-
-(* An exponent e is normalized when the corresponding f is normalized.        *)
-let is_norm_exp = define
-  `is_norm_exp (fmt:fformat) (e:int) (x:real) =
-  (?(f:num). (frep(fmt) f e x) /\ 
-     ((fradix fmt) EXP ((fprec fmt) - 1) <= f))`;;
-
-let decode_norm_exp = define
-  `decode_norm_exp (fmt:fformat) (x:real) =
-  (@(e:int). is_norm_exp(fmt) e x)`;;
+  `is_float (fmt:flformat) (x:real) = 
+  (?(m:num) (e:int) . is_msd_and_exp(fmt) x m e)`;;
 
 (* -------------------------------------------------------------------------- *)
 (* Largest / smallest fp numbers, subject to conditions                       *)

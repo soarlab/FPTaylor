@@ -8,27 +8,25 @@ needs "common.hl";;
 (* Fixed point format                                                         *)
 (* -------------------------------------------------------------------------- *)
 
-(* A fixed point number is a real number that can be written as               *)
+(* Fix r:num > 1 and even, p:num > 0, and e:int. A fixed point number is a    *)
+(* real number that can be written as                                         *)
 (*                                                                            *)
 (*     +/- f * r^(e - p + 1)                                                  *)
 (*                                                                            *)
 (* where                                                                      *)
 (*                                                                            *)
-(*   -- f:num, r:num, e:int, p:num                                            *)
+(*   -- f:num                                                                 *)
 (*   -- 0 <= f < r^(p - 1)                                                    *)
-(*   -- r = radix; must be even integer > 1                                   *)
-(*                                                                            *)
-(* r, e, and p are fixed.                                                     *)
 
-let is_valid_format = define
-  `is_valid_format (r:num, p:num, e:int) = (1 < r /\ (EVEN r) /\ (0 < p))`;;
+let is_valid_fformat = define
+  `is_valid_fformat (r:num, p:num, e:int) = (1 < r /\ (EVEN r) /\ (0 < p))`;;
 
 let fformat_typbij = new_type_definition
   "fformat"
   ("mk_fformat", "dest_fformat")
-  (prove (`?(fmt:num#num). is_valid_format fmt`,
-	  EXISTS_TAC `(2:num, 1:num, 0)` THEN
-	    REWRITE_TAC[is_valid_format] THEN
+  (prove (`?(fmt:num#num). is_valid_fformat fmt`,
+	  EXISTS_TAC `(2:num, 1:num, &0)` THEN
+	    REWRITE_TAC[is_valid_fformat] THEN
 	    ARITH_TAC));;
 			 
 let fr = define

@@ -57,10 +57,33 @@ and $x^- = \sup{\big ( \; S_x^- \; \big )}$, $x^+ = \inf{\big ( \; S_x^+ \;
 \end{defn}
 
 \begin{lem}
+\label{distance}
+\begin{equation*}
+\forall u, v \in Fixed \; . \; u \leq v \; \wedge \; v \leq u + fulp \;
+\Longrightarrow \; v = u \; \vee \; v = u + fulp
+\end{equation*}
+\begin{proof} Assume the antecedent, so we have $u \leq v \leq u + fulp$.
+Suppose the goal is not true. Then in fact
+\begin{equation*}
+u < v < u + fulp 
+\end{equation*}
+which implies
+\begin{equation*}
+ff(u) \cdot r^{e - p + 1} < ff(v) \cdot r^{e - p + 1} < (ff(u) + 1) \cdot r^{e - p + 1}
+\end{equation*}
+Dividing by the non-zero $r^{e - p + 1}$ gives
+\begin{equation*}
+ff(u) < ff(v) < ff(u) + 1
+\end{equation*}
+a contradiction, as the fractions are natural numbers.
+\end{proof}
+\end{lem}
+
+\begin{lem}
 \label{bounddistance}
 \begin{equation*}
 \forall x \in \mathbb{R} \; . \; |x| \leq finf \;
-\Longrightarrow \; x^- + fulp \geq x^+
+\Longrightarrow \; x^- \leq x^+ \; \wedge \; x^+ \leq x^- + fulp
 \end{equation*}
 \begin{proof} Assume the antecedent. Since $|x| \leq finf$, $S_x^-$ and
 $S_x^+$ are non-empty (they contain $-finf$ and $finf$ respectively).
@@ -75,25 +98,26 @@ $s \geq x^+$.
 \end{lem}
 
 \begin{lem}
+\label{bounddistance2}
+\begin{equation*}
+\forall x \in \mathbb{R} \; . \; |x| \leq finf \;
+\Longrightarrow \; x^+ = x^- \; \vee \; x^+ = x^- + fulp
+\end{equation*}
+\begin{proof} Simple combination of ~\ref{distance} and ~\ref{bounddistance}.
+\end{proof}
+\end{lem}
+
+\begin{lem}
 \label{boundbetw}
 \begin{equation*}
 \forall x \in \mathbb{R} \; . \; |x| \leq finf \;
 \Longrightarrow \; 
 \forall s \in Fixed \; . \; s \leq x^- \; \vee \; s \geq x^+
 \end{equation*}
-\begin{proof} Assume the antecedent. Since $|x| \leq finf$,
-$x^- + fulp \geq x^+$ from ~\ref{bounddistance}. Suppose
-$s > x^-$ and $s < x^+$. Either $s < x^- + fulp$ or $s \geq x^- + fulp$.
-If $s < x^- + fulp$, then
-\begin{equation*}
-ff(x^-) \cdot r^{e - p + 1} < ff(s) \cdot r^{e - p + 1} < (ff(x^-) + 1) \cdot
-r^{e - p + 1}
-\end{equation*}
-Since $r^{e - p + 1} > 0$, canceling it gives
-\begin{equation*}
-ff(x^-) < ff(s) < ff(x^-) + 1
-\end{equation*}
-a contradiction. If $s \geq x^- + fulp$, then $s \geq x^+$, contradiction.
+\begin{proof} Assume the antecedent. Suppose, for a contradiction, that
+there is some $s$ with $s > x^-$ and $s < x^+$. Then $s \geq x^-$ and
+$s \leq x^+ \leq x^- + fulp$ from ~\ref{bounddistance2}. It then follows
+from ~\ref{distance} that $s = x^-$ or $s = x^- + fulp$, both contradictions.
 \end{proof}
 \end{lem}
 
@@ -146,10 +170,10 @@ $x \leq x^+$.
 
 Suppose $round(to\_nearest,x) = x^-$ (with the corresponding assumptions).
 Either $x > x^-$ or $x = x^-$. If $x = x^-$, the error is zero. If $x > x^-$,
-then $x^- < x \leq x^+$ and $|x^- - x| \leq |x^+ - x|$. It then follows
-(I'm thinking arith rule can do it) that $|x^-  - x| \leq |x^+ - x^-| / 2$.
-From ~\ref{bounddistance}, $|x^+ - x^-| \leq fulp$, whence $|x^- - x| \leq 
-fulp/2$.
+then $x^- < x \leq x^+$ and $|x^- - x| \leq |x^+ - x|$ (defn of closer). 
+It then follows (I'm thinking arith tac can do it) that 
+$|x^-  - x| \leq |x^+ - x^-| / 2$. From ~\ref{bounddistance}, 
+$|x^+ - x^-| \leq fulp$, whence $|x^- - x| \leq fulp/2$.
 
 The proof for $x^+$ is similar.
 \end{proof}
@@ -158,5 +182,66 @@ The proof for $x^+$ is similar.
 The proof for the other rounding modes is similar, but easier, and the
 bound on the absolute error is $fulp$ instead of $fulp/2$.
 
+\begin{lem}
+\label{rnddown}
+\begin{equation*}
+\forall x \in \mathbb{R} \; . \; |x| \leq finf \;
+\Longrightarrow \;
+\big [ \; x < x^- + fulp/2 \; \Longrightarrow \; round(to\_nearest, x) = x^-
+\; \big ]
+\end{equation*}
+\begin{proof} Assume the antecedent. Then $x^-$ and $x^+$ exist with the
+desired properties. From ~\ref{bounddistance2}, $x^+ = x^-$ or $x^+ =
+x^- + fulp$. If $x^+ = x^-$, then no matter what, $round(to\_nearest,x)$
+rewrites to $x^-$.
+
+Suppose $x^+ = x^- + fulp$. It then follows that
+\begin{equation*}
+x - x^- < fulp/2 = (x^+ - x^-)/2
+\end{equation*}
+and hence (arith tac?) $x - x^- < x^+ - x$, or $|x - x^-| < |x^+ - x|$. 
+Therefore, $closer(x^-, x^+, x)$, and $round(to\_nearest, x) = x^-$ 
+(probably some extra steps here in HOL light).
+\end{proof}
+\end{lem}
+
+\begin{lem}
+\label{rndup}
+\begin{equation*}
+\forall x \in \mathbb{R} \; . \; |x| \leq finf \;
+\Longrightarrow \;
+\big [ \; x > x^- + fulp/2 \; \Longrightarrow \; round(to\_nearest, x) = x^+
+\; \big ]
+\end{equation*}
+\begin{proof} Similar proof.
+\end{proof}
+\end{lem}
+
+\begin{thm}
+\label{relerror}
+\begin{equation*}
+\forall x \in \mathbb{R} \; . \; |x| \leq finf \; \wedge \; x \neq 0 \;
+\Longrightarrow \;
+\left | \frac{round(to\_nearest, x) - x}{x} \right | \leq 1
+\end{equation*}
+\begin{proof} Assume the antecedent. Either $0 < |x| \leq fulp/2$ or 
+$|x| > fulp/2$. If $0 < |x| \leq fulp/2$, then $-fulp/2 \leq x \leq fulp/2$.
+It then follows from ~\ref{rnddown} and ~\ref{rndup} with $x^- = 0$ and
+$x^+ = 0$ (depending on the case) that $round(to\_nearest,x) = 0$, and so
+\begin{equation*}
+\left | \frac{round(to\_nearest, x) - x}{x} \right | = 1
+\end{equation*}
+Suppose $|x| > fulp/2$. Since $|x| \leq finf$, from
+~\ref{abserror} we have
+\begin{equation*}
+\left | round(to\_nearest, x) - x \right | \leq fulp/2
+\end{equation*}
+It then follows that
+\begin{equation*}
+\left | \frac{round(to\_nearest, x) - x}{x} \right | 
+\leq \frac{fulp/2}{|x|} \leq 1
+\end{equation*}
+\end{proof}
+\end{thm}
 
 \end{document}
