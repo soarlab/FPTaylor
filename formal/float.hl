@@ -75,7 +75,7 @@ let flp = define
   `flp (fmt:fformat) = (SND (dest_flformat fmt))`;;
 
 let is_msd_and_exp = define
-  `is_exp (fmt:flformat) (x:real) (m:num) (e:int) =
+  `is_msd_and_exp (fmt:flformat) (x:real) (m:num) (e:int) =
   (?(y:real) . ((is_fixed((flr(fmt), flp(fmt), e)) y) /\
 		  x = &m * &(flr fmt) ipow e + y))`;;
 
@@ -92,90 +92,43 @@ let is_float = define
   (?(m:num) (e:int) . is_msd_and_exp(fmt) x m e)`;;
 
 (* -------------------------------------------------------------------------- *)
-(* Largest / smallest fp numbers, subject to conditions                       *)
-(* -------------------------------------------------------------------------- *)
-
-let is_largest = define
-  `is_largest (fmt:fformat) (prop:real->bool) (fp:real)
-  (is_float(fmt) fp /\ prop fp /\ 
-     (!(fp':real). is_float(fmt) fp' /\ prop fp' ==> fp' <= fp)))`;;
-
-let largest = define
-  `largest (fmt:fformat) (prop:real->bool) = 
-  (@(fp:real). is_largest(fmt) prop fp)
-
-let is_smallest = define
-  `is_smallest (fmt:fformat) (prop:real->bool) (fp:real)
-  (is_float(fmt) fp /\ prop fp /\ 
-     (!(fp':real). is_float(fmt) fp' /\ prop fp' ==> fp <= fp')))`;;
-
-let smallest = define
-  `smallest (fmt:fformat) (prop:real->bool) = 
-  (@(fp:real). is_smallest(fmt) prop fp)
-
-(* -------------------------------------------------------------------------- *)
-(* Units in the last place (ULPs)                                             *)
-(* -------------------------------------------------------------------------- *)
-
-(* Definition: For any real non-zero x, _ulp(x)_ is the distance between the  *)
-(* floating point numbers a, b such that a <= x < b. This will always be      *)
-(* r^(e - p + 1) where e = normalized exponent of a.                          *)
-let ulp = define
-  `ulp (fmt:fformat) (x:real) =
-  ((largest(fmt) (\fp. fp <= x)) - (smallest(fmt) (\fp. x < fp)))
-
-(* -------------------------------------------------------------------------- *)
 (* Rounding                                                                   *)
 (* -------------------------------------------------------------------------- *)
 
-let closer = define
-  `closer (x:real) (y:real) (z:real) = (abs(x - z) < abs(y - z))`;;
-  
-let roundmode_INDUCT, roundmode_RECURSION = define_type
-  "roundmode = To_near | To_zero | To_pinf | To_ninf";;
+let greatest_exp = define
+  `greatest_exp (fmt:flformat) (x:real) = 
+  sup({ (z:int) | &(flr fmt) ipow z <= |x| })`;;
 
-let round = define
-  `((round (fmt:fformat) (To_near) (x:real) =
-	(let lo = (smallest(fmt) (\fp. x <= fp))
-	 and hi = (largest(fmt) (\fp. fp <= x))
-	 in
-	   (if closer lo hi x
-	    then lo
-	    else (if closer hi lo x
-		  then hi
-		  else (if EVEN (decode_norm_frac(fmt) lo)
-			then lo
-			else hi)))))
-      
-      (round (fmt:fformat) (To_zero) (x:real) =
-	  (if (x > &0)
-	   then (largest(fmt) (\fp. fp <= x))
-	   else (smallest(fmt) (\fp. x <= fp))))
+let greatest_msd = define
+  `greatest_msd (fmt:flformat) (x:real) =
+  sup({ (m:num) | (m * (greatest_exp(fmt) x) <= |x| /\ 
+		       1 < m /\ 
+		       m < (flr fmt))})`;;
 
-      (round (fmt:fformat) (To_pinf) (x:real) =
-	  (smallest(fmt) (\fp. x <= fp)))
+let greatest_rem = define
+  `greatest_rem (fmt:flformat) (x:real) = 
+  (x - (greatest_msd(fmt) x) * &(flr fmt) ipow (greatest_exp(fmt) x))`;;
 
-      (round (fmt:fformat) (To_ninf) (x:real) =
-	  (largest(fmt) (\fp. fp <= x))))
-
-(* -------------------------------------------------------------------------- *)
-(* Relative Error                                                             *)
-(* -------------------------------------------------------------------------- *)
-
-let rerror = define
-  `rerror (a:real) (b:real) = abs((b - a) / a)`;;
+let flround = define
+  `flround (fmt:flformat) (mode:roundmode) (x:real) =
+  (let m = (greatest_msd(fmt) x)
+   and e = (greatest_exp(fmt) x)
+   and y = (greatest_rem(fmt) x)
+   in
+     (if (&0 < x)
+      then
+	(m * &(flr fmt) ipow e + 
+	   (fround((flr fmt), (flp fmt), e) mode y))
+      else
+	(-- m * &(flr fmt) ipow e + 
+	   (fround((flr fmt), (flp fmt), e) mode y))))`;;
 
 (* -------------------------------------------------------------------------- *)
 (* Machine Epsilon                                                            *)
 (* -------------------------------------------------------------------------- *)
 
-(* Definition: For a fformat fmt, the _machine epsilon_ is                    *)
+(* Definition: For a flformat fmt, the _machine epsilon_ is                   *)
 (*                                                                            *)
-(*      eps = (2r^(p - 1) + 1)^(-1)                                           *)
-(*                                                                            *)
-(* It will be shown that for all x:real,                                      *)
-(*                                                                            *)
-(*      (rerror (round(fmt) To_near x) x) <= eps                              *)
-
-let eps = define
-  `eps (fmt:fformat) = (&1 / &(2 * (fradix fmt) EXP ((fprec fmt) - 1) + 1))`;;
+(*      fleps = (2r^(p - 1) + 1)^(-1)                                         *)
+let fleps = define
+  `fleps (fmt:flformat) = (&1 / &(2 * (flr fmt) EXP ((flp fmt) - 1) + 1))`;;

@@ -20,3 +20,11 @@ parse_as_infix("ipow",(24,"left"));;
 
 let rerror = define
   `rerror (a:real) (b:real) = abs((b - a) / a)`;;
+
+(* -------------------------------------------------------------------------- *)
+(* closer                                                                     *)
+(* -------------------------------------------------------------------------- *)
+
+let closer = define
+  `closer (x:real) (y:real) (z:real) = (abs(x - z) < abs(y - z))`;;
+
