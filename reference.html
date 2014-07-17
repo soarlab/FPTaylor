@@ -1,0 +1,333 @@
+<h1>FPTaylor Reference Manual</h1>
+
+<p><strong>FPTaylor</strong> is a tool for estimation of round-off errors of floating-point computations. The following command invokes FPTaylor on a given input file</p>
+
+<pre><code>fptaylor input_file_name
+</code></pre>
+
+<p>See <em>Input file format</em> for the description of the input file format. FPTaylor reads the input file and analyzes expressions defined in this file. All operations in input files are assumed to be over real numbers. FPTaylor models floating-point arithmetic with rounding operations. The basic analysis which FPTaylor performs is the following. Suppose the input file contains an expression <code>expr</code> containing some variables (for simplicity, assume that is depends on one variable <code>x</code>) and some rounding operations. FPTaylor constructs another expression <code>expr'</code> without rounding operations and estimates the maximum value of the difference </p>
+
+<pre><code>`|expr - expr'|`
+</code></pre>
+
+<p>over all possible values of <code>x</code> (this is the absolute round-off error of <code>expr</code>). FPTaylor also can estimate the value of </p>
+
+<pre><code>`|(expr - expr') / expr|`
+</code></pre>
+
+<p>(the relative round-off error of <code>expr</code>) if it finds that <code>expr</code> is never equal to 0 for all values of <code>x</code> and if the option for computing relative errors is turned on.</p>
+
+<p>It is possible to invoke FPTaylor with several files. In this case, FPTaylor analyzes expressions in all input files in sequence.</p>
+
+<p>Special configuration files can be used to pass parameters to FPTaylor. To invoke FPTaylor with given configuration files, use the following command</p>
+
+<pre><code>fptaylor [-c config_file1 [-c config_file2 ...]] input_file1 [input_file2 ...]
+</code></pre>
+
+<p>If several configuration files are provided, options in the second configuration file will override options in the first file, and so on. The default configuration file <code>default.cfg</code> is always loaded first. See the section <em>Options</em> for a complete description of available options in FPTaylor.</p>
+
+<h2>Input file format</h2>
+
+<p>Each <strong>FPTaylor</strong> input files consists of several sections: <em>Constants</em>, <em>Variables</em>, <em>Definitions</em>, <em>Expressions</em>. The section <em>Constants</em> defines constants. The section <em>Variables</em> defines variables. The section <em>Definitions</em> contains named expressions (definitions). The section <em>Expressions</em> contains expressions for analysis. The most important sections are <em>Variables</em> and <em>Expressions</em>. Sections must be defined in the order: <em>Constants</em>, <em>Variables</em>, <em>Definitions</em>, <em>Expressions</em>. Any section may be omitted. FPTaylor will not produce any result for an input file without the <em>Expressions</em> section.</p>
+
+<h3>Constants</h3>
+
+<p>The section with constants has the following syntax</p>
+
+<pre><code>Constants
+  name = constant expression,
+  name = constant expression,
+  ...
+  name = constant expression;
+</code></pre>
+
+<p>All constant definitions must be separated by comma and the last definition must end with a semicolon. It is possible to refer to previously defined constants in constant definitions. All constants are assumed to be real rational numbers. It is not possible to define irrational constants (e.g., a square root of 2: <code>sqrt(2)</code>). Irrational constants may be defined in the <em>Definitions</em> section.</p>
+
+<p>Example:</p>
+
+<pre><code>Constants
+  k = 0.1,
+  c = 1 / k * 2;
+</code></pre>
+
+<h3>Variables</h3>
+
+<p>The section with variables has the following syntax</p>
+
+<pre><code>Variables
+  type var_name in [low, high],
+  ...
+  type var_name in [low, high];
+</code></pre>
+
+<p>All variable definitions must be separated by comma and the last definition must end with a semicolon. Each variable has a type, name, and the interval of values. The type can be omitted; in this case, a variable will get the <code>real</code> type.</p>
+
+<p>Variables can be of the following types:</p>
+
+<ul>
+<li><code>real</code>: the type of real values. This type is assigned by default to variables without explicit type.</li>
+<li><code>float16</code>: the type of IEEE-754 16-bit floating-point numbers (half precision).</li>
+<li><code>float32</code>: the type of IEEE-754 32-bit floating-point numbers (single precision).</li>
+<li><code>float64</code>: the type of IEEE-754 64-bit floating-point numbers (double precision).</li>
+<li><code>float128</code>: the type of IEEE-754 128-bit floating-point numbers (quadruple precision).</li>
+</ul>
+
+<p>Names of variables should be different from names of constants.</p>
+
+<p>All variables must be bounded. Bounds are given as rational constant expressions (support for irrational bounds will be added in future versions of FPTaylor).</p>
+
+<p>Example:</p>
+
+<pre><code>Constants
+  k = 2;
+
+Variables
+  float32 x in [0, 1],
+  y in [2.1 / 3, 20/7 + 0.1],
+  real z in [-3, 4.5 + k]; // k is a constant
+</code></pre>
+
+<p>In the example above, <code>y</code> and <code>z</code> are real variables, <code>x</code> is a single precision variable.</p>
+
+<p>It is also possible to define a variable which has uncertainties. It is done in the following way</p>
+
+<pre><code>type var_name in [low, high] +/- uncertainty
+</code></pre>
+
+<p>Here, <code>uncertainty</code> must be a positive rational constant expression. Suppose that <code>x</code> is a variable in the interval <code>[a, b]</code> with uncertainty <code>u</code>. Then we have the following relation between the actual value (<code>val(x)</code>) of <code>x</code> and its uncertain value: <code>|val(x) - x| &lt;= u</code> and <code>a &lt;= val(x) &lt;= b</code>. Note that the actual value of <code>x</code> is bounded by <code>a</code> and <code>b</code> (not by <code>a - u</code> and <code>b + u</code>).</p>
+
+<h3>Definitions</h3>
+
+<p>The section with definitions has the following syntax</p>
+
+<pre><code>Definitions
+  def_name = expr,
+  ...
+  def_name = expr;
+</code></pre>
+
+<p>All definitions must be separated by comma and the last definition must end with a semicolon. It is possible to refer to previous definitions. Definition names must be different from names of variables and constants.</p>
+
+<p>Example:</p>
+
+<pre><code>Definitions
+  t = x * y + 1,
+  z = (t - 1) / (t + 1);
+</code></pre>
+
+<p>There is an alternative way to write a definition</p>
+
+<pre><code>  def_name rnd= expr
+</code></pre>
+
+<p>Here, <code>rnd</code> must be one of rounding operators. The meaning of this definition is the following: the rounding operator <code>rnd</code> is recursively applied to subexpressions of <code>expr</code>. There is one restriction: <code>rnd</code> is not applied to another rounding operator and it does not propagate inside another rounding operator.</p>
+
+<p>Example:</p>
+
+<pre><code>r0 = 1 + x,
+r1 rnd32= x,
+r2 rnd64= x + r0 * y,
+r3 rnd16_up= rnd32(x) + y,
+r4 rnd32= rnd64(x + y);
+</code></pre>
+
+<p>It is equivalent to</p>
+
+<pre><code>r0 = 1 + x,
+r1 = rnd32(x),
+r2 = rnd64(rnd64(x) + rnd64(rnd64(r0) * rnd64(y))),
+r3 = rnd16_up(rnd32(x) + rnd16_up(y)),
+r4 = rnd64(x + y);
+</code></pre>
+
+<h3>Expressions</h3>
+
+<p>The section with expressions has the following syntax</p>
+
+<pre><code>Expressions
+  expr_name = expr,
+  ...
+  expr_name = expr;
+</code></pre>
+
+<p>All expressions must be separated by comma and the last expression must end with a semicolon. This section works in the same way as the <em>Definitions</em> section but names of expressions (and the equality sign) can be omitted. Expressions without names will get automatically generated names "Expression k" where k is the number of the expression in the definition list. </p>
+
+<p>It is also possible to use the alternative syntax of definitions with automatic rounding (see the <em>Definitions</em> section).</p>
+
+<p>Example:</p>
+
+<pre><code>Expressions
+  2 * x,    // This expression will be named "Expression 1"
+  t rnd16= 2 * x,
+  1 + t;   // This expression will be named "Expression 3"
+</code></pre>
+
+<p>In the example above, the value of the last expression is <code>1 + rnd16(rnd16(2) * rnd16(x))</code>.</p>
+
+<p>Names of expressions are printed in the summary section of the FPTaylor output.</p>
+
+<h2>Operations</h2>
+
+<p>All operations in <strong>FPTaylor</strong> are assumed to be over real numbers. Floating-point arithmetic is supported via rounding operators.</p>
+
+<h3>Basic operations</h3>
+
+<ol>
+<li><code>+</code> addition</li>
+<li><code>-</code> subtraction and negation</li>
+<li><code>*</code> multiplication</li>
+<li><code>/</code> division</li>
+<li><code>sqrt</code> square root</li>
+<li><code>fma</code> (deprecated). <code>fma(a,b,c)</code> is equivalent to <code>a * b + c</code>. In early versions of FPTaylor this operation corresponded to <code>rnd(a * b + c)</code> with the appropriately selected rounding operator.</li>
+</ol>
+
+<h3>Transcendental operations</h3>
+
+<ol>
+<li><code>sin</code> sine</li>
+<li><code>cos</code> cosine</li>
+<li><code>exp</code> exponent</li>
+<li><code>log</code> logarithm</li>
+</ol>
+
+<p>Other transcendental functions will be added to FPTaylor soon. Transcendental functions may be not supported by some optimization backends of FPTaylor. The default optimization backend (interval branch and bound, <code>bb</code>) supports all operations.</p>
+
+<h2>Rounding</h2>
+
+<p>The general rounding operator has the following syntax</p>
+
+<pre><code>rnd(bits, type, scale, eps, delta)
+</code></pre>
+
+<p>Here, <code>bits</code> is one of the following values: 16, 32, 64, or 128. It specifies the floating-point format to which the operator rounds. Values of <code>type</code> can be: <code>ne</code>, <code>up</code>, <code>down</code>, or <code>zero</code>. It specifies the type of the rounding operator: to nearest, toward positive infinity (up), toward negative infinity (down), or toward zero. The value of <code>scale</code> must be a real number, values of <code>eps</code> and <code>delta</code> must be integers. These values play the following role. Assume that the following expression is given:</p>
+
+<pre><code>rnd(bits, type, scale, eps, delta)(f)
+</code></pre>
+
+<p>FPTaylor creates the following relation between <code>f</code> and its rounded value:</p>
+
+<pre><code>rnd(bits, type, scale, eps, delta)(f) = f + f e + d
+</code></pre>
+
+<p>with <code>|e| &lt;= scale * 2^eps</code> and <code>|d| &lt;= scale * 2^delta</code> if <code>type</code> is <code>ne</code>, and <code>|e| &lt;= 2 * scale * 2^eps</code> and <code>|d| &lt;= 2 * scale * 2^delta</code> if <code>type</code> is <code>up</code>, <code>down</code>, or <code>zero</code>. There is one special value for <code>eps</code> and <code>delta</code>. If <code>eps = 0</code> then <code>e = 0</code> and if <code>delta = 0</code> then <code>d = 0</code>.</p>
+
+<p>FPTaylor also can work with an improved rounded model where the expression <code>f e</code> is replaced with <code>p2(f)e</code>. The function <code>p2</code> is a special function which improves the result of the rounding approximation. In general, the imporved rounding model leads to more complicated problems for FPTaylor to solve. It can be turned on with a special option.</p>
+
+<p>Note that values of <code>bits</code> and <code>type</code> are not explicitly used in the above rounded expression. Nevertheless, they play an important role in the analysis which FPTaylor does internally.</p>
+
+<p>There are several simplified versions of rounding operators. Parameters <code>eps</code> and <code>delta</code> can be omitted. In that case, their values will be deduced automatically from the value of <code>bits</code> and <code>type</code>:</p>
+
+<pre><code>rnd(bits, type, scale)
+</code></pre>
+
+<p>The parameter <code>scale</code> can also be omitted. If it is omitted, then its value is assumed to be <code>1.0</code>.</p>
+
+<p>There are several predefined names for most commonly used rounding operators:</p>
+
+<pre><code>rnd16 = rnd(16, ne)
+rnd16_up = rnd(16, up)
+rnd16_down = rnd(16, down)
+rnd16_0 = rnd(16, zero)
+
+rnd32 = rnd(32, ne)
+rnd32_up = rnd(32, up)
+rnd32_down = rnd(32, down)
+rnd32_0 = rnd(32, zero)
+
+rnd64 = rnd(64, ne)
+rnd64_up = rnd(64, up)
+rnd64_down = rnd(64, down)
+rnd64_0 = rnd(64, zero)
+
+rnd128 = rnd(128, ne)
+rnd128_up = rnd(128, up)
+rnd128_down = rnd(128, down)
+rnd128_0 = rnd(128, zero)
+</code></pre>
+
+<h2>Options</h2>
+
+<p>Options are specified in configuration files. Base options are defined in the default configuration file <code>default.cfg</code>. A configuration file <code>config.cfg</code> can be loaded with the following command</p>
+
+<pre><code>fptaylor -c config.cfg input_file1 [input_file2 ...]
+</code></pre>
+
+<p>Several configuration files can be provided:</p>
+
+<pre><code>fptaylor -c config1.cfg -c config2.cfg -c config3.cfg ... input_file1 [input_file2 ...]
+</code></pre>
+
+<p>Options defined in <code>config2.cfg</code> override options defined in <code>config1.cfg</code> and in <code>default.cfg</code>, options in <code>config3.cfg</code> override options in <code>config2.cfg</code>, etc.</p>
+
+<p>The syntax of configuration files is the following:</p>
+
+<pre><code>option_name = option_value
+...
+option_name = option_value
+</code></pre>
+
+<p>Empty lines and lines containing <code>*</code> are ignored. Example:</p>
+
+<pre><code>abs-error = true
+* This is a comment
+This is also * a comment
+
+rel-error = false
+</code></pre>
+
+<p>Important options are described below. Other options can be found in <code>default.cfg</code>.</p>
+
+<h3><code>abs-error</code></h3>
+
+<p>Possible values: <code>true</code>, <code>false</code>.</p>
+
+<p>If the value is true, then FPTaylor computes absolute round-off errors of expressions.</p>
+
+<h3><code>rel-error</code></h3>
+
+<p>Possible values: <code>true</code>, <code>false</code>.</p>
+
+<p>If the value is true, then FPTaylor computes relative round-off errors of expressions. If the value of an expression can be very close to 0, then FPTaylor issues a warning and does not compute the relative error.</p>
+
+<h3><code>fp-power2-model</code></h3>
+
+<p>Possible values: <code>true</code>, <code>false</code>.</p>
+
+<p>Turns on or off the impoved rounding model. The improved rounding model yields better error estimation results but it also produces harder problems for optimization backends to solve. It may be not supported by some optimization backends.</p>
+
+<h3><code>opt-approx</code></h3>
+
+<p>Possible values: <code>true</code>, <code>false</code>.</p>
+
+<p>If true, then approximate optimization problems are solved by FPTaylor optimization backends. These approximate problems are simpler than exact optimization problems and may yield worse (but still sound) upper bounds of errors.</p>
+
+<h3><code>opt-exact</code></h3>
+
+<p>Possible values: <code>true</code>, <code>false</code>.</p>
+
+<p>If true, then exact optimization problems are solved by FPTaylor optimization backends. These exact problems are harder than approximate optimization problems. Some optimization backends may not support exact optimization problems.</p>
+
+<h3><code>opt</code></h3>
+
+<p>Possible values: <code>bb</code>, <code>z3</code>, and <code>nlopt</code>.</p>
+
+<p>Specifies the optimization backend of FPTaylor.</p>
+
+<ul>
+<li><code>bb</code> is the default optimization backend implemented in FPTaylor. It supports all FPTaylor operations and the improved rounding model. <a href="http://ocaml.org">OCaml</a> compiler must be installed in order to use this optimization backend.</li>
+<li><code>z3</code> is the optimization backend based on <a href="http://z3.codeplex.com">Z3 SMT solver</a>. Z3 must be installed and its Python binding must work. This optimization backend does not support transcendental functions, exact optimization problems, and the improved rounding model.</li>
+<li><code>nlopt</code> is the optimization backend based on the <a href="http://ab-initio.mit.edu/wiki/index.php/NLopt">NLOpt optimization library</a>. This optimization backend may yield unsound results but it is fast and is a good choice for getting solid preliminary results. This optimization backend does not support the improved rounding model (will be corrected in future releases of FPTaylor).</li>
+</ul>
+
+<h2>Output</h2>
+
+<p><strong>FPTaylor</strong> prints out information about analyzed expressions in the standard output. The summary of error analysis is printed at the end. This summary contains the following information</p>
+
+<ul>
+<li>The name of the analyzed expression printed as <code>Problem: name_of_the_expression</code>.</li>
+<li>The absolute round-off error obtained with the exact optimization problem if <code>abs-error = true</code> and <code>opt-exact = true</code>.</li>
+<li>The absolute round-off error obtained with the approximate optimization problem if <code>abs-error = true</code> and <code>opt-approx = true</code>.</li>
+<li>The relative round-off error obtained with the exact optimization problem if <code>rel-error = true</code> and <code>opt-approx = true</code>.</li>
+<li>The relative round-off error obtained with the approximate optimization problem if <code>rel-error = true</code> and <code>opt-approx = true</code>.</li>
+<li>The analysis time in seconds printed as <code>Elapsed time: time</code>.</li>
+</ul>

@@ -89,29 +89,36 @@ let min_max_expr tolx tolfx var_bound e =
 
   let base = Config.base_dir in
   let tmp = Lib.get_dir "tmp" in
-  let ml_name = tmp ^ "/bb.ml" in
+  let ml_name = Filename.concat tmp "bb.ml" in
 
 (*  let ml_name = Format.sprintf "%s/bb_%d.ml" tmp !counter in *)
 
-  let exe_name = tmp ^ "/bb" in
-  let files = [
-    "INTERVAL/libinterval.a";
-    "INTERVAL/interval.cmxa";
-    "b_and_b/pqueue.mli";
-    "b_and_b/pqueue.ml";
-    "b_and_b/b_and_b.mli";
-    "b_and_b/b_and_b.ml";
-    "b_and_b/opt0.ml";
-    "b_and_b/fp.ml";
+  let exe_name = Filename.concat tmp "bb" in
+  let interval_files_native = map (Filename.concat "INTERVAL") [
+    "libinterval.a";
+    "interval.cmxa";
   ] in
+  let interval_files_byte = map (Filename.concat "INTERVAL") [
+    "chcw.o";
+    "interval.cma";
+  ] in
+  let bb_files = map (Filename.concat "b_and_b") [
+    "opt0.ml";
+    "fp.ml";
+  ] in
+  let ocamlc = Config.get_option "bb-ocamlc" "ocamlopt" in
+  let files = 
+    if ocamlc = "ocamlc" then
+      interval_files_byte @ bb_files
+    else
+      interval_files_native @ bb_files in
   let gen = gen_bb_opt_code tolx tolfx in
   let _ = write_to_file ml_name gen (var_bound, e) in
-  let srcs = map (fun s -> base ^ s) files in
-  let ocamlc = Config.get_option "bb-ocamlc" "ocamlopt" in
+  let srcs = map (fun s -> Filename.concat base s) files in
   let cmd = Format.sprintf "%s -I %s -I %s -o %s %s %s" 
     ocamlc
-    (base ^ "INTERVAL")
-    (base ^ "b_and_b")
+    (Filename.concat base "INTERVAL")
+    (Filename.concat base "b_and_b")
     exe_name
     (String.concat " " srcs) 
     ml_name in

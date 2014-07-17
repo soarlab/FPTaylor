@@ -1,5 +1,6 @@
 %{
   open Environment
+  open Rounding
   exception TODO
 %}
 
@@ -14,7 +15,10 @@
 %token <string> NUMBER
 
 %token CONSTANTS VARIABLES DEFINITIONS CONSTRAINTS EXPRESSIONS
-%token INT REAL
+%token INT REAL 
+%token <int> FLOAT
+%token <int * string> RND_PAR
+%token RND
 %token E_CONST
 
 %token ABS INV SQRT FMA
@@ -75,14 +79,15 @@ next_variables: /* empty */ {}
 
 variable:
   var_type ID IN LBRACKET expr COMMA expr RBRACKET PLUS_MINUS expr 
-  { add_variable_with_uncertainty $2 $5 $7 $10 }
+  { add_variable_with_uncertainty $1 $2 $5 $7 $10 }
   | var_type ID IN LBRACKET expr COMMA expr RBRACKET 
-      { add_variable $2 $5 $7 }
+      { add_variable $1 $2 $5 $7 }
 ;
 
-var_type: /* empty */ {}
-  | INT {}
-  | REAL {}
+var_type: /* empty */ { real_type }
+  | INT { real_type }
+  | REAL { real_type }
+  | FLOAT { mk_value_type $1 }
 ;
 
 definitions:
@@ -95,6 +100,7 @@ next_definitions: /* empty */ {}
 
 definition:
   ID EQ expr { add_definition $1 $3 }
+  | ID rnd EQ expr { add_definition $1 (apply_raw_rounding $2 $4) }
 ;
 
 constraints:
@@ -118,37 +124,61 @@ constr:
 ;
 
 expressions:
-  expr next_expressions { add_expression $1 }
+  expression next_expressions {}
 ;
 
 next_expressions: /* empty */ {}
   | COMMA expressions {}
 ;
 
+expression:
+  ID EQ expr { add_expression_with_name $1 $3 }
+  | ID rnd EQ expr { add_expression_with_name $1 (apply_raw_rounding $2 $4) }
+  | expr { add_expression $1 }
+;
+
+pos_neg_number:
+  NUMBER { $1 }
+  | MINUS NUMBER { ("-" ^ $2) }
+;
+
+rnd:
+  RND LPAREN NUMBER COMMA ID COMMA NUMBER COMMA pos_neg_number COMMA pos_neg_number RPAREN
+  { create_explicit_rounding (int_of_string $3) ($5) 
+      (float_of_string $7) (int_of_string $9) (int_of_string $11) }
+  | RND LPAREN NUMBER COMMA ID COMMA NUMBER RPAREN
+  { create_rounding (int_of_string $3) ($5) (float_of_string $7) }
+  | RND LPAREN NUMBER COMMA ID RPAREN
+      { create_rounding (int_of_string $3) ($5) 1.0 }
+  | RND_PAR
+      { create_rounding (fst $1) (snd $1) 1.0 }
+;
+
 expr:
   ID { Identifier $1 }
   | INTEGER { Numeral $1 }
   | NUMBER { Numeral $1 }
-  | expr PLUS expr { Raw_bin_op ("+", false, $1, $3) }
-  | expr MINUS expr { Raw_bin_op ("-", false, $1, $3) }
-  | expr MULT expr { Raw_bin_op ("*", false, $1, $3) }
-  | expr DIVIDE expr { Raw_bin_op ("/", false, $1, $3) }
-  | MINUS expr %prec NEG { Raw_u_op ("-", false, $2) }
+  | rnd LPAREN expr RPAREN { Raw_rounding ($1, $3) }
+  | expr PLUS expr { Raw_bin_op ("+", $1, $3) }
+  | expr MINUS expr { Raw_bin_op ("-", $1, $3) }
+  | expr MULT expr { Raw_bin_op ("*", $1, $3) }
+  | expr DIVIDE expr { Raw_bin_op ("/", $1, $3) }
+  | MINUS expr %prec NEG { Raw_u_op ("-", $2) }
   | PLUS expr %prec NEG { $2 }
-  | E_CONST POW expr { Raw_u_op ("exp", false, $3) }
-  | expr POW NUMBER { Raw_bin_op ("^", false, $1, Numeral $3) }
-  | expr POW LPAREN MINUS NUMBER RPAREN { Raw_bin_op ("^", false, $1, Numeral ("-" ^ $5)) }
+  | E_CONST POW expr { Raw_u_op ("exp", $3) }
+  | expr POW NUMBER { Raw_bin_op ("^", $1, Numeral $3) }
+  | expr POW LPAREN MINUS NUMBER RPAREN { Raw_bin_op ("^", $1, Numeral ("-" ^ $5)) }
   | LPAREN expr RPAREN { $2 }
-  | ABS LPAREN expr RPAREN { Raw_u_op ("abs", false, $3) }
-  | INV LPAREN expr RPAREN { Raw_u_op ("inv", false, $3) }
+  | ABS LPAREN expr RPAREN { Raw_u_op ("abs", $3) }
+  | INV LPAREN expr RPAREN { Raw_u_op ("inv", $3) }
   | FMA LPAREN expr COMMA expr COMMA expr RPAREN 
-      { Raw_gen_op ("fma", false, [$3; $5; $7]) }
-  | SQRT LPAREN expr RPAREN { Raw_u_op ("sqrt", false, $3) }
-  | EXP LPAREN expr RPAREN { Raw_u_op ("exp", false, $3) }
-  | LOG LPAREN expr RPAREN { Raw_u_op ("log", false, $3) }
-  | COS LPAREN expr RPAREN { Raw_u_op ("cos", false, $3) }
-  | SIN LPAREN expr RPAREN { Raw_u_op ("sin", false, $3) }
-  | TAN LPAREN expr RPAREN { Raw_u_op ("tan", false, $3) }
+      { Raw_gen_op ("fma", [$3; $5; $7]) }
+  | SQRT LPAREN expr RPAREN { Raw_u_op ("sqrt", $3) }
+  | EXP LPAREN expr RPAREN { Raw_u_op ("exp", $3) }
+  | LOG LPAREN expr RPAREN { Raw_u_op ("log", $3) }
+  | COS LPAREN expr RPAREN { Raw_u_op ("cos", $3) }
+  | SIN LPAREN expr RPAREN { Raw_u_op ("sin", $3) }
+  | TAN LPAREN expr RPAREN { Raw_u_op ("tan", $3) }
   | MIN LPAREN expr COMMA expr RPAREN { raise TODO }
   | MAX LPAREN expr COMMA expr RPAREN { raise TODO }
   | COSH LPAREN expr RPAREN { raise TODO }
@@ -161,8 +191,8 @@ expr:
   | ASINH LPAREN expr RPAREN { raise TODO }
   | ATANH LPAREN expr RPAREN { raise TODO }
   | ATAN2 LPAREN expr COMMA expr RPAREN { raise TODO }
-  | FLOOR_POWER2 LPAREN expr RPAREN { Raw_u_op ("floor_power2", false, $3) }
-  | SYM_INTERVAL LPAREN expr RPAREN { Raw_u_op ("sym_interval", false, $3) }
+  | FLOOR_POWER2 LPAREN expr RPAREN { Raw_u_op ("floor_power2", $3) }
+  | SYM_INTERVAL LPAREN expr RPAREN { Raw_u_op ("sym_interval", $3) }
 ;
 
 %%

@@ -1,13 +1,13 @@
 Variables
-  x0 in [0.0, 1.0] +/- 1e-5,
-  x1 in [0.0, 1.0],
-  x2 in [0.0, 1.0],
-  x3 in [0.0, 1.0]
+  float32 x0 in [0.0, 1.0] +/- 1e-5,
+  float32 x1 in [0.0, 1.0],
+  float32 x2 in [0.0, 1.0],
+  float32 x3 in [0.0, 1.0]
 ;
 	
 Definitions
-  sum1 = ((x0 + x1) + x2) + x3,
-  sum2 = (x0 + x1) + (x2 + x3)
+  sum1 rnd32= ((x0 + x1) + x2) + x3,
+  sum2 rnd32= (x0 + x1) + (x2 + x3)
 ;
   
 

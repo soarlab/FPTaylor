@@ -12,11 +12,11 @@ Variables
 ;
 	
 Definitions
-  res = (p + a * (N / V) * (N / V)) * (V - N * b) - k * N * T
+  res rnd64= (p + a * (N / V) * (N / V)) * (V - N * b) - k * N * T
 ;
   
 
 Expressions
-  res
+  carbon_gas = res
 ;
 

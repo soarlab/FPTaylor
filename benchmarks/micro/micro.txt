@@ -1,25 +1,22 @@
 Variables
-  x0 in [1.0, 2.0],
-  x1 in [1.0, 2.0],
-  x2 in [1.0, 2.0],
-  s in [-16, 16],
-  x in [1.001, 2.0],
-  y in [1.001, 2.0],
-  z in [0, 999]
+  float64 x0 in [1.0, 2.0],
+  float64 x1 in [1.0, 2.0],
+  float64 x2 in [1.0, 2.0],
+  float64 x in [1.001, 2.0],
+  float64 y in [1.001, 2.0],
+  float64 z in [0, 999]
 ;
 	
 Definitions
-  p0 = (x0 + x1) - x2,
-  p1 = (x1 + x2) - x0,
-  p2 = (x2 + x0) - x1,
-  sum = (p0 + p1) + p2,
-  t = x * y
+  p0 rnd64= (x0 + x1) - x2,
+  p1 rnd64= (x1 + x2) - x0,
+  p2 rnd64= (x2 + x0) - x1,
+  t rnd64= x * y
 ;
   
 
 Expressions
-  sum,
-  (t - 1) / (t * t - 1),
-  z / (z + 1)
-//  log(1 + exp(s))
+  sum rnd64= (p0 + p1) + p2,
+  nonlin1 rnd64= z / (z + 1),
+  nonlin2 rnd64= (t - 1) / (t * t - 1)
 ;

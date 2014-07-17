@@ -59,7 +59,7 @@ let min_max_expr tol var_bound e =
     (t.Interval.low, t.Interval.high)
   else
     let tmp = Lib.get_dir "tmp" in
-    let py_name = tmp ^ "/min_max.py" in
+    let py_name = Filename.concat tmp "min_max.py" in
     let gen = gen_z3py_opt_code in
     let _ = write_to_file py_name gen (tol, var_bound, e) in
     let cmd = Format.sprintf "PYTHONPATH=\"%s\" python %s"

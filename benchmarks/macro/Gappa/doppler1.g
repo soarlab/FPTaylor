@@ -1,14 +1,24 @@
 @rnd = float<ieee_64,ne>;
 
-t1 rnd= 331.4 + 0.6 * T;
+Mc1 = 331.4;
+Mc2 = 0.6;
+
+c1 = rnd(Mc1);
+c2 = rnd(Mc2);
+
+u = rnd(Mu);
+v = rnd(Mv);
+T = rnd(MT);
+
+t1 rnd= c1 + c2 * T;
 r rnd= (-t1 * v) / ((t1 + u) * (t1 + u));
 	
-Mt1 = 331.4 + 0.6 * T;
-Mr = (-Mt1 * v) / ((Mt1 + u) * (Mt1 + u));
+Mt1 = Mc1 + Mc2 * MT;
+Mr = (-Mt1 * Mv) / ((Mt1 + Mu) * (Mt1 + Mu));
 
-{ u in [-100, 100] /\
-  v in [20, 20000] /\
-  T in [-30, 50]
+{ Mu in [-100, 100] /\
+  Mv in [20, 20000] /\
+  MT in [-30, 50]
     -> |r - Mr| in ? }
 
 

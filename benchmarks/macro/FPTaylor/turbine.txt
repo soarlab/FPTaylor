@@ -4,16 +4,16 @@ Variables
   r in [3.8, 7.8] +/- 1e-8;
 	
 Definitions
-  r1 = 3 + 2 / (r * r) - 0.125 * (3 - 2 * v) * (w * w * r * r) / (1 - v) - 4.5,
-  r2 = 6*v - 0.5 * v * (w*w*r*r) / (1-v) - 2.5,
-  r3 = 3 - 2/(r*r) - 0.125 * (1+2*v) * (w*w*r*r) / (1-v) - 0.5
+  r1 rnd64= 3 + 2 / (r * r) - 0.125 * (3 - 2 * v) * (w * w * r * r) / (1 - v) - 4.5,
+  r2 rnd64= 6*v - 0.5 * v * (w*w*r*r) / (1-v) - 2.5,
+  r3 rnd64= 3 - 2/(r*r) - 0.125 * (1+2*v) * (w*w*r*r) / (1-v) - 0.5
 ;
   
 
 Expressions
-  r1,
-  r2,
-  r3
+  turbine1 = r1,
+  turbine2 = r2,
+  turbine3 = r3
 ;
 
 

@@ -50,9 +50,15 @@ let rec opt0 f x_tol f_tol m bound doms acc =
       if v.high <= bound then
 	opt0 f x_tol f_tol m bound rest acc
       else
-	let v2 = f (Array.map mk_const_interval dom.mid) in
-	let bound = max v2.low bound in
-	if abs_float (v.high -. v2.low) <= f_tol || size_max_X dom.bounds <= x_tol then
+	let d_min = Array.map (fun d -> mk_const_interval d.low) dom.bounds and
+	    d_max = Array.map (fun d -> mk_const_interval d.high) dom.bounds and
+	    d_mid = Array.map mk_const_interval dom.mid in
+	let v2_min = f d_min and
+	    v2_max = f d_max and
+	    v2_mid = f d_mid in
+	let v2 = max (max v2_min.low v2_max.low) v2_mid.low in
+	let bound = max v2 bound in
+	if abs_float (v.high -. v2) <= f_tol || size_max_X dom.bounds <= x_tol then
 	  opt0 f x_tol f_tol (max m v.high) bound rest acc
 	else
 	  let d1, d2 = split_dom dom in

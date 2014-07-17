@@ -1,6 +1,6 @@
 open Format
 
-let open_log, close_log, append_to_log =
+let open_log, close_log, append_to_log, log_fmt =
   let out = ref None in
   let fmt = ref None in
   let close_log () =
@@ -13,7 +13,7 @@ let open_log, close_log, append_to_log =
   in
   let open_log fname =
     let _ = Lib.get_dir "log" in
-    let log_name = "log/" ^ Filename.basename fname ^ ".log" in
+    let log_name = Filename.concat "log" (Filename.basename fname ^ ".log") in
     let _ = close_log() in
     let c = open_out log_name in
     out := Some c;
@@ -26,9 +26,12 @@ let open_log, close_log, append_to_log =
 	pp_print_string fmt str;
 	pp_print_newline fmt ()
   in
+  let log_fmt () = !fmt
+  in
   open_log,
   close_log,
-  append_to_log
+  append_to_log,
+  log_fmt
 
 
 let report_flag = ref true
