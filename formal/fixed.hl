@@ -24,8 +24,8 @@ let is_valid_fformat = define
 let fformat_typbij = new_type_definition
   "fformat"
   ("mk_fformat", "dest_fformat")
-  (prove (`?(fmt:num#num). is_valid_fformat fmt`,
-	  EXISTS_TAC `(2:num, 1:num, &0)` THEN
+  (prove (`?(fmt:num#num#int). is_valid_fformat fmt`,
+	  EXISTS_TAC `(2:num, 1:num, (&0):int)` THEN
 	    REWRITE_TAC[is_valid_fformat] THEN
 	    ARITH_TAC));;
 			 
@@ -33,15 +33,15 @@ let fr = define
   `fr (fmt:fformat) = (FST (dest_fformat fmt))`;;
 
 let fp = define
-  `fp (fmt:fformat) = (SND (dest_fformat fmt))`;;
+  `fp (fmt:fformat) = (FST (SND (dest_fformat fmt)))`;;
 
 let fe = define
-  `fe (fmt:fformat) = (SND (dest_fformat fmt))`;;
+  `fe (fmt:fformat) = (SND (SND (dest_fformat fmt)))`;;
 
 let is_frac = define
   `is_frac (fmt:fformat) (x:real) (f:num) = 
   ((f < (fr fmt) EXP ((fp fmt) - 1) /\ 
-      abs(x) = &f * &(fr fmt) ipow (&(fe fmt) - &(fp fmt) + &1)))`;;
+      abs(x) = &f * &(fr fmt) ipow ((fe fmt) - &(fp fmt) + &1)))`;;
 
 let ff = define
   `ff (fmt:fformat) (x:real) = (@(f:num) . is_frac(fmt) x f)`;;
@@ -59,11 +59,11 @@ let fmax = define
 
 (* fixed point ulp                                                            *)
 let fulp = define
-  `fulp (fmt:fformat) = (&(fr ffmt) ipow ((fe fmt) - &(fp fmt) + &1))`;;
+  `fulp (fmt:fformat) = (&(fr fmt) ipow ((fe fmt) - &(fp fmt) + &1))`;;
 
 (* fixed point infinity                                                       *)
 let finf = define
-  `finf (fmt:fformat) = (&(fr ffmt) ipow (fe fmt))`;;
+  `finf (fmt:fformat) = (&(fr fmt) ipow (fe fmt))`;;
 
 (* largest fixed point magnitude = finf - fulp                                *)
 let flargest = define
@@ -80,10 +80,10 @@ let fixed = define
 (* Simple wrappers around sup / inf                                           *)
 
 let greatest = define 
-  `greatest (fmt:fformat) (S:real->bool) = sup(S INTER fixed);;
+  `greatest (fmt:fformat) (S:real->bool) = sup(S INTER fixed(fmt))`;;
 
 let least = define 
-  `least (fmt:fformat) (S:real->bool) = inf(S INTER fixed);;
+  `least (fmt:fformat) (S:real->bool) = inf(S INTER fixed(fmt))`;;
 
 (* -------------------------------------------------------------------------- *)
 (* Fixed point rounding                                                       *)
@@ -94,8 +94,8 @@ let roundmode_INDUCT, roundmode_RECURSION = define_type
 
 let fround = define
   `((fround (fmt:fformat) (To_near) (x:real) =
-	(let lo = (greatest(fmt) (\fp. fp <= x))
-	 and hi = (least(fmt) (\fp. x <= fp))
+	(let lo = (greatest(fmt) (\z. z <= x))
+	 and hi = (least(fmt) (\z. x <= z))
 	 in
 	   (if (closer lo hi x)
 	    then 
@@ -111,12 +111,12 @@ let fround = define
       
       (fround (fmt:fformat) (To_zero) (x:real) =
 	  (if (x > &0)
-	   then (greatest(fmt) (\fp. fp <= x))
-	   else (least(fmt) (\fp. x <= fp)))) /\
+	   then (greatest(fmt) (\z. z <= x))
+	   else (least(fmt) (\z. x <= z)))) /\
 
       (fround (fmt:fformat) (To_pinf) (x:real) =
-	  (least(fmt) (\fp. x <= fp))) /\
+	  (least(fmt) (\z. x <= z))) /\
 
       (fround (fmt:fformat) (To_ninf) (x:real) =
-	  (greatest(fmt) (\fp. fp <= x))))`;;
+	  (greatest(fmt) (\z. z <= x))))`;;
 

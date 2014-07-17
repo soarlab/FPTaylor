@@ -1,0 +1,238 @@
+(* ========================================================================== *)
+(* FIXED POINT THEOREMS                                                       *)
+(* ========================================================================== *)
+
+needs "common.hl";;
+needs "fixed.hl";;
+
+(* -------------------------------------------------------------------------- *)
+(* Valid fformat properties                                                   *)
+(* -------------------------------------------------------------------------- *)
+
+let FFORMAT_SPLIT = TAUT `!(fmt:fformat).
+  (dest_fformat fmt) = (FST (dest_fformat fmt),
+			(FST (SND (dest_fformat fmt)),
+			 SND (SND (dest_fformat fmt))))`;;
+
+let FFORMAT_VALID_IMP_RADIX_LT_1 =
+  prove(`!(r:num) (p:num) (e:int). ((is_valid_fformat (r,p,e)) ==> 
+				      1 < (FST (r,p,e)))`,
+	REPEAT GEN_TAC THEN REWRITE_TAC[is_valid_fformat] THEN ARITH_TAC);;
+
+let FFORMAT_VALID_IMP_RADIX_EVEN =
+  prove(`!(r:num) (p:num) (e:int). ((is_valid_fformat (r,p,e)) ==> 
+				      EVEN (FST (r,p,e)))`,
+	REPEAT GEN_TAC THEN REWRITE_TAC[is_valid_fformat] THEN MESON_TAC[]);;
+
+let FFORMAT_VALID_IMP_PREC_LT_0 =
+  prove(`!(r:num) (p:num) (e:int). ((is_valid_fformat (r,p,e)) ==> 
+				      0 < (FST (SND (r,p,e))))`,
+	REPEAT GEN_TAC THEN REWRITE_TAC[is_valid_fformat] THEN MESON_TAC[]);;
+
+let FFORMAT_VALID = 
+  prove(`!(fmt:fformat). is_valid_fformat (dest_fformat fmt)`,
+	REWRITE_TAC[fformat_typbij]);;
+
+let FFORMAT_RADIX_LT_1 =
+  prove(`!(fmt:fformat). 1 < (fr fmt)`,
+	GEN_TAC THEN REWRITE_TAC[fr] THEN ONCE_REWRITE_TAC[FFORMAT_SPLIT] THEN
+	  MATCH_MP_TAC FFORMAT_VALID_IMP_RADIX_LT_1 THEN
+	  REWRITE_TAC[FFORMAT_VALID]);;
+
+let FFORMAT_RADIX_LT_0 =
+  prove(`!(fmt:fformat). 0 < (fr fmt)`,
+	GEN_TAC THEN MATCH_MP_TAC (ARITH_RULE `1 < x ==> 0 < x`) THEN
+        REWRITE_TAC[FFORMAT_RADIX_LT_1]);;
+
+let FFORMAT_RADIX_NE_0 =
+  prove(`!(fmt:fformat). ~(&(fr fmt) = &0)`,
+	GEN_TAC THEN REWRITE_TAC[REAL_OF_NUM_EQ] THEN MATCH_MP_TAC 
+        (ARITH_RULE `0 < x ==> ~(x = 0)`) THEN
+        REWRITE_TAC[FFORMAT_RADIX_LT_0]);;
+
+let FFORMAT_RADIX_EVEN =
+  prove(`!(fmt:fformat). EVEN (fr fmt)`,
+	GEN_TAC THEN REWRITE_TAC[fr] THEN ONCE_REWRITE_TAC[FFORMAT_SPLIT] THEN
+	  MATCH_MP_TAC FFORMAT_VALID_IMP_RADIX_EVEN THEN
+	  REWRITE_TAC[FFORMAT_VALID]);;
+
+let FFORMAT_PREC_LT_0 =
+  prove(`!(fmt:fformat). 0 < (fp fmt)`,
+	GEN_TAC THEN REWRITE_TAC[fp] THEN ONCE_REWRITE_TAC[FFORMAT_SPLIT] THEN
+	  MATCH_MP_TAC FFORMAT_VALID_IMP_PREC_LT_0 THEN
+	  REWRITE_TAC[FFORMAT_VALID]);;
+
+let FFORMAT_PREC_MINUS_1 =
+  prove(`!(fmt:fformat). &0 <= (&(fp fmt):int) - (&1:int)`,
+        REWRITE_TAC[ARITH_RULE `&0 <= x:int - &1:int <=> &1 <= x`] THEN
+        REWRITE_TAC[INT_OF_NUM_LE] THEN
+        REWRITE_TAC[ARITH_RULE `1 <= n <=> 0 < n`] THEN
+	REWRITE_TAC[FFORMAT_PREC_LT_0]);;	
+
+(* -------------------------------------------------------------------------- *)
+(* Set of fixed point numbers is finite.                                      *)
+(* -------------------------------------------------------------------------- *)
+
+let FIXED_DISJOINT_CASES = 
+  prove(`!(fmt:fformat) . (x IN fixed(fmt)) <=> 
+	  ((is_fixed(fmt) x) \/ x = (finf fmt) \/ x = --(finf fmt))`,
+	GEN_TAC THEN REWRITE_TAC[fixed] THEN REWRITE_TAC[UNION] THEN
+	REWRITE_TAC[IN_ELIM_THM] THEN REWRITE_TAC[IN_INSERT] THEN
+	REWRITE_TAC[NOT_IN_EMPTY]);;
+
+let FIXED_CORRESPONDENCE = define
+  `fixed_correspondence (fmt:fformat) (n:num) = 
+  (if (n = 0)
+   then
+     &0
+   else if (ODD n)
+   then
+     -- &((n + 1) DIV 2) * &(fr fmt) ipow ((fe fmt) - &(fp fmt) + &1)
+   else
+     &(n DIV 2) * &(fr fmt) ipow ((fe fmt) - &(fp fmt) + &1))`;;
+
+let FIXED_IN_IMAGE =
+  prove(`!(fmt:fformat) (x:real). x IN (fixed fmt) ==>
+	  ?(n:num). (fixed_correspondence(fmt) n) = x`,
+	REPEAT GEN_TAC THEN REWRITE_TAC[FIXED_CORRESPONDENCE] THEN
+	DISCH_THEN(fun thm -> 
+	DISJ_CASES_THEN2 
+	(* rewrite is_fixed *)
+	(fun disj1 -> (CHOOSE_THEN (LABEL_TAC "frac") (REWRITE_RULE [is_frac] 
+        (REWRITE_RULE [is_fixed] disj1))))
+	(* rewrite +/- finf *)
+	(fun disj2 -> (DISJ_CASES_TAC (REWRITE_RULE [finf] disj2)))
+	(* disj cases thm *)
+	(REWRITE_RULE [FIXED_DISJOINT_CASES] thm)) THENL [
+	  (* case 1: x is a fixed point number *)
+	  USE_THEN "frac" (fun frac -> (MAP_EVERY (fun pair ->
+          (LABEL_TAC (fst pair) (snd pair))) 
+	  (zip ["frac1"; "frac2"] (CONJUNCTS frac)))) THEN
+	  ASM_CASES_TAC `&0 <= x` THENL [
+
+	    (* case 1.1: x is non-negative *)
+	    EXISTS_TAC `2 * f` THEN
+	    COND_CASES_TAC THENL [
+	      (* n = 0 *)
+	      SUBGOAL_THEN `f = 0` (LABEL_TAC "f0") THENL [
+		ASM_ARITH_TAC; ALL_TAC] THEN
+	      USE_THEN "frac2" (fun frac2 -> (USE_THEN "f0" (fun f0 ->
+              (LABEL_TAC "f0sub") (REWRITE_RULE [f0] frac2)))) THEN
+              USE_THEN "f0sub" (fun f0sub -> (LABEL_TAC "f0subsimp"
+              (REWRITE_RULE[ARITH_RULE `&0 * x = &0`] f0sub))) THEN
+	      ASM_ARITH_TAC;
+
+	      COND_CASES_TAC THENL [
+		(* n odd *)
+		CONTR_TAC DOUBLE_NOT_ODD;
+		(* n even *)
+		REWRITE_TAC[ARITH_RULE `(2 * z) DIV 2 = z`] THEN
+		ASM_ARITH_TAC]];
+
+	    (* case 1.2: x is negative *)
+	    SUBGOAL_THEN `0 < f` (LABEL_TAC "fpos") THENL [
+	      LABEL_TAC "absn0" (MATCH_MP 
+              (ARITH_RULE `~(&0 <= x) ==> ~(abs(x) = &0)`) 
+              (ASSUME `~(&0 <= x)`)) THEN
+              USE_THEN "absn0" (fun absn0 -> (USE_THEN "frac2" 
+              (fun frac2 -> (LABEL_TAC "disjn0" (MATCH_MP REAL_MULT_NOT_0 
+              (CONJ frac2 absn0)))))) THEN
+	      USE_THEN "disjn0" (fun disjn0 -> (LABEL_TAC "fn0" 
+              (REWRITE_RULE [REAL_OF_NUM_EQ] (CONJUNCT1 disjn0)))) THEN
+              ASM_ARITH_TAC; ALL_TAC] THEN
+
+	    EXISTS_TAC `2 * f - 1` THEN
+	    COND_CASES_TAC THENL [
+	      (* 2f - 1 = 0 *)
+	      USE_THEN "fpos" (fun fpos -> CONTR_TAC (REWRITE_RULE
+              [TAUT `~a /\ a <=> F`] (CONJ (MATCH_MP (ARITH_RULE
+              `0 < f ==> ~(2 * f - 1 = 0)`) fpos) (ASSUME `(2 * f - 1 = 0)`))));
+
+	      COND_CASES_TAC THENL [
+		(* 2f - 1 odd *)
+		REWRITE_TAC[ARITH_RULE `(2 * f - 1 + 1) DIV 2 = f`] THEN
+                SUBGOAL_THEN `x = -- abs(x)` (fun thm -> ONCE_REWRITE_TAC[thm])
+                THENL [ASM_ARITH_TAC; ALL_TAC] THEN ASM_ARITH_TAC;
+		(* 2f - 1 even *)
+		USE_THEN "fpos" (fun fpos -> CONTR_TAC 
+                (REWRITE_RULE [TAUT `~a /\ a <=> F`]
+                (CONJ (ASSUME `~ODD(2 * f - 1)`) (MATCH_MP DOUBLE_NEG_1_ODD
+                fpos))))]]];
+
+	  (* x = +finf *)
+	  X_CHOOSE_THEN `m:num` (fun thm -> (LABEL_TAC "eqm") thm)
+          (MATCH_MP (SPEC `(fr (fmt:fformat))` IPOW_EQ_INT) 
+          (SPEC `fmt:fformat` FFORMAT_PREC_MINUS_1)) THEN
+          EXISTS_TAC `2 * m` THEN
+          COND_CASES_TAC THENL [
+	    (* 2 * m = 0 *)
+	    SUBGOAL_THEN `&0 < &(fr fmt) ipow (&(fp fmt) - &1)` (fun thm ->
+            LABEL_TAC "rpg0" thm) THENL [
+	      MATCH_MP_TAC IPOW_LT_0 THEN REWRITE_TAC[REAL_OF_NUM_LT] THEN
+	      REWRITE_TAC[FFORMAT_RADIX_LT_0]; ALL_TAC] THEN
+            USE_THEN "rpg0" (fun rpg0 -> USE_THEN "eqm" (fun eqm -> 
+            (LABEL_TAC "mn0" (MATCH_MP 
+            (ARITH_RULE `y = x /\ ~(y = &0) ==> ~(x = &0)`)
+            (CONJ eqm (MATCH_MP (ARITH_RULE `&0 < y ==> ~(y = &0)`) rpg0))))))
+            THEN
+            USE_THEN "mn0" (fun mn0 -> (LABEL_TAC "mn02" (REWRITE_RULE
+            [REAL_OF_NUM_EQ] mn0))) THEN
+            ASM_ARITH_TAC;
+
+	    COND_CASES_TAC THENL [
+	      (* 2 * m odd *)
+	      CONTR_TAC(INST [(`m:num`,`f:num`)] DOUBLE_NOT_ODD);
+	      (* 2 * m even *)
+	      REWRITE_TAC[ARITH_RULE `(2 * x) DIV 2 = x`] THEN
+              USE_THEN "eqm" (fun eqm -> REWRITE_TAC [GSYM eqm]) THEN
+              REWRITE_TAC[MATCH_MP IPOW_ADD_EXP (SPEC `fmt:fformat` 
+              FFORMAT_RADIX_NE_0)] THEN
+	      REWRITE_TAC[ARITH_RULE `(x:int) - y + z - x + y = z`] THEN
+	      ASM_REWRITE_TAC[]]];
+
+	  (* x = -finf *)
+	  X_CHOOSE_THEN `m:num` (fun thm -> (LABEL_TAC "eqm") thm)
+          (MATCH_MP (SPEC `(fr (fmt:fformat))` IPOW_EQ_INT) 
+          (SPEC `fmt:fformat` FFORMAT_PREC_MINUS_1)) THEN
+          EXISTS_TAC `2 * m - 1` THEN
+          COND_CASES_TAC THENL [
+	    (* 2 * m - 1 = 0 *)
+	    SUBGOAL_THEN `&0 < &(fr fmt) ipow (&(fp fmt) - &1)` (fun thm ->
+            LABEL_TAC "rpg0" thm) THENL [
+	      MATCH_MP_TAC IPOW_LT_0 THEN REWRITE_TAC[REAL_OF_NUM_LT] THEN
+	      REWRITE_TAC[FFORMAT_RADIX_LT_0]; ALL_TAC] THEN
+            USE_THEN "rpg0" (fun rpg0 -> USE_THEN "eqm" (fun eqm -> 
+            (LABEL_TAC "mn0" (MATCH_MP 
+            (ARITH_RULE `y = x /\ ~(y = &0) ==> ~(x = &0)`)
+            (CONJ eqm (MATCH_MP (ARITH_RULE `&0 < y ==> ~(y = &0)`) rpg0))))))
+            THEN
+            USE_THEN "mn0" (fun mn0 -> (LABEL_TAC "mn02" (REWRITE_RULE
+            [REAL_OF_NUM_EQ] mn0))) THEN
+	    ASM_ARITH_TAC;
+
+	    COND_CASES_TAC THENL [
+	      (* 2 * m - 1 odd *)
+	      REWRITE_TAC[ARITH_RULE `(2 * x - 1 + 1) DIV 2 = x`] THEN
+              USE_THEN "eqm" (fun eqm -> REWRITE_TAC [GSYM eqm]) THEN
+	      REWRITE_TAC [ARITH_RULE `(-- x) * y = -- (x * y)`] THEN
+              REWRITE_TAC[MATCH_MP IPOW_ADD_EXP (SPEC `fmt:fformat` 
+              FFORMAT_RADIX_NE_0)] THEN
+	      REWRITE_TAC[ARITH_RULE `(x:int) - y + z - x + y = z`] THEN
+	      ASM_REWRITE_TAC[];
+	      (* 2 * m - 1 even *)
+	      SUBGOAL_THEN `&0 < &(fr fmt) ipow (&(fp fmt) - &1)` (fun thm ->
+              LABEL_TAC "rpg0" thm) THENL [
+		MATCH_MP_TAC IPOW_LT_0 THEN REWRITE_TAC[REAL_OF_NUM_LT] THEN
+		REWRITE_TAC[FFORMAT_RADIX_LT_0]; ALL_TAC] THEN
+              USE_THEN "rpg0" (fun rpg0 -> USE_THEN "eqm" (fun eqm -> 
+              (LABEL_TAC "mg0" (MATCH_MP 
+              (ARITH_RULE `y = x /\ &0 < y ==> &0 < x`)
+              (CONJ eqm rpg0))))) THEN
+	      USE_THEN "mg0" (fun mg0 -> (LABEL_TAC "mg02" (REWRITE_RULE
+              [REAL_OF_NUM_LT] mg0))) THEN
+	      USE_THEN "mg02" (fun mg02 -> (LABEL_TAC "od" (MATCH_MP
+              DOUBLE_NEG_1_ODD mg02))) THEN
+	      USE_THEN "od" (fun od -> CONTR_TAC 
+              (REWRITE_RULE [TAUT `a /\ ~a <=> F`] 
+              (CONJ od (ASSUME `~ODD (2 * m - 1)`))))]]]);;
+
