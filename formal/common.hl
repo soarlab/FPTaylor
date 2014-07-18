@@ -9,7 +9,7 @@
 unparse_as_infix("ipow");;
 let ipow = define
   `ipow (x:real) (e:int) = 
-  (if (e < &0)
+  (if (x < &0)
    then (inv (x pow (num_of_int (--e))))
    else (x pow (num_of_int e)))`;;
 parse_as_infix("ipow",(24,"left"));;
@@ -198,21 +198,40 @@ let IPOW_ADD_EXP =
 	    REWRITE_TAC[ARITH_RULE `--((u:int) + (v:int)) = --u + --v`] THEN
 	    MATCH_MP_TAC lem2 THEN ASM_ARITH_TAC]]));;
 
-let IPOW_EQ_INT = 
+let IPOW_EQ_EXP = 
   let lem1 = GEN_REWRITE_RULE (RAND_CONV o ONCE_DEPTH_CONV)
              [TAUT `~a <=> (a <=> F)`] (ARITH_RULE 
              `&0 <= (u:int) ==> ~(u < &0)`) in
-  prove(`!(r:num) (i:int). &0 <= i ==> ?(m:num). &r ipow i = &m`,
+  prove(`!(r:num) (i:int). &0 <= i ==> ?(m:num). m = num_of_int(i) /\ 
+	    &r ipow i = &(r EXP m)`,
 	REPEAT GEN_TAC THEN REWRITE_TAC[ipow] THEN DISCH_THEN(fun thm -> 
         LABEL_TAC "ige0" thm) THEN
-	(* A: ige0 *)
-	USE_THEN "ige0" (fun ige0 ->
-        REWRITE_TAC[MATCH_MP lem1 ige0] THEN 
-        CHOOSE_TAC(REWRITE_RULE[GSYM INT_OF_NUM_EXISTS] ige0) THEN 
-	ASM_REWRITE_TAC[] THEN
-        REWRITE_TAC[NUM_OF_INT_OF_NUM] THEN
-        REWRITE_TAC[REAL_OF_NUM_POW] THEN
-        EXISTS_TAC `r EXP n` THEN REWRITE_TAC[]));;	
+        EXISTS_TAC `num_of_int(i)` THEN
+        USE_THEN "ige0" (fun ige0 -> REWRITE_TAC[MATCH_MP
+        (ARITH_RULE `&0 <= (x:int) ==> (x < &0 <=> F)`) ige0]) THEN
+        USE_THEN "ige0" (fun ige0 -> CHOOSE_TAC(
+        REWRITE_RULE[GSYM INT_OF_NUM_EXISTS] ige0)) THEN
+        ASM_REWRITE_TAC[] THEN REWRITE_TAC[NUM_OF_INT_OF_NUM] THEN
+        REWRITE_TAC[REAL_OF_NUM_POW]);;
+
+let IPOW_EQ_EXP_P =
+  prove(`!(r:num) (p:num). 0 < p ==> &r ipow (&p - &1) = &(r EXP (p - 1))`,
+       REPEAT GEN_TAC THEN DISCH_THEN (fun thm -> LABEL_TAC "pg0" thm) THEN
+       USE_THEN "pg0" (fun pg0 -> (LABEL_TAC "pm1ge0" (MATCH_MP 
+       (ARITH_RULE `0 < p ==> 0 <= p - 1`) pg0))) THEN
+       USE_THEN "pm1ge0" (fun pm1ge0 -> LABEL_TAC "intge0"
+       (REWRITE_RULE[GSYM INT_OF_NUM_LE] pm1ge0)) THEN
+       USE_THEN "intge0" (fun intge0 -> CHOOSE_THEN (fun thm ->
+       LABEL_TAC "m" thm) (MATCH_MP (SPEC `r:num` IPOW_EQ_EXP) intge0)) THEN
+       USE_THEN "m" (fun m -> MAP_EVERY (fun pair -> (LABEL_TAC 
+       (fst pair) (snd pair))) (zip ["m1"; "m2"] (CONJUNCTS m))) THEN
+       USE_THEN "pg0" (fun pg0 -> REWRITE_TAC[MATCH_MP
+       INT_OF_NUM_SUB (REWRITE_RULE[ARITH_RULE `0 < x <=> 1 <= x`]
+       pg0)]) THEN
+       USE_THEN "m1" (fun m1 -> GEN_REWRITE_TAC (RAND_CONV o RAND_CONV o
+       ONCE_DEPTH_CONV) [GSYM (REWRITE_RULE[
+       NUM_OF_INT_OF_NUM] m1)]) THEN
+       ASM_REWRITE_TAC[]);;
 
 (* -------------------------------------------------------------------------- *)
 (* rerror                                                                     *)
@@ -232,8 +251,9 @@ let closer = define
 (* Misc helpful theorems                                                      *)
 (* -------------------------------------------------------------------------- *)
 
-let DOUBLE_NOT_ODD = REWRITE_RULE [EVEN_DOUBLE] (REWRITE_RULE [GSYM NOT_EVEN] 
-						   (ASSUME `ODD(2 * f)`));;
+let DOUBLE_NOT_ODD = 
+  prove(`!(n:num). ODD(2 * n) <=> F`,
+	  REWRITE_TAC[GSYM NOT_EVEN] THEN REWRITE_TAC[EVEN_DOUBLE]);;
 
 let DOUBLE_NEG_1_ODD = 
   prove(`!(f:num). 0 < f ==> ODD(2 * f - 1)`,
