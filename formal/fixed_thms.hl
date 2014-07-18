@@ -249,8 +249,8 @@ let FIXED_FINITE =
 	  GEN_TAC THEN REWRITE_TAC[GSYM IMAGE] THEN 
 	  MATCH_MP_TAC FINITE_IMAGE THEN USE_THEN "lem1" (fun lem1 ->
           REWRITE_TAC[lem1]); ALL_TAC] THEN
-	  (* lemma 3 *)
-          SUBGOAL_THEN `!(fmt:fformat). (fixed fmt) SUBSET
+	(* lemma 3 *)
+        SUBGOAL_THEN `!(fmt:fformat). (fixed fmt) SUBSET
           {(y:real) | ?(n:num). n IN (fixed_preimage fmt) /\ 
 	       y = (fixed_corr fmt n)}` (LABEL_TAC "lem3") THENL [
 	    GEN_TAC THEN REWRITE_TAC[SUBSET] THEN
@@ -260,9 +260,13 @@ let FIXED_FINITE =
             RAND_CONV o ABS_CONV o RAND_CONV o ONCE_DEPTH_CONV) 
             [EQ_SYM_EQ] THEN REWRITE_TAC[SPEC `fmt:fformat`
             FIXED_IN_IMAGE]; ALL_TAC] THEN
-	  (* main result *)
-	  GEN_TAC THEN MATCH_MP_TAC FINITE_SUBSET THEN
-	  EXISTS_TAC `{y | ?n. n IN fixed_preimage fmt /\ 
+	(* main result *)
+	GEN_TAC THEN MATCH_MP_TAC FINITE_SUBSET THEN
+	EXISTS_TAC `{y | ?n. n IN fixed_preimage fmt /\ 
 			   y = fixed_corr fmt n}` THEN
-	  ASM_REWRITE_TAC[]);;
+	ASM_REWRITE_TAC[]);;
+
+(* -------------------------------------------------------------------------- *)
+(* greatest / least exist                                                     *)
+(* -------------------------------------------------------------------------- *)
 
