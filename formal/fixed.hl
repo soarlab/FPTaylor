@@ -69,21 +69,34 @@ let finf = define
 let flargest = define
   `flargest (fmt:fformat) = ((finf fmt) - (fulp fmt))`;;
 
-let fixed = define
-  `fixed (fmt:fformat) = ({ x | is_fixed(fmt) x } UNION 
-			    { finf(fmt), --finf(fmt) })`;;
+let fixed_inf = define
+  `fixed_inf (fmt:fformat) = ({ x | is_fixed(fmt) x } UNION 
+				{ finf(fmt), --finf(fmt) })`;;
 
 (* -------------------------------------------------------------------------- *)
 (* Greatest / least                                                           *)
 (* -------------------------------------------------------------------------- *)
 
+let is_lb = define
+  `is_lb (fmt:fformat) (x:real) (y:real) = (y IN (fixed_inf fmt) /\ y <= x)`;;
+
+let is_glb = define
+  `is_glb (fmt:fformat) (x:real) (y:real) =
+  (is_lb(fmt) x y /\ (!y'. is_lb(fmt) x y' ==> y' <= y))`;;
+
+let is_ub = define
+  `is_ub (fmt:fformat) (x:real) (y:real) = (y IN (fixed_inf fmt) /\ x <= y)`;;
+
+let is_lub = define
+  `is_lub (fmt:fformat) (x:real) (y:real) =
+  (is_ub(fmt) x y /\ (!y'. is_ub(fmt) x y' ==> y <= y'))`;;
+
 (* Simple wrappers around sup / inf                                           *)
 
-let greatest = define 
-  `greatest (fmt:fformat) (x:real) = sup({y:real | y <= x} INTER fixed(fmt))`;;
-
-let least = define 
-  `least (fmt:fformat) (x:real) = inf({y:real | x <= y} INTER fixed(fmt))`;;
+let glb = define 
+  `glb (fmt:fformat) (x:real) = sup({y:real | y <= x} INTER fixed_inf(fmt))`;;
+let lub = define 
+  `lub (fmt:fformat) (x:real) = inf({y:real | x <= y} INTER fixed_inf(fmt))`;;
 
 (* -------------------------------------------------------------------------- *)
 (* Fixed point rounding                                                       *)
@@ -94,8 +107,8 @@ let roundmode_INDUCT, roundmode_RECURSION = define_type
 
 let fround = define
   `((fround (fmt:fformat) (To_near) (x:real) =
-	(let lo = (greatest(fmt) x)
-	 and hi = (least(fmt) x)
+	(let lo = (glb(fmt) x)
+	 and hi = (lub(fmt) x)
 	 in
 	   (if (closer lo hi x)
 	    then 
@@ -111,12 +124,12 @@ let fround = define
       
       (fround (fmt:fformat) (To_zero) (x:real) =
 	  (if (x > &0)
-	   then (greatest(fmt) x)
-	   else (least(fmt) x))) /\
+	   then (glb(fmt) x)
+	   else (lub(fmt) x))) /\
 
       (fround (fmt:fformat) (To_pinf) (x:real) =
-	  (least(fmt) x)) /\
+	  (lub(fmt) x)) /\
 
       (fround (fmt:fformat) (To_ninf) (x:real) =
-	  (greatest(fmt) x)))`;;
+	  (glb(fmt) x)))`;;
 

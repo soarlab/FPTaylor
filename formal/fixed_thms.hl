@@ -74,9 +74,9 @@ let FFORMAT_PREC_MINUS_1 =
 (* -------------------------------------------------------------------------- *)
 
 let FIXED_DISJOINT_CASES = 
-  prove(`!(fmt:fformat) . (x IN fixed(fmt)) <=> 
+  prove(`!(fmt:fformat) . (x IN fixed_inf(fmt)) <=> 
 	  ((is_fixed(fmt) x) \/ x = (finf fmt) \/ x = --(finf fmt))`,
-	GEN_TAC THEN REWRITE_TAC[fixed] THEN REWRITE_TAC[UNION] THEN
+	GEN_TAC THEN REWRITE_TAC[fixed_inf] THEN REWRITE_TAC[UNION] THEN
 	REWRITE_TAC[IN_ELIM_THM] THEN REWRITE_TAC[IN_INSERT] THEN
 	REWRITE_TAC[NOT_IN_EMPTY]);;
 
@@ -96,7 +96,7 @@ let FIXED_PREIMAGE = define
   { n:num | 0 <= n /\ n <= 2 * (fr fmt) EXP ((fp fmt) - 1) }`;;
 
 let FIXED_IN_IMAGE =
-  prove(`!(fmt:fformat) (x:real). x IN (fixed fmt) ==>
+  prove(`!(fmt:fformat) (x:real). x IN (fixed_inf fmt) ==>
 	  ?(n:num). n IN (fixed_preimage fmt) /\ (fixed_corr fmt n) = x`,
 	REPEAT GEN_TAC THEN REWRITE_TAC[FIXED_CORR] THEN
 	DISCH_THEN(fun thm -> 
@@ -234,7 +234,7 @@ let FIXED_IN_IMAGE =
               FFORMAT_RADIX_NE_0)) `(fp fmt) - 1 = 0`))))))]]]);;
 
 let FIXED_FINITE =
-  prove(`!(fmt:fformat). FINITE(fixed fmt)`,
+  prove(`!(fmt:fformat). FINITE(fixed_inf fmt)`,
 	(* lemma 1 *)
 	SUBGOAL_THEN `!(fmt:fformat). FINITE(fixed_preimage fmt)`
 	(LABEL_TAC "lem1") THENL [
@@ -250,7 +250,7 @@ let FIXED_FINITE =
 	  MATCH_MP_TAC FINITE_IMAGE THEN USE_THEN "lem1" (fun lem1 ->
           REWRITE_TAC[lem1]); ALL_TAC] THEN
 	(* lemma 3 *)
-        SUBGOAL_THEN `!(fmt:fformat). (fixed fmt) SUBSET
+        SUBGOAL_THEN `!(fmt:fformat). (fixed_inf fmt) SUBSET
           {(y:real) | ?(n:num). n IN (fixed_preimage fmt) /\ 
 	       y = (fixed_corr fmt n)}` (LABEL_TAC "lem3") THENL [
 	    GEN_TAC THEN REWRITE_TAC[SUBSET] THEN
@@ -266,7 +266,56 @@ let FIXED_FINITE =
 			   y = fixed_corr fmt n}` THEN
 	ASM_REWRITE_TAC[]);;
 
+let FIXED_NONEMPTY =
+  prove(`!(fmt:fformat). ~((fixed_inf fmt) = {})`,
+	GEN_TAC THEN REWRITE_TAC[GSYM MEMBER_NOT_EMPTY] THEN
+	EXISTS_TAC `(&0):real` THEN REWRITE_TAC[fixed_inf] THEN
+	REWRITE_TAC[UNION] THEN REWRITE_TAC[IN_ELIM_THM] THEN
+        DISJ1_TAC THEN REWRITE_TAC[is_fixed] THEN REWRITE_TAC[is_frac] THEN
+	EXISTS_TAC `0:num` THEN REWRITE_TAC[ARITH_RULE `&0 * x = &0`] THEN
+	REWRITE_TAC[REWRITE_RULE [GSYM EXP_LT_0]
+        (DISJ1 (SPEC `fmt:fformat` (REWRITE_RULE[REAL_OF_NUM_EQ]
+        FFORMAT_RADIX_NE_0)) `(fp fmt) - 1 = 0`)] THEN
+        ARITH_TAC);;
+
 (* -------------------------------------------------------------------------- *)
-(* greatest / least exist                                                     *)
+(* glb/lub exist                                                              *)
 (* -------------------------------------------------------------------------- *)
 
+let FIXED_GLB_EXISTS =
+   prove(`!(fmt:fformat) (x:real). abs(x) <= finf(fmt) ==>
+	   ?(y:real). (glb(fmt) x) = y /\ (is_glb(fmt) x y)`
+	 REPEAT GEN_TAC THEN DISCH_THEN (LABEL_TAC "absx") THEN
+	 REWRITE_TAC[glb] THEN
+	 (* lemma: {z | z is fixed /\ z <= x} is finite. *)
+	 SUBGOAL_THEN `FINITE({z | z <= x} INTER (fixed_inf fmt))`
+         (LABEL_TAC "fin") THENL [
+	   MATCH_MP_TAC FINITE_SUBSET THEN
+	   EXISTS_TAC `(fixed_inf fmt)` THEN
+	   REWRITE_TAC[FIXED_FINITE] THEN
+	   REWRITE_TAC[INTER_SUBSET]; ALL_TAC] THEN
+	 (* lemma: {z | z is fixed /\ z <= x} is non-empty. *)
+	 SUBGOAL_THEN `~(({z | z <= x} INTER (fixed_inf fmt)) = {})`
+	 (LABEL_TAC "notempty") THENL [
+	   REWRITE_TAC[GSYM MEMBER_NOT_EMPTY] THEN
+	   EXISTS_TAC `--(finf fmt)` THEN REWRITE_TAC[INTER] THEN
+	   REWRITE_TAC[IN_ELIM_THM] THEN
+           USE_THEN "absx" (fun absx -> REWRITE_TAC[REWRITE_RULE
+           [REAL_ABS_BOUNDS] absx]) THEN
+	   REWRITE_TAC[fixed_inf] THEN REWRITE_TAC[UNION] THEN
+           REWRITE_TAC[IN_ELIM_THM] THEN DISJ2_TAC THEN
+	   REWRITE_TAC[IN_ELIM_THM] THEN REWRITE_TAC[IN_INSERT]; ALL_TAC] THEN
+	 (* back to main result ... *)
+	 USE_THEN "fin" (fun fin -> USE_THEN "notempty" (fun notempty ->
+         LABEL_TAC "sup0" (MATCH_MP SUP_FINITE (CONJ fin notempty)))) THEN
+	 EXISTS_TAC `sup ({z | z <= (x:real)} INTER (fixed_inf fmt))` THEN
+	 REWRITE_TAC[] THEN REWRITE_TAC[is_glb] THEN REWRITE_TAC[is_lb] THEN
+	 USE_THEN "sup0" (fun sup0 -> MAP_EVERY (fun pair ->
+         LABEL_TAC (fst pair) (snd pair)) (zip ["sup1"; "sup2"] 
+         (CONJUNCTS sup0))) THEN
+	 USE_THEN "sup1" (fun sup1 -> REWRITE_TAC[REWRITE_RULE[IN_ELIM_THM]
+         (GEN_REWRITE_RULE (RAND_CONV o ONCE_DEPTH_CONV) [INTER] sup1)]) THEN
+	 USE_THEN "sup2" (fun sup2 -> REWRITE_TAC[ONCE_REWRITE_RULE[
+         TAUT `a /\ b <=> b /\ a`] (REWRITE_RULE[IN_ELIM_THM]
+         (GEN_REWRITE_RULE (RAND_CONV o ABS_CONV o RATOR_CONV o RAND_CONV o
+         ONCE_DEPTH_CONV) [INTER] sup2))]));;
