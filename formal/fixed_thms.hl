@@ -284,7 +284,7 @@ let FIXED_NONEMPTY =
 
 let FIXED_GLB_EXISTS =
    prove(`!(fmt:fformat) (x:real). abs(x) <= finf(fmt) ==>
-	   ?(y:real). (glb(fmt) x) = y /\ (is_glb(fmt) x y)`
+	   ?(y:real). (glb(fmt) x) = y /\ (is_glb(fmt) x y)`,
 	 REPEAT GEN_TAC THEN DISCH_THEN (LABEL_TAC "absx") THEN
 	 REWRITE_TAC[glb] THEN
 	 (* lemma: {z | z is fixed /\ z <= x} is finite. *)
@@ -319,3 +319,43 @@ let FIXED_GLB_EXISTS =
          TAUT `a /\ b <=> b /\ a`] (REWRITE_RULE[IN_ELIM_THM]
          (GEN_REWRITE_RULE (RAND_CONV o ABS_CONV o RATOR_CONV o RAND_CONV o
          ONCE_DEPTH_CONV) [INTER] sup2))]));;
+
+(* It might be possible to re-use FIXED_GLB_EXISTS, but it would probably be  *)
+(* tedious.                                                                   *)
+let FIXED_LUB_EXISTS =
+   prove(`!(fmt:fformat) (x:real). abs(x) <= finf(fmt) ==>
+	   ?(y:real). (lub(fmt) x) = y /\ (is_lub(fmt) x y)`,
+	 REPEAT GEN_TAC THEN DISCH_THEN (LABEL_TAC "absx") THEN
+	 REWRITE_TAC[lub] THEN
+	 (* lemma: {z | z is fixed /\ x <= z} is finite. *)
+	 SUBGOAL_THEN `FINITE({z | x <= z} INTER (fixed_inf fmt))`
+         (LABEL_TAC "fin") THENL [
+	   MATCH_MP_TAC FINITE_SUBSET THEN
+	   EXISTS_TAC `(fixed_inf fmt)` THEN
+	   REWRITE_TAC[FIXED_FINITE] THEN
+	   REWRITE_TAC[INTER_SUBSET]; ALL_TAC] THEN
+	 (* lemma: {z | z is fixed /\ z <= x} is non-empty. *)
+	 SUBGOAL_THEN `~(({z | x <= z} INTER (fixed_inf fmt)) = {})`
+	 (LABEL_TAC "notempty") THENL [
+	   REWRITE_TAC[GSYM MEMBER_NOT_EMPTY] THEN
+	   EXISTS_TAC `(finf fmt)` THEN REWRITE_TAC[INTER] THEN
+	   REWRITE_TAC[IN_ELIM_THM] THEN
+           USE_THEN "absx" (fun absx -> REWRITE_TAC[REWRITE_RULE
+           [REAL_ABS_BOUNDS] absx]) THEN
+	   REWRITE_TAC[fixed_inf] THEN REWRITE_TAC[UNION] THEN
+           REWRITE_TAC[IN_ELIM_THM] THEN DISJ2_TAC THEN
+	   REWRITE_TAC[IN_ELIM_THM] THEN REWRITE_TAC[IN_INSERT]; ALL_TAC] THEN
+	 (* back to main result ... *)
+	 USE_THEN "fin" (fun fin -> USE_THEN "notempty" (fun notempty ->
+         LABEL_TAC "inf0" (MATCH_MP INF_FINITE (CONJ fin notempty)))) THEN
+	 EXISTS_TAC `inf ({z | (x:real) <= z} INTER (fixed_inf fmt))` THEN
+	 REWRITE_TAC[] THEN REWRITE_TAC[is_lub] THEN REWRITE_TAC[is_ub] THEN
+	 USE_THEN "inf0" (fun inf0 -> MAP_EVERY (fun pair ->
+         LABEL_TAC (fst pair) (snd pair)) (zip ["inf1"; "inf2"] 
+         (CONJUNCTS inf0))) THEN
+	 USE_THEN "inf1" (fun inf1 -> REWRITE_TAC[REWRITE_RULE[IN_ELIM_THM]
+         (GEN_REWRITE_RULE (RAND_CONV o ONCE_DEPTH_CONV) [INTER] inf1)]) THEN
+	 USE_THEN "inf2" (fun inf2 -> REWRITE_TAC[ONCE_REWRITE_RULE[
+         TAUT `a /\ b <=> b /\ a`] (REWRITE_RULE[IN_ELIM_THM]
+         (GEN_REWRITE_RULE (RAND_CONV o ABS_CONV o RATOR_CONV o RAND_CONV o
+         ONCE_DEPTH_CONV) [INTER] inf2))]));;
