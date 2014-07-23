@@ -3,6 +3,20 @@
 (* ========================================================================== *)
 
 (* -------------------------------------------------------------------------- *)
+(* LABEL_CONJUNCTS_TAC                                                        *)
+(* -------------------------------------------------------------------------- *)
+
+let rec LABEL_CONJUNCTS_TAC labels thm =
+  if is_conj(concl(thm))
+  then
+    CONJUNCTS_THEN2 
+      (fun c1 -> LABEL_TAC (hd labels) c1)
+      (fun c2 -> LABEL_CONJUNCTS_TAC (tl labels) c2)
+      thm
+  else
+    LABEL_TAC (hd labels) thm;;
+
+(* -------------------------------------------------------------------------- *)
 (* ipow: pow with integer exponent                                            *)
 (* -------------------------------------------------------------------------- *)
 
@@ -202,6 +216,32 @@ let IPOW_EQ_EXP_P =
        NUM_OF_INT_OF_NUM] m1)]) THEN
        ASM_REWRITE_TAC[]);;
 
+let IPOW_BETWEEN =
+  prove(`!(x:real) (y:num) (z:num) (e:int). 
+	  &0 < x /\ &y * x ipow e <= &z * x ipow e /\
+	  &z * x ipow e <= (&y + &1) * x ipow e ==>
+	  z = y \/ z = y + 1`,
+	REPEAT GEN_TAC THEN 
+        DISCH_THEN (LABEL_CONJUNCTS_TAC ["xgt0"; "ineq1"; "ineq2"]) THEN
+	(* lemma: y <= z *)
+	SUBGOAL_THEN `(y:num) <= z` (LABEL_TAC "ylez") THENL [
+	  REWRITE_TAC[GSYM REAL_OF_NUM_LE] THEN
+	  MATCH_MP_TAC REAL_LE_LCANCEL_IMP THEN
+	  EXISTS_TAC `(x ipow e)` THEN
+	  ONCE_REWRITE_TAC[ARITH_RULE `(a:real) * b = b * a`] THEN
+	  ASM_REWRITE_TAC[] THEN
+	  MATCH_MP_TAC IPOW_LT_0 THEN ASM_REWRITE_TAC[]; ALL_TAC] THEN
+	(* lemma: z <= y + 1 *)
+	SUBGOAL_THEN `(z:num) <= y + 1` (LABEL_TAC "zleyp1") THENL [
+	  REWRITE_TAC[GSYM REAL_OF_NUM_LE] THEN
+	  REWRITE_TAC[GSYM REAL_OF_NUM_ADD] THEN
+	  MATCH_MP_TAC REAL_LE_LCANCEL_IMP THEN
+	  EXISTS_TAC `(x ipow e)` THEN
+	  ONCE_REWRITE_TAC[ARITH_RULE `(a:real) * b = b * a`] THEN
+	  ASM_REWRITE_TAC[] THEN
+	  MATCH_MP_TAC IPOW_LT_0 THEN ASM_REWRITE_TAC[]; ALL_TAC] THEN
+	ASM_ARITH_TAC);;        
+
 (* -------------------------------------------------------------------------- *)
 (* rerror                                                                     *)
 (* -------------------------------------------------------------------------- *)
@@ -233,3 +273,4 @@ let DOUBLE_NEG_1_ODD =
 
 let REAL_MULT_NOT_0 = 
   REAL_RING `z = x * y /\ ~(z = &0) ==> ~(x = &0) /\ ~(y = &0)`;;
+
