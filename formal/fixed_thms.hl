@@ -383,6 +383,26 @@ let FIXED_LUB_EXISTS =
 	 USE_THEN "inf2" (fun inf2 -> REWRITE_TAC[ONCE_REWRITE_RULE[
 	 IN_ELIM_THM] inf2]));;
 
+let FIXED_GLB_IS_FIXED =
+  prove(`!(fmt:fformat) (x:real). abs(x) <= (finf fmt) ==> 
+          (glb(fmt) x) IN (fixed fmt)`,
+	REPEAT GEN_TAC THEN DISCH_THEN(fun thm -> CHOOSE_THEN
+        (LABEL_CONJUNCTS_TAC ["glbeq"; "isglb"])
+        (MATCH_MP FIXED_GLB_EXISTS thm)) THEN
+	ASM_REWRITE_TAC[] THEN
+	USE_THEN "isglb" (fun isglb -> REWRITE_TAC[REWRITE_RULE[is_lb] (
+        REWRITE_RULE[is_glb] isglb)]));;	
+
+let FIXED_LUB_IS_FIXED =
+  prove(`!(fmt:fformat) (x:real). abs(x) <= (finf fmt) ==> 
+          (lub(fmt) x) IN (fixed fmt)`,
+	REPEAT GEN_TAC THEN DISCH_THEN(fun thm -> CHOOSE_THEN
+        (LABEL_CONJUNCTS_TAC ["lubeq"; "islub"])
+        (MATCH_MP FIXED_LUB_EXISTS thm)) THEN
+	ASM_REWRITE_TAC[] THEN
+	USE_THEN "islub" (fun islub -> REWRITE_TAC[REWRITE_RULE[is_ub] (
+        REWRITE_RULE[is_lub] islub)]));;	
+
 let FIXED_PLUS_FULP_NNEG =
   prove(`!(fmt:fformat) (u:real) (f:num).
 	  &0 <= u /\ (is_frac(fmt) u f) ==>
@@ -537,7 +557,7 @@ let FIXED_FULP_DISTANCE =
 	  REWRITE_TAC[REAL_OF_NUM_LT] THEN
 	  REWRITE_TAC[FFORMAT_RADIX_LT_0]]);;
 
-let FIXED_GREATEST_LEAST_DIST =
+let FIXED_GLB_LUB_BOUNDS =
   prove(`!(fmt:fformat) (x:real). abs(x) <= (finf fmt) ==>
 	  glb(fmt) x <= lub(fmt) x /\ lub(fmt) x <= glb(fmt) x + (fulp fmt)`,
 	REPEAT GEN_TAC THEN DISCH_THEN (fun thm -> LABEL_TAC "absx" thm) THEN
@@ -676,7 +696,7 @@ let FIXED_GREATEST_LEAST_DIST =
           y1frac0)) THEN
 	  (* lemma: f1 > 0 *)
 	  SUBGOAL_THEN `0 < f1` (LABEL_TAC "f1gt0") THENL [
-	    MATCH_MP_TAC (SPEC `fmt:fformat` FIXED_FRAC_LT_0)
+	    MATCH_MP_TAC (SPEC `fmt:fformat` FIXED_FRAC_LT_0) THEN
 	    EXISTS_TAC `y1:real` THEN
 	    ASM_REWRITE_TAC[] THEN
 	    ASM_ARITH_TAC; ALL_TAC] THEN
@@ -738,3 +758,41 @@ let FIXED_GREATEST_LEAST_DIST =
             "isleast"] (REWRITE_RULE[is_lub] islub)) THEN
 	    USE_THEN "isleast" (fun isleast -> MATCH_MP_TAC isleast) THEN
 	    ASM_REWRITE_TAC[]]]]);;
+
+let FIXED_GLB_LUB_DIST =
+  prove(`!(fmt:fformat) (x:real). abs(x) <= (finf fmt) ==>
+	  lub(fmt) x = glb(fmt) x \/ lub(fmt) x = glb(fmt) x + (fulp fmt)`,
+	REPEAT GEN_TAC THEN DISCH_TAC THEN
+	MATCH_MP_TAC FIXED_FULP_DISTANCE THEN
+	REWRITE_TAC[TAUT `a /\ b /\ c /\ d <=> (a /\ b) /\ (c /\ d)`] THEN
+	CONJ_TAC THENL [
+	  CONJ_TAC THENL [
+	    MATCH_MP_TAC FIXED_GLB_IS_FIXED THEN ASM_REWRITE_TAC[];
+	    MATCH_MP_TAC FIXED_LUB_IS_FIXED THEN ASM_REWRITE_TAC[]];
+	  MATCH_MP_TAC FIXED_GLB_LUB_BOUNDS THEN ASM_REWRITE_TAC[]]);;
+
+let FIXED_GLB_LUB_DISCRETE =
+  prove(`!(fmt:fformat) (x:real). abs(x) <= (finf fmt) ==>
+	  (!(s:real). s IN (fixed fmt) ==> 
+	     s <= glb(fmt) x \/ lub(fmt) x <= s)`,
+	REPEAT GEN_TAC THEN DISCH_THEN (LABEL_TAC "absx") THEN GEN_TAC THEN
+        DISCH_TAC THEN
+	ASM_CASES_TAC `s < glb(fmt) x \/ lub(fmt) x < s` THENL [
+	  (* first case is trivial *)
+	  ASM_ARITH_TAC;
+	  USE_THEN "absx" (fun absx ->
+	  DISJ_CASES_TAC (MATCH_MP FIXED_GLB_LUB_DIST absx)) THENL [
+	    (* the first sub case is somewhat trivial *)
+	    ASM_REWRITE_TAC[] THEN ARITH_TAC;
+	    ASM_REWRITE_TAC[] THEN
+	    LABEL_TAC "sbounds" (
+	    REWRITE_RULE[ASSUME `lub(fmt) x = glb(fmt) x + (fulp fmt)`] 
+	    (REWRITE_RULE[
+               ARITH_RULE `~((x:real) < y \/ z < x) <=> (y <= x /\ x <= z)`]
+               (ASSUME `~((s:real) < glb(fmt) x \/ lub(fmt) x < s)`))) THEN
+	    MATCH_MP_TAC (
+               ARITH_RULE `(x:real) = y \/ x = z ==> x <= y \/ z <= x`) THEN
+	    USE_THEN "sbounds" (fun sbounds -> USE_THEN "absx" (fun absx ->
+	    REWRITE_TAC[MATCH_MP FIXED_FULP_DISTANCE (CONJ
+             (MATCH_MP (SPEC `fmt:fformat` FIXED_GLB_IS_FIXED ) absx)
+	     (CONJ (ASSUME `(s:real) IN (fixed fmt)`) sbounds))]))]]);;
