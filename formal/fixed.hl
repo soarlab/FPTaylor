@@ -2,7 +2,7 @@
 (* FIXED POINT DEFINITIONS                                                    *)
 (* ========================================================================== *)
 
-needs "common.hl";;
+(* needs "common.hl";; *)
 
 (* -------------------------------------------------------------------------- *)
 (* Fixed point format                                                         *)
@@ -119,7 +119,7 @@ let fround = define
 	      hi))) /\
       
       (fround (fmt:fformat) (To_zero) (x:real) =
-	  (if (x > &0)
+	  (if (&0 <= x)
 	   then (glb(fmt) x)
 	   else (lub(fmt) x))) /\
 
