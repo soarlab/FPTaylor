@@ -274,3 +274,12 @@ let DOUBLE_NEG_1_ODD =
 let REAL_MULT_NOT_0 = 
   REAL_RING `z = x * y /\ ~(z = &0) ==> ~(x = &0) /\ ~(y = &0)`;;
 
+let EXP_LE_1 =
+  prove(`!(x:num) (n:num). ~(x = 0) ==> 1 <= x EXP n`,
+	REPEAT GEN_TAC THEN DISCH_TAC THEN
+	GEN_REWRITE_TAC (RATOR_CONV o RAND_CONV)
+        [ARITH_RULE `1 = x EXP 0`] THEN
+        REWRITE_TAC[LE_EXP] THEN
+	COND_CASES_TAC THENL [
+	  ASM_ARITH_TAC;
+	  ARITH_TAC]);;
