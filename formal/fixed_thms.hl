@@ -2008,6 +2008,7 @@ let FIXED_RD_NEAREST_TO_0 =
              FIXED_RD_NEAREST_TO_LUB (CONJ absx fulpleqx)])) THEN
         ASM_REWRITE_TAC[]]);;
 
+(* this is the tightest bound possible for fixed point *)
 let FIXED_RD_NEAREST_REL_ERROR =
   prove(`!(fmt:fformat) (x:real). abs(x) <= (finf fmt) /\ ~(x = &0) ==>
 	  (rerror x (fround(fmt) To_near x)) <= &1`,
@@ -2040,3 +2041,4 @@ let FIXED_RD_NEAREST_REL_ERROR =
             CONJ_TAC THENL [
               MATCH_MP_TAC FIXED_RD_NEAREST_ABS_ERROR THEN ASM_REWRITE_TAC[];
 	      ASM_ARITH_TAC]]]);;
+

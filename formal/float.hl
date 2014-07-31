@@ -2,6 +2,9 @@
 (* FLOATING POINT DEFINITIONS                                                 *)
 (* ========================================================================== *)
 
+(* needs "common.hl";; *)
+(* needs "fixed.hl";; *)
+
 (* References:                                                                *)
 (*                                                                            *)
 (*  [ 1 ] John Harrison, "A Machine-Checked Theory of Floating Point          *)
@@ -25,37 +28,12 @@
 (* Fix r:num > 1 and even, p:num > 0. A floating point number is a real       *)
 (* number that can be written as                                              *)
 (*                                                                            *)
-(*     +/- (m * r^e + y)                                                      *)
+(*     +/- f * r^(e - p + 1)                                                  *)
 (*                                                                            *)
 (* where                                                                      *)
 (*                                                                            *)
 (*   -- e is an integer                                                       *)
-(*   -- y is a fixed point number with exponent e, radix r, and precision p   *)
-(*   -- m is a natural number (short for most significant digit) with         *)
-(*      0 < m < r (notice for r = 2, m is always 1)                           *)
-(*                                                                            *)
-(* There is no restriction on the exponent (makes the formalization more      *)
-(* general).                                                                  *)
-(*                                                                            *)
-(* An alternative representation for floating point numbers is                *)
-(*                                                                            *)
-(*   +/- f * r^(e - p + 1)                                                    *)
-(*                                                                            *)
-(* where 0 <= f < r^p. The fraction is normalized when r^(p - 1) <= f < r^p.  *)
-(* Suppose |x| = f * r^(e - p + 1) with f normalized; then                    *)
-(*                                                                            *)
-(*   f = m * r^(p - 1) + B * r^(p - 2) + C * r^(p - 3) + ...                  *)
-(*                                                                            *)
-(* with 0 < m < r. It then follows that                                       *)
-(*                                                                            *)
-(*   f * r^(e - p + 1) = m * r^e + (B * r^(p - 2) + ...) * r^(e - p + 1)      *)
-(*                     = m * r^e + f' * r^(e - p + 1)                         *)
-(*                     = m * r^e + y                                          *)
-(*                                                                            *)
-(* Notice that 0 <= f' < r^(p - 1), so y is a fixed point number with radix   *)
-(* r, precision p, and exponent e. This shows any floating point number in    *)
-(* the common format can be written in our format, and moreover, that the     *)
-(* corresponding exponent e in our format is always normalized.               *)
+(*   -- 0 < f < r^p (so zero is not a floating point number)                  *)
 
 let is_valid_flformat = define
   `is_valid_flformat (r:num, p:num) = (1 < r /\ (EVEN r) /\ (0 < p))`;;
@@ -72,59 +50,69 @@ let flr = define
   `flr (fmt:flformat) = (FST (dest_flformat fmt))`;;
 
 let flp = define
-  `flp (fmt:fformat) = (SND (dest_flformat fmt))`;;
+  `flp (fmt:flformat) = (SND (dest_flformat fmt))`;;
 
-let is_msd_and_exp = define
-  `is_msd_and_exp (fmt:flformat) (x:real) (m:num) (e:int) =
-  (?(y:real) . ((is_fixed((flr(fmt), flp(fmt), e)) y) /\
-		  x = &m * &(flr fmt) ipow e + y))`;;
-
-let flm = define
-  `flm (fmt:flformat) (x:real) =
-  (@(m:num) . ?:(e:int) . is_msd_and_exp(fmt) x m e)`;;
-
-let fle = define
-  `fle (fmt:flformat) (x:real) =
-  (@(e:int) . ?:(m:num) . is_msd_and_exp(fmt) x m e)`;;
+let is_frac_and_exp = define
+  `is_frac_and_exp (fmt:flformat) (x:real) (f:num) (e:int) =
+  (0 < f /\
+   f < (flr fmt) EXP ((flp fmt) - 1) /\
+   abs(x) = &f * &(flr fmt) ipow (e - &(flp fmt) + &1))`;;
 
 let is_float = define
   `is_float (fmt:flformat) (x:real) = 
-  (?(m:num) (e:int) . is_msd_and_exp(fmt) x m e)`;;
+  (?(f:num) (e:int) . is_frac_and_exp(fmt) x f e)`;;
+
+let to_fformat = define
+  `to_fformat (r:num) (p:num) (e:int) = (mk_fformat (r, p, e))`;;
+
+(* -------------------------------------------------------------------------- *)
+(* Normalization                                                              *)
+(* -------------------------------------------------------------------------- *)
+
+(* x = +/- m * r^e + y *)
+
+let normalizes = define
+  `normalizes (fmt:flformat) (x:real) (m:num) (e:int) (y:real) =
+  (0 < m /\
+   m < (flr fmt) /\
+   abs(y) <= (finf (to_fformat (flr fmt) (flp fmt) e)) /\
+  (if (&0 <= x)
+   then
+     x = &m * &(flr fmt) ipow e + y
+   else
+     x = -- &m * &(flr fmt) ipow e + y))`;;
+
+let greatest_e = define
+  `greatest_e (fmt:flformat) (x:real) = 
+  sup_int({ (z:int) | &(flr fmt) ipow z <= abs(x) })`;;
+
+let greatest_m = define
+  `greatest_m (fmt:flformat) (x:real) =
+  sup_num({ (m:num) | (&m * &(flr fmt) ipow (greatest_e(fmt) x) <= abs(x) /\ 
+		       0 < m /\ 
+		       m < (flr fmt))})`;;
+
+let greatest_r = define
+  `greatest_r (fmt:flformat) (x:real) = 
+  (x - &(greatest_m(fmt) x) * &(flr fmt) ipow (greatest_e(fmt) x))`;;
 
 (* -------------------------------------------------------------------------- *)
 (* Rounding                                                                   *)
 (* -------------------------------------------------------------------------- *)
 
-let greatest_exp = define
-  `greatest_exp (fmt:flformat) (x:real) = 
-  sup({ (z:int) | &(flr fmt) ipow z <= |x| })`;;
-
-let greatest_msd = define
-  `greatest_msd (fmt:flformat) (x:real) =
-  sup({ (m:num) | (m * (greatest_exp(fmt) x) <= |x| /\ 
-		       1 < m /\ 
-		       m < (flr fmt))})`;;
-
-let greatest_rem = define
-  `greatest_rem (fmt:flformat) (x:real) = 
-  (x - (greatest_msd(fmt) x) * &(flr fmt) ipow (greatest_exp(fmt) x))`;;
-
 let flround = define
   `flround (fmt:flformat) (mode:roundmode) (x:real) =
-  (let m = (greatest_msd(fmt) x)
-   and e = (greatest_exp(fmt) x)
-   and y = (greatest_rem(fmt) x)
+  (let m = (greatest_m(fmt) x)
+   and e = (greatest_e(fmt) x)
+   and y = (greatest_r(fmt) x)
    in
-     (if (x = &0)
+     (if (&0 <= x)
       then
-	&0
-      else if (&0 < x)
-      then
-	(m * &(flr fmt) ipow e + 
-	   (fround((flr fmt), (flp fmt), e) mode y))
+     	(&m * &(flr fmt) ipow e +
+     	   (fround(to_fformat (flr fmt) (flp fmt) e) mode y))
       else
-	(-- m * &(flr fmt) ipow e + 
-	   (fround((flr fmt), (flp fmt), e) mode y))))`;;
+     	(-- &m * &(flr fmt) ipow e +
+     	   (fround(to_fformat (flr fmt) (flp fmt) e) mode y))))`;;
 
 (* -------------------------------------------------------------------------- *)
 (* Machine Epsilon                                                            *)
@@ -133,5 +121,5 @@ let flround = define
 (* Definition: For a flformat fmt, the _machine epsilon_ is                   *)
 (*                                                                            *)
 (*      fleps = (2r^(p - 1) + 1)^(-1)                                         *)
-let fleps = define
-  `fleps (fmt:flformat) = (&1 / &(2 * (flr fmt) EXP ((flp fmt) - 1) + 1))`;;
+(* let fleps = define *)
+(*   `fleps (fmt:flformat) = (&1 / &(2 * (flr fmt) EXP ((flp fmt) - 1) + 1))`;; *)

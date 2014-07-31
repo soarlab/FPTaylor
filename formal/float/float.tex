@@ -1,139 +1,25 @@
-% needed later ...
+\documentclass{article}
+\usepackage{amsmath,amssymb,fouriernc,parskip,amsthm}
+\usepackage{hyperref}
+\hypersetup{
+  citecolor=red,
+  colorlinks=true
+}
+\title{Floating Point}
+\date{}
+\author{}
+\begin{document}
+\theoremstyle{definition}
+\newtheorem{thm}{Theorem}[section]
+\newtheorem{lem}[thm]{Lemma}
+\newtheorem{defn}[thm]{Definition}
 
-\begin{lem}
-\label{monotoneleft}
-\begin{equation*}
-\forall a, b, x, y \in \mathbb{R} \; . \; 
-\left [
-\begin{array}{cl} 
-\wedge & \big ( \; 0 \leq a \leq x \leq y \leq b \; \vee \; 
-a \leq x \leq y \leq b \leq 0 \; \big )\\
-\wedge & x \neq 0\\
-\wedge & y \neq 0
-\end{array} \right ] \;
-\Longrightarrow \;
-\left | \frac{a - x}{x} \right | \leq \left | \frac{a - y}{y} \right |
-\end{equation*}
-\begin{proof} Assume the antecedent. If all are positive, then the goal
-becomes
-\begin{equation*}
-\frac{x - a}{x} \leq \frac{y - a}{y}
-\end{equation*}
-$x$ and $y$ are non-zero; multiply on left and right to get
-\begin{equation*}
-xy - ay \leq xy - ax \quad \Leftrightarrow \quad 0 \leq a
-\end{equation*}
-which is true. The other case is similar.
-\end{proof}
-\end{lem}
+\maketitle
 
-\begin{lem}
-\label{monotoneright}
-\begin{equation*}
-\forall a, b, x, y \in \mathbb{R} \; . \; 
-\left [
-\begin{array}{cl} 
-\wedge & \big ( \; 0 \leq a \leq x \leq y \leq b \; \vee \; 
-a \leq x \leq y \leq b \leq 0 \; \big )\\
-\wedge & x \neq 0\\
-\wedge & y \neq 0
-\end{array} \right ] \;
-\Longrightarrow \;
-\left | \frac{b - x}{x} \right | \geq \left | \frac{b - y}{y} \right |
-\end{equation*}
-\begin{proof} Similar proof.
-\end{proof}
-\end{lem}
+Fix a valid floating point format $fmt$, and let $Float$ be the set of all 
+floating point numbers in this format (i.e., the set of all real numbers 
+$x$ for which $is\_float(fmt,x)$ is true).
 
-\begin{lem}
-\label{rnddown}
-\begin{equation*}
-\forall x \in \mathbb{R} \; . \; |x| \leq finf \;
-\Longrightarrow \;
-\big [ \; x < x^- + fulp/2 \; \Longrightarrow \; round(to\_nearest, x) = x^-
-\; \big ]
-\end{equation*}
-\begin{proof} Assume the antecedent. Then $x^-$ and $x^+$ exist with the
-desired properties. From ~\ref{bounddistance2}, $x^+ = x^-$ or $x^+ =
-x^- + fulp$. If $x^+ = x^-$, then no matter what, $round(to\_nearest,x)$
-rewrites to $x^-$.
+\section{Rounding}
 
-Suppose $x^+ = x^- + fulp$. It then follows that
-\begin{equation*}
-x - x^- < fulp/2 = (x^+ - x^-)/2
-\end{equation*}
-and hence (arith tac?) $x - x^- < x^+ - x$, or $|x - x^-| < |x^+ - x|$. 
-Therefore, $closer(x^-, x^+, x)$, and $round(to\_nearest, x) = x^-$ 
-(probably some extra steps here in HOL light).
-\end{proof}
-\end{lem}
 
-\begin{lem}
-\label{rndup}
-\begin{equation*}
-\forall x \in \mathbb{R} \; . \; |x| \leq finf \;
-\Longrightarrow \;
-\big [ \; x > x^- + fulp/2 \; \Longrightarrow \; round(to\_nearest, x) = x^+
-\; \big ]
-\end{equation*}
-\begin{proof} Similar proof.
-\end{proof}
-\end{lem}
-
-\begin{lem}
-\label{rtnmonoleft}
-\begin{align*}
-&\forall x, y \in \mathbb{R} \; . \; 
-\left [
-\begin{array}{cl}
-\wedge & |x| \leq finf\\
-\wedge & |y| \leq finf\\
-\wedge & y^- = x^-\\
-\wedge & x \neq 0\\
-\wedge & y \neq 0\\
-\wedge & \big ( \; 0 \leq x^- \leq x \leq y < x^- + fulp/2 \; \vee \;
-x^- \leq x \leq y < x^- + fulp/2 \leq 0 \; \big )
-\end{array} \right ]
-\Longrightarrow \;\\
-& \left | \frac{rtn(x) - x}{x} \right | \leq \left | \frac{rtn(y) - y}{y}
-\right |
-\end{align*}
-\begin{proof} Assume the antecedent. Suppose $0 \leq x^- \leq x \leq y <
-x^- + fulp/2$. From ~\ref{monotoneleft}, we then have
-\begin{equation*}
-\left | \frac{x^- - x}{x} \right | \leq \left | \frac{x^- - y}{y} \right |
-\end{equation*}
-From the assumptions and ~\ref{rnddown}, we also have
-\begin{align*}
-rtn(x) &= x^-\\
-rtn(y) &= y^- = x^-
-\end{align*}
-hence
-\begin{equation*}
-\left | \frac{rtn(x) - x}{x} \right | \leq \left | \frac{rtn(y) - y}{y} \right |
-\end{equation*}
-The proof for the other case is similar.
-\end{proof}
-\end{lem}
-
-\begin{lem}
-\label{rtnmonoright}
-\begin{align*}
-&\forall x, y \in \mathbb{R} \; . \; 
-\left [
-\begin{array}{cl}
-\wedge & |x| \leq finf\\
-\wedge & |y| \leq finf\\
-\wedge & y^+ = x^+\\
-\wedge & x \neq 0\\
-\wedge & y \neq 0\\
-\wedge & \big ( \; 0 \leq x^- + fulp/2 < x \leq y \leq x^+ \; \vee \;
-x^- + fulp/2 < x \leq y \leq x^+ \leq 0 \; \big )
-\end{array} \right ]
-\Longrightarrow \;\\
-& \left | \frac{rtn(x) - x}{x} \right | \geq \left | \frac{rtn(y) - y}{y}
-\right |
-\end{align*}
-\begin{proof} Similar proof.
-\end{proof}
-\end{lem}
