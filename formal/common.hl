@@ -242,6 +242,127 @@ let IPOW_BETWEEN =
 	  MATCH_MP_TAC IPOW_LT_0 THEN ASM_REWRITE_TAC[]; ALL_TAC] THEN
 	ASM_ARITH_TAC);;        
 
+let IPOW_TO_1 =
+  prove(`!(x:real). x ipow &1 = x`,
+	GEN_TAC THEN REWRITE_TAC[ipow] THEN
+        REWRITE_TAC[ARITH_RULE `&0 <= (&1:int) <=> T`] THEN
+        REWRITE_TAC[NUM_OF_INT_OF_NUM] THEN ARITH_TAC);;
+
+let IPOW_TO_0 =
+  prove(`!(x:real). x ipow &0 = &1`,
+	GEN_TAC THEN REWRITE_TAC[ipow] THEN
+        REWRITE_TAC[ARITH_RULE `&0 <= (&0:int) <=> T`] THEN
+        REWRITE_TAC[NUM_OF_INT_OF_NUM] THEN ARITH_TAC);;
+
+let IPOW_LE_1 =
+  prove(`!(x:real) (e:int). &1 <= x /\ &0 <= e ==> &1 <= x ipow e`,
+	REPEAT GEN_TAC THEN REWRITE_TAC[ipow] THEN DISCH_THEN 
+        (LABEL_CONJUNCTS_TAC ["xgeq1"; "egeq0"]) THEN
+	ASM_REWRITE_TAC[] THEN 
+        USE_THEN "egeq0" (fun egeq0 -> CHOOSE_THEN (fun thm -> REWRITE_TAC[thm])
+        (REWRITE_RULE[GSYM INT_OF_NUM_EXISTS] egeq0)) THEN
+        REWRITE_TAC[NUM_OF_INT_OF_NUM] THEN MATCH_MP_TAC REAL_POW_LE_1 THEN
+        ASM_REWRITE_TAC[]);;
+
+let IPOW_LE_NUM =
+  let lem1 =
+    prove(`!(r:num) (n:num). 2 <= r ==> ?(e:int). &0 <= e /\ &n <= &r ipow e`,
+	    GEN_TAC THEN INDUCT_TAC THENL [
+	    (* base case *)
+	      DISCH_TAC THEN
+	      EXISTS_TAC `(&0):int` THEN
+	      REWRITE_TAC[ARITH_RULE `&0 <= (&0:int) <=> T`] THEN
+	      MATCH_MP_TAC (ARITH_RULE `&0 < (x:real) ==> &0 <= x`) THEN
+	      MATCH_MP_TAC IPOW_LT_0 THEN REWRITE_TAC[REAL_OF_NUM_LT] THEN
+              ASM_ARITH_TAC;
+	      (* inductive step *)
+	      DISCH_THEN (LABEL_TAC "rgeq2") THEN
+	      USE_THEN "rgeq2" (fun rgeq2 -> CHOOSE_THEN (LABEL_TAC "nleqpow")
+              (MATCH_MP 
+              (ASSUME 
+                 `2 <= r ==> (?e. &0 <= e /\ &n <= &r ipow e)`) rgeq2)) THEN
+              EXISTS_TAC `e + (&1:int)` THEN REWRITE_TAC[ADD1] THEN
+	      CONJ_TAC THENL [
+		ASM_ARITH_TAC; ALL_TAC] THEN
+	      SUBGOAL_THEN `&r ipow (e + &1) = &r ipow e * &r ipow &1`
+              (fun thm -> REWRITE_TAC[thm]) THENL [
+		ONCE_REWRITE_TAC[EQ_SYM_EQ] THEN
+		MATCH_MP_TAC IPOW_ADD_EXP THEN
+		REWRITE_TAC[REAL_OF_NUM_EQ] THEN ASM_ARITH_TAC; ALL_TAC] THEN
+	      REWRITE_TAC[IPOW_TO_1] THEN MATCH_MP_TAC REAL_LE_TRANS THEN
+	      EXISTS_TAC `&2 * &r ipow e` THEN
+	      CONJ_TAC THENL [
+		ONCE_REWRITE_TAC[ARITH_RULE `&2 * x = x + (x:real)`] THEN
+		REWRITE_TAC[GSYM REAL_OF_NUM_ADD] THEN
+                MATCH_MP_TAC (ARITH_RULE 
+                    `x <= (y:real) /\ z <= w ==> x + z <= y + w`) THEN
+                ASM_REWRITE_TAC[] THEN MATCH_MP_TAC IPOW_LE_1 THEN
+		REWRITE_TAC[REAL_OF_NUM_LE] THEN ASM_ARITH_TAC;
+		GEN_REWRITE_TAC (RATOR_CONV o RAND_CONV o ONCE_DEPTH_CONV)
+                [ARITH_RULE `(a:real) * b = b * a`] THEN
+                MATCH_MP_TAC REAL_LE_LMUL THEN
+                REWRITE_TAC[REAL_OF_NUM_LE] THEN ASM_REWRITE_TAC[] THEN
+                MATCH_MP_TAC (ARITH_RULE `&0 < (x:real) ==> &0 <= x`) THEN
+                MATCH_MP_TAC IPOW_LT_0 THEN REWRITE_TAC[REAL_OF_NUM_LT] THEN
+                ASM_ARITH_TAC]]) in
+    prove(`!(r:num) (n:num). 2 <= r ==> ?(e:int). &n <= &r ipow e`,
+	    REPEAT GEN_TAC THEN DISCH_THEN (fun thm -> CHOOSE_TAC
+            (SPEC `n:num` (MATCH_MP lem1 thm))) THEN EXISTS_TAC `e:int` THEN 
+            ASM_REWRITE_TAC[]);;
+
+let IPOW_LE_REAL =
+  prove(`!(r:num) (z:real). 2 <= r ==> ?(e:int). z <= &r ipow e`,
+	REPEAT GEN_TAC THEN 
+        DISCH_THEN (LABEL_TAC "rgeq2") THEN
+        CHOOSE_THEN (LABEL_TAC "nbound") (SPEC `z:real` REAL_ARCH_SIMPLE) THEN
+        USE_THEN "rgeq2" (fun rgeq2 -> 
+           CHOOSE_TAC (SPEC `n:num` (MATCH_MP IPOW_LE_NUM rgeq2))) THEN
+        EXISTS_TAC `e:int` THEN ASM_ARITH_TAC);;
+
+let IPOW_LE_REAL_2 =
+  prove(`!(r:num) (z:real). &0 < z /\ 2 <= r ==> ?(e:int). &r ipow e <= z`,
+	REPEAT GEN_TAC THEN 
+        DISCH_THEN (LABEL_CONJUNCTS_TAC ["zgt0"; "rgeq2"]) THEN
+        USE_THEN "rgeq2" (fun rgeq2 -> CHOOSE_THEN (LABEL_TAC "recip")
+        (SPEC `&1 / (z:real)` (MATCH_MP IPOW_LE_REAL rgeq2))) THEN
+	EXISTS_TAC `-- (e:int)` THEN
+        USE_THEN "rgeq2" (fun rgeq2 -> ONCE_REWRITE_TAC[MATCH_MP IPOW_INV_NEG
+        (MATCH_MP (ARITH_RULE `&2 <= &r ==> ~(&r = &0)`)
+        (REWRITE_RULE[GSYM REAL_OF_NUM_LE] rgeq2))]) THEN
+        REWRITE_TAC[ARITH_RULE `-- -- (e:int) = e`] THEN
+        GEN_REWRITE_TAC (RAND_CONV o ONCE_DEPTH_CONV) [GSYM REAL_INV_INV] THEN
+        MATCH_MP_TAC REAL_LE_INV2 THEN
+        CONJ_TAC THENL [
+	  MATCH_MP_TAC REAL_LT_INV THEN ASM_REWRITE_TAC[];
+	  GEN_REWRITE_TAC (RATOR_CONV o RAND_CONV o ONCE_DEPTH_CONV)
+          [ARITH_RULE `(x:real) = &1 * x`] THEN
+          REWRITE_TAC[GSYM real_div] THEN ASM_REWRITE_TAC[]]);;
+
+let IPOW_MONOTONE =
+  prove(`!(x:num) (e1:int) (e2:int). 1 <= x /\ &x ipow e1 <= &x ipow e2 ==> 
+             e1 <= e2`,
+	REPEAT GEN_TAC THEN
+	  REWRITE_TAC[ipow] THEN
+          ASM_CASES_TAC `&0 <= (e1:int)` THENL [
+	    ASM_CASES_TAC `&0 <= (e2:int)` THENL [
+	      ASM_REWRITE_TAC[] THEN
+	      CHOOSE_THEN (fun thm -> REWRITE_TAC[thm])
+              (REWRITE_RULE[GSYM INT_OF_NUM_EXISTS] 
+                    (ASSUME `&0 <= (e1:int)`)) THEN
+	      CHOOSE_THEN (fun thm -> REWRITE_TAC[thm])
+              (REWRITE_RULE[GSYM INT_OF_NUM_EXISTS] 
+                    (ASSUME `&0 <= (e2:int)`)) THEN
+              REWRITE_TAC[NUM_OF_INT_OF_NUM] THEN
+              REWRITE_TAC[REAL_OF_NUM_POW] THEN
+              REWRITE_TAC[REAL_OF_NUM_LE] THEN
+              REWRITE_TAC[INT_OF_NUM_LE] THEN
+              REWRITE_TAC[LE_EXP] THEN REWRITE_TAC[GSYM IMP_IMP] THEN
+              DISCH_TAC THEN ASM_ARITH_TAC
+
+              ASM_CASES_TAC `x = 0` THENL [
+		ASM_REWRITE_TAC[] THEN SIMP_TAC[]
+              
+
 (* -------------------------------------------------------------------------- *)
 (* rerror                                                                     *)
 (* -------------------------------------------------------------------------- *)

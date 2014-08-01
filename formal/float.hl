@@ -63,7 +63,7 @@ let is_float = define
   (?(f:num) (e:int) . is_frac_and_exp(fmt) x f e)`;;
 
 let to_fformat = define
-  `to_fformat (r:num) (p:num) (e:int) = (mk_fformat (r, p, e))`;;
+  `to_fformat (fmt:flformat) (e:int) = (mk_fformat ((flr fmt), (flp fmt), e))`;;
 
 (* -------------------------------------------------------------------------- *)
 (* Normalization                                                              *)
@@ -75,7 +75,7 @@ let normalizes = define
   `normalizes (fmt:flformat) (x:real) (m:num) (e:int) (y:real) =
   (0 < m /\
    m < (flr fmt) /\
-   abs(y) <= (finf (to_fformat (flr fmt) (flp fmt) e)) /\
+   abs(y) <= (finf (to_fformat fmt e)) /\
   (if (&0 <= x)
    then
      x = &m * &(flr fmt) ipow e + y
@@ -94,7 +94,11 @@ let greatest_m = define
 
 let greatest_r = define
   `greatest_r (fmt:flformat) (x:real) = 
-  (x - &(greatest_m(fmt) x) * &(flr fmt) ipow (greatest_e(fmt) x))`;;
+  (if (&0 <= x)
+   then 
+     (x - &(greatest_m(fmt) x) * &(flr fmt) ipow (greatest_e(fmt) x))
+   else 
+     (x + &(greatest_m(fmt) x) * &(flr fmt) ipow (greatest_e(fmt) x)))`;;
 
 (* -------------------------------------------------------------------------- *)
 (* Rounding                                                                   *)
@@ -109,10 +113,10 @@ let flround = define
      (if (&0 <= x)
       then
      	(&m * &(flr fmt) ipow e +
-     	   (fround(to_fformat (flr fmt) (flp fmt) e) mode y))
+     	   (fround(to_fformat fmt e) mode y))
       else
      	(-- &m * &(flr fmt) ipow e +
-     	   (fround(to_fformat (flr fmt) (flp fmt) e) mode y))))`;;
+     	   (fround(to_fformat fmt e) mode y))))`;;
 
 (* -------------------------------------------------------------------------- *)
 (* Machine Epsilon                                                            *)
