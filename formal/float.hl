@@ -88,9 +88,7 @@ let greatest_e = define
 
 let greatest_m = define
   `greatest_m (fmt:flformat) (x:real) =
-  sup_num({ (m:num) | (&m * &(flr fmt) ipow (greatest_e(fmt) x) <= abs(x) /\ 
-		       0 < m /\ 
-		       m < (flr fmt))})`;;
+  sup_num({ (m:num) | &m * &(flr fmt) ipow (greatest_e(fmt) x) <= abs(x) })`;;
 
 let greatest_r = define
   `greatest_r (fmt:flformat) (x:real) = 
@@ -115,7 +113,7 @@ let flround = define
      	(&m * &(flr fmt) ipow e +
      	   (fround(to_fformat fmt e) mode y))
       else
-     	(-- &m * &(flr fmt) ipow e +
+     	(-- (&m * &(flr fmt) ipow e) +
      	   (fround(to_fformat fmt e) mode y))))`;;
 
 (* -------------------------------------------------------------------------- *)
