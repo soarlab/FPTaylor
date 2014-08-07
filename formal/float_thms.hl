@@ -156,6 +156,32 @@ let FLOAT_IPOW_LE_REAL_2 =
         (SPEC `fmt:flformat`FLFORMAT_RADIX_LE_2))]));;
 
 (* -------------------------------------------------------------------------- *)
+(* Various float props                                                        *)
+(* -------------------------------------------------------------------------- *)
+
+let dump_float_defn isfloat =
+  LABEL_TAC "isfloat" isfloat THEN
+  CHOOSE_THEN
+  (CHOOSE_THEN (LABEL_TAC "isfracexp"))
+  (REWRITE_RULE[is_float] isfloat) THEN
+  USE_THEN "isfracexp" (fun isfracexp -> LABEL_CONJUNCTS_TAC
+  ["fgt0"; "fltrp"; "absxeq"] (REWRITE_RULE[is_frac_and_exp] isfracexp));;
+  
+let FLOAT_NOT_ZERO =
+  prove(`!(fmt:flformat) (x:real). is_float(fmt) x ==> ~(x = &0)`,
+	REPEAT GEN_TAC THEN DISCH_THEN dump_float_defn THEN
+	ONCE_REWRITE_TAC[GSYM REAL_ABS_ZERO] THEN
+        MATCH_MP_TAC (ARITH_RULE 
+             `!y. (x:real) = y /\ ~(y = &0) ==> ~(x = &0)`) THEN
+        EXISTS_TAC `&f * &(flr fmt) ipow (e - &(flp fmt) + &1)` THEN
+        ASM_REWRITE_TAC[] THEN
+        REWRITE_TAC[REAL_ENTIRE] THEN REWRITE_TAC[DE_MORGAN_THM] THEN
+        CONJ_TAC THENL [
+	  REWRITE_TAC[REAL_OF_NUM_EQ] THEN ASM_ARITH_TAC;
+	  MATCH_MP_TAC (ARITH_RULE `&0 < x ==> ~(x = &0)`) THEN
+          REWRITE_TAC[FLFORMAT_RADIX_IPOW_LT_0]]);;
+
+(* -------------------------------------------------------------------------- *)
 (* greatest_e, greatest_m, greatest_r                                         *)
 (* -------------------------------------------------------------------------- *)
 
@@ -348,3 +374,321 @@ let FLOAT_GREATEST_R_EXISTS =
              (ARITH_RULE `~(m + 1 <= m)`))) THEN
           REWRITE_TAC[ARITH_RULE `(a:real) * b + b = (a + &1) * b`] THEN
           REWRITE_TAC[REAL_OF_NUM_ADD] THEN ASM_ARITH_TAC]);;
+
+let dump_ge_gm_gr_info xneq0 =
+  dump_ge_gm_info xneq0 THEN
+  USE_THEN "xneq0" (fun xneq0 -> CHOOSE_THEN
+  (LABEL_CONJUNCTS_TAC ["greq"; "grleq2"]) 
+  (SPEC `fmt:flformat` (MATCH_MP FLOAT_GREATEST_R_EXISTS xneq0))) THEN
+  USE_THEN "geeq" (fun geeq -> dump_flformat_conv (rand (concl geeq))) THEN
+  REMOVE_THEN "grleq2" (fun grleq2 -> USE_THEN "fmteq" (fun fmteq -> 
+  USE_THEN "geeq" (fun geeq -> 
+  LABEL_TAC "grleq" (REWRITE_RULE[fmteq] (REWRITE_RULE[geeq] grleq2)))));;
+
+let FLOAT_NORMALIZE_REAL =
+  prove(`!(fmt:flformat) (x:real). ~(x = &0) ==>
+	  (if (&0 <= x)
+	   then
+	     x = &(greatest_m(fmt) x) * &(flr fmt) ipow (greatest_e(fmt) x) +
+		 (greatest_r(fmt) x)
+	   else 
+	     x = -- (&(greatest_m(fmt) x) * 
+                     &(flr fmt) ipow (greatest_e(fmt) x)) +
+		 (greatest_r(fmt) x))`,
+	REPEAT GEN_TAC THEN DISCH_THEN (LABEL_TAC "xneq0") THEN
+	USE_THEN "xneq0" (fun xneq0 -> dump_ge_gm_gr_info xneq0) THEN
+        REWRITE_TAC[greatest_r] THEN ASM_REWRITE_TAC[] THEN
+        ARITH_TAC);;
+	  
+let FLOAT_NORM_FRAC =
+  prove(`!(fmt:flformat) (x:real). is_float(fmt) x ==>
+	  ?(f:num) (e:int). (flr fmt) EXP ((flp fmt) - 1) <= f /\
+                            is_frac_and_exp(fmt) x f e`,
+	REPEAT GEN_TAC THEN DISCH_THEN dump_float_defn THEN
+	SUBGOAL_THEN `?n. (flr fmt) EXP ((flp fmt) - 1) <=
+                          f * (flr fmt) EXP n`
+	(LABEL_TAC "nexist") THENL [
+          EXISTS_TAC `(flp fmt) - 1` THEN REWRITE_TAC[IN_ELIM_THM] THEN
+          GEN_REWRITE_TAC (RATOR_CONV o RAND_CONV o ONCE_DEPTH_CONV)
+          [ARITH_RULE `n:num = n * 1`] THEN
+          GEN_REWRITE_TAC (RAND_CONV o ONCE_DEPTH_CONV)
+          [ARITH_RULE `(n:num) * m = m * n`] THEN
+	  REWRITE_TAC[LE_MULT_LCANCEL] THEN DISJ2_TAC THEN ASM_ARITH_TAC;
+          ALL_TAC] THEN
+        REMOVE_THEN "nexist" (fun nexist -> CHOOSE_THEN
+        (LABEL_CONJUNCTS_TAC ["expn"; "nsmall"])
+        (MATCH_MP (REWRITE_RULE[WF] WF_num) nexist)) THEN
+        EXISTS_TAC `f * (flr fmt) EXP n` THEN EXISTS_TAC `(e:int) - &n` THEN
+        ASM_REWRITE_TAC[] THEN REWRITE_TAC[is_frac_and_exp] THEN
+        CONJ_TAC THENL [
+	  REWRITE_TAC[LT_MULT] THEN ASM_REWRITE_TAC[] THEN
+          REWRITE_TAC[EXP_LT_0] THEN DISJ1_TAC THEN 
+          REWRITE_TAC[GSYM REAL_OF_NUM_EQ] THEN
+          REWRITE_TAC[FLFORMAT_RADIX_NE_0];
+	  CONJ_TAC THENL [
+	    DISJ_CASES_TAC (SPEC `n:num` num_CASES) THENL [
+	      ASM_REWRITE_TAC[] THEN REWRITE_TAC[EXP] THEN
+              ASM_ARITH_TAC;
+	      CHOOSE_THEN (LABEL_TAC "neqnp")
+              (ASSUME `?n'. n = SUC n'`) THEN
+              CHOOSE_THEN (LABEL_TAC "peqpp")
+              (MATCH_MP (REWRITE_RULE[TAUT `a \/ b <=> ~a ==> b`] num_CASES)
+              (MATCH_MP (ARITH_RULE `0 < a ==> ~(a = 0)`)
+               (SPEC `fmt:flformat` FLFORMAT_PREC_LT_0))) THEN
+              ASM_REWRITE_TAC[] THEN REWRITE_TAC[EXP] THEN
+	      ONCE_REWRITE_TAC[ARITH_RULE 
+                  `(a:num) * b * c = b * (a * c)`] THEN
+              REWRITE_TAC[LT_MULT_LCANCEL] THEN CONJ_TAC THENL [
+		REWRITE_TAC[GSYM REAL_OF_NUM_EQ] THEN
+                REWRITE_TAC[FLFORMAT_RADIX_NE_0];
+		SUBGOAL_THEN `n'' = (flp fmt) - 1` (fun thm ->
+                REWRITE_TAC[thm]) THENL [
+		  ASM_ARITH_TAC; ALL_TAC] THEN
+                SUBGOAL_THEN `(n':num) < n` (LABEL_TAC "npltn") THENL [
+		  ASM_ARITH_TAC; ALL_TAC] THEN
+                REWRITE_TAC[ARITH_RULE `(a:num) < b <=> ~(b <= a)`] THEN
+                USE_THEN "npltn" (fun npltn -> USE_THEN "nsmall" (fun nsmall ->
+                REWRITE_TAC[MATCH_MP nsmall npltn]))]];
+	    (* cancel the common factor ... *)
+	    REWRITE_TAC[ARITH_RULE `(e:int) - &n - &(flp fmt) + &1 = 
+                                       (-- &n) + (e - &(flp fmt) + &1)`] THEN
+            ONCE_REWRITE_TAC[GSYM(MATCH_MP (SPEC `&(flr fmt)` IPOW_ADD_EXP)
+            (SPEC `fmt:flformat` FLFORMAT_RADIX_NE_0))] THEN
+            GEN_REWRITE_TAC (RAND_CONV o RAND_CONV o RATOR_CONV o RAND_CONV o
+            ONCE_DEPTH_CONV)
+            [MATCH_MP (SPEC `&(flr fmt)` IPOW_INV_NEG)
+            (SPEC `fmt:flformat` FLFORMAT_RADIX_NE_0)] THEN
+            REWRITE_TAC[ARITH_RULE `-- -- (&n:int) = &n`] THEN
+	    SUBGOAL_THEN `&(flr fmt) ipow &n = &((flr fmt) EXP n)` (fun thm ->
+            REWRITE_TAC[thm]) THENL [
+	      SUBGOAL_THEN `&0 <= (&n:int)` (fun thm -> 
+	      CHOOSE_THEN ASSUME_TAC (MATCH_MP (SPEC `(flr fmt)` IPOW_EQ_EXP)
+              thm)) THENL [ ARITH_TAC; ALL_TAC ] THEN
+              ASM_REWRITE_TAC[] THEN REWRITE_TAC[NUM_OF_INT_OF_NUM]; 
+              ALL_TAC] THEN
+            REWRITE_TAC[GSYM REAL_OF_NUM_MUL] THEN
+            SUBGOAL_THEN `(&((flr fmt) EXP n)) * inv (&((flr fmt) EXP n)) = &1`
+            ASSUME_TAC THENL [
+	      MATCH_MP_TAC REAL_MUL_RINV THEN REWRITE_TAC[REAL_OF_NUM_EQ] THEN
+              REWRITE_TAC[EXP_EQ_0] THEN REWRITE_TAC[DE_MORGAN_THM] THEN
+              DISJ1_TAC THEN REWRITE_TAC[GSYM REAL_OF_NUM_EQ] THEN
+              REWRITE_TAC[FLFORMAT_RADIX_NE_0]; ALL_TAC] THEN
+            REWRITE_TAC[ARITH_RULE `((x:real) * y) * inv y * z = 
+                                        (y * inv y) * x * z`] THEN
+            ASM_REWRITE_TAC[] THEN ARITH_TAC]]);;
+
+let FLOAT_NORM_M =
+  prove(`!(fmt:flformat) (x:real). is_float(fmt) x ==>
+          (?(m:num) (e:int) (f':num). 
+             f' < (flr fmt) EXP ((flp fmt) - 1) /\
+             1 <= m /\
+             m < (flr fmt) /\
+             abs(x) = &(m * (flr fmt) EXP ((flp fmt) - 1) + f') * 
+                        &(flr fmt) ipow (e - &(flp fmt) + &1))`,
+	REPEAT GEN_TAC THEN DISCH_THEN (fun thm -> CHOOSE_THEN 
+        (CHOOSE_THEN (LABEL_CONJUNCTS_TAC ["flow"; "isfracexp"]))
+        (MATCH_MP FLOAT_NORM_FRAC thm)) THEN
+        REMOVE_THEN "isfracexp" (fun isfracexp -> LABEL_CONJUNCTS_TAC
+        ["fpos"; "fleqrp"; "absxeq"] (REWRITE_RULE[is_frac_and_exp] 
+        isfracexp)) THEN
+        SUBGOAL_THEN `?(m:num) (f':num). 
+                f = m * ((flr fmt) EXP ((flp fmt) - 1)) + f' /\
+	        f' < (flr fmt) EXP ((flp fmt) - 1)`
+        (CHOOSE_THEN (CHOOSE_THEN (LABEL_CONJUNCTS_TAC 
+        ["feqmfp"; "fpleq"]))) THENL [
+	  MATCH_MP_TAC DIVMOD_EXIST THEN REWRITE_TAC[EXP_EQ_0] THEN
+          REWRITE_TAC[DE_MORGAN_THM] THEN DISJ1_TAC THEN
+          REWRITE_TAC[GSYM REAL_OF_NUM_EQ] THEN 
+          REWRITE_TAC[FLFORMAT_RADIX_NE_0]; ALL_TAC] THEN
+        EXISTS_TAC `m:num` THEN EXISTS_TAC `e:int` THEN EXISTS_TAC `f':num` THEN
+        ASM_REWRITE_TAC[] THEN CONJ_TAC THENL [
+	  MATCH_MP_TAC NUM_LE_MUL_1 THEN 
+          EXISTS_TAC `(flr fmt) EXP ((flp fmt) - 1)` THEN
+          REWRITE_TAC[ARITH_RULE `1 <= b <=> 0 < b`] THEN
+          MATCH_MP_TAC (ARITH_RULE `!b. (a:num) < b /\ b <= c ==> a < c`) THEN
+          EXISTS_TAC `(flr fmt) EXP ((flp fmt) - 1) - f'` THEN
+          ASM_ARITH_TAC;
+	  MATCH_MP_TAC (ARITH_RULE `!(a:num). x < (y:num) /\ ~(a = 0) ==>
+                          x < y`) THEN 
+          EXISTS_TAC `(flr fmt) EXP ((flp fmt) - 1)` THEN
+          REWRITE_TAC[GSYM LT_MULT_RCANCEL] THEN
+	  GEN_REWRITE_TAC (RAND_CONV o ONCE_DEPTH_CONV)
+          [GSYM EXP] THEN
+          REWRITE_TAC[MATCH_MP (ARITH_RULE `0 < n ==> SUC (n - 1) = n`)
+                      (SPEC `fmt:flformat` FLFORMAT_PREC_LT_0)] THEN
+          ASM_ARITH_TAC]);;
+
+let FLOAT_NORM_GREATEST =
+  prove(`!(fmt:flformat) (x:real). is_float(fmt) x ==>
+           (?(f':num). 
+              f' < (flr fmt) EXP ((flp fmt) - 1) /\
+	      abs(x) = &((greatest_m(fmt) x) * ((flr fmt) EXP ((flp fmt) - 1))
+                          + f') * 
+                    &(flr fmt) ipow ((greatest_e(fmt) x) - &(flp fmt) + &1))`,
+	REPEAT GEN_TAC THEN DISCH_THEN (LABEL_TAC "isfloat") THEN
+        USE_THEN "isfloat" (fun isfloat -> CHOOSE_THEN
+        (CHOOSE_THEN (CHOOSE_THEN (LABEL_CONJUNCTS_TAC 
+        ["fpleqrp"; "mgeq1"; "mltr"; "absxeq"])))
+        (MATCH_MP FLOAT_NORM_M isfloat)) THEN
+        EXISTS_TAC `f':num` THEN ASM_REWRITE_TAC[] THEN
+        USE_THEN "isfloat" (fun isfloat -> LABEL_TAC "xneq0" (MATCH_MP
+        FLOAT_NOT_ZERO isfloat)) THEN
+	USE_THEN "xneq0" (fun xneq0 -> dump_ge_gm_info xneq0) THEN
+	SUBGOAL_THEN `&(flr fmt) ipow e <= abs(x)` (LABEL_TAC "eleqabs") THENL [
+	  MATCH_MP_TAC REAL_LE_TRANS THEN 
+          EXISTS_TAC `&m * &(flr fmt) ipow e` THEN CONJ_TAC THENL [
+	    GEN_REWRITE_TAC (RATOR_CONV o RAND_CONV o ONCE_DEPTH_CONV)
+            [ARITH_RULE `(x:real) = &1 * x`] THEN
+	      MATCH_MP_TAC REAL_LE_RMUL THEN CONJ_TAC THENL [
+	      REWRITE_TAC[REAL_OF_NUM_LE] THEN ASM_REWRITE_TAC[];
+	      REWRITE_TAC[FLFORMAT_RADIX_IPOW_LE_0]];
+	    MATCH_MP_TAC REAL_LE_TRANS THEN
+	    EXISTS_TAC `&(m * flr fmt EXP (flp fmt - 1) + f') * 
+	                &(flr fmt) ipow (e - &(flp fmt) + &1)` THEN
+	    CONJ_TAC THENL [
+	      REWRITE_TAC[GSYM REAL_OF_NUM_ADD] THEN 
+              REWRITE_TAC[REAL_ADD_RDISTRIB] THEN
+              MATCH_MP_TAC (ARITH_RULE `(a:real) = b /\ &0 <= (c:real) ==>
+                                          a <= b + c`) THEN
+	      CONJ_TAC THENL [
+		REWRITE_TAC[GSYM REAL_OF_NUM_MUL] THEN
+		REWRITE_TAC[GSYM (MATCH_MP (SPEC `(flr fmt)` IPOW_EQ_EXP_P)
+                (SPEC `fmt:flformat` FLFORMAT_PREC_LT_0))] THEN
+		REWRITE_TAC[ARITH_RULE `((a:real) * b) * c = a * (b * c)`] THEN
+                REWRITE_TAC[MATCH_MP IPOW_ADD_EXP
+                (SPEC `fmt:flformat` FLFORMAT_RADIX_NE_0)] THEN
+                REWRITE_TAC[ARITH_RULE `(x:int) - &1 + e - x + &1 = e`];
+		MATCH_MP_TAC REAL_LE_MUL THEN CONJ_TAC THENL [
+		  REWRITE_TAC[REAL_OF_NUM_LE] THEN ARITH_TAC;
+		  REWRITE_TAC[FLFORMAT_RADIX_IPOW_LE_0]]];
+	    ASM_ARITH_TAC]]; ALL_TAC] THEN
+	  USE_THEN "eleqabs" (fun eleqabs -> USE_THEN "gebig" (fun gebig ->
+          DISJ_CASES_TAC (MATCH_MP (ARITH_RULE `(e:int) <= b ==>
+          e = b \/ e < b`) (MATCH_MP gebig eleqabs)))) THENL [
+
+	    (* e = e' *)
+	    SUBGOAL_THEN `&m * &(flr fmt) ipow e' <= abs(x)` 
+            (LABEL_TAC "mleqabs") THENL [
+	      MATCH_MP_TAC REAL_LE_TRANS THEN
+              EXISTS_TAC `&(m * flr fmt EXP (flp fmt - 1) + f') * 
+	                &(flr fmt) ipow (e - &(flp fmt) + &1)` THEN
+  	      CONJ_TAC THENL [
+	        REWRITE_TAC[GSYM REAL_OF_NUM_ADD] THEN 
+                REWRITE_TAC[REAL_ADD_RDISTRIB] THEN
+                MATCH_MP_TAC (ARITH_RULE `(a:real) = b /\ &0 <= (c:real) ==>
+                                          a <= b + c`) THEN
+	        CONJ_TAC THENL [
+		  REWRITE_TAC[GSYM REAL_OF_NUM_MUL] THEN
+		  REWRITE_TAC[GSYM (MATCH_MP (SPEC `(flr fmt)` IPOW_EQ_EXP_P)
+                  (SPEC `fmt:flformat` FLFORMAT_PREC_LT_0))] THEN
+		  REWRITE_TAC[ARITH_RULE 
+                                `((a:real) * b) * c = a * (b * c)`] THEN
+                  REWRITE_TAC[MATCH_MP IPOW_ADD_EXP
+                  (SPEC `fmt:flformat` FLFORMAT_RADIX_NE_0)] THEN
+                  REWRITE_TAC[ARITH_RULE `(x:int) - &1 + e - x + &1 = e`] THEN
+                  ASM_REWRITE_TAC[];
+		  MATCH_MP_TAC REAL_LE_MUL THEN CONJ_TAC THENL [
+		    REWRITE_TAC[REAL_OF_NUM_LE] THEN ARITH_TAC;
+		    REWRITE_TAC[FLFORMAT_RADIX_IPOW_LE_0]]];
+		ASM_ARITH_TAC]; ALL_TAC] THEN
+	    USE_THEN "mleqabs" (fun mleqabs -> USE_THEN "gmbig" (fun gmbig ->
+            DISJ_CASES_TAC (MATCH_MP (ARITH_RULE `(e:num) <= b ==>
+            e = b \/ e < b`) (MATCH_MP gmbig mleqabs)))) THENL [
+
+	      (* m = m' *)
+	      ASM_REWRITE_TAC[];
+
+	      (* m < m' *)
+	      SUBGOAL_THEN `&(m + 1) * &(flr fmt) ipow e' <= abs(x)` 
+              ASSUME_TAC THENL [
+		MATCH_MP_TAC REAL_LE_TRANS THEN
+                EXISTS_TAC `&m' * &(flr fmt) ipow e'` THEN
+                ASM_REWRITE_TAC[] THEN MATCH_MP_TAC REAL_LE_RMUL THEN
+                REWRITE_TAC[FLFORMAT_RADIX_IPOW_LE_0] THEN 
+                REWRITE_TAC[REAL_OF_NUM_LE] THEN ASM_ARITH_TAC; ALL_TAC] THEN
+              SUBGOAL_THEN `abs(x) < &(m + 1) * &(flr fmt) ipow e'`
+              ASSUME_TAC THENL [
+		ASM_REWRITE_TAC[] THEN REWRITE_TAC[GSYM REAL_OF_NUM_ADD] THEN
+                REWRITE_TAC[REAL_ADD_RDISTRIB] THEN 
+                MATCH_MP_TAC (ARITH_RULE 
+                              `(a:real) < b /\ c = d ==> c + a < d + b`) THEN
+                CONJ_TAC THENL [
+		  MATCH_MP_TAC (ARITH_RULE 
+                                  `!b. (a:real) < b /\ b = c ==> a < c`) THEN
+                  EXISTS_TAC `&((flr fmt) EXP ((flp fmt) - 1)) *
+                                &(flr fmt) ipow (e' - &(flp fmt) + &1)` THEN 
+                  CONJ_TAC THENL [
+		    MATCH_MP_TAC REAL_LT_RMUL THEN
+                    REWRITE_TAC[FLFORMAT_RADIX_IPOW_LT_0] THEN
+                    REWRITE_TAC[REAL_OF_NUM_LT] THEN ASM_REWRITE_TAC[];
+                    REWRITE_TAC[GSYM (MATCH_MP (SPEC `(flr fmt)` IPOW_EQ_EXP_P)
+                    (SPEC `fmt:flformat` FLFORMAT_PREC_LT_0))] THEN
+                    REWRITE_TAC[MATCH_MP (SPEC `&(flr fmt)` IPOW_ADD_EXP)
+                    (SPEC `fmt:flformat` FLFORMAT_RADIX_NE_0)] THEN
+                    REWRITE_TAC[ARITH_RULE 
+                                `(e:int) - &1 + e' - e + &1 = e'`] THEN
+                    ARITH_TAC];
+                REWRITE_TAC[GSYM REAL_OF_NUM_MUL] THEN
+                REWRITE_TAC[GSYM (MATCH_MP (SPEC `(flr fmt)` IPOW_EQ_EXP_P)
+                (SPEC `fmt:flformat` FLFORMAT_PREC_LT_0))] THEN
+                REWRITE_TAC[ARITH_RULE `((a:real) * b) * c = a * (b * c)`] THEN
+                REWRITE_TAC[MATCH_MP (SPEC `&(flr fmt)` IPOW_ADD_EXP)
+                (SPEC `fmt:flformat` FLFORMAT_RADIX_NE_0)] THEN
+                REWRITE_TAC[ARITH_RULE 
+                                `(e:int) - &1 + e' - e + &1 = e'`]]; 
+                ALL_TAC] THEN
+             ASM_ARITH_TAC];
+
+	    (* e < e' *)
+	    SUBGOAL_THEN `&(flr fmt) ipow (e + &1) <= abs(x)` 
+              ASSUME_TAC THENL [
+		MATCH_MP_TAC REAL_LE_TRANS THEN
+                EXISTS_TAC `&(flr fmt) ipow e'` THEN CONJ_TAC THENL [
+		  MATCH_MP_TAC IPOW_MONOTONE_2 THEN CONJ_TAC THENL [
+		    REWRITE_TAC[REAL_OF_NUM_LE] THEN MATCH_MP_TAC
+                    (ARITH_RULE `1 < x ==> 1 <= x`) THEN
+                    REWRITE_TAC[FLFORMAT_RADIX_LT_1];
+		    ASM_ARITH_TAC];
+		  ASM_REWRITE_TAC[]]; ALL_TAC] THEN
+            SUBGOAL_THEN `abs(x) < &(flr fmt) ipow (e + &1)`
+              ASSUME_TAC THENL [
+              MATCH_MP_TAC (ARITH_RULE 
+                              `!b. (a:real) < b /\ b <= d ==> a < d`) THEN
+              EXISTS_TAC `&(m + 1) * &(flr fmt) ipow e` THEN CONJ_TAC THENL [
+		ASM_REWRITE_TAC[] THEN REWRITE_TAC[GSYM REAL_OF_NUM_ADD] THEN
+                REWRITE_TAC[REAL_ADD_RDISTRIB] THEN 
+                MATCH_MP_TAC (ARITH_RULE 
+                              `(a:real) < b /\ c = d ==> c + a < d + b`) THEN
+                CONJ_TAC THENL [
+		  MATCH_MP_TAC (ARITH_RULE 
+                                  `!b. (a:real) < b /\ b = c ==> a < c`) THEN
+                  EXISTS_TAC `&((flr fmt) EXP ((flp fmt) - 1)) *
+                                &(flr fmt) ipow (e - &(flp fmt) + &1)` THEN 
+                  CONJ_TAC THENL [
+		    MATCH_MP_TAC REAL_LT_RMUL THEN
+                    REWRITE_TAC[FLFORMAT_RADIX_IPOW_LT_0] THEN
+                    REWRITE_TAC[REAL_OF_NUM_LT] THEN ASM_REWRITE_TAC[];
+                    REWRITE_TAC[GSYM (MATCH_MP (SPEC `(flr fmt)` IPOW_EQ_EXP_P)
+                    (SPEC `fmt:flformat` FLFORMAT_PREC_LT_0))] THEN
+                    REWRITE_TAC[MATCH_MP (SPEC `&(flr fmt)` IPOW_ADD_EXP)
+                    (SPEC `fmt:flformat` FLFORMAT_RADIX_NE_0)] THEN
+                    REWRITE_TAC[ARITH_RULE 
+                                `(e:int) - &1 + e' - e + &1 = e'`] THEN
+                    ARITH_TAC];
+                REWRITE_TAC[GSYM REAL_OF_NUM_MUL] THEN
+                REWRITE_TAC[GSYM (MATCH_MP (SPEC `(flr fmt)` IPOW_EQ_EXP_P)
+                (SPEC `fmt:flformat` FLFORMAT_PREC_LT_0))] THEN
+                REWRITE_TAC[ARITH_RULE `((a:real) * b) * c = a * (b * c)`] THEN
+                REWRITE_TAC[MATCH_MP (SPEC `&(flr fmt)` IPOW_ADD_EXP)
+                (SPEC `fmt:flformat` FLFORMAT_RADIX_NE_0)] THEN
+                REWRITE_TAC[ARITH_RULE 
+                                `(e:int) - &1 + e' - e + &1 = e'`]];
+             REWRITE_TAC[GSYM (MATCH_MP (SPEC `&(flr fmt)` IPOW_ADD_EXP)
+             (SPEC `fmt:flformat` FLFORMAT_RADIX_NE_0))] THEN
+             GEN_REWRITE_TAC (RAND_CONV o ONCE_DEPTH_CONV)
+             [ARITH_RULE `(a:real) * b = b * a`] THEN
+             MATCH_MP_TAC REAL_LE_RMUL THEN
+             REWRITE_TAC[FLFORMAT_RADIX_IPOW_LE_0] THEN
+             REWRITE_TAC[IPOW_TO_1] THEN REWRITE_TAC[REAL_OF_NUM_LE] THEN
+             ASM_ARITH_TAC]; ALL_TAC] THEN
+           ASM_ARITH_TAC]);;

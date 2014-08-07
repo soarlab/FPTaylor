@@ -55,7 +55,7 @@ let flp = define
 let is_frac_and_exp = define
   `is_frac_and_exp (fmt:flformat) (x:real) (f:num) (e:int) =
   (0 < f /\
-   f < (flr fmt) EXP ((flp fmt) - 1) /\
+   f < (flr fmt) EXP (flp fmt) /\
    abs(x) = &f * &(flr fmt) ipow (e - &(flp fmt) + &1))`;;
 
 let is_float = define
@@ -70,17 +70,6 @@ let to_fformat = define
 (* -------------------------------------------------------------------------- *)
 
 (* x = +/- m * r^e + y *)
-
-let normalizes = define
-  `normalizes (fmt:flformat) (x:real) (m:num) (e:int) (y:real) =
-  (0 < m /\
-   m < (flr fmt) /\
-   abs(y) <= (finf (to_fformat fmt e)) /\
-  (if (&0 <= x)
-   then
-     x = &m * &(flr fmt) ipow e + y
-   else
-     x = -- &m * &(flr fmt) ipow e + y))`;;
 
 let greatest_e = define
   `greatest_e (fmt:flformat) (x:real) = 
