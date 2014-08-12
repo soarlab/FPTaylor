@@ -1117,19 +1117,33 @@ let CLOSER_BETWEEN_2 =
 	 REPEAT GEN_TAC THEN REWRITE_TAC[closer] THEN ARITH_TAC);;
 
 let is_closest = define
-  `is_closest (fmt:fformat) (x:real) (y:real) = 
+  `is_closest (fmt:fformat) (x:real) (y:real) =
          (!(s:real). (s IN (fixed fmt)) /\ ~(s = y) ==>
 				     ((closer y s x) \/ ~(closer s y x)))`;;
 
 let to_even = define
   `to_even (fmt:fformat) (x:real) (y:real) = (!(y2:real) (f:num).
-  (y2 IN (fixed fmt)) /\ (is_closest(fmt) x y) /\ (is_closest(fmt) x y2) /\ 
+  (y2 IN (fixed fmt)) /\ (is_closest(fmt) x y) /\ (is_closest(fmt) x y2) /\
    ~(y2 = y) /\
     (is_frac(fmt) y f) ==> (EVEN f))`;;
 
+let glb_fixed_proof = 
+    USE_THEN "absx" (fun absx ->
+    LABEL_TAC "glbfixed" (REWRITE_RULE[IN_ELIM_THM] (REWRITE_RULE[fixed]
+    (MATCH_MP FIXED_GLB_IS_FIXED absx)))) THEN
+    USE_THEN "glb1" (fun glb1 -> REWRITE_TAC[GSYM glb1]) THEN
+    USE_THEN "glbfixed" (fun glbfixed -> REWRITE_TAC[glbfixed]);;
+let lub_fixed_proof = 
+    USE_THEN "absx" (fun absx ->
+    LABEL_TAC "lubfixed" (REWRITE_RULE[IN_ELIM_THM] (REWRITE_RULE[fixed]
+    (MATCH_MP FIXED_LUB_IS_FIXED absx)))) THEN
+    USE_THEN "lub1" (fun lub1 -> REWRITE_TAC[GSYM lub1]) THEN
+    USE_THEN "lubfixed" (fun lubfixed -> REWRITE_TAC[lubfixed]);;
+
 let FIXED_RD_NEAREST_CLOSEST =
   prove(`!(fmt:fformat) (x:real). abs(x) <= (finf fmt) ==>
-	  ?(y:real). fround(fmt) To_near x = y /\ is_closest(fmt) x y`,
+	  ?(y:real). fround(fmt) To_near x = y /\
+                     is_fixed(fmt) y /\ is_closest(fmt) x y`,
 	REPEAT GEN_TAC THEN DISCH_THEN (LABEL_TAC "absx") THEN
 	REWRITE_TAC[is_closest] THEN
 	REWRITE_TAC[fround] THEN LET_TAC THEN
@@ -1143,14 +1157,16 @@ let FIXED_RD_NEAREST_CLOSEST =
 	USE_THEN "lub1" (fun lub1 -> REWRITE_TAC[lub1]) THEN
 	COND_CASES_TAC THENL [
 	  (* the glb is closer *)
-	  EXISTS_TAC `y:real` THEN 
+	  EXISTS_TAC `y:real` THEN
           ASM_REWRITE_TAC[] THEN
+	  (* show it is fixed *)
+	  CONJ_TAC THENL [glb_fixed_proof; ALL_TAC] THEN
 	  (* show it is closest *)
-	  REWRITE_TAC[is_closest] THEN GEN_TAC THEN 
+	  REWRITE_TAC[is_closest] THEN GEN_TAC THEN
           DISCH_THEN (LABEL_CONJUNCTS_TAC ["sfixed"; "sneqy"]) THEN
           DISJ1_TAC THEN
 	  USE_THEN "absx" (fun absx -> USE_THEN "sfixed" (fun sfixed ->
-          DISJ_CASES_TAC (MATCH_MP (MATCH_MP (SPEC `fmt:fformat` 
+          DISJ_CASES_TAC (MATCH_MP (MATCH_MP (SPEC `fmt:fformat`
           FIXED_GLB_LUB_DISCRETE) absx) sfixed))) THENL [
 	    (* s <= glb *)
 	    SUBGOAL_THEN `s < glb fmt x` ASSUME_TAC THENL [
@@ -1160,7 +1176,7 @@ let FIXED_RD_NEAREST_CLOSEST =
 	    (* lub <= s *)
 	    ASM_CASES_TAC `s = lub(fmt) x` THENL [
 	      ONCE_ASM_REWRITE_TAC[] THEN
-              USE_THEN "lub1" (fun lub1 -> REWRITE_TAC[lub1]) THEN	
+              USE_THEN "lub1" (fun lub1 -> REWRITE_TAC[lub1]) THEN
               ASM_REWRITE_TAC[];
 	      MATCH_MP_TAC CLOSER_TRANS THEN
 	      EXISTS_TAC `y':real` THEN ASM_REWRITE_TAC[] THEN
@@ -1170,11 +1186,14 @@ let FIXED_RD_NEAREST_CLOSEST =
 	  (* the lub is closer *)
 	  EXISTS_TAC `y':real` THEN
 	  ASM_REWRITE_TAC[] THEN
-	  GEN_TAC THEN 
+	  (* show fixed *)
+	  CONJ_TAC THENL [lub_fixed_proof; ALL_TAC] THEN
+	  (* show closest *)
+	  GEN_TAC THEN
           DISCH_THEN (LABEL_CONJUNCTS_TAC ["sfixed"; "sneqyp"]) THEN
 	  DISJ1_TAC THEN
           USE_THEN "absx" (fun absx -> USE_THEN "sfixed" (fun sfixed ->
-          DISJ_CASES_TAC (MATCH_MP (MATCH_MP (SPEC `fmt:fformat` 
+          DISJ_CASES_TAC (MATCH_MP (MATCH_MP (SPEC `fmt:fformat`
           FIXED_GLB_LUB_DISCRETE) absx) sfixed))) THENL [
 	    ASM_CASES_TAC `s = glb(fmt) x` THENL [
 	      ONCE_ASM_REWRITE_TAC[] THEN
@@ -1191,11 +1210,13 @@ let FIXED_RD_NEAREST_CLOSEST =
 	  (* neither is closer, but the glb has an even frac *)
 	  EXISTS_TAC `y:real` THEN
 	  ASM_REWRITE_TAC[] THEN
+	  (* show fixed *)
+	  CONJ_TAC THENL [glb_fixed_proof; ALL_TAC] THEN
           GEN_TAC THEN
           DISCH_THEN (LABEL_CONJUNCTS_TAC ["sfixed"; "sneqy"]) THEN
           DISJ2_TAC THEN
 	  USE_THEN "absx" (fun absx -> USE_THEN "sfixed" (fun sfixed ->
-          DISJ_CASES_TAC (MATCH_MP (MATCH_MP (SPEC `fmt:fformat` 
+          DISJ_CASES_TAC (MATCH_MP (MATCH_MP (SPEC `fmt:fformat`
           FIXED_GLB_LUB_DISCRETE) absx) sfixed))) THENL [
 	    (* s <= glb *)
 	    ASM_CASES_TAC `s = glb(fmt) x` THENL [
@@ -1220,11 +1241,13 @@ let FIXED_RD_NEAREST_CLOSEST =
 	  (* neither is closer, but the glb does not have an even frac *)
 	  EXISTS_TAC `y':real` THEN
 	  ASM_REWRITE_TAC[] THEN
+	  (* show fixed *)
+	  CONJ_TAC THENL [lub_fixed_proof; ALL_TAC] THEN
           GEN_TAC THEN
           DISCH_THEN (LABEL_CONJUNCTS_TAC ["sfixed"; "sneqyp"]) THEN
           DISJ2_TAC THEN
 	  USE_THEN "absx" (fun absx -> USE_THEN "sfixed" (fun sfixed ->
-          DISJ_CASES_TAC (MATCH_MP (MATCH_MP (SPEC `fmt:fformat` 
+          DISJ_CASES_TAC (MATCH_MP (MATCH_MP (SPEC `fmt:fformat`
           FIXED_GLB_LUB_DISCRETE) absx) sfixed))) THENL [
 	    (* s <= glb *)
 	    ASM_CASES_TAC `s = glb(fmt) x` THENL [
@@ -1246,10 +1269,11 @@ let FIXED_RD_NEAREST_CLOSEST =
 	      MATCH_MP_TAC CLOSER_NEG THEN MATCH_MP_TAC CLOSER_HIGHER THEN
               ASM_ARITH_TAC]]]);;
 
-
 let FIXED_RD_NEAREST_EVEN =
   prove(`!(fmt:fformat) (x:real). abs(x) <= (finf fmt) ==>
-	  ?(y:real). fround(fmt) To_near x = y /\ to_even(fmt) x y`,
+	  ?(y:real). fround(fmt) To_near x = y /\ 
+                     is_fixed(fmt) y /\
+                     to_even(fmt) x y`,
 	REPEAT GEN_TAC THEN DISCH_THEN (LABEL_TAC "absx") THEN
 	REWRITE_TAC[fround] THEN LET_TAC THEN
 	(* might as well dump all of the facts ... *)
@@ -1262,18 +1286,19 @@ let FIXED_RD_NEAREST_EVEN =
 	USE_THEN "lub1" (fun lub1 -> REWRITE_TAC[lub1]) THEN
 	COND_CASES_TAC THENL [
 	  (* the glb is closer *)
-	  EXISTS_TAC `y:real` THEN 
+	  EXISTS_TAC `y:real` THEN
           ASM_REWRITE_TAC[] THEN
+	  CONJ_TAC THENL [glb_fixed_proof; ALL_TAC] THEN
 	  REWRITE_TAC[to_even] THEN
 	  REPEAT GEN_TAC THEN
-          DISCH_THEN (LABEL_CONJUNCTS_TAC ["y2fixed"; "yclosest"; "y2closest"; 
+          DISCH_THEN (LABEL_CONJUNCTS_TAC ["y2fixed"; "yclosest"; "y2closest";
           "y2neqy"; "yfrac"]) THEN
 	  SUBGOAL_THEN `~(is_closest(fmt) x y2)` (LABEL_TAC "notcl") THENL [
 	    REWRITE_TAC[is_closest] THEN REWRITE_TAC[NOT_FORALL_THM] THEN
 	    EXISTS_TAC `y:real` THEN REWRITE_TAC[NOT_IMP] THEN
 	    ASM_REWRITE_TAC[] THEN REWRITE_TAC[DE_MORGAN_THM] THEN
             USE_THEN "absx" (fun absx -> USE_THEN "y2fixed" (fun y2fixed ->
-            DISJ_CASES_TAC (MATCH_MP (MATCH_MP (SPEC `fmt:fformat` 
+            DISJ_CASES_TAC (MATCH_MP (MATCH_MP (SPEC `fmt:fformat`
             FIXED_GLB_LUB_DISCRETE) absx) y2fixed))) THENL [
 	      (* y2 <= glb *)
 	      SUBGOAL_THEN `~(y2 = glb(fmt) x)` (LABEL_TAC "y2negglb") THENL [
@@ -1305,18 +1330,19 @@ let FIXED_RD_NEAREST_EVEN =
 
 	COND_CASES_TAC THENL [
 	  (* the lub is closer *)
-	  EXISTS_TAC `y':real` THEN 
+	  EXISTS_TAC `y':real` THEN
           ASM_REWRITE_TAC[] THEN
+	  CONJ_TAC THENL [lub_fixed_proof; ALL_TAC] THEN
 	  REWRITE_TAC[to_even] THEN
 	  REPEAT GEN_TAC THEN
-          DISCH_THEN (LABEL_CONJUNCTS_TAC ["y2fixed"; "yclosest"; "y2closest"; 
+          DISCH_THEN (LABEL_CONJUNCTS_TAC ["y2fixed"; "yclosest"; "y2closest";
           "y2neqy"; "yfrac"]) THEN
 	  SUBGOAL_THEN `~(is_closest(fmt) x y2)` (LABEL_TAC "notcl") THENL [
 	    REWRITE_TAC[is_closest] THEN REWRITE_TAC[NOT_FORALL_THM] THEN
 	    EXISTS_TAC `y':real` THEN REWRITE_TAC[NOT_IMP] THEN
 	    ASM_REWRITE_TAC[] THEN REWRITE_TAC[DE_MORGAN_THM] THEN
             USE_THEN "absx" (fun absx -> USE_THEN "y2fixed" (fun y2fixed ->
-            DISJ_CASES_TAC (MATCH_MP (MATCH_MP (SPEC `fmt:fformat` 
+            DISJ_CASES_TAC (MATCH_MP (MATCH_MP (SPEC `fmt:fformat`
             FIXED_GLB_LUB_DISCRETE) absx) y2fixed))) THENL [
 	      (* y2 <= glb *)
 	      ASM_CASES_TAC `y2 = glb(fmt) x` THENL [
@@ -1351,9 +1377,10 @@ let FIXED_RD_NEAREST_EVEN =
 	  (* neither is closer, but the glb has an even frac *)
 	  EXISTS_TAC `y:real` THEN
 	  ASM_REWRITE_TAC[] THEN
+	  CONJ_TAC THENL [glb_fixed_proof; ALL_TAC] THEN
 	  REWRITE_TAC[to_even] THEN
 	  REPEAT GEN_TAC THEN
-          DISCH_THEN (LABEL_CONJUNCTS_TAC ["y2fixed"; "yclosest"; "y2closest"; 
+          DISCH_THEN (LABEL_CONJUNCTS_TAC ["y2fixed"; "yclosest"; "y2closest";
           "y2neqy"; "yfrac"]) THEN
 	  USE_THEN "glb7" (fun glb7 -> USE_THEN "yfrac" (fun yfrac ->
           LABEL_TAC "feq" (MATCH_MP (SPEC `fmt:fformat` FIXED_FF_UNIQUE)
@@ -1365,7 +1392,7 @@ let FIXED_RD_NEAREST_EVEN =
           (MATCH_MP FIXED_FF_EXISTS glb5)) THEN
 	  USE_THEN "glb7" (fun glb7 -> USE_THEN "e2" (fun e2 ->
           LABEL_TAC "f2eq" (MATCH_MP (SPEC `fmt:fformat` FIXED_FF_UNIQUE)
-          (CONJ glb7 e2)))) THEN 
+          (CONJ glb7 e2)))) THEN
           USE_THEN "f2eq" (fun f2eq -> REWRITE_TAC[f2eq]) THEN
 	  USE_THEN "e1" (fun e1 -> REWRITE_TAC[GSYM e1]) THEN
           ASM_REWRITE_TAC[]; ALL_TAC] THEN
@@ -1373,13 +1400,14 @@ let FIXED_RD_NEAREST_EVEN =
 	(* neither is closer, rtn = lub *)
 	EXISTS_TAC `y':real` THEN
 	ASM_REWRITE_TAC[] THEN
+        CONJ_TAC THENL [lub_fixed_proof; ALL_TAC] THEN
 	REWRITE_TAC[to_even] THEN
 	REPEAT GEN_TAC THEN
-        DISCH_THEN (LABEL_CONJUNCTS_TAC ["y2fixed"; "yclosest"; "y2closest"; 
+        DISCH_THEN (LABEL_CONJUNCTS_TAC ["y2fixed"; "yclosest"; "y2closest";
         "y2neqy"; "yfrac"]) THEN
 	SUBGOAL_THEN `~(y' = (y:real))` (LABEL_TAC "lubneqglb") THENL [
 	    USE_THEN "absx" (fun absx -> USE_THEN "y2fixed" (fun y2fixed ->
-            DISJ_CASES_TAC (MATCH_MP (MATCH_MP (SPEC `fmt:fformat` 
+            DISJ_CASES_TAC (MATCH_MP (MATCH_MP (SPEC `fmt:fformat`
             FIXED_GLB_LUB_DISCRETE) absx) y2fixed))) THENL [
 	      (* y2 <= glb *)
 	      ASM_CASES_TAC `y2 = glb(fmt) x` THENL [
@@ -1388,13 +1416,13 @@ let FIXED_RD_NEAREST_EVEN =
 		ONCE_REWRITE_TAC[GSYM(ASSUME `y2 = glb(fmt) x`)] THEN
 		ASM_REWRITE_TAC[];
 		
-		SUBGOAL_THEN `~(is_closest(fmt) x y2)` (LABEL_TAC "notcl") 
+		SUBGOAL_THEN `~(is_closest(fmt) x y2)` (LABEL_TAC "notcl")
 		THENL [
 		  REWRITE_TAC[is_closest] THEN REWRITE_TAC[NOT_FORALL_THM] THEN
                   EXISTS_TAC `y':real` THEN REWRITE_TAC[NOT_IMP] THEN
                   ASM_REWRITE_TAC[] THEN REWRITE_TAC[DE_MORGAN_THM] THEN
 		  CONJ_TAC THENL [
-		    MATCH_MP_TAC CLOSER_NEG THEN 
+		    MATCH_MP_TAC CLOSER_NEG THEN
                     MATCH_MP_TAC CLOSER_TRANS_2 THEN
 		    EXISTS_TAC `y:real` THEN ASM_REWRITE_TAC[] THEN
 		    MATCH_MP_TAC CLOSER_LOWER THEN ASM_ARITH_TAC;
@@ -1408,18 +1436,18 @@ let FIXED_RD_NEAREST_EVEN =
 
 	      (* lub <= y2 *)
 	      ASM_CASES_TAC `y2 = lub(fmt) x` THENL [
-		USE_THEN "lub1" (fun lub1 -> 
+		USE_THEN "lub1" (fun lub1 ->
 		USE_THEN "y2neqy" (fun y2neqy -> CONTR_TAC(
                 REWRITE_RULE[TAUT `a /\ ~a <=> F`] (CONJ
                 (REWRITE_RULE[lub1] (ASSUME `y2 = lub(fmt) x`)) y2neqy))));
 
-		SUBGOAL_THEN `~(is_closest(fmt) x y2)` (LABEL_TAC "notcl") 
+		SUBGOAL_THEN `~(is_closest(fmt) x y2)` (LABEL_TAC "notcl")
 		THENL [
 		  REWRITE_TAC[is_closest] THEN REWRITE_TAC[NOT_FORALL_THM] THEN
                   EXISTS_TAC `y':real` THEN REWRITE_TAC[NOT_IMP] THEN
                   ASM_REWRITE_TAC[] THEN REWRITE_TAC[DE_MORGAN_THM] THEN
 		  CONJ_TAC THENL [
-		    MATCH_MP_TAC CLOSER_NEG THEN 
+		    MATCH_MP_TAC CLOSER_NEG THEN
 		    MATCH_MP_TAC CLOSER_HIGHER THEN ASM_ARITH_TAC;
 		    MATCH_MP_TAC CLOSER_HIGHER THEN ASM_ARITH_TAC]; ALL_TAC]
                   THEN
@@ -1438,7 +1466,7 @@ let FIXED_RD_NEAREST_EVEN =
         (MATCH_MP FIXED_FF_EXISTS glb5)) THEN
 	USE_THEN "glb7" (fun glb7 -> USE_THEN "e2" (fun e2 ->
         LABEL_TAC "f2eq" (MATCH_MP (SPEC `fmt:fformat` FIXED_FF_UNIQUE)
-        (CONJ glb7 e2)))) THEN 
+        (CONJ glb7 e2)))) THEN
 	USE_THEN "absx" (fun absx -> USE_THEN "glb7" (fun glb7 ->
 	USE_THEN "glb1" (fun glb1 -> USE_THEN "lub1" (fun lub1 ->
 	USE_THEN "lub7" (fun lub7 -> DISJ_CASES_TAC
@@ -1466,13 +1494,16 @@ let FIXED_RD_NEAREST_EVEN =
 (* simple combination of previous thms *)
 let FIXED_RD_NEAREST_EXISTS =
   prove(`!(fmt:fformat) (x:real). abs(x) <= (finf fmt) ==>
-	  ?(y:real). fround(fmt) To_near x = y /\ is_closest(fmt) x y /\
+	  ?(y:real). fround(fmt) To_near x = y /\ 
+                     is_fixed(fmt) y /\
+                     is_closest(fmt) x y /\
                      to_even(fmt) x y`,
 	REPEAT GEN_TAC THEN DISCH_THEN (LABEL_TAC "absx") THEN
-	USE_THEN "absx" (fun absx -> CHOOSE_THEN (LABEL_CONJUNCTS_TAC 
-        ["eq1"; "closest"]) (MATCH_MP FIXED_RD_NEAREST_CLOSEST absx)) THEN
-	USE_THEN "absx" (fun absx -> CHOOSE_THEN (LABEL_CONJUNCTS_TAC 
-        ["eq2"; "even"]) (MATCH_MP FIXED_RD_NEAREST_EVEN absx)) THEN
+	USE_THEN "absx" (fun absx -> CHOOSE_THEN (LABEL_CONJUNCTS_TAC
+        ["eq1"; "fixed1"; "closest"]) 
+            (MATCH_MP FIXED_RD_NEAREST_CLOSEST absx)) THEN
+	USE_THEN "absx" (fun absx -> CHOOSE_THEN (LABEL_CONJUNCTS_TAC
+        ["eq2"; "fixed2"; "even"]) (MATCH_MP FIXED_RD_NEAREST_EVEN absx)) THEN
         EXISTS_TAC `y:real` THEN EXPAND_TAC "y" THEN
         ASM_REWRITE_TAC[] THEN EXPAND_TAC "y" THEN
 	USE_THEN "eq2" (fun eq2 -> REWRITE_TAC[eq2]) THEN
@@ -1486,21 +1517,24 @@ let to_zero = define
   `to_zero (fmt:fformat) (x:real) (y:real) =
   (if (&0 <= x)
    then
-     (&0 <= y) /\ (y <= x) /\ 
+     (&0 <= y) /\ (y <= x) /\
        !(y':real). y' IN (fixed fmt) /\ y' <= x ==> y' <= y
    else
-     (y <= &0) /\ (x <= y) /\ 
+     (y <= &0) /\ (x <= y) /\
        !(y':real). y' IN (fixed fmt) /\ x <= y' ==> y <= y')`;;
 
 let FIXED_RD_ZERO_EXISTS =
   prove(`!(fmt:fformat) (x:real). abs(x) <= (finf fmt) ==>
-	  ?(y:real). fround(fmt) To_zero x = y /\ to_zero(fmt) x y`,
+	  ?(y:real). fround(fmt) To_zero x = y /\ 
+	             is_fixed(fmt) y /\
+                     to_zero(fmt) x y`,
 	REPEAT GEN_TAC THEN DISCH_THEN (LABEL_TAC "absx") THEN
 	USE_THEN "absx" (fun absx -> dump_glb_lub_info absx) THEN
 	REWRITE_TAC[fround] THEN
 	COND_CASES_TAC THENL [
 	  (* 0 <= x, rtz = glb *)
 	  EXISTS_TAC `y:real` THEN ASM_REWRITE_TAC[] THEN
+	  CONJ_TAC THENL [glb_fixed_proof; ALL_TAC] THEN
 	  REWRITE_TAC[to_zero] THEN ASM_REWRITE_TAC[] THEN
 	  CONJ_TAC THENL [
 	    (* 0 <= glb *)
@@ -1515,6 +1549,7 @@ let FIXED_RD_ZERO_EXISTS =
 
 	  (* x < 0 *)
 	  EXISTS_TAC `y':real` THEN ASM_REWRITE_TAC[] THEN
+	  CONJ_TAC THENL [lub_fixed_proof; ALL_TAC] THEN
 	  REWRITE_TAC[to_zero] THEN ASM_REWRITE_TAC[] THEN
 	  CONJ_TAC THENL [
 	    (* lub <= 0 *)
@@ -1534,11 +1569,14 @@ let to_pinf = define
 
 let FIXED_RD_PINF_EXISTS =
   prove(`!(fmt:fformat) (x:real). abs(x) <= (finf fmt) ==>
-	  ?(y:real). fround(fmt) To_pinf x = y /\ to_pinf(fmt) x y`,
+	  ?(y:real). fround(fmt) To_pinf x = y /\ 
+                     is_fixed(fmt) y /\
+                     to_pinf(fmt) x y`,
 	REPEAT GEN_TAC THEN DISCH_THEN (LABEL_TAC "absx") THEN
 	USE_THEN "absx" (fun absx -> dump_glb_lub_info absx) THEN
         REWRITE_TAC[fround] THEN EXISTS_TAC `y':real` THEN
-        ASM_REWRITE_TAC[] THEN REWRITE_TAC[to_pinf] THEN
+	ASM_REWRITE_TAC[] THEN CONJ_TAC THENL [lub_fixed_proof; ALL_TAC] THEN
+        REWRITE_TAC[to_pinf] THEN
 	ASM_REWRITE_TAC[] THEN REWRITE_TAC[GSYM is_ub] THEN
         ASM_REWRITE_TAC[]);;
 
@@ -1548,11 +1586,14 @@ let to_ninf = define
 
 let FIXED_RD_NINF_EXISTS =
   prove(`!(fmt:fformat) (x:real). abs(x) <= (finf fmt) ==>
-	  ?(y:real). fround(fmt) To_ninf x = y /\ to_ninf(fmt) x y`,
+	  ?(y:real). fround(fmt) To_ninf x = y /\ 
+                     is_fixed(fmt) y /\
+                     to_ninf(fmt) x y`,
 	REPEAT GEN_TAC THEN DISCH_THEN (LABEL_TAC "absx") THEN
 	USE_THEN "absx" (fun absx -> dump_glb_lub_info absx) THEN
         REWRITE_TAC[fround] THEN EXISTS_TAC `y:real` THEN
-        ASM_REWRITE_TAC[] THEN REWRITE_TAC[to_ninf] THEN
+        ASM_REWRITE_TAC[] THEN CONJ_TAC THENL [glb_fixed_proof; ALL_TAC] THEN
+        REWRITE_TAC[to_ninf] THEN
 	ASM_REWRITE_TAC[] THEN REWRITE_TAC[GSYM is_lb] THEN
         ASM_REWRITE_TAC[]);;
 
@@ -1567,7 +1608,7 @@ let FIXED_RD_IS_GLB_LUB =
 	GEN_TAC THEN GEN_TAC THEN MATCH_MP_TAC roundmode_INDUCT THEN
 	REWRITE_TAC[fround] THEN SIMP_TAC[] THEN
 	CONJ_TAC THENL [
-	  LET_TAC THEN 
+	  LET_TAC THEN
 	  COND_CASES_TAC THENL [
 	    SIMP_TAC[]; ALL_TAC] THEN
 	  COND_CASES_TAC THENL [
@@ -1585,7 +1626,7 @@ let FIXED_RD_NEAREST_ABS_ERROR =
 	REPEAT GEN_TAC THEN DISCH_THEN (LABEL_TAC "absx") THEN
 	USE_THEN "absx" (fun absx -> dump_glb_lub_info absx) THEN
         USE_THEN "absx" (fun absx -> CHOOSE_THEN
-        (LABEL_CONJUNCTS_TAC ["freq"; "closeassum"])
+        (LABEL_CONJUNCTS_TAC ["freq"; "rdfixed"; "closeassum"])
         (MATCH_MP FIXED_RD_NEAREST_CLOSEST absx)) THEN
         ASM_REWRITE_TAC[] THEN
         USE_THEN "freq" (fun freq -> DISJ_CASES_TAC
@@ -1596,23 +1637,23 @@ let FIXED_RD_NEAREST_ABS_ERROR =
 	    ASM_REWRITE_TAC[] THEN REWRITE_TAC[
               ARITH_RULE `abs((y:real) - y) = &0`] THEN
             MATCH_MP_TAC (ARITH_RULE `&0 <= (x:real) ==> &0 <= x / &2`) THEN
-	    REWRITE_TAC[fulp] THEN 
+	    REWRITE_TAC[fulp] THEN
             REWRITE_TAC[SPEC `fmt:fformat` FFORMAT_RADIX_IPOW_LE_0];
 	    (* glb < x *)
 	    SUBGOAL_THEN `~(y' = (y:real))` ASSUME_TAC THENL [
-	      MATCH_MP_TAC 
+	      MATCH_MP_TAC
 		(ARITH_RULE `!(x:real). z1 < x /\ x <= z2 ==> ~(z2 = z1)`) THEN
 	      EXISTS_TAC `x:real` THEN
 	      ASM_REWRITE_TAC[] THEN
-	      MATCH_MP_TAC 
+	      MATCH_MP_TAC
                 (ARITH_RULE `(y:real) <= x /\ ~(x = y) ==> y < x`) THEN
               ASM_REWRITE_TAC[]; ALL_TAC] THEN
 	    MATCH_MP_TAC REAL_LE_TRANS THEN
             EXISTS_TAC `abs(y' - y) / &2` THEN CONJ_TAC THENL [
 	      MATCH_MP_TAC CLOSER_BETWEEN_1 THEN ASM_REWRITE_TAC[] THEN
-	      USE_THEN "closeassum" (fun closeassum -> USE_THEN "glb1" 
+	      USE_THEN "closeassum" (fun closeassum -> USE_THEN "glb1"
               (fun glb1 -> MATCH_MP_TAC (REWRITE_RULE[is_closest] (
-              REWRITE_RULE[glb1] (REWRITE_RULE[ASSUME `y'' = glb(fmt) x`] 
+              REWRITE_RULE[glb1] (REWRITE_RULE[ASSUME `y'' = glb(fmt) x`]
               closeassum))))) THEN
               ASM_REWRITE_TAC[];
 	    SUBGOAL_THEN `y' = y + (fulp fmt)` ASSUME_TAC THENL [
@@ -1626,9 +1667,9 @@ let FIXED_RD_NEAREST_ABS_ERROR =
               FIXED_GLB_LUB_DIST absx]); ALL_TAC] THEN
             ASM_REWRITE_TAC[] THEN
             REWRITE_TAC[ARITH_RULE `((y:real) + x) - y = x`] THEN
-            REWRITE_TAC[MATCH_MP 
+            REWRITE_TAC[MATCH_MP
                (ARITH_RULE `&0 <= (x:real) ==> abs(x) = x`)
-               (SPEC `fmt:fformat` FIXED_FULP_LE_0)] THEN 
+               (SPEC `fmt:fformat` FIXED_FULP_LE_0)] THEN
             ARITH_TAC]];
 
 	  ASM_REWRITE_TAC[] THEN
@@ -1640,19 +1681,19 @@ let FIXED_RD_NEAREST_ABS_ERROR =
             REWRITE_TAC[SPEC `fmt:fformat` FIXED_FULP_LE_0];
 	    (* x < lub *)
 	    SUBGOAL_THEN `~(y' = (y:real))` ASSUME_TAC THENL [
-	      MATCH_MP_TAC 
+	      MATCH_MP_TAC
 		(ARITH_RULE `!(x:real). z1 <= x /\ x < z2 ==> ~(z2 = z1)`) THEN
 	      EXISTS_TAC `x:real` THEN
 	      ASM_REWRITE_TAC[] THEN
-	      MATCH_MP_TAC 
+	      MATCH_MP_TAC
                 (ARITH_RULE `(x:real) <= y /\ ~(x = y) ==> x < y`) THEN
               ASM_REWRITE_TAC[]; ALL_TAC] THEN
 	    MATCH_MP_TAC REAL_LE_TRANS THEN
             EXISTS_TAC `abs(y' - y) / &2` THEN CONJ_TAC THENL [
 	      MATCH_MP_TAC CLOSER_BETWEEN_2 THEN ASM_REWRITE_TAC[] THEN
-	      USE_THEN "closeassum" (fun closeassum -> USE_THEN "lub1" 
+	      USE_THEN "closeassum" (fun closeassum -> USE_THEN "lub1"
               (fun lub1 -> MATCH_MP_TAC (REWRITE_RULE[is_closest] (
-              REWRITE_RULE[lub1] (REWRITE_RULE[ASSUME `y'' = lub(fmt) x`] 
+              REWRITE_RULE[lub1] (REWRITE_RULE[ASSUME `y'' = lub(fmt) x`]
               closeassum))))) THEN
               ASM_REWRITE_TAC[];
 	    SUBGOAL_THEN `y' = y + (fulp fmt)` ASSUME_TAC THENL [
@@ -1666,9 +1707,9 @@ let FIXED_RD_NEAREST_ABS_ERROR =
               FIXED_GLB_LUB_DIST absx]); ALL_TAC] THEN
             ASM_REWRITE_TAC[] THEN
             REWRITE_TAC[ARITH_RULE `((y:real) + x) - y = x`] THEN
-            REWRITE_TAC[MATCH_MP 
+            REWRITE_TAC[MATCH_MP
                (ARITH_RULE `&0 <= (x:real) ==> abs(x) = x`)
-               (SPEC `fmt:fformat` FIXED_FULP_LE_0)] THEN 
+               (SPEC `fmt:fformat` FIXED_FULP_LE_0)] THEN
             ARITH_TAC]]]);;
 
 (* if I had proved the existence theorems a bit differently, I could have     *)
@@ -1679,7 +1720,7 @@ let FIXED_RD_ZERO_ABS_ERROR =
 	REPEAT GEN_TAC THEN DISCH_THEN (LABEL_TAC "absx") THEN
 	USE_THEN "absx" (fun absx -> dump_glb_lub_info absx) THEN
         USE_THEN "absx" (fun absx -> CHOOSE_THEN
-        (LABEL_CONJUNCTS_TAC ["freq"; "closeassum"])
+        (LABEL_CONJUNCTS_TAC ["freq"; "rdfixed"; "closeassum"])
         (MATCH_MP FIXED_RD_ZERO_EXISTS absx)) THEN
         ASM_REWRITE_TAC[] THEN
         USE_THEN "freq" (fun freq -> DISJ_CASES_TAC
@@ -1688,12 +1729,12 @@ let FIXED_RD_ZERO_ABS_ERROR =
 	  ASM_REWRITE_TAC[] THEN
 	  MATCH_MP_TAC REAL_LE_TRANS THEN
           EXISTS_TAC `abs(y' - (y:real))` THEN CONJ_TAC THENL [
-	    MATCH_MP_TAC (ARITH_RULE 
+	    MATCH_MP_TAC (ARITH_RULE
 	       `(z:real) <= a /\ a <= w ==> abs(z - a) <= abs(w - z)`) THEN
 	    ASM_REWRITE_TAC[];
             USE_THEN "absx" (fun absx -> USE_THEN "glb1" (fun glb1 ->
-	    USE_THEN "lub1" (fun lub1 -> 
-	    REWRITE_TAC[MATCH_MP 
+	    USE_THEN "lub1" (fun lub1 ->
+	    REWRITE_TAC[MATCH_MP
              (REWRITE_RULE[glb1] (REWRITE_RULE[lub1]
                 (SPECL [`fmt:fformat`;`x:real`] FIXED_GLB_LUB_DIST_2)))
                                  absx])))];
@@ -1701,12 +1742,12 @@ let FIXED_RD_ZERO_ABS_ERROR =
 	  ASM_REWRITE_TAC[] THEN
 	  MATCH_MP_TAC REAL_LE_TRANS THEN
           EXISTS_TAC `abs(y' - (y:real))` THEN CONJ_TAC THENL [
-	    MATCH_MP_TAC (ARITH_RULE 
+	    MATCH_MP_TAC (ARITH_RULE
 	       `(z:real) <= a /\ a <= w ==> abs(w - a) <= abs(w - z)`) THEN
 	    ASM_REWRITE_TAC[];
             USE_THEN "absx" (fun absx -> USE_THEN "glb1" (fun glb1 ->
-	    USE_THEN "lub1" (fun lub1 -> 
-	    REWRITE_TAC[MATCH_MP 
+	    USE_THEN "lub1" (fun lub1 ->
+	    REWRITE_TAC[MATCH_MP
              (REWRITE_RULE[glb1] (REWRITE_RULE[lub1]
                 (SPECL [`fmt:fformat`;`x:real`] FIXED_GLB_LUB_DIST_2)))
                                  absx])))]]);;
@@ -1717,7 +1758,7 @@ let FIXED_RD_PINF_ABS_ERROR =
 	REPEAT GEN_TAC THEN DISCH_THEN (LABEL_TAC "absx") THEN
 	USE_THEN "absx" (fun absx -> dump_glb_lub_info absx) THEN
         USE_THEN "absx" (fun absx -> CHOOSE_THEN
-        (LABEL_CONJUNCTS_TAC ["freq"; "closeassum"])
+        (LABEL_CONJUNCTS_TAC ["freq"; "rdfixed"; "closeassum"])
         (MATCH_MP FIXED_RD_PINF_EXISTS absx)) THEN
         ASM_REWRITE_TAC[] THEN
         USE_THEN "freq" (fun freq -> DISJ_CASES_TAC
@@ -1726,12 +1767,12 @@ let FIXED_RD_PINF_ABS_ERROR =
 	  ASM_REWRITE_TAC[] THEN
 	  MATCH_MP_TAC REAL_LE_TRANS THEN
           EXISTS_TAC `abs(y' - (y:real))` THEN CONJ_TAC THENL [
-	    MATCH_MP_TAC (ARITH_RULE 
+	    MATCH_MP_TAC (ARITH_RULE
 	       `(z:real) <= a /\ a <= w ==> abs(z - a) <= abs(w - z)`) THEN
 	    ASM_REWRITE_TAC[];
             USE_THEN "absx" (fun absx -> USE_THEN "glb1" (fun glb1 ->
-	    USE_THEN "lub1" (fun lub1 -> 
-	    REWRITE_TAC[MATCH_MP 
+	    USE_THEN "lub1" (fun lub1 ->
+	    REWRITE_TAC[MATCH_MP
              (REWRITE_RULE[glb1] (REWRITE_RULE[lub1]
                 (SPECL [`fmt:fformat`;`x:real`] FIXED_GLB_LUB_DIST_2)))
                                  absx])))];
@@ -1739,12 +1780,12 @@ let FIXED_RD_PINF_ABS_ERROR =
 	  ASM_REWRITE_TAC[] THEN
 	  MATCH_MP_TAC REAL_LE_TRANS THEN
           EXISTS_TAC `abs(y' - (y:real))` THEN CONJ_TAC THENL [
-	    MATCH_MP_TAC (ARITH_RULE 
+	    MATCH_MP_TAC (ARITH_RULE
 	       `(z:real) <= a /\ a <= w ==> abs(w - a) <= abs(w - z)`) THEN
 	    ASM_REWRITE_TAC[];
             USE_THEN "absx" (fun absx -> USE_THEN "glb1" (fun glb1 ->
-	    USE_THEN "lub1" (fun lub1 -> 
-	    REWRITE_TAC[MATCH_MP 
+	    USE_THEN "lub1" (fun lub1 ->
+	    REWRITE_TAC[MATCH_MP
              (REWRITE_RULE[glb1] (REWRITE_RULE[lub1]
                 (SPECL [`fmt:fformat`;`x:real`] FIXED_GLB_LUB_DIST_2)))
                                  absx])))]]);;
@@ -1755,7 +1796,7 @@ let FIXED_RD_NINF_ABS_ERROR =
 	REPEAT GEN_TAC THEN DISCH_THEN (LABEL_TAC "absx") THEN
 	USE_THEN "absx" (fun absx -> dump_glb_lub_info absx) THEN
         USE_THEN "absx" (fun absx -> CHOOSE_THEN
-        (LABEL_CONJUNCTS_TAC ["freq"; "closeassum"])
+        (LABEL_CONJUNCTS_TAC ["freq"; "rdfixed"; "closeassum"])
         (MATCH_MP FIXED_RD_NINF_EXISTS absx)) THEN
         ASM_REWRITE_TAC[] THEN
         USE_THEN "freq" (fun freq -> DISJ_CASES_TAC
@@ -1764,12 +1805,12 @@ let FIXED_RD_NINF_ABS_ERROR =
 	  ASM_REWRITE_TAC[] THEN
 	  MATCH_MP_TAC REAL_LE_TRANS THEN
           EXISTS_TAC `abs(y' - (y:real))` THEN CONJ_TAC THENL [
-	    MATCH_MP_TAC (ARITH_RULE 
+	    MATCH_MP_TAC (ARITH_RULE
 	       `(z:real) <= a /\ a <= w ==> abs(z - a) <= abs(w - z)`) THEN
 	    ASM_REWRITE_TAC[];
             USE_THEN "absx" (fun absx -> USE_THEN "glb1" (fun glb1 ->
-	    USE_THEN "lub1" (fun lub1 -> 
-	    REWRITE_TAC[MATCH_MP 
+	    USE_THEN "lub1" (fun lub1 ->
+	    REWRITE_TAC[MATCH_MP
              (REWRITE_RULE[glb1] (REWRITE_RULE[lub1]
                 (SPECL [`fmt:fformat`;`x:real`] FIXED_GLB_LUB_DIST_2)))
                                  absx])))];
@@ -1777,12 +1818,12 @@ let FIXED_RD_NINF_ABS_ERROR =
 	  ASM_REWRITE_TAC[] THEN
 	  MATCH_MP_TAC REAL_LE_TRANS THEN
           EXISTS_TAC `abs(y' - (y:real))` THEN CONJ_TAC THENL [
-	    MATCH_MP_TAC (ARITH_RULE 
+	    MATCH_MP_TAC (ARITH_RULE
 	       `(z:real) <= a /\ a <= w ==> abs(w - a) <= abs(w - z)`) THEN
 	    ASM_REWRITE_TAC[];
             USE_THEN "absx" (fun absx -> USE_THEN "glb1" (fun glb1 ->
-	    USE_THEN "lub1" (fun lub1 -> 
-	    REWRITE_TAC[MATCH_MP 
+	    USE_THEN "lub1" (fun lub1 ->
+	    REWRITE_TAC[MATCH_MP
              (REWRITE_RULE[glb1] (REWRITE_RULE[lub1]
                 (SPECL [`fmt:fformat`;`x:real`] FIXED_GLB_LUB_DIST_2)))
                                  absx])))]]);;
@@ -1802,7 +1843,7 @@ let FIXED_RD_NEAREST_TO_GLB =
         DISCH_THEN (LABEL_CONJUNCTS_TAC ["absx"; "xleqglb"]) THEN
         USE_THEN "absx" (fun absx -> dump_glb_lub_info absx) THEN
         USE_THEN "absx" (fun absx -> CHOOSE_THEN
-        (LABEL_CONJUNCTS_TAC ["freq"; "closeassum"])
+        (LABEL_CONJUNCTS_TAC ["freq"; "rdfixed"; "closeassum"])
         (MATCH_MP FIXED_RD_NEAREST_CLOSEST absx)) THEN
         ASM_REWRITE_TAC[] THEN
 	USE_THEN "absx" (fun absx -> DISJ_CASES_TAC (MATCH_MP
@@ -1834,11 +1875,11 @@ let FIXED_RD_NEAREST_TO_GLB =
                USE_THEN "lub1" (fun lub1 -> REWRITE_TAC[GSYM lub1]) THEN
                REWRITE_TAC[ASSUME `lub(fmt) x = glb(fmt) x + (fulp fmt)`] THEN
                REWRITE_TAC[ARITH_RULE `((x:real) + y) - x = y`] THEN
-               ONCE_REWRITE_TAC[ARITH_RULE 
+               ONCE_REWRITE_TAC[ARITH_RULE
                       `(x:real) - z < y <=> x < z + y`] THEN
                ASM_REWRITE_TAC[]; ALL_TAC] THEN
             USE_THEN "freq" (fun freq -> REWRITE_TAC[GSYM freq]) THEN
-            REWRITE_TAC[fround] THEN LET_TAC THEN ASM_REWRITE_TAC[]]);;	    
+            REWRITE_TAC[fround] THEN LET_TAC THEN ASM_REWRITE_TAC[]]);;
 
 let FIXED_RD_NEAREST_TO_LUB =
   prove(`!(fmt:fformat) (x:real).
@@ -1848,7 +1889,7 @@ let FIXED_RD_NEAREST_TO_LUB =
         DISCH_THEN (LABEL_CONJUNCTS_TAC ["absx"; "xleqglb"]) THEN
         USE_THEN "absx" (fun absx -> dump_glb_lub_info absx) THEN
         USE_THEN "absx" (fun absx -> CHOOSE_THEN
-        (LABEL_CONJUNCTS_TAC ["freq"; "closeassum"])
+        (LABEL_CONJUNCTS_TAC ["freq"; "rdfixed"; "closeassum"])
         (MATCH_MP FIXED_RD_NEAREST_CLOSEST absx)) THEN
         ASM_REWRITE_TAC[] THEN
 	USE_THEN "absx" (fun absx -> DISJ_CASES_TAC (MATCH_MP
@@ -1872,21 +1913,21 @@ let FIXED_RD_NEAREST_TO_LUB =
                     `(y':real) - x < x - y <=> y' - x < (y' - y) / &2`] THEN
 	       USE_THEN "glb1" (fun glb1 -> REWRITE_TAC[GSYM glb1]) THEN
                USE_THEN "lub1" (fun lub1 -> REWRITE_TAC[GSYM lub1]) THEN
-               GEN_REWRITE_TAC (RAND_CONV o ONCE_DEPTH_CONV) 
+               GEN_REWRITE_TAC (RAND_CONV o ONCE_DEPTH_CONV)
                [ASSUME `lub(fmt) x = glb(fmt) x + (fulp fmt)`] THEN
                REWRITE_TAC[ARITH_RULE `((x:real) + y) - x = y`] THEN
-               ONCE_REWRITE_TAC[ARITH_RULE 
+               ONCE_REWRITE_TAC[ARITH_RULE
                       `(x:real) - z < y <=> x - y < z`] THEN
                ASM_REWRITE_TAC[]; ALL_TAC] THEN
             USE_THEN "freq" (fun freq -> REWRITE_TAC[GSYM freq]) THEN
-            REWRITE_TAC[fround] THEN 
+            REWRITE_TAC[fround] THEN
             USE_THEN "lubcloser" (fun lubcloser -> ASSUME_TAC (
-            MATCH_MP CLOSER_NEG lubcloser)) THEN LET_TAC THEN 
+            MATCH_MP CLOSER_NEG lubcloser)) THEN LET_TAC THEN
             ASM_REWRITE_TAC[]]);;
 
 let FIXED_RD_NEAREST_TO_0 =
-  prove(`!(fmt:fformat) (x:real). 
-	  abs(x) < (fulp fmt) / &2 ==> (fround(fmt) To_near x) = &0`, 
+  prove(`!(fmt:fformat) (x:real).
+	  abs(x) < (fulp fmt) / &2 ==> (fround(fmt) To_near x) = &0`,
 	REPEAT GEN_TAC THEN DISCH_THEN (LABEL_TAC "absxleqfulp") THEN
 	SUBGOAL_THEN `abs(x) <= (finf fmt)` (LABEL_TAC "absx") THENL [
 	  MATCH_MP_TAC REAL_LE_TRANS THEN
@@ -1935,15 +1976,15 @@ let FIXED_RD_NEAREST_TO_0 =
         FIXED_GLB_UNIQUE (CONJ absx (CONJ glb2 isglb0)))))) THEN
         SUBGOAL_THEN `x < glb(fmt) x + (fulp fmt) / &2`
             (LABEL_TAC "xleqfulp") THENL [
-	      ASM_REWRITE_TAC[] THEN 
+	      ASM_REWRITE_TAC[] THEN
               REWRITE_TAC[ARITH_RULE `&0 + (x:real) = x`] THEN
               GEN_REWRITE_TAC (RATOR_CONV o RAND_CONV o ONCE_DEPTH_CONV)
-              [MATCH_MP 
+              [MATCH_MP
                  (ARITH_RULE `&0 <= (x:real) ==> x = abs(x)`)
                  (ASSUME `&0 <= (x:real)`)] THEN
               ASM_REWRITE_TAC[]; ALL_TAC] THEN
         USE_THEN "absx" (fun absx -> USE_THEN "xleqfulp" (fun xleqfulp ->
-        REWRITE_TAC[MATCH_MP 
+        REWRITE_TAC[MATCH_MP
              FIXED_RD_NEAREST_TO_GLB (CONJ absx xleqfulp)])) THEN
         ASM_REWRITE_TAC[];
 
@@ -1979,7 +2020,7 @@ let FIXED_RD_NEAREST_TO_0 =
                   USE_THEN "absxleqfulp" (fun absxleqfulp ->
                   ASSUME_TAC (
                   REWRITE_RULE[MATCH_MP
-                      (ARITH_RULE `~(&0 <= (x:real)) ==> 
+                      (ARITH_RULE `~(&0 <= (x:real)) ==>
 			               (abs(x) < z <=> x > -- z)`)
                       (ASSUME `~(&0 <= (x:real))`)] absxleqfulp)) THEN
 		  CONJ_TAC THENL [
@@ -1994,17 +2035,17 @@ let FIXED_RD_NEAREST_TO_0 =
         FIXED_LUB_UNIQUE (CONJ absx (CONJ lub2 islub0)))))) THEN
         SUBGOAL_THEN `lub(fmt) x - (fulp fmt) / &2 < x`
             (LABEL_TAC "fulpleqx") THENL [
-	      ASM_REWRITE_TAC[] THEN 
+	      ASM_REWRITE_TAC[] THEN
               REWRITE_TAC[ARITH_RULE `&0 - (x:real) = -- x`] THEN
               USE_THEN "absxleqfulp" (fun absxleqfulp ->
               ASSUME_TAC (
               REWRITE_RULE[MATCH_MP
-                    (ARITH_RULE `~(&0 <= (x:real)) ==> 
+                    (ARITH_RULE `~(&0 <= (x:real)) ==>
 	                          (abs(x) < z <=> x > -- z)`)
                       (ASSUME `~(&0 <= (x:real))`)] absxleqfulp)) THEN
 	      ASM_ARITH_TAC; ALL_TAC] THEN
         USE_THEN "absx" (fun absx -> USE_THEN "fulpleqx" (fun fulpleqx ->
-        REWRITE_TAC[MATCH_MP 
+        REWRITE_TAC[MATCH_MP
              FIXED_RD_NEAREST_TO_LUB (CONJ absx fulpleqx)])) THEN
         ASM_REWRITE_TAC[]]);;
 
@@ -2016,7 +2057,7 @@ let FIXED_RD_NEAREST_REL_ERROR =
         "xneq0"]) THEN
         ASM_CASES_TAC `abs(x) < (fulp fmt) / &2` THENL [
 	  (* rtn = 0 *)
-	  ASSUME_TAC (MATCH_MP FIXED_RD_NEAREST_TO_0 
+	  ASSUME_TAC (MATCH_MP FIXED_RD_NEAREST_TO_0
 	     (ASSUME `abs(x) < (fulp fmt) / &2`)) THEN ASM_REWRITE_TAC[] THEN
           REWRITE_TAC[rerror] THEN
 	  ONCE_REWRITE_TAC[ARITH_RULE `(&0 - x) / x = -- (x / x)`] THEN
@@ -2027,7 +2068,7 @@ let FIXED_RD_NEAREST_REL_ERROR =
 	  (* other case *)
 	  REWRITE_TAC[rerror] THEN REWRITE_TAC[REAL_ABS_DIV] THEN
 	  MATCH_MP_TAC REAL_LE_LCANCEL_IMP THEN
-          EXISTS_TAC `abs((x:real))` THEN 
+          EXISTS_TAC `abs((x:real))` THEN
           CONJ_TAC THENL [
 	    ASM_ARITH_TAC;
 	    REWRITE_TAC[ARITH_RULE `(x:real) * &1 = x`] THEN

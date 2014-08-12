@@ -1018,8 +1018,9 @@ let CLOSER_BETWEEN_5 =
 
 let fl_is_closest = define
   `fl_is_closest (fmt:flformat) (x:real) (y:real) =
-         (!(s:real). is_float(fmt) s /\ ~(s = y) ==>
-				     ((closer y s x) \/ ~(closer s y x)))`;;
+     (is_float(fmt) y /\ 
+      (!(s:real). is_float(fmt) s /\ ~(s = y) ==>
+				     ((closer y s x) \/ ~(closer s y x))))`;;
 
 let FLOAT_RD_NEAREST_CLOSEST =
   prove(`!(fmt:flformat) (x:real). ~(x = &0) ==>
@@ -1499,3 +1500,23 @@ let FLOAT_RD_NEAREST_CLOSEST =
             REWRITE_TAC[ASSUME `greatest_r(fmt) x = y`] THEN
             REWRITE_TAC[ASSUME `greatest_e(fmt) x = e`] THEN
  	    USE_THEN "sneq" (fun sneq -> REWRITE_TAC[sneq])]]);;
+
+let fl_to_even = define
+  `fl_to_even (fmt:flformat) (x:real) (y:real) = (!(y2:real) (f:num).
+  is_float(fmt) y2 /\ (is_closest(fmt) x y) /\ (is_closest(fmt) x y2) /\ 
+   ~(y2 = y) /\
+    (is_frac(fmt) y f) ==> (EVEN f))`;;
+
+  `fl_is_closest (fmt:flformat) (x:real) (y:real) =
+         (!(s:real). is_float(fmt) s /\ ~(s = y) ==>
+				     ((closer y s x) \/ ~(closer s y x)))`;;
+
+let FLOAT_RD_NEAREST_CLOSEST =
+  prove(`!(fmt:flformat) (x:real). ~(x = &0) ==>
+	  ?(z:real). flround(fmt) To_near x = z /\ fl_is_closest(fmt) x z`,
+	REPEAT GEN_TAC THEN DISCH_THEN (LABEL_TAC "xneq0") THEN
+        REWRITE_TAC[flround] THEN LET_TAC THEN
+        COND_CASES_TAC THENL [
+
+	  (* 0 <= x *)
+	
