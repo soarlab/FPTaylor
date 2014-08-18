@@ -270,7 +270,28 @@ let FIXED_FULP_LE_FINF =
                        (SPEC `fmt:fformat` FFORMAT_RADIX_NE_0)] THEN
 	  REWRITE_TAC[ARITH_RULE `(x:int) - y + z - x + y = z`] THEN
 	  REWRITE_TAC[finf] THEN ARITH_TAC]);;
-	    
+
+let FIXED_FF_LE =
+  prove(`!(fmt:fformat) (x:real). is_fixed(fmt) x ==>
+	  ff(fmt) x <= (fr fmt) EXP ((fp fmt) - 1)`,
+	REPEAT GEN_TAC THEN DISCH_THEN (LABEL_TAC "xfixed") THEN
+        SUBGOAL_THEN `is_frac(fmt) x (ff(fmt) x)` (LABEL_TAC "ffisfrac") THENL [
+          REWRITE_TAC[ff] THEN SELECT_ELIM_TAC THEN
+          USE_THEN "xfixed" (fun xfixed -> REWRITE_TAC[REWRITE_RULE[is_fixed]
+              xfixed]); ALL_TAC] THEN
+        USE_THEN "ffisfrac" (fun ffisfrac -> REWRITE_TAC[REWRITE_RULE[is_frac]
+            ffisfrac]));;
+
+let FIXED_FF_REP =
+  prove(`!(fmt:fformat) (x:real). is_fixed(fmt) x ==>
+	  abs(x) = &(ff(fmt) x) * &(fr fmt) ipow ((fe fmt) - &(fp fmt) + &1)`,
+	REPEAT GEN_TAC THEN DISCH_THEN (LABEL_TAC "xfixed") THEN
+        SUBGOAL_THEN `is_frac(fmt) x (ff(fmt) x)` (LABEL_TAC "ffisfrac") THENL [
+          REWRITE_TAC[ff] THEN SELECT_ELIM_TAC THEN
+          USE_THEN "xfixed" (fun xfixed -> REWRITE_TAC[REWRITE_RULE[is_fixed]
+              xfixed]); ALL_TAC] THEN
+        USE_THEN "ffisfrac" (fun ffisfrac -> REWRITE_TAC[REWRITE_RULE[is_frac]
+            ffisfrac]));;
 
 (* -------------------------------------------------------------------------- *)
 (* Set of fixed point numbers is finite.                                      *)
@@ -1053,6 +1074,50 @@ let FIXED_GLB_LUB_DISCRETE =
              (MATCH_MP (SPEC `fmt:fformat` FIXED_GLB_IS_FIXED ) absx)
 	     (CONJ (ASSUME `(s:real) IN (fixed fmt)`) sbounds))]))]]);;
 
+let FIXED_GLB_LE_0 =
+  prove(`!(fmt:fformat) (x:real). abs(x) <= (finf fmt) /\ &0 <= x ==> 
+              &0 <= (glb(fmt) x)`, 
+	REPEAT GEN_TAC THEN DISCH_THEN (LABEL_CONJUNCTS_TAC 
+        ["absx"; "xgeq0"]) THEN
+        USE_THEN "absx" (fun absx -> dump_glb_lub_info absx) THEN
+        ASM_REWRITE_TAC[] THEN
+        SUBGOAL_THEN `is_lb(fmt) x (&0)` (LABEL_TAC "zerolb") THENL [
+	  REWRITE_TAC[is_lb] THEN REWRITE_TAC[FIXED_ZERO_IN_FIXED] THEN
+          ASM_REWRITE_TAC[]; ALL_TAC] THEN
+	USE_THEN "glb4" (fun glb4 -> USE_THEN "zerolb" (fun zerolb ->
+        REWRITE_TAC[MATCH_MP glb4 zerolb])));;        
+
+let FIXED_GLB_LE_0_2 =
+  prove(`!(fmt:fformat) (x:real). abs(x) <= (finf fmt) /\ x <= &0 ==> 
+              (glb(fmt) x) <= &0`, 
+	REPEAT GEN_TAC THEN DISCH_THEN (LABEL_CONJUNCTS_TAC 
+        ["absx"; "xgeq0"]) THEN
+        USE_THEN "absx" (fun absx -> dump_glb_lub_info absx) THEN
+        ASM_REWRITE_TAC[] THEN MATCH_MP_TAC REAL_LE_TRANS THEN
+        EXISTS_TAC `x:real` THEN ASM_REWRITE_TAC[]);;
+
+let FIXED_LUB_LE_0 =
+  prove(`!(fmt:fformat) (x:real). abs(x) <= (finf fmt) /\ &0 <= x ==> 
+              &0 <= (lub(fmt) x)`, 
+	REPEAT GEN_TAC THEN DISCH_THEN (LABEL_CONJUNCTS_TAC 
+        ["absx"; "xgeq0"]) THEN
+        USE_THEN "absx" (fun absx -> dump_glb_lub_info absx) THEN
+        ASM_REWRITE_TAC[] THEN MATCH_MP_TAC REAL_LE_TRANS THEN
+        EXISTS_TAC `x:real` THEN ASM_REWRITE_TAC[]);;
+
+let FIXED_LUB_LE_0_2 =
+  prove(`!(fmt:fformat) (x:real). abs(x) <= (finf fmt) /\ x <= &0 ==> 
+              (lub(fmt) x) <= &0`, 
+	REPEAT GEN_TAC THEN DISCH_THEN (LABEL_CONJUNCTS_TAC 
+        ["absx"; "xgeq0"]) THEN
+        USE_THEN "absx" (fun absx -> dump_glb_lub_info absx) THEN
+        ASM_REWRITE_TAC[] THEN
+        SUBGOAL_THEN `is_ub(fmt) x (&0)` (LABEL_TAC "zerolb") THENL [
+	  REWRITE_TAC[is_ub] THEN REWRITE_TAC[FIXED_ZERO_IN_FIXED] THEN
+          ASM_REWRITE_TAC[]; ALL_TAC] THEN
+	USE_THEN "lub4" (fun lub4 -> USE_THEN "zerolb" (fun zerolb ->
+        REWRITE_TAC[MATCH_MP lub4 zerolb])));;        
+
 (* -------------------------------------------------------------------------- *)
 (* Basic round-to-nearest thms                                                *)
 (* -------------------------------------------------------------------------- *)
@@ -1598,7 +1663,7 @@ let FIXED_RD_NINF_EXISTS =
         ASM_REWRITE_TAC[]);;
 
 (* -------------------------------------------------------------------------- *)
-(* Absolute error when rounding                                               *)
+(* Useful properties                                                          *)
 (* -------------------------------------------------------------------------- *)
 
 let FIXED_RD_IS_GLB_LUB =
@@ -1619,6 +1684,63 @@ let FIXED_RD_IS_GLB_LUB =
 	  COND_CASES_TAC THENL [
 	    SIMP_TAC[]; ALL_TAC] THEN
 	  SIMP_TAC[]]);;
+
+let FIXED_RD_IS_GLB_LUB_2 =
+  prove(`!(fmt:fformat) (x:real) (m:roundmode).
+	  fround(fmt) m x = glb(fmt) x \/ fround(fmt) m x = lub(fmt) x`,
+	GEN_TAC THEN GEN_TAC THEN MATCH_MP_TAC roundmode_INDUCT THEN
+	REWRITE_TAC[fround] THEN 
+	CONJ_TAC THENL [
+	  LET_TAC THEN LET_TAC THEN
+	  COND_CASES_TAC THENL [
+	    SIMP_TAC[]; ALL_TAC] THEN
+	  COND_CASES_TAC THENL [
+	    SIMP_TAC[]; ALL_TAC] THEN
+	  COND_CASES_TAC THENL [
+	    SIMP_TAC[]; ALL_TAC] THEN
+	  SIMP_TAC[];
+	  COND_CASES_TAC THENL [
+	    SIMP_TAC[]; ALL_TAC] THEN
+	  SIMP_TAC[]]);;
+
+let FIXED_RD_LE_0 =
+  prove(`!(fmt:fformat) (x:real) (m:roundmode). abs(x) <= (finf fmt) /\ 
+          &0 <= x ==>
+          &0 <= (fround(fmt) m x)`,
+	REPEAT GEN_TAC THEN
+        DISJ_CASES_TAC (SPECL [`fmt:fformat`; `x:real`; `m:roundmode`] 
+            FIXED_RD_IS_GLB_LUB_2) THENL [
+          ASM_REWRITE_TAC[] THEN REWRITE_TAC[FIXED_GLB_LE_0];
+          ASM_REWRITE_TAC[] THEN REWRITE_TAC[FIXED_LUB_LE_0]]);;
+
+let FIXED_RD_LE_0_2 =
+  prove(`!(fmt:fformat) (x:real) (m:roundmode). abs(x) <= (finf fmt) /\ 
+          x <= &0 ==>
+          (fround(fmt) m x) <= &0`,
+	REPEAT GEN_TAC THEN
+        DISJ_CASES_TAC (SPECL [`fmt:fformat`; `x:real`; `m:roundmode`] 
+            FIXED_RD_IS_GLB_LUB_2) THENL [
+          ASM_REWRITE_TAC[] THEN REWRITE_TAC[FIXED_GLB_LE_0_2];
+          ASM_REWRITE_TAC[] THEN REWRITE_TAC[FIXED_LUB_LE_0_2]]);;
+
+let FIXED_RD_IS_FIXED =
+  prove(`!(fmt:fformat) (x:real) (m:roundmode).
+	  abs(x) <= (finf fmt) ==> is_fixed(fmt) (fround(fmt) m x)`, 
+	REPEAT GEN_TAC THEN DISCH_THEN (LABEL_TAC "absx") THEN
+        DISJ_CASES_TAC (SPECL [`fmt:fformat`; `x:real`; `m:roundmode`] 
+            FIXED_RD_IS_GLB_LUB_2) THENL [
+	  ASM_REWRITE_TAC[] THEN 
+	  USE_THEN "absx" (fun absx -> REWRITE_TAC[
+          REWRITE_RULE[IN_ELIM_THM] (REWRITE_RULE[fixed] (MATCH_MP 
+          FIXED_GLB_IS_FIXED absx))]);
+	  ASM_REWRITE_TAC[] THEN 
+	  USE_THEN "absx" (fun absx -> REWRITE_TAC[
+          REWRITE_RULE[IN_ELIM_THM] (REWRITE_RULE[fixed] (MATCH_MP 
+          FIXED_LUB_IS_FIXED absx))])]);;
+
+(* -------------------------------------------------------------------------- *)
+(* Absolute error when rounding                                               *)
+(* -------------------------------------------------------------------------- *)
 
 let FIXED_RD_NEAREST_ABS_ERROR =
   prove(`!(fmt:fformat) (x:real). abs(x) <= (finf fmt) ==>
