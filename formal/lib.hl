@@ -1,0 +1,156 @@
+let rev_table = define 
+  `!f i. rev_table (f:num->A) 0 = [] /\
+  rev_table f (SUC i) = CONS (f i) (rev_table f i)`;;
+
+let table = new_definition 
+  `!f i. table f i = REVERSE (rev_table f i)`;;
+
+let sum_list = new_definition 
+  `!s f. sum_list s f = ITLIST (\x r:real. f x + r) s (&0)`;;
+
+let length_reverse = prove
+  (`!(s:(A)list). LENGTH (REVERSE s) = LENGTH s`,
+   LIST_INDUCT_TAC THEN ASM_REWRITE_TAC[LENGTH; REVERSE; LENGTH_APPEND] THEN ARITH_TAC);;
+
+let all_reverse = prove
+  (`!P (s:(A)list). ALL P (REVERSE s) <=> ALL P s`,
+   GEN_TAC THEN LIST_INDUCT_TAC THEN ASM_REWRITE_TAC[ALL; REVERSE; ALL_APPEND; CONJ_ACI]);;
+
+let mem_reverse = prove
+  (`!x:A s. MEM x (REVERSE s) <=> MEM x s`,
+   GEN_TAC THEN LIST_INDUCT_TAC THEN ASM_REWRITE_TAC[MEM; REVERSE; MEM_APPEND; DISJ_ACI]);;
+
+let reverse_nil = prove
+  (`!s:(A)list. REVERSE s = [] <=> s = []`,
+   REWRITE_TAC[GSYM LENGTH_EQ_NIL; length_reverse]);;
+
+let length_rev_table = prove
+  (`!(f:num->A) n. LENGTH (rev_table f n) = n`,
+   GEN_TAC THEN INDUCT_TAC THEN ASM_REWRITE_TAC[rev_table; LENGTH]);;
+
+let length_table = prove
+  (`!(f:num->A) n. LENGTH (table f n) = n`,
+   REWRITE_TAC[table; length_rev_table; length_reverse]);;
+
+let hd_append = prove
+  (`!s t:(A)list. HD (APPEND s t) = if s = [] then HD t else HD s`,
+   LIST_INDUCT_TAC THEN REWRITE_TAC[APPEND; HD; NOT_CONS_NIL]);;
+
+let hd_reverse = prove
+  (`!s:(A)list. ~(s = []) ==> HD (REVERSE s) = LAST s`,
+   LIST_INDUCT_TAC THEN REWRITE_TAC[REVERSE; HD; LAST] THEN
+     COND_CASES_TAC THEN ASM_REWRITE_TAC[REVERSE; APPEND; HD; hd_append] THEN
+     ASM_SIMP_TAC[reverse_nil]);;
+
+let el_reverse = prove
+  (`!(s:(A)list) i. i < LENGTH s
+      ==> EL i (REVERSE s) = EL (LENGTH s - i - 1) s`,
+   LIST_INDUCT_TAC THEN REWRITE_TAC[LENGTH; REVERSE] THENL [ ARITH_TAC; ALL_TAC ] THEN
+     REPEAT STRIP_TAC THEN REWRITE_TAC[EL_APPEND; length_reverse] THEN
+     COND_CASES_TAC THENL [
+       SUBGOAL_THEN `SUC (LENGTH (t:(A)list)) - i - 1 = SUC (LENGTH t - i - 1)` ASSUME_TAC THENL [
+	 POP_ASSUM MP_TAC THEN ARITH_TAC;
+	 ALL_TAC
+       ] THEN
+       ASM_SIMP_TAC[EL; TL];
+       ALL_TAC
+     ] THEN
+     ABBREV_TAC `n = LENGTH (t:(A)list)` THEN
+     ASM_SIMP_TAC[ARITH_RULE `~(i < n) /\ i < SUC n ==> i - n = 0 /\ SUC n - i - 1 = 0`; EL; HD]);;
+
+let el_rev_table = prove
+  (`!(f:num->A) n i. i < n 
+      ==> EL i (rev_table f n) = f (n - i - 1)`,
+   GEN_TAC THEN INDUCT_TAC THEN INDUCT_TAC THEN REWRITE_TAC[rev_table; EL; HD] THEN TRY ARITH_TAC THENL [
+     REWRITE_TAC[ARITH_RULE `SUC n - 0 - 1 = n`];
+     ALL_TAC
+   ] THEN
+     ASM_SIMP_TAC[LT_SUC; TL; ARITH_RULE `SUC n - SUC i - 1 = n - i - 1`]);;
+
+let el_table = prove
+  (`!(f:num->A) n i. i < n ==> EL i (table f n) = f i`,
+   REPEAT STRIP_TAC THEN REWRITE_TAC[table] THEN
+     ASM_SIMP_TAC[length_reverse; length_rev_table; el_reverse] THEN
+     ASM_SIMP_TAC[el_rev_table; ARITH_RULE `i < n ==> n - i - 1 < n`] THEN
+     AP_TERM_TAC THEN POP_ASSUM MP_TAC THEN ARITH_TAC);;
+
+let sum_list_nil = prove
+  (`!f. sum_list [] f = &0`,
+   REWRITE_TAC[sum_list; ITLIST]);;
+
+let sum_list_cons = prove
+  (`!h t f. sum_list (CONS h t) f = f h + sum_list t f`,
+   REWRITE_TAC[sum_list; ITLIST]);;
+
+let sum_list_append = prove
+  (`!f s1 s2. sum_list (APPEND s1 s2) f = sum_list s1 f + sum_list s2 f`,
+   GEN_TAC THEN LIST_INDUCT_TAC THEN 
+     ASM_REWRITE_TAC[APPEND; sum_list_cons; sum_list_nil; REAL_ADD_LID; REAL_ADD_ASSOC]);;
+
+let sum_list_map = prove
+  (`!h s f. sum_list (MAP h s) f = sum_list s (f o h)`,
+   GEN_TAC THEN LIST_INDUCT_TAC THEN 
+     ASM_REWRITE_TAC[MAP; sum_list_nil; sum_list_cons; o_THM]);;
+
+let sum_list_sum = prove
+  (`!(s:(A)list) f. sum_list s f = 
+      if s = [] then &0 else sum (0..LENGTH s - 1) (\i. f (EL i s))`,
+   LIST_INDUCT_TAC THEN ASM_REWRITE_TAC[sum_list_nil; sum_list_cons; NOT_CONS_NIL] THEN
+     GEN_TAC THEN COND_CASES_TAC THEN ASM_REWRITE_TAC[LENGTH; SUC_SUB1] THENL [
+       REWRITE_TAC[NUMSEG_SING; SUM_SING; EL; HD; REAL_ADD_RID];
+       ALL_TAC
+     ] THEN
+     SUBGOAL_THEN `0 <= LENGTH (t:(A)list) /\ (LENGTH t - 1) + 1 = LENGTH t` STRIP_ASSUME_TAC THENL [
+       ASM_REWRITE_TAC[LE_0; ARITH_RULE `(n - 1) + 1 = n <=> ~(n = 0)`; LENGTH_EQ_NIL];
+       ALL_TAC
+     ] THEN
+     ASM_SIMP_TAC[SUM_CLAUSES_LEFT; EL; HD] THEN
+     FIRST_ASSUM (fun th -> ONCE_REWRITE_TAC[GSYM th]) THEN
+     ASM_REWRITE_TAC[SUM_OFFSET; GSYM ADD1; EL; TL]);;
+
+let sum_list_sum_alt = prove
+  (`!(s:(A)list) f. sum_list s f = sum (1..LENGTH s) (\i. f (EL (i - 1) s))`,
+   REPEAT GEN_TAC THEN REWRITE_TAC[sum_list_sum] THEN
+     COND_CASES_TAC THENL [
+       ASM_REWRITE_TAC[LENGTH; SUM_CLAUSES_NUMSEG; ARITH_RULE `~(1 = 0)`];
+       ALL_TAC
+     ] THEN
+     SUBGOAL_THEN `1..LENGTH (s:(A)list) = 0 + 1..(LENGTH s - 1) + 1` ASSUME_TAC THENL [
+       REWRITE_TAC[ADD] THEN AP_TERM_TAC THEN
+	 ASM_REWRITE_TAC[ARITH_RULE `n = (n - 1) + 1 <=> ~(n = 0)`; LENGTH_EQ_NIL];
+       ALL_TAC
+     ] THEN
+     ASM_REWRITE_TAC[SUM_OFFSET; ARITH_RULE `(i + 1) - 1 = i`]);;
+
+let MAP_MAP = prove
+  (`!(f:A->B) (h:C->A) s. MAP f (MAP h s) = MAP (\x. f (h x)) s`,
+   GEN_TAC THEN GEN_TAC THEN LIST_INDUCT_TAC THEN ASM_REWRITE_TAC[MAP]);;
+
+let MAP2_MAP_ZIP = prove
+  (`!(f:A->B->C) s1 s2. LENGTH s1 = LENGTH s2 
+      ==> MAP2 f s1 s2 = MAP (\p. f (FST p) (SND p)) (ZIP s1 s2)`,
+   GEN_TAC THEN REPEAT LIST_INDUCT_TAC THEN 
+     REWRITE_TAC[MAP; MAP2; LENGTH; ZIP] THEN TRY ARITH_TAC THEN
+     REWRITE_TAC[SUC_INJ] THEN DISCH_TAC THEN ASM_SIMP_TAC[]);;
+     
+let MAP2_MAP = prove
+  (`!(f:A->B->C) (h1:D->A) (h2:E->B) s1 s2. LENGTH s1 = LENGTH s2
+      ==> MAP2 f (MAP h1 s1) (MAP h2 s2) = MAP2 (\x y. f (h1 x) (h2 y)) s1 s2`,
+   GEN_TAC THEN GEN_TAC THEN GEN_TAC THEN 
+     REPEAT LIST_INDUCT_TAC THEN REWRITE_TAC[MAP; MAP2; LENGTH] THEN TRY ARITH_TAC THEN
+     REWRITE_TAC[SUC_INJ] THEN DISCH_TAC THEN ASM_SIMP_TAC[]);;
+
+let MAP2_MAP_1 = prove
+  (`!(f:A->B->C) (h:D->A) s1 s2. LENGTH s1 = LENGTH s2
+      ==> MAP2 f (MAP h s1) s2 = MAP2 (\x y. f (h x) y) s1 s2`,
+   GEN_TAC THEN GEN_TAC THEN
+     REPEAT LIST_INDUCT_TAC THEN REWRITE_TAC[MAP; MAP2; LENGTH] THEN TRY ARITH_TAC THEN
+     REWRITE_TAC[SUC_INJ] THEN DISCH_TAC THEN ASM_SIMP_TAC[]);;
+
+let MAP2_MAP_2 = prove
+  (`!(f:A->B->C) (h:D->B) s1 s2. LENGTH s1 = LENGTH s2
+      ==> MAP2 f s1 (MAP h s2) = MAP2 (\x y. f x (h y)) s1 s2`,
+   GEN_TAC THEN GEN_TAC THEN
+     REPEAT LIST_INDUCT_TAC THEN REWRITE_TAC[MAP; MAP2; LENGTH] THEN TRY ARITH_TAC THEN
+     REWRITE_TAC[SUC_INJ] THEN DISCH_TAC THEN ASM_SIMP_TAC[]);;
+
