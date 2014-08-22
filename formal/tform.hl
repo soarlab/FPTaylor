@@ -1,0 +1,301 @@
+needs "lib.hl";;
+
+parse_as_infix ("::", (12, "right"));;
+override_interface ("::", `CONS`);;
+make_overloadable "++" `:A->A->A`;;
+overload_interface ("++", `APPEND`);;
+
+let list_to_pair = function
+  | [a; b] -> (a, b)
+  | _ -> failwith "list_to_pair";;
+
+let tform_exists = prove
+  (`?s:(real^N->real) # (real^N->real)list # (real^N->real)list.
+     LENGTH (FST (SND s)) = LENGTH (SND (SND s))`,
+   EXISTS_TAC `(\x:real^N. &0), []:(real^N->real)list, []:(real^N->real)list` THEN
+     REWRITE_TAC[]);;
+
+let tform_type_bij = new_type_definition "tform" ("mk_tform", "dest_tform") tform_exists;;
+let mk_tform, dest_tform = list_to_pair (CONJUNCTS tform_type_bij);;
+
+let tform_f0 = new_definition `tform_f0 t = FST (dest_tform t)`;;
+let tform_f1s = new_definition `tform_f1s t = FST (SND (dest_tform t))`;;
+let tform_e1s = new_definition `tform_e1s t = SND (SND (dest_tform t))`;;
+let tform_f1 = new_definition `tform_f1 t i = EL i (tform_f1s t)`;;
+let tform_e1 = new_definition `tform_e1 t i = EL i (tform_e1s t)`;;
+let tform_dim = new_definition `tform_dim t = LENGTH (tform_f1s t)`;;
+
+let length_f1s_e1s = prove
+  (`!t:(N)tform. LENGTH (tform_f1s t) = LENGTH (tform_e1s t)`,
+   MESON_TAC[tform_type_bij; tform_f1s; tform_e1s]);;
+
+let dim_eq_e1 = prove
+  (`!t:(N)tform. tform_dim t = LENGTH (tform_e1s t)`,
+   REWRITE_TAC[tform_dim; length_f1s_e1s]);;
+
+let mk_f0 = prove
+  (`!f0 f1 e1. LENGTH f1 = LENGTH e1 ==> tform_f0 (mk_tform (f0:real^N->real, f1, e1)) = f0`,
+   REPEAT STRIP_TAC THEN REWRITE_TAC[tform_f0] THEN
+     MP_TAC (SPEC `f0:real^N->real, f1:(real^N->real)list, e1:(real^N->real)list` dest_tform) THEN
+     ASM_SIMP_TAC[]);;
+
+let mk_f1s = prove
+  (`!f0 f1 e1. LENGTH f1 = LENGTH e1 
+      ==> tform_f1s (mk_tform (f0:real^N->real, f1, e1)) = f1`,
+   REPEAT STRIP_TAC THEN REWRITE_TAC[tform_f1s] THEN
+     MP_TAC (SPEC `f0:real^N->real, f1:(real^N->real)list, e1:(real^N->real)list` dest_tform) THEN
+     ASM_SIMP_TAC[]);;
+
+let mk_e1s = prove
+  (`!f0 f1 e1. LENGTH f1 = LENGTH e1 
+      ==> tform_e1s (mk_tform (f0:real^N->real, f1, e1)) = e1`,
+   REPEAT STRIP_TAC THEN REWRITE_TAC[tform_e1s] THEN
+     MP_TAC (SPEC `f0:real^N->real, f1:(real^N->real)list, e1:(real^N->real)list` dest_tform) THEN
+     ASM_SIMP_TAC[]);;
+
+let mk_f1 = prove
+  (`!f0 f1 e1 i. LENGTH f1 = LENGTH e1 
+      ==> tform_f1 (mk_tform (f0:real^N->real, f1, e1)) i = EL i f1`,
+   SIMP_TAC[tform_f1; mk_f1s]);;
+
+let mk_e1 = prove
+  (`!f0 f1 e1 i. LENGTH f1 = LENGTH e1 
+      ==> tform_e1 (mk_tform (f0:real^N->real, f1, e1)) i = EL i e1`,
+   SIMP_TAC[tform_e1; mk_e1s]);;
+
+let mk_dim = prove
+  (`!f0 f1 e1. LENGTH f1 = LENGTH e1
+      ==> tform_dim (mk_tform (f0:real^N->real, f1, e1)) = LENGTH f1`,
+   SIMP_TAC[tform_dim; mk_f1s]);;
+
+let mk_dim_alt = prove
+  (`!f0 f1 e1. LENGTH f1 = LENGTH e1
+      ==> tform_dim (mk_tform (f0:real^N->real, f1, e1)) = LENGTH e1`,
+   SIMP_TAC[tform_dim; mk_f1s]);;
+
+let dest_components = prove
+  (`!t:(N)tform. dest_tform t = (tform_f0 t, tform_f1s t, tform_e1s t)`,
+   REWRITE_TAC[tform_f0; tform_f1s; tform_e1s]);;
+
+let mk_components = prove
+  (`!t:(N)tform. mk_tform (tform_f0 t, tform_f1s t, tform_e1s t) = t`,
+   REWRITE_TAC[GSYM dest_components; mk_tform]);;
+
+
+
+let approx = new_definition
+  `approx (dom:real^N->bool) h (t:(N)tform) <=> 
+    !x. x IN dom ==> 
+         ?e. (!i. i < tform_dim t ==> abs (e i) <= abs (tform_e1 t i x))
+	     /\ h x = tform_f0 t x + 
+	                 sum (1..tform_dim t) (\i. tform_f1 t (i - 1) x * e (i - 1))`;;
+
+let approx_subset = prove
+  (`!r1 r2 h (t:(N)tform). 
+     approx r1 h t /\ r2 SUBSET r1 ==> approx r2 h t`,
+   REWRITE_TAC[approx; SUBSET] THEN REPEAT STRIP_TAC THEN
+     FIRST_X_ASSUM (MP_TAC o SPEC `x:real^N`) THEN ASM_SIMP_TAC[]);;
+
+let approx_bound_gen = prove
+  (`!r h t e. approx r h t /\
+     (!i x. i < tform_dim t /\ x IN r ==> abs (tform_e1 t i x) <= e i)
+   ==> !x:real^N. x IN r ==> 
+          abs (h x - tform_f0 t x)
+              <= sum (1..tform_dim t) (\i. abs (tform_f1 t (i - 1) x) * e (i - 1))`,
+   REWRITE_TAC[approx] THEN REPEAT STRIP_TAC THEN
+     FIRST_X_ASSUM (MP_TAC o SPEC `x:real^N`) THEN ASM_REWRITE_TAC[] THEN STRIP_TAC THEN
+     ASM_REWRITE_TAC[REAL_ARITH `(a + b) - a = b:real`] THEN
+     MATCH_MP_TAC SUM_ABS_LE THEN REWRITE_TAC[FINITE_NUMSEG; IN_NUMSEG; REAL_ABS_MUL] THEN
+     REPEAT STRIP_TAC THEN
+     MATCH_MP_TAC REAL_LE_LMUL THEN REWRITE_TAC[REAL_ABS_POS] THEN
+     ASM_MESON_TAC[ARITH_RULE `1 <= x' /\ x' <= n ==> x' - 1 < n`; REAL_LE_TRANS]);;
+
+let approx_bound = prove
+  (`!r r2 h t e m. approx r h t /\
+     r SUBSET r2 /\
+     (!i x. i < tform_dim t /\ x IN r2 ==> abs (tform_e1 t i x) <= e i) /\
+     (!x. x IN r2 ==> sum (1..tform_dim t) (\i. abs (tform_f1 t (i - 1) x) * e (i - 1)) <= m)
+   ==> !x:real^N. x IN r ==> abs (h x - tform_f0 t x) <= m`,
+   REWRITE_TAC[SUBSET] THEN REPEAT STRIP_TAC THEN
+     MP_TAC (SPECL[`r:real^N->bool`; `h:real^N->real`; `t:(N)tform`; `e:num->real`] approx_bound_gen) THEN
+     ASM_SIMP_TAC[] THEN
+     DISCH_THEN (MP_TAC o SPEC `x:real^N`) THEN ASM_REWRITE_TAC[] THEN DISCH_TAC THEN
+     ASM_MESON_TAC[REAL_LE_TRANS]);;
+
+let approx_bound_simple = prove
+  (`!r r2 h t e m. approx r h t /\
+     r SUBSET r2 /\
+     (!i x. i < tform_dim t /\ x IN r2 ==> abs (tform_e1 t i x) <= e i) /\
+     (!i x. i < tform_dim t /\ x IN r2 ==> abs (tform_f1 t i x) * e i <= m i)
+   ==> !x:real^N. x IN r ==> 
+              abs (h x - tform_f0 t x) <= sum (1..tform_dim t) (\i. m (i - 1))`,
+   REPEAT GEN_TAC THEN STRIP_TAC THEN
+     MATCH_MP_TAC approx_bound THEN 
+     EXISTS_TAC `r2:real^N->bool` THEN EXISTS_TAC `e:num->real` THEN
+     ASM_REWRITE_TAC[] THEN REPEAT STRIP_TAC THEN
+     MATCH_MP_TAC SUM_LE THEN REWRITE_TAC[FINITE_NUMSEG; IN_NUMSEG] THEN
+     REPEAT STRIP_TAC THEN
+     ASM_SIMP_TAC[ARITH_RULE `1 <= x' /\ x' <= n ==> x' - 1 < n`]);;
+
+
+
+let tneg = new_definition
+  `tneg (t:(N)tform) = mk_tform ((\x. --tform_f0 t x),
+				 MAP (\f. (\x. --f x)) (tform_f1s t),
+				 tform_e1s t)`;;
+
+let tadd = new_definition
+  `tadd (t1:(N)tform) t2 = 
+     mk_tform ((\x. tform_f0 t1 x + tform_f0 t2 x),
+	       tform_f1s t1 ++ tform_f1s t2,
+	       tform_e1s t1 ++ tform_e1s t2)`;;
+
+let tsub = new_definition
+  `tsub (t1:(N)tform) t2 = tadd t1 (tneg t2)`;;
+
+let tmul = new_definition
+  `tmul (m2,e2) (t1:(N)tform) t2 =
+     mk_tform ((\x. tform_f0 t1 x * tform_f0 t2 x),
+	       CONS (\x. m2)
+		 (MAP (\f. (\x. tform_f0 t2 x * f x)) (tform_f1s t1) ++
+		    MAP (\g. (\x. tform_f0 t1 x * g x)) (tform_f1s t2)),
+	       CONS (\x. e2)
+		 (tform_e1s t1 ++ tform_e1s t2))`;;
+
+
+let dim_tneg = prove
+  (`!t:(N)tform. tform_dim (tneg t) = tform_dim t`,
+   SIMP_TAC[tneg; tform_dim; mk_e1s; length_f1s_e1s; LENGTH_MAP]);;
+
+let f0_tneg = prove
+  (`!t:(N)tform. tform_f0 (tneg t) = (\x. --tform_f0 t x)`,
+   SIMP_TAC[tneg; tform_dim; mk_f0; length_f1s_e1s; LENGTH_MAP]);;
+
+let f1s_tneg = prove
+  (`!t:(N)tform. tform_f1s (tneg t) = MAP (\f. (\x. --f x)) (tform_f1s t)`,
+   SIMP_TAC[tneg; tform_dim; mk_f1s; length_f1s_e1s; LENGTH_MAP]);;
+
+let e1s_tneg = prove
+  (`!t:(N)tform. tform_e1s (tneg t) = tform_e1s t`,
+   SIMP_TAC[tneg; tform_dim; mk_e1s; length_f1s_e1s; LENGTH_MAP]);;
+
+let f1_tneg = prove
+  (`!t:(N)tform i. i < tform_dim t 
+   ==> tform_f1 (tneg t) i = \x. --tform_f1 t i x`,
+   SIMP_TAC[tneg; tform_dim; mk_f1; length_f1s_e1s; LENGTH_MAP] THEN
+     SIMP_TAC[GSYM length_f1s_e1s; EL_MAP; tform_f1]);;
+
+let e1_tneg = prove
+  (`!t:(N)tform. tform_e1 (tneg t) = tform_e1 t`,
+   REWRITE_TAC[FUN_EQ_THM; e1s_tneg; tform_e1]);;
+
+
+
+let tneg_tneg = prove
+  (`!t:(N)tform. tneg (tneg t) = t`,
+   GEN_TAC THEN REWRITE_TAC[tneg] THEN
+     SIMP_TAC[mk_f0; mk_f1s; mk_e1s; LENGTH_MAP; length_f1s_e1s; MAP_MAP] THEN
+     REWRITE_TAC[REAL_NEG_NEG; ETA_AX; MAP_ID; mk_components]);;
+
+let tneg_approx = prove
+  (`!t:(N)tform h r. approx r h t ==> approx r (\x. --h x) (tneg t)`,
+   REWRITE_TAC[approx] THEN REPEAT STRIP_TAC THEN
+     FIRST_X_ASSUM (MP_TAC o SPEC `x:real^N`) THEN ASM_REWRITE_TAC[] THEN STRIP_TAC THEN
+     EXISTS_TAC `e:num->real` THEN
+     ASM_REWRITE_TAC[dim_tneg; e1_tneg; f0_tneg; REAL_ARITH `--(a + b) = --a + (-- &1) * b`] THEN
+     AP_TERM_TAC THEN REWRITE_TAC[GSYM SUM_LMUL] THEN
+     MATCH_MP_TAC SUM_EQ THEN REWRITE_TAC[IN_NUMSEG] THEN REPEAT STRIP_TAC THEN
+     SUBGOAL_THEN `x' - 1 < tform_dim (t:(N)tform)` ASSUME_TAC THENL [
+       ASM_ARITH_TAC;
+       ALL_TAC
+     ] THEN
+     ASM_SIMP_TAC[f1_tneg] THEN REAL_ARITH_TAC);;
+
+
+let dim_tadd = prove
+  (`!t1 t2:(N)tform. tform_dim (tadd t1 t2) = tform_dim t1 + tform_dim t2`,
+   SIMP_TAC[tadd; tform_dim; mk_e1s; length_f1s_e1s; LENGTH_APPEND]);;
+
+let f0_tadd = prove
+  (`!t1 t2:(N)tform. tform_f0 (tadd t1 t2) = (\x. tform_f0 t1 x + tform_f0 t2 x)`,
+   SIMP_TAC[tadd; tform_dim; mk_f0; length_f1s_e1s; LENGTH_APPEND]);;
+
+let f1s_tadd = prove
+  (`!t1 t2:(N)tform. tform_f1s (tadd t1 t2) = tform_f1s t1 ++ tform_f1s t2`,
+   SIMP_TAC[tadd; tform_dim; mk_f1s; length_f1s_e1s; LENGTH_APPEND]);;
+
+let e1s_tadd = prove
+  (`!t1 t2:(N)tform. tform_e1s (tadd t1 t2) = tform_e1s t1 ++ tform_e1s t2`,
+   SIMP_TAC[tadd; tform_dim; mk_e1s; length_f1s_e1s; LENGTH_APPEND]);;
+
+let f1_tadd = prove
+  (`!t1 t2:(N)tform i. tform_f1 (tadd t1 t2) i = 
+      if i < tform_dim t1 then tform_f1 t1 i else tform_f1 t2 (i - tform_dim t1)`,
+   SIMP_TAC[tadd; tform_dim; mk_f1; length_f1s_e1s; LENGTH_APPEND; EL_APPEND] THEN
+     REWRITE_TAC[tform_f1]);;
+
+let e1_tadd = prove
+  (`!t1 t2:(N)tform i. tform_e1 (tadd t1 t2) i = 
+      if i < tform_dim t1 then tform_e1 t1 i else tform_e1 t2 (i - tform_dim t1)`,
+   SIMP_TAC[tadd; tform_dim; mk_e1; length_f1s_e1s; LENGTH_APPEND; EL_APPEND] THEN
+     REWRITE_TAC[tform_e1]);;
+
+
+let tadd_approx = prove
+  (`!t1 t2:(N)tform h1 h2 r. approx r h1 t1 /\ approx r h2 t2
+       ==> approx r (\x. h1 x + h2 x) (tadd t1 t2)`,
+   REWRITE_TAC[approx] THEN REPEAT STRIP_TAC THEN
+     REPEAT (FIRST_X_ASSUM (MP_TAC o SPEC `x:real^N`) THEN ASM_REWRITE_TAC[]) THEN
+     REPEAT STRIP_TAC THEN
+     ABBREV_TAC `d = \i:num. if i < tform_dim (t1:(N)tform) then e i else e' (i - tform_dim t1):real` THEN
+     EXISTS_TAC `d:num->real` THEN
+     ASM_REWRITE_TAC[dim_tadd; e1_tadd; f0_tadd] THEN CONJ_TAC THENL [
+       REPEAT STRIP_TAC THEN COND_CASES_TAC THENL [
+	 EXPAND_TAC "d" THEN ASM_SIMP_TAC[];
+	 ALL_TAC
+       ] THEN
+	 EXPAND_TAC "d" THEN ASM_REWRITE_TAC[] THEN
+	 ASM_SIMP_TAC[ARITH_RULE `i < a + b /\ ~(i < a) ==> i - a < b:num`];
+       ALL_TAC
+     ] THEN
+     ONCE_REWRITE_TAC[REAL_ARITH `(a + s1) + b + s2 = (a + b) + (s1 + s2):real`] THEN
+     AP_TERM_TAC THEN
+     SIMP_TAC[SUM_ADD_SPLIT; ARITH_RULE `1 <= n + 1`] THEN
+     SUBGOAL_THEN `!a b. a + 1..a + b = 1 + a..b + a` (fun th -> REWRITE_TAC[th]) THENL [
+       REWRITE_TAC[ADD_AC];
+       ALL_TAC
+     ] THEN
+     REWRITE_TAC[SUM_OFFSET] THEN
+     MATCH_MP_TAC (REAL_ARITH `a = b /\ c = d ==> a + c = b + d:real`) THEN
+     CONJ_TAC THEN MATCH_MP_TAC SUM_EQ THEN REWRITE_TAC[IN_NUMSEG] THEN REPEAT STRIP_TAC THENL [
+       SUBGOAL_THEN `x' - 1 < tform_dim (t1:(N)tform)` ASSUME_TAC THENL [
+	 ASM_ARITH_TAC;
+	 ALL_TAC
+       ] THEN
+	 EXPAND_TAC "d" THEN ASM_REWRITE_TAC[f1_tadd];
+       ALL_TAC
+     ] THEN
+     SUBGOAL_THEN `~((x' + tform_dim t1) - 1 < tform_dim (t1:(N)tform))` ASSUME_TAC THENL [
+       ASM_ARITH_TAC;
+       ALL_TAC
+     ] THEN
+     EXPAND_TAC "d" THEN ASM_REWRITE_TAC[f1_tadd] THEN
+     ASM_SIMP_TAC[ARITH_RULE `!n m. 1 <= n ==> (n + m) - 1 - m = n - 1`]);;
+
+
+let tsub_approx = prove
+  (`!t1 t2:(N)tform h1 h2 r. approx r h1 t1 /\ approx r h2 t2
+       ==> approx r (\x. h1 x - h2 x) (tsub t1 t2)`,
+   REPEAT STRIP_TAC THEN REWRITE_TAC[tsub; real_sub] THEN
+     MATCH_MP_TAC tadd_approx THEN ASM_SIMP_TAC[tneg_approx]);;
+
+
+
+`approx dom h1 (tform f0 f1s) /\ approx dom h2 (tfrom g0 g1s)
+  /\ (!x. x IN dom ==> 
+	sum_list f1s (\ (f, e). sum_list g1s (\ (g, e2). f x * g x)) <= m2)
+  /\ (!x. x IN dom ==> 
+	(!i. i < LENGTH f1s ==> SND (EL i f1s) x <= e2 x) /\
+	(!i. i < LENGTH g1s ==> SND (EL i g1s) x <= e2 x))
+  ==> approx dom (\x. h1 x + h2 x) (tmul (m2, e2) (f0, f1s) (g0, g1s))`;;
+
