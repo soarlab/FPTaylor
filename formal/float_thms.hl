@@ -2935,6 +2935,13 @@ let FLOAT_IS_CLOSEST_FIXED =
 	  ~(x = &0) /\ is_float(fmt) y /\ fl_is_closest(fmt) x y ==>
 	  ?(z:real). is_fixed(to_fformat fmt (greatest_e(fmt) x)) z /\
      is_closest(to_fformat fmt (greatest_e(fmt) x)) (greatest_r(fmt) x) z /\
+	  (if (&0 <= y)
+	   then
+	       y = &(greatest_m(fmt) x) * &(flr fmt) ipow (greatest_e(fmt) x) +
+	          z
+           else
+	       y = -- (&(greatest_m(fmt) x) * 
+                      &(flr fmt) ipow (greatest_e(fmt) x)) + z) /\
           (EVEN (ff(to_fformat fmt (greatest_e(fmt) y))
                (greatest_r(fmt) y)) <=>
               EVEN (ff(to_fformat fmt (greatest_e(fmt) x)) z))`,
@@ -3510,29 +3517,161 @@ let FLOAT_IS_CLOSEST_FIXED =
        ASM_REWRITE_TAC[] THEN
        ASM_ARITH_TAC]]);;
 
-(* let fl_to_even = define *)
-(*   `fl_to_even (fmt:flformat) (x:real) (y:real) = (!(y2:real) (f:num). *)
-(*   is_float(fmt) y2 /\ (fl_is_closest(fmt) x y) /\ (fl_is_closest(fmt) x y2) /\ *)
-(*    ~(y2 = y) /\ *)
-(*     (is_frac(fmt) y f) ==> (EVEN f))`;; *)
+(* A floating point number's normalized frac is m * r^(p - 1) + the fraction  *)
+(* of its fixed point remainder.                                              *)
+let fl_norm_frac = define
+  `fl_norm_frac (fmt:flformat) (y:real) =
+  ( (greatest_m(fmt) y) * (flr fmt) EXP ((flp fmt) - 1) +
+    (ff (to_fformat fmt (greatest_e(fmt) y)) (greatest_r(fmt) y)) )`;;
 
-(* show fl_is_closest --> y = +/- m * r^e + z, is_closest z x *)
-(*    if abs(y) = m * r^e, done   *)
-(*    if abs(y) = m * r^e + finf, done  *)
-(*    otherwise, show abs(y) > m * r^e and abs(y) < ... *)
-(*    conclude ge(y) = e, gm(y) = e, and y = +/- m * r^e + z ... *)
+let fl_to_even = define
+  `fl_to_even (fmt:flformat) (x:real) (y:real) = (!(y2:real).
+   is_float(fmt) y2 /\ 
+   (fl_is_closest(fmt) x y) /\ 
+   (fl_is_closest(fmt) x y2) /\
+   ~(y2 = y) ==>
+   (EVEN (fl_norm_frac(fmt) y)))`;;
 
-(* show if y is float, z is fixed *)
-(* show if y2 != y, then z2 != z *)
-(* conclude z has even frac *)
-(* show y's frac = m*r^p-1 + z's frac, so y's frac is even *)
+let FLOAT_RD_NEAREST_EVEN =
+  prove(`!(fmt:flformat) (x:real). ~(x = &0) ==>
+	  fl_to_even(fmt) x (flround(fmt) To_near x)`,
+	REPEAT GEN_TAC THEN DISCH_THEN (LABEL_TAC "xneq0") THEN
+	  REWRITE_TAC[fl_to_even] THEN GEN_TAC THEN
+	  DISCH_THEN (LABEL_CONJUNCTS_TAC 
+           ["y2float"; "roundclose"; "y2close"; "y2neq"]) THEN
 
-(* let FLOAT_RD_NEAREST_EVEN = *)
-(*   prove(`!(fmt:flformat) (x:real). ~(x = &0) ==> *)
-(* 	  ?(z:real). flround(fmt) To_near x = z /\ fl_to_even(fmt) x z`, *)
-(* 	REPEAT GEN_TAC THEN DISCH_THEN (LABEL_TAC "xneq0") THEN *)
-(*         REWRITE_TAC[flround] THEN LET_TAC THEN *)
-(*         COND_CASES_TAC THENL [ *)
+	  SUBGOAL_THEN `is_float(fmt) (flround(fmt) To_near x)`
+	  (LABEL_TAC "roundfloat") THENL [
+	    MATCH_MP_TAC FLOAT_RD_IS_FLOAT THEN ASM_REWRITE_TAC[]; ALL_TAC] THEN
+	  
+	  USE_THEN "xneq0" (fun xneq0 ->
+	  USE_THEN "y2float" (fun y2float ->
+	  USE_THEN "y2close" (fun y2close ->
+	    CHOOSE_THEN 
+            (LABEL_CONJUNCTS_TAC ["zpfixed"; "zpeq"; "zpclose"; "zpfrac"])
+            (MATCH_MP (SPEC `fmt:flformat` FLOAT_IS_CLOSEST_FIXED)
+              (CONJ xneq0 (CONJ y2float y2close)))))) THEN
 
-	  (* 0 <= x *)
-	
+	  USE_THEN "xneq0" (fun xneq0 ->
+	  USE_THEN "roundfloat" (fun roundfloat ->
+	  USE_THEN "roundclose" (fun roundclose ->
+	    CHOOSE_THEN 
+            (LABEL_CONJUNCTS_TAC ["zfixed"; "zeq"; "zclose"; "zfrac"])
+            (MATCH_MP (SPEC `fmt:flformat` FLOAT_IS_CLOSEST_FIXED)
+              (CONJ xneq0 (CONJ roundfloat roundclose)))))) THEN
+
+	  SUBGOAL_THEN 
+ `fround (to_fformat fmt (greatest_e(fmt) x)) To_near (greatest_r(fmt) x) = z'`
+	  (LABEL_TAC "eqzp") THENL [
+	    ASM_CASES_TAC `&0 <= (x:real)` THENL [
+	      ONCE_REWRITE_TAC[ARITH_RULE `(x:real) = y <=>
+  &(greatest_m(fmt) x) * &(flr fmt) ipow (greatest_e(fmt) x) + 
+       x = &(greatest_m(fmt) x) * &(flr fmt) ipow (greatest_e(fmt) x) + y`] THEN
+		SUBGOAL_THEN `&0 <= (flround(fmt) To_near x)` ASSUME_TAC THENL [
+		  MATCH_MP_TAC FLOAT_REVERSE_NORMALIZE_LE THEN
+		  EXISTS_TAC `fmt:flformat` THEN EXISTS_TAC `x:real` THEN
+		  ASM_REWRITE_TAC[]; ALL_TAC] THEN
+
+		SUBGOAL_THEN 
+   `&(greatest_m(fmt) x) * &(flr fmt) ipow (greatest_e(fmt) x) + 
+    fround (to_fformat fmt (greatest_e(fmt) x)) To_near (greatest_r(fmt) x) = 
+            (flround(fmt) To_near x)`
+		ASSUME_TAC THENL [
+		  REWRITE_TAC[flround] THEN LET_TAC THEN ASM_REWRITE_TAC[];
+		  ALL_TAC] THEN
+		
+		ASM_REWRITE_TAC[] THEN
+		ASM_ARITH_TAC;
+
+	      (* x < 0 *)
+	      ONCE_REWRITE_TAC[ARITH_RULE `(x:real) = y <=>
+   (-- (&(greatest_m(fmt) x) * &(flr fmt) ipow (greatest_e(fmt) x))) + x = 
+ (-- (&(greatest_m(fmt) x) * &(flr fmt) ipow (greatest_e(fmt) x))) + y`] THEN
+		SUBGOAL_THEN `~(&0 <= (flround(fmt) To_near x))` 
+		ASSUME_TAC THENL [
+		  MATCH_MP_TAC FLOAT_REVERSE_NORMALIZE_LE_2 THEN
+		  EXISTS_TAC `fmt:flformat` THEN EXISTS_TAC `x:real` THEN
+		  ASM_REWRITE_TAC[]; ALL_TAC] THEN
+
+		SUBGOAL_THEN 
+    `(-- (&(greatest_m(fmt) x) * &(flr fmt) ipow (greatest_e(fmt) x))) + 
+ fround (to_fformat fmt (greatest_e(fmt) x)) To_near (greatest_r(fmt) x) = 
+       (flround(fmt) To_near x)`
+		ASSUME_TAC THENL [
+		  REWRITE_TAC[flround] THEN LET_TAC THEN ASM_REWRITE_TAC[];
+		  ALL_TAC] THEN
+		
+		ASM_REWRITE_TAC[] THEN
+		ASM_ARITH_TAC]; ALL_TAC ] THEN
+
+	  (* showed z' = fround *)
+
+	  REWRITE_TAC[fl_norm_frac] THEN REWRITE_TAC[EVEN_ADD] THEN
+	  REWRITE_TAC[EVEN_MULT] THEN REWRITE_TAC[EVEN_EXP] THEN
+	  REWRITE_TAC[FLFORMAT_RADIX_EVEN] THEN
+	  REWRITE_TAC[ARITH_RULE `~(x - 1 = 0) <=> 1 < x`] THEN
+	  REWRITE_TAC[FLFORMAT_PREC_LT_1] THEN
+	  ASM_REWRITE_TAC[] THEN
+	  
+	  SUBGOAL_THEN `abs(greatest_r(fmt) x) <= 
+                    (finf (to_fformat fmt (greatest_e(fmt) x)))`
+	  (LABEL_TAC "grbnd") THENL [
+	    MATCH_MP_TAC (ARITH_RULE `(x:real) < y ==> x <= y`) THEN
+	    USE_THEN "xneq0" (fun xneq0 ->
+	      CHOOSE_THEN (fun thm -> REWRITE_TAC[thm]) 
+              (MATCH_MP (SPEC `fmt:flformat` FLOAT_GREATEST_R_EXISTS)
+                   xneq0)); ALL_TAC] THEN
+
+	  USE_THEN "grbnd" (fun grbnd -> 
+	   CHOOSE_THEN 
+           (LABEL_CONJUNCTS_TAC ["froundeq"; "frisfixed"; "frtoeven"])
+           (MATCH_MP (SPEC `(to_fformat fmt (greatest_e(fmt) x))` 
+                        FIXED_RD_NEAREST_EVEN)
+	      grbnd)) THEN
+
+	  SUBGOAL_THEN `z IN (fixed (to_fformat fmt (greatest_e(fmt) x)))`
+          (LABEL_TAC "zpinfixed") THENL [
+	    REWRITE_TAC[fixed] THEN REWRITE_TAC[IN_ELIM_THM] THEN
+	    ASM_REWRITE_TAC[]; ALL_TAC] THEN
+
+	  SUBGOAL_THEN `~((z:real) = z')` (LABEL_TAC "zneq") THENL [
+	    ASM_CASES_TAC `&0 <= (x:real)` THENL [
+	      SUBGOAL_THEN `&0 <= (flround(fmt) To_near x)` ASSUME_TAC THENL [
+		MATCH_MP_TAC FLOAT_REVERSE_NORMALIZE_LE THEN
+		EXISTS_TAC `fmt:flformat` THEN EXISTS_TAC `x:real` THEN
+		ASM_REWRITE_TAC[]; ALL_TAC] THEN
+	      SUBGOAL_THEN `&0 <= (y2:real)` ASSUME_TAC THENL [
+		MATCH_MP_TAC FLOAT_REVERSE_NORMALIZE_LE THEN
+		EXISTS_TAC `fmt:flformat` THEN EXISTS_TAC `x:real` THEN
+		ASM_REWRITE_TAC[]; ALL_TAC] THEN	      
+	      ASM_ARITH_TAC;
+
+            SUBGOAL_THEN `~(&0 <= (flround(fmt) To_near x))` ASSUME_TAC THENL [
+		MATCH_MP_TAC FLOAT_REVERSE_NORMALIZE_LE_2 THEN
+		EXISTS_TAC `fmt:flformat` THEN EXISTS_TAC `x:real` THEN
+		ASM_REWRITE_TAC[]; ALL_TAC] THEN
+	      SUBGOAL_THEN `~(&0 <= (y2:real))` ASSUME_TAC THENL [
+		MATCH_MP_TAC FLOAT_REVERSE_NORMALIZE_LE_2 THEN
+		EXISTS_TAC `fmt:flformat` THEN EXISTS_TAC `x:real` THEN
+		ASM_REWRITE_TAC[]; ALL_TAC] THEN	      
+	      ASM_ARITH_TAC]; ALL_TAC] THEN
+
+	SUBGOAL_THEN `is_frac (to_fformat fmt (greatest_e(fmt) x))
+                       z'
+		      (ff (to_fformat fmt (greatest_e(fmt) x)) z')`
+         (LABEL_TAC "zfrac") THENL [
+	   REWRITE_TAC[ff] THEN SELECT_ELIM_TAC THEN 
+	   REWRITE_TAC[GSYM is_fixed] THEN ASM_REWRITE_TAC[]; ALL_TAC] THEN
+
+       SUBGOAL_THEN `to_even (to_fformat fmt (greatest_e fmt x)) 
+              (greatest_r fmt x) z'`
+       (LABEL_TAC "frtoeven2") THENL [
+	 USE_THEN "eqzp" (fun eqzp -> REWRITE_TAC[GSYM eqzp]) THEN
+         USE_THEN "froundeq" (fun froundeq -> REWRITE_TAC[froundeq]) THEN
+         ASM_REWRITE_TAC[]; ALL_TAC] THEN
+
+       (* OK! now we're ready ... *)
+
+       USE_THEN "frtoeven2" (fun frtoeven2 ->
+	 MATCH_MP_TAC (REWRITE_RULE[to_even] frtoeven2)) THEN
+       EXISTS_TAC `z:real` THEN ASM_REWRITE_TAC[]);;
