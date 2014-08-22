@@ -81,7 +81,7 @@ let FLFORMAT_PREC_LT_1 =
 
 let FLFORMAT_PREC_LT_0 =
   prove(`!(fmt:flformat). 0 < (flp fmt)`,
-	GEN_TAC THEM MATCH_MP_TAC (ARITH_RULE `1 < x ==> 0 < x`) THEN
+	GEN_TAC THEN MATCH_MP_TAC (ARITH_RULE `1 < x ==> 0 < x`) THEN
 	REWRITE_TAC[FLFORMAT_PREC_LT_1]);;
 
 let FLFORMAT_PREC_MINUS_1 =
@@ -3058,7 +3058,7 @@ let FLOAT_IS_CLOSEST_FIXED =
 	 (* s < 0 *)
          DISJ1_TAC THEN MATCH_MP_TAC CLOSER_LOWER THEN
          CONJ_TAC THENL [ASM_ARITH_TAC; ALL_TAC] THEN
-         MATCH_MP_TAC FLOAT_GREATEST_R_LE_0 THEN ASM_REWRITE_TAC[]; 
+         MATCH_MP_TAC FLOAT_GREATEST_R_LE_0 THEN ASM_REWRITE_TAC[];
          ALL_TAC] THEN
 
        (* x < 0 *)
@@ -3068,7 +3068,7 @@ let FLOAT_IS_CLOSEST_FIXED =
 	     ASM_ARITH_TAC; ALL_TAC] THEN
            DISJ1_TAC THEN MATCH_MP_TAC CLOSER_HIGHER THEN
            ASM_REWRITE_TAC[] THEN
-           MATCH_MP_TAC FLOAT_GREATEST_R_LE_0_2 THEN ASM_REWRITE_TAC[]; 
+           MATCH_MP_TAC FLOAT_GREATEST_R_LE_0_2 THEN ASM_REWRITE_TAC[];
            ALL_TAC] THEN
     
            (* s < 0 *)
@@ -3253,7 +3253,7 @@ let FLOAT_IS_CLOSEST_FIXED =
      REMOVE_THEN "sinfixed" (fun sinfixed -> LABEL_TAC "sfixed"
        (REWRITE_RULE[IN_ELIM_THM] (REWRITE_RULE[fixed] sinfixed))) THEN
      
-     (* no choice but to do cases again :( ... *)
+     (* no choice but to do cases again :( ... ) *)
      ASM_CASES_TAC `&0 <= (x:real)` THENL [
        (* 0 <= x *)
 
@@ -3383,7 +3383,7 @@ let FLOAT_IS_CLOSEST_FIXED =
 
         REWRITE_TAC[GSYM closer] THEN
         USE_THEN "yisclosest" (fun yisclosest -> MATCH_MP_TAC
-        (REWRITE_RULE[fl_is_closest] yisclosest)) THEN ASM_REWRITE_TAC[]; 
+        (REWRITE_RULE[fl_is_closest] yisclosest)) THEN ASM_REWRITE_TAC[];
        ALL_TAC] THEN
 
     (* DONE SHOWING IS CLOSEST *)
@@ -3401,7 +3401,7 @@ let FLOAT_IS_CLOSEST_FIXED =
           EXISTS_TAC `(greatest_e(fmt) x) + &1` THEN
           EXISTS_TAC `1` THEN
           CONJ_TAC THENL [
-	    MATCH_MP_TAC (SPEC `fmt:flformat` FLOAT_NOT_ZERO) THEN 
+	    MATCH_MP_TAC (SPEC `fmt:flformat` FLOAT_NOT_ZERO) THEN
 	    ASM_REWRITE_TAC[]; ALL_TAC] THEN
           CONJ_TAC THENL [ ARITH_TAC; ALL_TAC] THEN
           CONJ_TAC THENL [ REWRITE_TAC[FLFORMAT_RADIX_LT_1]; ALL_TAC ] THEN
@@ -3414,40 +3414,43 @@ let FLOAT_IS_CLOSEST_FIXED =
           
           SUBGOAL_THEN `(&(flr fmt) - &1) = &((flr fmt) - 1)`
           (fun thm -> REWRITE_TAC[thm]) THENL [
-	    MATCH_MP_TAC REAL_OF_NUM_SUB THEN 
+	    MATCH_MP_TAC REAL_OF_NUM_SUB THEN
             MATCH_MP_TAC (ARITH_RULE `1 < n ==> 1 <= n`) THEN
             REWRITE_TAC[FLFORMAT_RADIX_LT_1]; ALL_TAC] THEN
 
-          ASM_REWRITE_TAC[] THEN 
+          ASM_REWRITE_TAC[] THEN
 	  REWRITE_TAC[finf] THEN dump_flformat_conv `(greatest_e(fmt) x)` THEN
 	  ASM_REWRITE_TAC[]; ALL_TAC] THEN
 
+	  (* m != r - 1 *)
 	  MATCH_MP_TAC FLOAT_EQ_IPOW_R_0 THEN
           EXISTS_TAC `(greatest_e(fmt) x)` THEN
           EXISTS_TAC `(greatest_m(fmt) x) + 1` THEN
           CONJ_TAC THENL [
-	    MATCH_MP_TAC (SPEC `fmt:flformat` FLOAT_NOT_ZERO) THEN 
+	    MATCH_MP_TAC (SPEC `fmt:flformat` FLOAT_NOT_ZERO) THEN
 	    ASM_REWRITE_TAC[]; ALL_TAC] THEN
           CONJ_TAC THENL [ ARITH_TAC; ALL_TAC] THEN
-          CONJ_TAC THENL [ REWRITE_TAC[FLFORMAT_RADIX_LT_1]; ALL_TAC ] THEN
-          
-	  REWRITE_TAC[GSYM(MATCH_MP (SPEC `&(flr fmt)` IPOW_ADD_EXP)
-             (SPEC `fmt:flformat` FLFORMAT_RADIX_NE_0))] THEN
+
           USE_THEN "xneq0" (fun xneq0 -> dump_gm_info xneq0 "x") THEN
-          ASM_REWRITE_TAC[] THEN
-          REWRITE_TAC[ARITH_RULE `m + 1 < (flr fmt) <=> m < (flr fmt) - 1`] THEN
-          MATCH_MP_TAC (ARITH_RULE 
+	  CONJ_TAC THENL [ 
+            ASM_REWRITE_TAC[] THEN
+            REWRITE_TAC[ARITH_RULE 
+                 `m + 1 < (flr fmt) <=> m < (flr fmt) - 1`] THEN
+            MATCH_MP_TAC (ARITH_RULE
                `(x:num) < y /\ ~(x = y - 1) ==> x < y - 1`) THEN
-	  CONJ_TAC THENL [ ASM_REWRITE_TAC[]; ALL_TAC] THEN
-          USE_THEN "xgmeq" (fun xgmeq -> REWRITE_TAC[GSYM xgmeq]) THEN
-          REWRITE_TAC[ASSUME `~(greatest_m fmt x = flr fmt - 1)`] THEN
-	  
-	  REWRITE_TAC[GSYM REAL_OF_NUM_ADD] THEN 
+  	    CONJ_TAC THENL [ ASM_REWRITE_TAC[]; ALL_TAC] THEN
+            USE_THEN "xgmeq" (fun xgmeq -> REWRITE_TAC[GSYM xgmeq]) THEN
+            REWRITE_TAC[ASSUME `~(greatest_m fmt x = flr fmt - 1)`];
+            ALL_TAC] THEN
+
+	  REWRITE_TAC[GSYM REAL_OF_NUM_ADD] THEN
           REWRITE_TAC[ARITH_RULE `((x:real) + &1) * z = x * z + z`] THEN
 	  ASM_REWRITE_TAC[] THEN
 	  REWRITE_TAC[finf] THEN
           dump_flformat_conv `(greatest_e(fmt) x)` THEN
           ASM_REWRITE_TAC[]; ALL_TAC] THEN
+
+      (* (abs(y) = mr^e + finf) done showing fraction is zero *)
 
       REWRITE_TAC[FIXED_FF_ZERO] THEN REWRITE_TAC[EVEN] THEN
       
@@ -3456,14 +3459,56 @@ let FLOAT_IS_CLOSEST_FIXED =
         (fun thm -> REWRITE_TAC[thm]) THENL [
 	  ASM_ARITH_TAC; ALL_TAC] THEN
 
-	REWRITE_TAC[FIXED_FF_FINF] THEN 
+	REWRITE_TAC[FIXED_FF_FINF] THEN
         REWRITE_TAC[EVEN_EXP] THEN
         REWRITE_TAC[FFORMAT_RADIX_EVEN] THEN
-        MATCH_MP_TAC (ARITH_RULE `0 < x ==> ~(x - 1 = 0)
+        MATCH_MP_TAC (ARITH_RULE `1 < x ==> ~(x - 1 = 0)`) THEN
+	dump_flformat_conv `(greatest_e(fmt) x)` THEN
+	ASM_REWRITE_TAC[] THEN
+	REWRITE_TAC[FLFORMAT_PREC_LT_1];
 
-(* NEED TO SWITCH TO PREC >= 2 *)
-	
-        
+	(* y < 0 *)
+	SUBGOAL_THEN `z = -- (finf (to_fformat fmt (greatest_e fmt x)))`
+        (fun thm -> REWRITE_TAC[thm]) THENL [
+	  ASM_ARITH_TAC; ALL_TAC] THEN
+
+	SUBGOAL_THEN ` (ff (to_fformat fmt (greatest_e fmt x))
+                     (--finf (to_fformat fmt (greatest_e fmt x)))) =
+                 (ff (to_fformat fmt (greatest_e fmt x))
+                      (finf (to_fformat fmt (greatest_e fmt x))))`
+         (fun thm -> REWRITE_TAC[thm]) THENL [
+	   MATCH_MP_TAC FIXED_FF_NEG THEN 
+	   REWRITE_TAC[REWRITE_RULE[IN_ELIM_THM] (REWRITE_RULE[fixed]
+            FIXED_FINF_IN_FIXED)]; ALL_TAC] THEN
+
+	REWRITE_TAC[FIXED_FF_FINF] THEN
+        REWRITE_TAC[EVEN_EXP] THEN
+        REWRITE_TAC[FFORMAT_RADIX_EVEN] THEN
+        MATCH_MP_TAC (ARITH_RULE `1 < x ==> ~(x - 1 = 0)`) THEN
+	dump_flformat_conv `(greatest_e(fmt) x)` THEN
+	ASM_REWRITE_TAC[] THEN
+	REWRITE_TAC[FLFORMAT_PREC_LT_1]]; ALL_TAC] THEN
+
+   (* done with fraction edge case ! *)
+
+   USE_THEN "eqclauses" (fun eqclauses ->
+	LABEL_CONJUNCTS_TAC ["ygmeq"; "ygeeq"]
+        (MATCH_MP eqclauses (ASSUME `~(abs y =
+        &(greatest_m fmt x) * &(flr fmt) ipow greatest_e fmt x +
+        finf (to_fformat fmt (greatest_e fmt x)))`))) THEN
+
+   ASM_REWRITE_TAC[] THEN
+
+   SUBGOAL_THEN `(greatest_r(fmt) y) = z` (fun thm -> REWRITE_TAC[thm]) THENL [
+     REWRITE_TAC[greatest_r] THEN 
+     COND_CASES_TAC THENL [
+       REWRITE_TAC[ARITH_RULE `(y:real) - x = z <=> y = x + z`] THEN
+       ASM_REWRITE_TAC[] THEN
+       ASM_ARITH_TAC;
+       REWRITE_TAC[ARITH_RULE `(y:real) + x = z <=> y = (-- x) + z`] THEN
+       REWRITE_TAC[ARITH_RULE `(-- x:real) * y = -- (x * y)`] THEN
+       ASM_REWRITE_TAC[] THEN
+       ASM_ARITH_TAC]]);;
 
 (* let fl_to_even = define *)
 (*   `fl_to_even (fmt:flformat) (x:real) (y:real) = (!(y2:real) (f:num). *)
