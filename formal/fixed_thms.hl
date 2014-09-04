@@ -1826,6 +1826,25 @@ let FIXED_RD_LE_0_2 =
           ASM_REWRITE_TAC[] THEN REWRITE_TAC[FIXED_GLB_LE_0_2];
           ASM_REWRITE_TAC[] THEN REWRITE_TAC[FIXED_LUB_LE_0_2]]);;
 
+let FIXED_RD_EQ_0 =
+  prove(`!(fmt:fformat) (m:roundmode). (fround(fmt) m (&0)) = &0`,
+	REPEAT GEN_TAC THEN
+	SUBGOAL_THEN `&0 <= (fround(fmt) m (&0))` ASSUME_TAC THENL [
+	  MATCH_MP_TAC FIXED_RD_LE_0 THEN 
+	  CONJ_TAC THENL [
+	    REWRITE_TAC[ARITH_RULE `abs(&0) = &0`] THEN
+	    REWRITE_TAC[finf] THEN
+	    REWRITE_TAC[FFORMAT_RADIX_IPOW_LE_0];
+	    ARITH_TAC]; ALL_TAC] THEN
+	SUBGOAL_THEN `(fround(fmt) m (&0)) <= &0` ASSUME_TAC THENL [
+	  MATCH_MP_TAC FIXED_RD_LE_0_2 THEN 
+	  CONJ_TAC THENL [
+	    REWRITE_TAC[ARITH_RULE `abs(&0) = &0`] THEN
+	    REWRITE_TAC[finf] THEN
+	    REWRITE_TAC[FFORMAT_RADIX_IPOW_LE_0];
+	    ARITH_TAC]; ALL_TAC] THEN
+	ASM_ARITH_TAC);;
+
 let FIXED_RD_IS_FIXED =
   prove(`!(fmt:fformat) (x:real) (m:roundmode).
 	  abs(x) <= (finf fmt) ==> is_fixed(fmt) (fround(fmt) m x)`, 
