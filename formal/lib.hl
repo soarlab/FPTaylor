@@ -8,6 +8,45 @@ let table = new_definition
 let sum_list = new_definition 
   `!s f. sum_list s f = ITLIST (\x r:real. f x + r) s (&0)`;;
 
+let unzip_def = define `!h1 h2 t. (unzip [] = [],[]) /\ 
+  (unzip (CONS (h1, h2) t) = CONS h1 (FST (unzip t)), CONS h2 (SND (unzip t)))`;;
+
+let pair_eq_thm = prove(`!p:A#B. p = FST p, SND p`, REWRITE_TAC[]);;
+
+let length_unzip = prove
+  (`!s:(A#B)list. LENGTH (FST (unzip s)) = LENGTH s /\ LENGTH (SND (unzip s)) = LENGTH s`,
+  LIST_INDUCT_TAC THEN REWRITE_TAC[LENGTH; unzip_def] THEN
+    MP_TAC (ISPEC `h:A#B` pair_eq_thm) THEN DISCH_THEN (fun th -> ONCE_REWRITE_TAC[th]) THEN
+    ASM_REWRITE_TAC[unzip_def; LENGTH]);;
+
+let unzip_map = prove
+  (`!s:(A#B)list. FST (unzip s) = MAP FST s /\ SND (unzip s) = MAP SND s`,
+   LIST_INDUCT_TAC THEN REWRITE_TAC[unzip_def; MAP] THEN
+     MP_TAC (ISPEC `h:A#B` pair_eq_thm) THEN DISCH_THEN (fun th -> ONCE_REWRITE_TAC[th]) THEN
+     ASM_REWRITE_TAC[unzip_def; MAP]);;
+
+let zip_unzip = prove
+  (`!s:(A#B)list. ZIP (FST (unzip s)) (SND (unzip s)) = s`,
+   LIST_INDUCT_TAC THEN REWRITE_TAC[ZIP; unzip_def] THEN
+     MP_TAC (ISPEC `h:A#B` pair_eq_thm) THEN DISCH_THEN (fun th -> ONCE_REWRITE_TAC[th]) THEN
+     ASM_REWRITE_TAC[unzip_def; ZIP]);;
+
+let unzip_zip = prove
+  (`!(s:(A)list) (t:(B)list). LENGTH s = LENGTH t ==> unzip (ZIP s t) = (s, t)`,
+   REPEAT STRIP_TAC THEN
+     ONCE_REWRITE_TAC[pair_eq_thm] THEN REWRITE_TAC[PAIR_EQ; unzip_map] THEN
+     ASM_SIMP_TAC[MAP_FST_ZIP; MAP_SND_ZIP]);;
+
+let length_zip = prove
+  (`!(s:(A)list) (t:(B)list). LENGTH s = LENGTH t ==> LENGTH (ZIP s t) = LENGTH s`,
+   REPEAT LIST_INDUCT_TAC THEN ASM_SIMP_TAC[ZIP; LENGTH; SUC_INJ] THEN ARITH_TAC);;
+
+let el_zip = prove
+  (`!(s:(A)list) (t:(B)list) i. LENGTH s = LENGTH t /\ i < LENGTH s
+      ==> EL i (ZIP s t) = EL i s, EL i t`,
+   REPEAT LIST_INDUCT_TAC THEN ASM_REWRITE_TAC[ZIP; LENGTH; EL; SUC_INJ] THEN TRY ARITH_TAC THEN
+     INDUCT_TAC THEN ASM_SIMP_TAC[EL; HD; TL; LT_SUC]);;
+
 let length_reverse = prove
   (`!(s:(A)list). LENGTH (REVERSE s) = LENGTH s`,
    LIST_INDUCT_TAC THEN ASM_REWRITE_TAC[LENGTH; REVERSE; LENGTH_APPEND] THEN ARITH_TAC);;
@@ -122,6 +161,213 @@ let sum_list_sum_alt = prove
      ] THEN
      ASM_REWRITE_TAC[SUM_OFFSET; ARITH_RULE `(i + 1) - 1 = i`]);;
 
+let sum_list_add = prove
+  (`!f g s:(A)list. sum_list s (\x. f x + g x) = sum_list s f + sum_list s g`,
+   SIMP_TAC[sum_list_sum_alt; SUM_ADD; FINITE_NUMSEG]);;
+
+let sum_list_sub = prove
+  (`!f g s:(A)list. sum_list s (\x. f x - g x) = sum_list s f - sum_list s g`,
+   SIMP_TAC[sum_list_sum_alt; SUM_SUB; FINITE_NUMSEG]);;
+
+let sum_list_eq_0 = prove
+  (`!f s:(A)list. ALL (\x. f x = &0) s ==> sum_list s f = &0`,
+  GEN_TAC THEN LIST_INDUCT_TAC THEN ASM_SIMP_TAC[ALL; sum_list_nil; sum_list_cons; REAL_ADD_LID]);;
+
+let sum_list_0 = prove
+  (`!s:(A)list. sum_list s (\x. &0) = &0`,
+   REWRITE_TAC[sum_list_sum_alt; SUM_0]);;
+
+let sum_list_lmul = prove
+  (`!f c s:(A)list. sum_list s (\x. c * f x) = c * sum_list s f`,
+   REWRITE_TAC[sum_list_sum_alt; SUM_LMUL]);;
+
+let sum_list_rmul = prove
+  (`!f c s:(A)list. sum_list s (\x. f x * c) = sum_list s f * c`,
+   REWRITE_TAC[sum_list_sum_alt; SUM_RMUL]);;
+
+let sum_list_neg = prove
+  (`!f s:(A)list. --sum_list s f = sum_list s (\x. --f x)`,
+   REWRITE_TAC[sum_list_sum_alt; SUM_NEG]);;
+
+let sum_list_le = prove
+  (`!f g s:(A)list. ALL (\x. f x <= g x) s ==> sum_list s f <= sum_list s g`,
+   GEN_TAC THEN GEN_TAC THEN
+     LIST_INDUCT_TAC THEN ASM_REWRITE_TAC[ALL; sum_list_nil; sum_list_cons; REAL_LE_REFL] THEN
+     STRIP_TAC THEN MATCH_MP_TAC REAL_LE_ADD2 THEN ASM_SIMP_TAC[]);;
+
+let sum_list_lt = prove
+  (`!f g s:(A)list. ALL (\x. f x <= g x) s /\ EX (\x. f x < g x) s
+   ==> sum_list s f < sum_list s g`,
+   GEN_TAC THEN GEN_TAC THEN
+     LIST_INDUCT_TAC THEN ASM_REWRITE_TAC[ALL; sum_list_nil; sum_list_cons; EX] THEN
+     STRIP_TAC THENL [
+       MATCH_MP_TAC REAL_LTE_ADD2 THEN ASM_SIMP_TAC[sum_list_le];
+       MATCH_MP_TAC REAL_LET_ADD2 THEN ASM_SIMP_TAC[]
+     ]);;
+
+let sum_list_lt_all = prove
+  (`!f g s:(A)list. ~(s = []) /\ ALL (\x. f x < g x) s
+     ==> sum_list s f < sum_list s g`,
+   GEN_TAC THEN GEN_TAC THEN
+     LIST_INDUCT_TAC THEN ASM_REWRITE_TAC[ALL; sum_list_nil; sum_list_cons; NOT_CONS_NIL] THEN
+     STRIP_TAC THEN ASM_CASES_TAC `t:(A)list = []` THENL [
+       MATCH_MP_TAC REAL_LTE_ADD2 THEN ASM_REWRITE_TAC[sum_list_nil; REAL_LE_REFL];
+       MATCH_MP_TAC REAL_LT_ADD2 THEN ASM_SIMP_TAC[]
+     ]);;
+
+let sum_list_pos_le = prove
+  (`!f s:(A)list. ALL (\x. &0 <= f x) s ==> &0 <= sum_list s f`,
+   GEN_TAC THEN 
+     LIST_INDUCT_TAC THEN ASM_REWRITE_TAC[ALL; sum_list_nil; sum_list_cons; REAL_LE_REFL] THEN
+     STRIP_TAC THEN MATCH_MP_TAC REAL_LE_ADD THEN ASM_SIMP_TAC[]);;
+
+let sum_list_pos_lt = prove
+  (`!f s:(A)list. ALL (\x. &0 <= f x) s /\ EX (\x. &0 < f x) s
+     ==> &0 < sum_list s f`,
+   GEN_TAC THEN LIST_INDUCT_TAC THEN ASM_REWRITE_TAC[ALL; sum_list_nil; sum_list_cons; EX] THEN
+     STRIP_TAC THENL [
+       MATCH_MP_TAC REAL_LTE_ADD THEN ASM_SIMP_TAC[sum_list_pos_le];
+       MATCH_MP_TAC REAL_LET_ADD THEN ASM_SIMP_TAC[]
+     ]);;
+
+let sum_list_pos_lt_all = prove
+  (`!f s:(A)list. ~(s = []) /\ ALL (\x. &0 < f x) s ==> &0 < sum_list s f`,
+   GEN_TAC THEN 
+     LIST_INDUCT_TAC THEN ASM_REWRITE_TAC[ALL; sum_list_nil; sum_list_cons; NOT_CONS_NIL] THEN
+     STRIP_TAC THEN ASM_CASES_TAC `t:(A)list = []` THENL [
+       MATCH_MP_TAC REAL_LTE_ADD THEN ASM_REWRITE_TAC[sum_list_nil; REAL_LE_REFL];
+       MATCH_MP_TAC REAL_LT_ADD THEN ASM_SIMP_TAC[]
+     ]);;
+
+let sum_list_eq = prove
+  (`!f g s:(A)list. ALL (\x. f x = g x) s ==> sum_list s f = sum_list s g`,
+   GEN_TAC THEN GEN_TAC THEN
+     LIST_INDUCT_TAC THEN REWRITE_TAC[ALL; sum_list_nil; sum_list_cons] THEN
+     REPEAT STRIP_TAC THEN ASM_REWRITE_TAC[REAL_EQ_ADD_LCANCEL] THEN
+     FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_REWRITE_TAC[]);;
+
+let sum_list_abs = prove
+  (`!f s:(A)list. abs (sum_list s f) <= sum_list s (\x. abs (f x))`,
+   SIMP_TAC[sum_list_sum_alt; SUM_ABS; FINITE_NUMSEG]);;
+
+ let sum_list_abs_le = prove
+  (`!f g (s:(A)list). ALL (\x. abs (f x) <= g x) s
+     ==> abs (sum_list s f) <= sum_list s g`,
+   REWRITE_TAC[sum_list_sum_alt; GSYM ALL_EL] THEN REPEAT STRIP_TAC THEN
+     MATCH_MP_TAC SUM_ABS_LE THEN REWRITE_TAC[FINITE_NUMSEG; IN_NUMSEG] THEN
+     REPEAT STRIP_TAC THEN FIRST_X_ASSUM MATCH_MP_TAC THEN
+     ASM_ARITH_TAC);;
+
+let sum_list_const = prove
+  (`!c s:(A)list. sum_list s (\x. c) = &(LENGTH s) * c`,
+   SIMP_TAC[sum_list_sum_alt; SUM_CONST; FINITE_NUMSEG; CARD_NUMSEG; ARITH_RULE `(a + 1) - 1 = a`]);;
+
+let sum_list_pos_bound = prove
+  (`!f b s:(A)list. ALL (\x. &0 <= f x) s /\ sum_list s f <= b
+     ==> ALL (\x. f x <= b) s`,
+   GEN_TAC THEN GEN_TAC THEN
+     LIST_INDUCT_TAC THEN ASM_REWRITE_TAC[ALL; sum_list_nil; sum_list_cons] THEN STRIP_TAC THEN
+     FIRST_ASSUM (ASSUME_TAC o MATCH_MP sum_list_pos_le) THEN
+     FIRST_X_ASSUM (MP_TAC o MATCH_MP (REAL_ARITH `!x y. x + y <= b ==> &0 <= x /\ &0 <= y ==> x <= b /\ y <= b`)) THEN
+     ASM_SIMP_TAC[]);;
+
+let sum_list_pos_eq_0 = prove
+  (`!f s:(A)list. ALL (\x. &0 <= f x) s /\ sum_list s f = &0
+      ==> ALL (\x. f x = &0) s`,
+   REPEAT STRIP_TAC THEN REWRITE_TAC[REAL_ARITH `!x. x = &0 <=> &0 <= x /\ x <= &0`] THEN
+     ASM_REWRITE_TAC[GSYM AND_ALL] THEN MATCH_MP_TAC sum_list_pos_bound THEN
+     ASM_SIMP_TAC[REAL_ARITH `x = &0 ==> x <= &0`]);;
+
+let sum_list_sing = prove
+  (`!f x:A. sum_list [x] f = f x`,
+   REWRITE_TAC[sum_list_cons; sum_list_nil; REAL_ADD_RID]);;
+
+let sum_list_swap = prove
+  (`!f:A->B->real s t.
+    sum_list s (\i. sum_list t (f i)) = sum_list t (\j. sum_list s (\i. f i j))`,
+     GEN_TAC THEN REPEAT LIST_INDUCT_TAC THEN 
+       REWRITE_TAC[sum_list_nil; sum_list_cons; sum_list_0; REAL_ADD_LID] THEN
+       ASM_REWRITE_TAC[sum_list_add; ETA_AX] THEN REAL_ARITH_TAC);;
+
+let sum_list_restrict = prove
+  (`!f s:(A)list. sum_list s (\x. if MEM x s then f x else &0) = sum_list s f`,
+   REPEAT GEN_TAC THEN MATCH_MP_TAC sum_list_eq THEN SIMP_TAC[GSYM ALL_MEM]);;
+
+let sum_list_bound = prove
+  (`!f b s:(A)list. ALL (\x. f x <= b) s ==> sum_list s f <= &(LENGTH s) * b`,
+   GEN_TAC THEN GEN_TAC THEN
+     LIST_INDUCT_TAC THEN 
+     REWRITE_TAC[ALL; sum_list_nil; sum_list_cons; LENGTH; REAL_MUL_LZERO; REAL_LE_REFL] THEN
+     STRIP_TAC THEN REWRITE_TAC[ARITH_RULE `SUC n = 1 + n`] THEN
+     REWRITE_TAC[GSYM REAL_OF_NUM_ADD; REAL_ADD_RDISTRIB; REAL_MUL_LID] THEN
+     MATCH_MP_TAC REAL_LE_ADD2 THEN ASM_SIMP_TAC[]);;
+
+let sum_list_bound_gen = prove
+  (`!f b s:(A)list. ~(s = []) /\ ALL (\x. f x <= b / &(LENGTH s)) s
+     ==> sum_list s f <= b`,
+   REWRITE_TAC[GSYM LENGTH_EQ_NIL] THEN REPEAT STRIP_TAC THEN
+     SUBGOAL_THEN `b = &(LENGTH (s:(A)list)) * (b / &(LENGTH s))` MP_TAC THENL [
+       ASM_SIMP_TAC[real_div; REAL_MUL_AC; REAL_MUL_LINV; REAL_OF_NUM_EQ; REAL_MUL_RID];
+       ALL_TAC
+     ] THEN
+     DISCH_THEN (fun th -> ONCE_REWRITE_TAC[th]) THEN
+     MATCH_MP_TAC sum_list_bound THEN ASM_REWRITE_TAC[]);;
+
+let sum_list_abs_bound = prove
+  (`!f b s:(A)list. ALL (\x. abs (f x) <= b) s
+     ==> abs (sum_list s f) <= &(LENGTH s) * b`,
+   REPEAT STRIP_TAC THEN
+     MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `sum_list s (\x:A. abs (f x))` THEN
+     ASM_SIMP_TAC[sum_list_abs; sum_list_bound]);;
+
+let sum_list_bound_lt = prove
+  (`!f b s:(A)list. ALL (\x. f x <= b) s /\ EX (\x. f x < b) s
+     ==> sum_list s f < &(LENGTH s) * b`,
+   GEN_TAC THEN GEN_TAC THEN
+     LIST_INDUCT_TAC THEN 
+     REWRITE_TAC[ALL; EX; sum_list_nil; sum_list_cons; LENGTH; REAL_MUL_LZERO; REAL_LE_REFL] THEN
+     REWRITE_TAC[ARITH_RULE `SUC n = 1 + n`] THEN
+     REWRITE_TAC[GSYM REAL_OF_NUM_ADD; REAL_ADD_RDISTRIB; REAL_MUL_LID] THEN
+     STRIP_TAC THENL [
+       MATCH_MP_TAC REAL_LTE_ADD2 THEN ASM_SIMP_TAC[sum_list_bound];
+       MATCH_MP_TAC REAL_LET_ADD2 THEN ASM_SIMP_TAC[]
+     ]);;
+
+let sum_list_bound_lt_all = prove
+  (`!f b s:(A)list. ~(s = []) /\ ALL (\x. f x < b) s
+     ==> sum_list s f < &(LENGTH s) * b`,
+   GEN_TAC THEN GEN_TAC THEN
+     LIST_INDUCT_TAC THEN 
+     REWRITE_TAC[ALL; EX; sum_list_nil; sum_list_cons; LENGTH; REAL_MUL_LZERO; REAL_LE_REFL] THEN
+     REWRITE_TAC[NOT_CONS_NIL; ARITH_RULE `SUC n = 1 + n`] THEN
+     REWRITE_TAC[GSYM REAL_OF_NUM_ADD; REAL_ADD_RDISTRIB; REAL_MUL_LID] THEN
+     STRIP_TAC THEN ASM_CASES_TAC `t:(A)list = []` THENL [
+       ASM_REWRITE_TAC[LENGTH; sum_list_nil; REAL_MUL_LZERO; REAL_ADD_RID];
+       MATCH_MP_TAC REAL_LT_ADD2 THEN ASM_SIMP_TAC[]
+     ]);;
+
+let sum_list_bound_lt_gen = prove
+  (`!f b s:(A)list. ~(s = []) /\ ALL (\x. f x < b / &(LENGTH s)) s
+     ==> sum_list s f < b`,
+   REWRITE_TAC[GSYM LENGTH_EQ_NIL] THEN REPEAT STRIP_TAC THEN
+     SUBGOAL_THEN `b = &(LENGTH (s:(A)list)) * (b / &(LENGTH s))` MP_TAC THENL [
+       ASM_SIMP_TAC[real_div; REAL_MUL_AC; REAL_MUL_LINV; REAL_OF_NUM_EQ; REAL_MUL_RID];
+       ALL_TAC
+     ] THEN
+     DISCH_THEN (fun th -> ONCE_REWRITE_TAC[th]) THEN
+     MATCH_MP_TAC sum_list_bound_lt_all THEN ASM_REWRITE_TAC[GSYM LENGTH_EQ_NIL]);;
+
+let length_eq_sum_list = prove
+  (`!s:(A)list. &(LENGTH s) = sum_list s (\x. &1)`,
+   SIMP_TAC[sum_list_sum_alt; GSYM CARD_EQ_SUM; FINITE_NUMSEG; CARD_NUMSEG; ARITH_RULE `(a + 1) - 1 = a`]);;
+
+let sum_list_closed = prove
+  (`!P f s:(A)list. P (&0) /\ (!x y. P x /\ P y ==> P (x + y)) /\
+     ALL (\x. P (f x)) s
+     ==> P (sum_list s f)`,
+   GEN_TAC THEN GEN_TAC THEN
+     LIST_INDUCT_TAC THEN ASM_SIMP_TAC[sum_list_nil; sum_list_cons; ALL]);;
+
 let MAP_MAP = prove
   (`!(f:A->B) (h:C->A) s. MAP f (MAP h s) = MAP (\x. f (h x)) s`,
    GEN_TAC THEN GEN_TAC THEN LIST_INDUCT_TAC THEN ASM_REWRITE_TAC[MAP]);;
@@ -154,3 +400,36 @@ let MAP2_MAP_2 = prove
      REPEAT LIST_INDUCT_TAC THEN REWRITE_TAC[MAP; MAP2; LENGTH] THEN TRY ARITH_TAC THEN
      REWRITE_TAC[SUC_INJ] THEN DISCH_TAC THEN ASM_SIMP_TAC[]);;
 
+let ALL2_LENGTH_EQ = prove
+  (`!s t (P:A->B->bool). ALL2 P s t ==> LENGTH s = LENGTH t`,
+   REPEAT LIST_INDUCT_TAC THEN ASM_REWRITE_TAC[ALL2; LENGTH] THEN
+     REPEAT STRIP_TAC THEN AP_TERM_TAC THEN
+     FIRST_X_ASSUM MATCH_MP_TAC THEN EXISTS_TAC `P:A->B->bool` THEN ASM_REWRITE_TAC[]);;
+
+let all2_all_zip = prove
+  (`!s t (P:A->B->bool). LENGTH s = LENGTH t
+      ==> ALL2 P s t = ALL (\p. P (FST p) (SND p)) (ZIP s t)`,
+   REPEAT LIST_INDUCT_TAC THEN ASM_REWRITE_TAC[ALL2; ALL; ZIP; LENGTH] THEN TRY ARITH_TAC THEN
+     REWRITE_TAC[SUC_INJ] THEN REPEAT STRIP_TAC THEN
+     REWRITE_TAC[TAUT `((A /\ B) <=> (A /\ C)) <=> (~A \/ (B <=> C))`] THEN DISJ2_TAC THEN
+     ASM_SIMP_TAC[]);;
+
+let all2_el = prove
+  (`!s t (P:A->B->bool). ALL2 P s t <=> 
+     (LENGTH s = LENGTH t /\ !i. i < LENGTH s ==> P (EL i s) (EL i t))`,
+   REPEAT STRIP_TAC THEN EQ_TAC THEN STRIP_TAC THENL [
+     FIRST_ASSUM (MP_TAC o MATCH_MP ALL2_LENGTH_EQ) THEN SIMP_TAC[] THEN DISCH_TAC THEN
+       FIRST_ASSUM (MP_TAC o ISPEC `P:A->B->bool` o MATCH_MP all2_all_zip) THEN
+       ASM_SIMP_TAC[GSYM ALL_EL; length_zip; el_zip];
+     ALL_TAC
+   ] THEN
+     ASM_SIMP_TAC[all2_all_zip; GSYM ALL_EL; length_zip; el_zip]);;
+     
+     
+let sum_list_le_gen = prove
+  (`!(s:(A)list) (t:(B)list) f g. ALL2 (\a b. f a <= g b) s t
+     ==> sum_list s f <= sum_list t g`,
+   REWRITE_TAC[all2_el; sum_list_sum_alt] THEN REPEAT STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
+     MATCH_MP_TAC SUM_LE THEN REWRITE_TAC[FINITE_NUMSEG; IN_NUMSEG] THEN
+     REPEAT STRIP_TAC THEN FIRST_X_ASSUM MATCH_MP_TAC THEN
+     ASM_ARITH_TAC);;
