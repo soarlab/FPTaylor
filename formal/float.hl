@@ -204,6 +204,9 @@ let flround = define
 
 (* Definition: For a flformat fmt, the _machine epsilon_ is                   *)
 (*                                                                            *)
-(*      fleps = (2r^(p - 1) + 1)^(-1)                                         *)
-(* let fleps = define *)
-(*   `fleps (fmt:flformat) = (&1 / &(2 * (flr fmt) EXP ((flp fmt) - 1) + 1))`;; *)
+(*      fl_eps = r^(-p + 1) / 2                                               *)
+(*                                                                            *)
+(* This is *a little bit more than* the worst possible relative error when    *)
+(* rounding to nearest.                                                       *)
+let fl_eps = define
+  `fl_eps (fmt:flformat) = (&(flr fmt) ipow (&1 - &(flp fmt))) / &2`;;
