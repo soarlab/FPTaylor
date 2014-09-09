@@ -5063,3 +5063,188 @@ let FLOAT_RD_NEAR_REL_ERROR =
 	     (SPEC `fmt:flformat` FLFORMAT_RADIX_NE_0)] THEN
 	  REWRITE_TAC[ARITH_RULE `((e:int) - p + &1) + (-- e) = &1 - p`] THEN
 	  REWRITE_TAC[fl_eps] THEN ARITH_TAC);;
+
+let FLOAT_RD_ZERO_REL_ERROR =
+  prove(`!(fmt:flformat) (x:real). ~(x = &0) ==>
+	  (rerror x (flround(fmt) To_zero x)) <= &2 * fl_eps(fmt)`,
+	REPEAT GEN_TAC THEN DISCH_THEN (LABEL_TAC "xneq0") THEN
+	REWRITE_TAC[rerror] THEN
+	MATCH_MP_TAC REAL_LE_TRANS THEN
+	EXISTS_TAC `(fulp (to_fformat fmt (greatest_e fmt x))) / abs(x)` THEN
+	CONJ_TAC THENL [
+	  REWRITE_TAC[REAL_ABS_DIV] THEN
+
+	  SUBGOAL_THEN `&0 < abs(x)` 
+	    (fun thm -> REWRITE_TAC[MATCH_MP REAL_LE_DIV2_EQ thm]) THENL [
+	      ASM_ARITH_TAC; ALL_TAC] THEN
+
+	  MATCH_MP_TAC FLOAT_RD_ZERO_ABS_ERR THEN ASM_REWRITE_TAC[]; 
+	  ALL_TAC] THEN
+
+	MATCH_MP_TAC REAL_LE_TRANS THEN
+	EXISTS_TAC `fulp (to_fformat fmt (greatest_e fmt x)) / 
+           (&(flr fmt) ipow (greatest_e(fmt) x))` THEN
+	CONJ_TAC THENL [
+
+	  ONCE_REWRITE_TAC[GSYM REAL_INV_INV] THEN
+	  MATCH_MP_TAC REAL_LE_INV2 THEN
+	  CONJ_TAC THENL [
+	    MATCH_MP_TAC REAL_LT_INV THEN
+	    MATCH_MP_TAC REAL_LT_DIV THEN
+            CONJ_TAC THENL [	
+	      REWRITE_TAC[fulp] THEN
+              REWRITE_TAC[FFORMAT_RADIX_IPOW_LT_0] THEN ARITH_TAC;
+              REWRITE_TAC[FLFORMAT_RADIX_IPOW_LT_0]];
+
+	    REWRITE_TAC[REAL_INV_DIV] THEN
+
+	    SUBGOAL_THEN `&0 < 
+                 (fulp (to_fformat fmt (greatest_e fmt x)))`
+              (fun thm -> REWRITE_TAC[MATCH_MP REAL_LE_DIV2_EQ thm]) THENL [
+		  REWRITE_TAC[fulp] THEN 
+		  REWRITE_TAC[FFORMAT_RADIX_IPOW_LT_0]; ALL_TAC] THEN
+
+	    USE_THEN "xneq0" (fun xneq0 -> dump_ge_info xneq0 "x") THEN
+	    ASM_REWRITE_TAC[]]; ALL_TAC] THEN
+
+	  REWRITE_TAC[fulp] THEN dump_flformat_conv `(greatest_e(fmt) x)` THEN
+	  ASM_REWRITE_TAC[] THEN
+	  
+	  SUBGOAL_THEN `&(flr fmt) ipow greatest_e fmt x = 
+	    inv (&(flr fmt) ipow (-- (greatest_e fmt x)))`
+            (fun thm -> REWRITE_TAC[thm]) THENL [
+	      MATCH_MP_TAC IPOW_INV_NEG THEN 
+              REWRITE_TAC[FLFORMAT_RADIX_NE_0]; ALL_TAC] THEN
+
+	  ONCE_REWRITE_TAC[real_div] THEN
+	  REWRITE_TAC[REAL_INV_INV] THEN
+	  REWRITE_TAC[ARITH_RULE `(a:real) / b * c = (a * c) / b`] THEN
+	  REWRITE_TAC[MATCH_MP (SPEC `&(flr fmt)` IPOW_ADD_EXP)
+	     (SPEC `fmt:flformat` FLFORMAT_RADIX_NE_0)] THEN
+	  REWRITE_TAC[ARITH_RULE `((e:int) - p + &1) + (-- e) = &1 - p`] THEN
+	  REWRITE_TAC[fl_eps] THEN ARITH_TAC);;
+
+let FLOAT_RD_PINF_REL_ERROR =
+  prove(`!(fmt:flformat) (x:real). ~(x = &0) ==>
+	  (rerror x (flround(fmt) To_pinf x)) <= &2 * fl_eps(fmt)`,
+	REPEAT GEN_TAC THEN DISCH_THEN (LABEL_TAC "xneq0") THEN
+	REWRITE_TAC[rerror] THEN
+	MATCH_MP_TAC REAL_LE_TRANS THEN
+	EXISTS_TAC `(fulp (to_fformat fmt (greatest_e fmt x))) / abs(x)` THEN
+	CONJ_TAC THENL [
+	  REWRITE_TAC[REAL_ABS_DIV] THEN
+
+	  SUBGOAL_THEN `&0 < abs(x)` 
+	    (fun thm -> REWRITE_TAC[MATCH_MP REAL_LE_DIV2_EQ thm]) THENL [
+	      ASM_ARITH_TAC; ALL_TAC] THEN
+
+	  MATCH_MP_TAC FLOAT_RD_PINF_ABS_ERR THEN ASM_REWRITE_TAC[]; 
+	  ALL_TAC] THEN
+
+	MATCH_MP_TAC REAL_LE_TRANS THEN
+	EXISTS_TAC `fulp (to_fformat fmt (greatest_e fmt x)) / 
+           (&(flr fmt) ipow (greatest_e(fmt) x))` THEN
+	CONJ_TAC THENL [
+
+	  ONCE_REWRITE_TAC[GSYM REAL_INV_INV] THEN
+	  MATCH_MP_TAC REAL_LE_INV2 THEN
+	  CONJ_TAC THENL [
+	    MATCH_MP_TAC REAL_LT_INV THEN
+	    MATCH_MP_TAC REAL_LT_DIV THEN
+            CONJ_TAC THENL [	
+	      REWRITE_TAC[fulp] THEN
+              REWRITE_TAC[FFORMAT_RADIX_IPOW_LT_0] THEN ARITH_TAC;
+              REWRITE_TAC[FLFORMAT_RADIX_IPOW_LT_0]];
+
+	    REWRITE_TAC[REAL_INV_DIV] THEN
+
+	    SUBGOAL_THEN `&0 < 
+                 (fulp (to_fformat fmt (greatest_e fmt x)))`
+              (fun thm -> REWRITE_TAC[MATCH_MP REAL_LE_DIV2_EQ thm]) THENL [
+		  REWRITE_TAC[fulp] THEN 
+		  REWRITE_TAC[FFORMAT_RADIX_IPOW_LT_0]; ALL_TAC] THEN
+
+	    USE_THEN "xneq0" (fun xneq0 -> dump_ge_info xneq0 "x") THEN
+	    ASM_REWRITE_TAC[]]; ALL_TAC] THEN
+
+	  REWRITE_TAC[fulp] THEN dump_flformat_conv `(greatest_e(fmt) x)` THEN
+	  ASM_REWRITE_TAC[] THEN
+	  
+	  SUBGOAL_THEN `&(flr fmt) ipow greatest_e fmt x = 
+	    inv (&(flr fmt) ipow (-- (greatest_e fmt x)))`
+            (fun thm -> REWRITE_TAC[thm]) THENL [
+	      MATCH_MP_TAC IPOW_INV_NEG THEN 
+              REWRITE_TAC[FLFORMAT_RADIX_NE_0]; ALL_TAC] THEN
+
+	  ONCE_REWRITE_TAC[real_div] THEN
+	  REWRITE_TAC[REAL_INV_INV] THEN
+	  REWRITE_TAC[ARITH_RULE `(a:real) / b * c = (a * c) / b`] THEN
+	  REWRITE_TAC[MATCH_MP (SPEC `&(flr fmt)` IPOW_ADD_EXP)
+	     (SPEC `fmt:flformat` FLFORMAT_RADIX_NE_0)] THEN
+	  REWRITE_TAC[ARITH_RULE `((e:int) - p + &1) + (-- e) = &1 - p`] THEN
+	  REWRITE_TAC[fl_eps] THEN ARITH_TAC);;
+
+let FLOAT_RD_NINF_REL_ERROR =
+  prove(`!(fmt:flformat) (x:real). ~(x = &0) ==>
+	  (rerror x (flround(fmt) To_ninf x)) <= &2 * fl_eps(fmt)`,
+	REPEAT GEN_TAC THEN DISCH_THEN (LABEL_TAC "xneq0") THEN
+	REWRITE_TAC[rerror] THEN
+	MATCH_MP_TAC REAL_LE_TRANS THEN
+	EXISTS_TAC `(fulp (to_fformat fmt (greatest_e fmt x))) / abs(x)` THEN
+	CONJ_TAC THENL [
+	  REWRITE_TAC[REAL_ABS_DIV] THEN
+
+	  SUBGOAL_THEN `&0 < abs(x)` 
+	    (fun thm -> REWRITE_TAC[MATCH_MP REAL_LE_DIV2_EQ thm]) THENL [
+	      ASM_ARITH_TAC; ALL_TAC] THEN
+
+	  MATCH_MP_TAC FLOAT_RD_NINF_ABS_ERR THEN ASM_REWRITE_TAC[]; 
+	  ALL_TAC] THEN
+
+	MATCH_MP_TAC REAL_LE_TRANS THEN
+	EXISTS_TAC `fulp (to_fformat fmt (greatest_e fmt x)) / 
+           (&(flr fmt) ipow (greatest_e(fmt) x))` THEN
+	CONJ_TAC THENL [
+
+	  ONCE_REWRITE_TAC[GSYM REAL_INV_INV] THEN
+	  MATCH_MP_TAC REAL_LE_INV2 THEN
+	  CONJ_TAC THENL [
+	    MATCH_MP_TAC REAL_LT_INV THEN
+	    MATCH_MP_TAC REAL_LT_DIV THEN
+            CONJ_TAC THENL [	
+	      REWRITE_TAC[fulp] THEN
+              REWRITE_TAC[FFORMAT_RADIX_IPOW_LT_0] THEN ARITH_TAC;
+              REWRITE_TAC[FLFORMAT_RADIX_IPOW_LT_0]];
+
+	    REWRITE_TAC[REAL_INV_DIV] THEN
+
+	    SUBGOAL_THEN `&0 < 
+                 (fulp (to_fformat fmt (greatest_e fmt x)))`
+              (fun thm -> REWRITE_TAC[MATCH_MP REAL_LE_DIV2_EQ thm]) THENL [
+		  REWRITE_TAC[fulp] THEN 
+		  REWRITE_TAC[FFORMAT_RADIX_IPOW_LT_0]; ALL_TAC] THEN
+
+	    USE_THEN "xneq0" (fun xneq0 -> dump_ge_info xneq0 "x") THEN
+	    ASM_REWRITE_TAC[]]; ALL_TAC] THEN
+
+	  REWRITE_TAC[fulp] THEN dump_flformat_conv `(greatest_e(fmt) x)` THEN
+	  ASM_REWRITE_TAC[] THEN
+	  
+	  SUBGOAL_THEN `&(flr fmt) ipow greatest_e fmt x = 
+	    inv (&(flr fmt) ipow (-- (greatest_e fmt x)))`
+            (fun thm -> REWRITE_TAC[thm]) THENL [
+	      MATCH_MP_TAC IPOW_INV_NEG THEN 
+              REWRITE_TAC[FLFORMAT_RADIX_NE_0]; ALL_TAC] THEN
+
+	  ONCE_REWRITE_TAC[real_div] THEN
+	  REWRITE_TAC[REAL_INV_INV] THEN
+	  REWRITE_TAC[ARITH_RULE `(a:real) / b * c = (a * c) / b`] THEN
+	  REWRITE_TAC[MATCH_MP (SPEC `&(flr fmt)` IPOW_ADD_EXP)
+	     (SPEC `fmt:flformat` FLFORMAT_RADIX_NE_0)] THEN
+	  REWRITE_TAC[ARITH_RULE `((e:int) - p + &1) + (-- e) = &1 - p`] THEN
+	  REWRITE_TAC[fl_eps] THEN ARITH_TAC);;
+
+(* -------------------------------------------------------------------------- *)
+(* Delta bound                                                                *)
+(* -------------------------------------------------------------------------- *)
+
