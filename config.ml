@@ -93,6 +93,7 @@ let get_float_option name default =
   try stof (find name) with _ -> default
   
   (* General paramaters *)
+let fail_on_exception = stob (findd "false" "fail-on-exception")
 let uncertainty = stob (findd "false" "uncertainty")
 let subnormal = stob (findd "true" "subnormal")
 let simplification = 
@@ -132,6 +133,7 @@ let print_options fmt =
   let pb name b = pp (Format.sprintf "%s = %B" name b) in
   let pi name i = pp (Format.sprintf "%s = %d" name i) in
   let pf name f = pp (Format.sprintf "%s = %f" name f) in
+  pb "fail-on-exception" fail_on_exception;
   pb "uncertainty" uncertainty;
   pb "subnormal" subnormal;
   pb "simplification" simplification;

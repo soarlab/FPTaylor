@@ -150,7 +150,7 @@ let eval_interval_expr vars =
 	  | Op_add -> x1 +$ eval arg2
 	  | Op_sub -> x1 -$ eval arg2
 	  | Op_mul ->
-	    (* A temporary solution to deal with the Jet benchmark *)
+	    (* A temporary solution to increase accuracy *)
 	    if eq_expr arg1 arg2 then
 	      pow_I_i x1 2
 	    else
