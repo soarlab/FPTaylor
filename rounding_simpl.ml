@@ -101,7 +101,9 @@ let rnd_I rnd x =
       ( -^ ) = Fpu.fsub_low in
   let extra v = rnd.coefficient *^ ((e *^ abs_float v) +^ d) in
   let over v = 
-    if abs_float v > rnd.max_val then copysign infinity v else v in
+    if abs_float v > rnd.max_val then 
+      (if v < 0.0 then neg_infinity else infinity)
+    else v in
   {
     low = over (x.low -^ extra x.low);
     high = over (x.high +^ extra x.high);
