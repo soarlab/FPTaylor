@@ -1,4 +1,3 @@
-needs "update_database.ml";;
 needs "lib.hl";;
 
 prioritize_real();;
@@ -1042,4 +1041,34 @@ let approx_asn = prove
 
 
 
+(* --------------------------- *)
+(* simpl                       *)
+(* --------------------------- *)
+
+let approx_simpl = prove
+  (`!s h t:(N)tform i j.
+     approx s h t /\ i < j /\ j < LENGTH (tform_list t)
+     ==>  let (f1,e1,e2) = EL i (tform_list t) and
+	 (f1',e1',e2') = EL j (tform_list t) in
+       e1 = e1' 
+	     ==> approx s h 
+	     (mk_tform (tform_f0 t,
+			(((\x. f1 x + f1' x), e1, e2) :: 
+			   delete_at i (delete_at j (tform_list t)))))`,
+   REWRITE_TAC[approx] THEN REPEAT STRIP_TAC THEN LET_TAC THEN
+     ASM_SIMP_TAC[f0_mk; list_mk; tform_f1] THEN STRIP_TAC THEN
+     REPEAT STRIP_TAC THENL [
+       SUBGOAL_THEN `i < LENGTH (delete_at j (tform_list (t:(N)tform)))` ASSUME_TAC THENL [
+	 ASM_SIMP_TAC[length_delete_at] THEN ASM_ARITH_TAC;
+	 ALL_TAC
+       ] THEN
+	 ASM_SIMP_TAC[sum_list_cons; sum_list_delete_at; el_delete_at] THEN
+	 REAL_ARITH_TAC;
+       ALL_TAC
+     ] THEN
+     ASM_SIMP_TAC[all_delete_at_imp; ALL] THEN
+     FIRST_X_ASSUM (MP_TAC o SPEC `x:real^N`) THEN ASM_REWRITE_TAC[GSYM ALL_EL] THEN
+     STRIP_TAC THEN FIRST_X_ASSUM (MP_TAC o SPEC `i:num`) THEN
+     ANTS_TAC THENL [ ASM_ARITH_TAC; ALL_TAC ] THEN
+     ASM_REWRITE_TAC[]);;
 

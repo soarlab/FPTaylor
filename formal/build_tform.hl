@@ -1,0 +1,360 @@
+needs "update_database.ml";;
+
+needs "tform.hl";;
+
+open List;;
+
+prioritize_real();;
+
+
+type constant =
+  | Decimal of string
+  | Integer of num
+  | Float of bool * num * int;;
+
+
+let term_of_constant = function
+  | Decimal str -> parse_term (sprintf "# %s" str)
+  | Integer n -> mk_numeral n
+  | Float (s, m, e) -> failwith "term_of_constant(Float): Not implemented";;
+
+
+type op_type = 
+  | Op_neg
+  | Op_abs
+  | Op_add
+  | Op_sub
+  | Op_mul
+  | Op_div
+  | Op_inv
+  | Op_sqrt
+  | Op_sin
+  | Op_cos
+  | Op_tan
+  | Op_exp
+  | Op_log
+  | Op_fma
+  | Op_nat_pow
+  | Op_floor_power2
+  | Op_sym_interval;;
+
+type rnd_info = {
+  rnd_thm : thm;
+};;
+
+type ttree =
+  | Constant of constant
+      (* Variable(index) *)
+  | Variable of int
+  | Rounding of rnd_info * ttree
+  | U_op of op_type * ttree
+  | Bin_op of op_type * ttree * ttree;;
+
+
+let id_rnd = prove
+  (`!e2 d2 s2. &0 <= e2 /\ &0 <= d2 ==> is_rnd (e2,d2) s2 I`,
+   REWRITE_TAC[is_rnd; I_THM] THEN REPEAT STRIP_TAC THEN
+     MAP_EVERY EXISTS_TAC [`&0`; `&0`] THEN ASM_ARITH_TAC);;
+
+
+let test_rnd = prove(`is_rnd (#0.1, #0.01) (:real) I`, MATCH_MP_TAC id_rnd THEN REAL_ARITH_TAC);;
+
+
+
+let ttree_of_term =
+  let index = ref 0 in
+  let vs = ref [] in
+  let extract_index = function
+    | Variable i -> i
+    | _ -> failwith "extract_index" in
+  let rec build tm =
+    match tm with
+      | Var (v, ty) ->
+	  if ty <> `:real` then
+	    failwith ("All variables must be real: " ^ string_of_term tm)
+	  else
+	    begin
+	      try assoc v !vs with Failure _ | Not_found ->
+		let var = Variable !index in
+		let _ = vs := (v, var) :: !vs in
+		let _ = incr index in
+		  var
+	    end
+      | Const _ ->
+	  failwith ("ttree_of_term: Const: " ^ string_of_term tm)
+      | Comb (ltm, rtm) ->
+	  if is_comb ltm then
+	    let op, ltm = dest_comb ltm in
+	    let op_name = fst (dest_const op) in
+	    let ltree = build ltm and
+		rtree = build rtm in
+	      if op_name = "real_add" then
+		Bin_op (Op_add, ltree, rtree)
+	      else if op_name = "real_sub" then
+		Bin_op (Op_sub, ltree, rtree)
+	      else if op_name = "real_mul" then
+		Bin_op (Op_mul, ltree, rtree)
+	      else 
+		failwith ("ttree_of_term: Unsupported Bin_op: " ^ op_name)
+	  else
+	    if is_var ltm && fst (dest_var ltm) = "rnd" then
+	      let rtree = build rtm in
+		Rounding ({rnd_thm = test_rnd}, rtree)
+	    else
+	      let op_name = fst (dest_const ltm) in
+	      let rtree = build rtm in
+		if op_name = "real_neg" then
+		  U_op (Op_neg, rtree)
+		else if op_name = "real_inv" then
+		  U_op (Op_inv, rtree)
+		else if op_name = "sqrt" then
+		  U_op (Op_sqrt, rtree)
+		else if op_name = "sin" then
+		  U_op (Op_sin, rtree)
+		else if op_name = "cos" then
+		  U_op (Op_cos, rtree)
+		else
+		  failwith ("ttree_of_term: Unsupported U_op: " ^ op_name)
+      | Abs _ -> failwith ("ttree_of_term: Abs: " ^ string_of_term tm)
+  in
+    fun tm ->
+      let _ = index := 0 in
+      let _ = vs := [] in
+      let r = build tm in
+	r, map (fun (v, i) -> v, extract_index i) !vs;;
+
+
+(* Replaces the given term tm with a variable named var_name in the given theorem th *)
+(* A new assumption tm = var_name is added *)
+let ABBREV_RULE var_name tm th =
+  let var_tm = mk_var (var_name, type_of tm) in
+  let eq_th = ASSUME (mk_eq (tm, var_tm)) in
+    (UNDISCH_ALL o PURE_REWRITE_RULE[eq_th] o DISCH_ALL) th;;
+
+(* Transforms a theorem |- ?x. P x into (@x. P x) = x |- P x *)
+let SELECT_AND_ABBREV_RULE =
+  let P = `P:A->bool` in
+  let pth = prove
+    (`(?) (P:A->bool) ==> P((@) P)`,
+     SIMP_TAC[SELECT_AX; ETA_AX]) in
+  fun th ->
+    try 
+      let abs = rand (concl th) in
+      let var, b_tm = dest_abs abs in
+      let name, ty = dest_var var in
+      let select_tm = mk_binder "@" (var, b_tm) in
+      let th0 = CONV_RULE BETA_CONV (MP (PINST [ty,aty] [abs,P] pth) th) in
+	ABBREV_RULE name select_tm th0
+    with Failure _ -> failwith "SELECT_AND_ABBREV_RULE";;
+
+(* Transforms a theorem tm = var_name, G |- P into G[tm/var_name] |- P[tm/var_name] *)
+let EXPAND_RULE var_name th =
+  let hyp_tm = find (fun tm -> is_eq tm && is_var (rand tm) && name_of (rand tm) = var_name) (hyp th) in
+  let l_tm, var_tm = dest_eq hyp_tm in
+  let th1 = INST[l_tm, var_tm] th in
+    PROVE_HYP (REFL l_tm) th1;;
+
+(* Transforms a theorem tm = var_name, G |- P into tm = var_name, G |- P[tm/var_name] *)
+let EXPAND_CONCL_RULE var_name th =
+  let hyp_tm = find (fun tm -> is_eq tm && is_var (rand tm) && name_of (rand tm) = var_name) (hyp th) in
+  let eq_th = SYM (ASSUME hyp_tm) in
+    PURE_REWRITE_RULE[eq_th] th;;
+
+
+let hidden_def = new_definition `HIDDEN v x = x`;;
+
+let mk_hidden name =
+  let v = mk_var (name, bool_ty) in
+    mk_icomb (`HIDDEN:A->B->B`, v);;
+
+let hidden_eq x_tm =
+  let g = mk_eq (x_tm, mk_icomb (mk_hidden "...", x_tm)) in
+    prove(g, REWRITE_TAC[hidden_def]);;
+
+let print_hidden fmt = function
+  | Comb (Comb (Const ("HIDDEN", _), Var (name, _)), _) ->
+      pp_print_string fmt ("`" ^ name)
+  | _ -> failwith "print_hidden";;
+
+(* Adds the HIDDEN attribute to e1's in an approximation theorem A |- approx ... *)
+let hide_e1s =
+  let get_paths =
+    let path0 = "rrr" and
+	path1 = "lrrlr" in
+    let rec path str tm =
+      if is_binary "CONS" tm then
+	let tm1 = follow_path path1 tm in
+	  if is_var tm1 or is_binary "HIDDEN" tm1 then
+	    path (str ^ "r") (rand tm)
+	  else
+	    (str ^ "lrrlr") :: path (str ^ "r") (rand tm)
+      else
+	[] in
+      fun tm ->
+	path path0 (follow_path path0 tm) in
+  let h_th = hidden_eq `t:A` in
+    fun approx_th ->
+      let tm = concl approx_th in
+      let ps = get_paths tm in
+      let conv = itlist (fun p c -> c THENC PATH_CONV p (REWR_CONV h_th)) ps ALL_CONV in
+	EQ_MP (conv tm) approx_th;;
+
+
+let mk_vector_type =
+  let real_ty = `:real` in
+    fun nty ->
+      mk_type ("cart", [real_ty; nty]);;
+
+let mk_set_type =
+  let bool_ty = `:bool` in
+    fun ty ->
+      mk_type ("fun", [ty; bool_ty]);;
+
+let dest_set_type =
+  let bool_ty = `:bool` in
+    fun ty ->
+      let name, list = dest_type ty in
+	if name = "fun" && length list = 2 && nth list 1 = bool_ty then
+	  hd list
+	else
+	  failwith ("dest_set_type: not a set type: " ^ string_of_type ty);;
+
+
+let dest_approx tm =
+  let ltm, t_tm = dest_comb tm in
+  let ltm, h_tm = dest_comb ltm in
+  let c_tm, dom_tm = dest_comb ltm in
+    if fst (dest_const c_tm) = "approx" then
+      dom_tm, h_tm, t_tm
+    else
+      failwith ("dest_approx: " ^ string_of_term tm);;
+
+let build_var_tform =
+    fun dom_tm i ->
+      ISPECL[dom_tm; mk_small_numeral i] approx_var;;
+
+let build_add_tform approx1_th approx2_th =
+  let dom1_tm, h1_tm, t1_tm = dest_approx (concl approx1_th) and
+      dom2_tm, h2_tm, t2_tm = dest_approx (concl approx2_th) in
+    if dom1_tm <> dom2_tm then
+      failwith ("build_add_tform: distinct domains")
+    else
+      let th0 = ISPECL[dom1_tm; h1_tm; h2_tm; t1_tm; t2_tm] approx_add in
+      let th1 = MP th0 (CONJ approx1_th approx2_th) in
+	REWRITE_RULE[f0_mk; list_mk; APPEND] th1;;
+
+let build_sub_tform approx1_th approx2_th =
+  let dom1_tm, h1_tm, t1_tm = dest_approx (concl approx1_th) and
+      dom2_tm, h2_tm, t2_tm = dest_approx (concl approx2_th) in
+    if dom1_tm <> dom2_tm then
+      failwith ("build_sub_tform: distinct domains")
+    else
+      let th0 = ISPECL[dom1_tm; h1_tm; h2_tm; t1_tm; t2_tm] approx_sub in
+      let th1 = MP th0 (CONJ approx1_th approx2_th) in
+	REWRITE_RULE[f0_mk; list_mk; APPEND; MAP] th1;;
+
+let dest_is_rnd tm =
+  let ltm, f_tm = dest_comb tm in
+  let ltm, dom_tm = dest_comb ltm in
+  let c_tm, e2d2 = dest_comb ltm in
+  let e2_tm, d2_tm = dest_pair e2d2 in
+    if fst (dest_const c_tm) = "is_rnd" then
+      (e2_tm, d2_tm), dom_tm, f_tm
+    else
+      failwith ("dest_is_rnd: " ^ string_of_term tm);;
+
+let let_pair = prove
+  (`!Q p:A#B. (let a,b = p in Q a b) <=> Q (FST p) (SND p)`,
+   REPEAT GEN_TAC THEN EQ_TAC THENL [
+     LET_TAC THEN ASM_REWRITE_TAC[];
+     DISCH_THEN (LABEL_TAC "h") THEN LET_TAC THEN
+       REMOVE_THEN "h" MP_TAC THEN REWRITE_TAC[]
+   ]);;
+
+let build_rnd_tform rnd_th approx_th =
+  let (e2_tm, d2_tm), rnd_dom_tm, rnd_tm = dest_is_rnd (concl rnd_th) in
+  let dom_tm, h_tm, t_tm = dest_approx (concl approx_th) in
+  let m2_tm = `m2:real` in
+  let th0 = ISPECL[dom_tm; h_tm; t_tm; rnd_tm; e2_tm; d2_tm; rnd_dom_tm; m2_tm] approx_rnd in
+  let th1 = REWRITE_RULE[GSYM IMP_IMP; let_pair] (CONV_RULE (DEPTH_CONV let_CONV) th0) in
+  let th2 = MP (MP th1 approx_th) rnd_th in
+  let th3 = UNDISCH_ALL th2 in
+  let th4 = REWRITE_RULE[f0_mk; list_mk] th3 in
+    hide_e1s th4;;
+
+
+let build_tform dom_tm tree =
+  let rec build tree =
+    match tree with
+      | Variable i -> build_var_tform dom_tm i
+      | Rounding (rnd, t) ->
+	  let f = build t in
+	    build_rnd_tform rnd.rnd_thm f
+      | Bin_op (op, t1, t2) ->
+	  begin
+	    let f1 = build t1 in
+	    let f2 = build t2 in
+	      match op with
+		| Op_add ->
+		    build_add_tform f1 f2
+		| Op_sub ->
+		    build_sub_tform f1 f2
+		| _ -> failwith "Not implemented"
+	  end
+      | _ -> failwith "Not implemented"
+  in
+    build tree;;
+
+
+
+install_user_printer ("hidden", print_hidden);;
+
+let t, _ = ttree_of_term `rnd (rnd (x:real) - rnd y)`;;
+let form_th = build_tform `s:real^3->bool` t;;
+
+let th = build_rnd_tform test_rnd form_th;;
+let tm = concl th;;
+
+delete_user_printer "hidden";;
+	
+
+th;;
+approx_rnd;;
+hide_e1s (hide_e1s th);;
+
+
+let ps = get_paths tm;;
+let tms = map (C follow_path tm) ps;;
+let h_th = hidden_eq `t:A`;;
+
+
+
+
+itlist (PATH_CONV  REWR_CONV h_th
+;;
+itlist;;
+;;
+is_binary "HIDDEN" `HIDDEN a b`;;
+is_binary "CONS" (follow_path "rrr" tm);;
+follow_path "rrr" tm;;
+let e1 = follow_path "rrrlrrlr" tm;;
+let e2 = follow_path "rrrrlrrlr" tm;;
+
+PATH_CONV "rrrlrrlr" (REWR_CONV (hidden_eq e1)) tm;;
+PATH_CONV "rrrrlrrlr" (REWR_CONV (hidden_eq e2)) tm;;
+
+PATH_CONV;;
+
+path_term;;
+find_term;;
+
+
+install_user_printer("hidden", print_hidden);;
+delete_user_printer "hidden";;
+
+RAND_CONV (REWR_CONV (hidden_eq `t`)) `z + x + y`;;
+LAND_CONV (REWR_CONV ONE) `1 + 2`;;
+hidden_eq;;
+ONE;;
+
+
