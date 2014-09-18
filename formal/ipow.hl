@@ -1,6 +1,8 @@
+prioritize_real();;
+
 unparse_as_infix("ipow");;
 
-let ipow = define
+let ipow = new_definition
   `ipow (x:real) (e:int) = 
   (if (&0 <= e)
    then (x pow (num_of_int e))
@@ -117,8 +119,8 @@ let IPOW_ZERO =
 	GEN_TAC THEN STRIP_ASSUME_TAC (SPEC `u:int` INT_EQ_NUM_SUB) THEN REWRITE_TAC[ipow] THEN
 	  ASM_REWRITE_TAC[REAL_POW_ZERO; INT_SUB_LE; INT_OF_NUM_LE; INT_SUB_0; INT_OF_NUM_EQ] THEN
 	  COND_CASES_TAC THENL [
-	    ASM_SIMP_TAC[NUM_OF_INT_SUB; ARITH_RULE `m <= n ==> (n - m = 0 <=> n = m)`];
-	    ASM_SIMP_TAC[ARITH_RULE `~(m <= n) ==> ~(n = m)`; INT_ARITH `--(a - b) = b - a:int`] THEN
+	    ASM_SIMP_TAC[NUM_OF_INT_SUB; ARITH_RULE `m <= n ==> (n - m = 0 <=> n = m:num)`];
+	    ASM_SIMP_TAC[ARITH_RULE `~(m <= n) ==> ~(n = m:num)`; INT_ARITH `--(a - b) = b - a:int`] THEN
 	      SUBGOAL_THEN `num_of_int (&m - &n) = m - n` ASSUME_TAC THENL [
 		MATCH_MP_TAC NUM_OF_INT_SUB THEN ASM_ARITH_TAC;
 		ALL_TAC

@@ -57,7 +57,10 @@ let id_rnd = prove
      MAP_EVERY EXISTS_TAC [`&0`; `&0`] THEN ASM_ARITH_TAC);;
 
 
-let test_rnd = prove(`is_rnd (#0.1, #0.01) (:real) I`, MATCH_MP_TAC id_rnd THEN REAL_ARITH_TAC);;
+let test_rnd_def = new_definition `trnd = I`;;
+let test_rnd = prove
+  (`is_rnd (#0.1, #0.01) (:real) trnd`, 
+   REWRITE_TAC[test_rnd_def] THEN MATCH_MP_TAC id_rnd THEN REAL_ARITH_TAC);;
 
 
 
@@ -97,24 +100,22 @@ let ttree_of_term =
 	      else 
 		failwith ("ttree_of_term: Unsupported Bin_op: " ^ op_name)
 	  else
-	    if is_var ltm && fst (dest_var ltm) = "rnd" then
-	      let rtree = build rtm in
+	    let op_name = fst (dest_const ltm) in
+	    let rtree = build rtm in
+	      if op_name = "rnd" then
 		Rounding ({rnd_thm = test_rnd}, rtree)
-	    else
-	      let op_name = fst (dest_const ltm) in
-	      let rtree = build rtm in
-		if op_name = "real_neg" then
-		  U_op (Op_neg, rtree)
-		else if op_name = "real_inv" then
-		  U_op (Op_inv, rtree)
-		else if op_name = "sqrt" then
-		  U_op (Op_sqrt, rtree)
-		else if op_name = "sin" then
-		  U_op (Op_sin, rtree)
-		else if op_name = "cos" then
-		  U_op (Op_cos, rtree)
-		else
-		  failwith ("ttree_of_term: Unsupported U_op: " ^ op_name)
+	      else if op_name = "real_neg" then
+		U_op (Op_neg, rtree)
+	      else if op_name = "real_inv" then
+		U_op (Op_inv, rtree)
+	      else if op_name = "sqrt" then
+		U_op (Op_sqrt, rtree)
+	      else if op_name = "sin" then
+		U_op (Op_sin, rtree)
+	      else if op_name = "cos" then
+		U_op (Op_cos, rtree)
+	      else
+		failwith ("ttree_of_term: Unsupported U_op: " ^ op_name)
       | Abs _ -> failwith ("ttree_of_term: Abs: " ^ string_of_term tm)
   in
     fun tm ->
@@ -129,7 +130,16 @@ let ttree_of_term =
 let ABBREV_RULE var_name tm th =
   let var_tm = mk_var (var_name, type_of tm) in
   let eq_th = ASSUME (mk_eq (tm, var_tm)) in
-    (UNDISCH_ALL o PURE_REWRITE_RULE[eq_th] o DISCH_ALL) th;;
+  let n = length (hyp th) in
+  let th1 = DISCH_ALL th in
+  let th2 = PURE_REWRITE_RULE[eq_th] th1 in
+    funpow n UNDISCH th2;;
+
+let ABBREV_CONCL_RULE var_name tm th =
+  let var_tm = mk_var (var_name, type_of tm) in
+  let eq_th = ASSUME (mk_eq (tm, var_tm)) in
+    PURE_REWRITE_RULE[eq_th] th;;
+
 
 (* Transforms a theorem |- ?x. P x into (@x. P x) = x |- P x *)
 let SELECT_AND_ABBREV_RULE =
@@ -177,7 +187,8 @@ let print_hidden fmt = function
   | _ -> failwith "print_hidden";;
 
 (* Adds the HIDDEN attribute to e1's in an approximation theorem A |- approx ... *)
-let hide_e1s =
+let hide_and_abbrev_e1s, reset_index =
+  let global_index = ref 1 in
   let get_paths =
     let path0 = "rrr" and
 	path1 = "lrrlr" in
@@ -192,13 +203,30 @@ let hide_e1s =
 	[] in
       fun tm ->
 	path path0 (follow_path path0 tm) in
+  let test_hyp h i =
+    try
+      let name = fst (dest_var (snd (dest_eq h))) in
+	if String.sub name 0 2 = "e'" then
+	  let k = int_of_string (String.sub name 2 (String.length name - 2)) in
+	    if k >= i then k + 1 else i
+	else
+	  i
+    with _ -> i in
   let h_th = hidden_eq `t:A` in
-    fun approx_th ->
-      let tm = concl approx_th in
-      let ps = get_paths tm in
-      let conv = itlist (fun p c -> c THENC PATH_CONV p (REWR_CONV h_th)) ps ALL_CONV in
-	EQ_MP (conv tm) approx_th;;
-
+  let hide_and_abbrev approx_th =
+    let tm = concl approx_th in
+    (*let index = itlist test_hyp (hyp approx_th) 1 in*)
+    let index = !global_index in
+    let ps = get_paths tm in
+    let conv = itlist (fun p c -> c THENC PATH_CONV p (REWR_CONV h_th)) ps ALL_CONV in
+    let th1 = EQ_MP (conv tm) approx_th in
+    let tms = map (C follow_path (concl th1)) ps in
+    let index2 = index + length tms - 1 in
+    let names = map (fun i -> "e'" ^ string_of_int i) (index--index2) in
+    let _ = global_index := index2 + 1 in
+      itlist2 ABBREV_CONCL_RULE names tms th1
+  in
+    hide_and_abbrev, (fun () -> global_index := 1);;
 
 let mk_vector_type =
   let real_ty = `:real` in
@@ -275,12 +303,42 @@ let build_rnd_tform rnd_th approx_th =
   let (e2_tm, d2_tm), rnd_dom_tm, rnd_tm = dest_is_rnd (concl rnd_th) in
   let dom_tm, h_tm, t_tm = dest_approx (concl approx_th) in
   let m2_tm = `m2:real` in
-  let th0 = ISPECL[dom_tm; h_tm; t_tm; rnd_tm; e2_tm; d2_tm; rnd_dom_tm; m2_tm] approx_rnd in
-  let th1 = REWRITE_RULE[GSYM IMP_IMP; let_pair] (CONV_RULE (DEPTH_CONV let_CONV) th0) in
+  let b_tm = `b:real` in
+  let th0 = ISPECL[dom_tm; h_tm; t_tm; rnd_tm; e2_tm; d2_tm; rnd_dom_tm; m2_tm; b_tm] approx_rnd in
+  let th1 = PURE_REWRITE_RULE[GSYM IMP_IMP; let_pair] (CONV_RULE (DEPTH_CONV let_CONV) th0) in
   let th2 = MP (MP th1 approx_th) rnd_th in
   let th3 = UNDISCH_ALL th2 in
   let th4 = REWRITE_RULE[f0_mk; list_mk] th3 in
-    hide_e1s th4;;
+    hide_and_abbrev_e1s th4;;
+
+
+let build_mul_tform approx1_th approx2_th =
+  let dom1_tm, h1_tm, t1_tm = dest_approx (concl approx1_th) and
+      dom2_tm, h2_tm ,t2_tm = dest_approx (concl approx2_th) in
+    if dom1_tm <> dom2_tm then
+      failwith ("build_mul_tform: distinct domains")
+    else
+      let m2_tm = `m2:real` in
+      let e2_tm = `e2:real` in
+      let th0 = ISPECL[dom1_tm; h1_tm; h2_tm; t1_tm; t2_tm; m2_tm; e2_tm] approx_mul in
+      let th1 = PURE_REWRITE_RULE[GSYM IMP_IMP] th0 in
+      let th2 = MP (MP th1 approx1_th) approx2_th in
+      let th3 = UNDISCH_ALL th2 in
+      let th4 = REWRITE_RULE[mul_f1; MAP; APPEND; f0_mk; list_mk] th3 in
+	hide_and_abbrev_e1s th4;;
+
+let build_inv_tform approx_th =
+  let dom_tm, h_tm, t_tm = dest_approx (concl approx_th) in
+  let m1_tm = `m1:real` in
+  let m2_tm = `m2:real` in
+  let e2_tm = `e2:real` in
+  let b_tm = `b:real` in
+  let th0 = ISPECL[dom_tm; h_tm; t_tm; m1_tm; m2_tm; e2_tm; b_tm] approx_inv in
+  let th1 = PURE_REWRITE_RULE[GSYM IMP_IMP] th0 in
+  let th2 = MP th1 approx_th in
+  let th3 = UNDISCH_ALL (REWRITE_RULE[f0_mk; list_mk] th2) in
+  let th4 = REWRITE_RULE[mul_f1; MAP; APPEND; f0_mk; list_mk] th3 in
+    hide_and_abbrev_e1s th4;;
 
 
 let build_tform dom_tm tree =
@@ -299,6 +357,16 @@ let build_tform dom_tm tree =
 		    build_add_tform f1 f2
 		| Op_sub ->
 		    build_sub_tform f1 f2
+		| Op_mul ->
+		    build_mul_tform f1 f2
+		| _ -> failwith "Not implemented"
+	  end
+      | U_op (op, t1) ->
+	  begin
+	    let f1 = build t1 in
+	      match op with
+		| Op_inv ->
+		    build_inv_tform f1
 		| _ -> failwith "Not implemented"
 	  end
       | _ -> failwith "Not implemented"
@@ -306,11 +374,17 @@ let build_tform dom_tm tree =
     build tree;;
 
 
+approx_rnd;;
+approx_mul;;
+approx_inv;;
 
 install_user_printer ("hidden", print_hidden);;
 
-let t, _ = ttree_of_term `rnd (rnd (x:real) - rnd y)`;;
+reset_index();;
+let t, _ = ttree_of_term `rnd (rnd x * inv (rnd y))`;;
+let t, _ = ttree_of_term `rnd (rnd x * rnd y)`;;
 let form_th = build_tform `s:real^3->bool` t;;
+let x_th = form_th;;
 
 let th = build_rnd_tform test_rnd form_th;;
 let tm = concl th;;

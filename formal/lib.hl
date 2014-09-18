@@ -146,6 +146,12 @@ let sum_list_append = prove
    GEN_TAC THEN LIST_INDUCT_TAC THEN 
      ASM_REWRITE_TAC[APPEND; sum_list_cons; sum_list_nil; REAL_ADD_LID; REAL_ADD_ASSOC]);;
 
+let sum_list_reverse = prove
+  (`!f s:(A)list. sum_list (REVERSE s) f = sum_list s f`,
+   GEN_TAC THEN LIST_INDUCT_TAC THEN 
+     ASM_REWRITE_TAC[sum_list_cons; sum_list_nil; REVERSE; sum_list_append] THEN
+     REAL_ARITH_TAC);;
+
 let sum_list_map = prove
   (`!h s f. sum_list (MAP h s) f = sum_list s (f o h)`,
    GEN_TAC THEN LIST_INDUCT_TAC THEN 
