@@ -1,3 +1,7 @@
+let delete_at = (GEN_ALL o define) 
+  `delete_at i [] = [] /\ delete_at 0 (CONS h t) = t /\ 
+  delete_at (SUC i) (CONS h t) = CONS h (delete_at i t)`;;
+
 let rev_table = define 
   `!f i. rev_table (f:num->A) 0 = [] /\
   rev_table f (SUC i) = CONS (f i) (rev_table f i)`;;
@@ -11,7 +15,23 @@ let sum_list = new_definition
 let unzip_def = define `!h1 h2 t. (unzip [] = [],[]) /\ 
   (unzip (CONS (h1, h2) t) = CONS h1 (FST (unzip t)), CONS h2 (SND (unzip t)))`;;
 
+
 let pair_eq_thm = prove(`!p:A#B. p = FST p, SND p`, REWRITE_TAC[]);;
+
+let delete_at_eq = prove
+  (`!s:(A)list k. ~(k < LENGTH s) ==> delete_at k s = s`,
+   LIST_INDUCT_TAC THEN INDUCT_TAC THEN ASM_SIMP_TAC[LENGTH; delete_at; LT_0; LT_SUC]);;
+
+let length_delete_at = prove
+  (`!s:(A)list k. LENGTH (delete_at k s) = LENGTH s - if k < LENGTH s then 1 else 0`,
+   LIST_INDUCT_TAC THEN INDUCT_TAC THEN ASM_REWRITE_TAC[LENGTH; delete_at] THEN ARITH_TAC);;
+
+let el_delete_at = prove
+  (`!s:(A)list i k. i < LENGTH (delete_at k s)
+     ==> EL i (delete_at k s) = EL (if i < k then i else SUC i) s`,
+   LIST_INDUCT_TAC THEN INDUCT_TAC THEN INDUCT_TAC THEN 
+     REWRITE_TAC[LENGTH; delete_at; LT_REFL; ARITH_RULE `~(SUC n < 0)`; EL; HD; TL; LT_0] THEN
+     ASM_SIMP_TAC[LT_SUC] THEN COND_CASES_TAC THEN REWRITE_TAC[EL; TL]);;
 
 let length_unzip = prove
   (`!s:(A#B)list. LENGTH (FST (unzip s)) = LENGTH s /\ LENGTH (SND (unzip s)) = LENGTH s`,
@@ -357,6 +377,16 @@ let sum_list_bound_lt_gen = prove
      DISCH_THEN (fun th -> ONCE_REWRITE_TAC[th]) THEN
      MATCH_MP_TAC sum_list_bound_lt_all THEN ASM_REWRITE_TAC[GSYM LENGTH_EQ_NIL]);;
 
+let sum_list_delete_at = prove
+  (`!f k s:(A)list. k < LENGTH s ==>
+     sum_list (delete_at k s) f = sum_list s f - f (EL k s)`,
+   GEN_TAC THEN INDUCT_TAC THEN LIST_INDUCT_TAC THEN 
+     REWRITE_TAC[delete_at; LENGTH; sum_list_nil; sum_list_cons; 
+		 LT_REFL; EL; HD; ARITH_RULE `~(SUC k < 0)`] THENL [
+       REAL_ARITH_TAC;
+       ASM_SIMP_TAC[LT_SUC; TL] THEN REAL_ARITH_TAC
+     ]);;
+
 let length_eq_sum_list = prove
   (`!s:(A)list. &(LENGTH s) = sum_list s (\x. &1)`,
    SIMP_TAC[sum_list_sum_alt; GSYM CARD_EQ_SUM; FINITE_NUMSEG; CARD_NUMSEG; ARITH_RULE `(a + 1) - 1 = a`]);;
@@ -433,3 +463,7 @@ let sum_list_le_gen = prove
      MATCH_MP_TAC SUM_LE THEN REWRITE_TAC[FINITE_NUMSEG; IN_NUMSEG] THEN
      REPEAT STRIP_TAC THEN FIRST_X_ASSUM MATCH_MP_TAC THEN
      ASM_ARITH_TAC);;
+
+let all_delete_at_imp = prove
+  (`!s:(A)list k P. ALL P s ==> ALL P (delete_at k s)`,
+   LIST_INDUCT_TAC THEN INDUCT_TAC THEN ASM_SIMP_TAC[ALL; delete_at]);;

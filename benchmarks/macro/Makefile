@@ -21,7 +21,7 @@ taylor-a:
 	$(FPTAYLOR_A) FPTaylor/func.txt
 	$(FPTAYLOR_A) FPTaylor/turbine.txt
 	$(FPTAYLOR_A) FPTaylor/jet.txt
-	find log -name *.log -exec awk '/---/,0' '{}' \;
+	find log -name "*.log" -exec awk '/---/,0' '{}' \;
 
 taylor-b:
 	$(FPTAYLOR_B) FPTaylor/carbonGas.txt

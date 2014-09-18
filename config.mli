@@ -5,6 +5,7 @@ val get_bool_option : string -> bool -> bool
 val get_int_option : string -> int -> int
 val get_float_option : string -> float -> float
 val input_files : string list
+val fail_on_exception : bool
 val uncertainty : bool
 val subnormal : bool
 val const_approx_real_vars : bool

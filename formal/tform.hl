@@ -22,6 +22,12 @@ let tform_f0 = new_definition `tform_f0 t = FST (dest_tform t)`;;
 let tform_list = new_definition `tform_list t = SND (dest_tform t)`;;
 let tform_dim = new_definition `tform_dim t = LENGTH (tform_list t)`;;
 
+let tform_f1 = new_definition 
+  `tform_f1 t = \x:real^N. sum_list (tform_list t) (\ (f1,e1,e2). f1 x * e1 x)`;;
+
+let mul_f1 = new_definition
+  `mul_f1 g list = MAP (\ (f1,e1,e2). (\x. g x * f1 x), e1, e2) list`;;
+
 let dest_components = prove
   (`!t:(N)tform. dest_tform t = (tform_f0 t, tform_list t)`,
    REWRITE_TAC[tform_f0; tform_list]);;
@@ -38,12 +44,36 @@ let list_mk = prove
   (`!(f0:real^N->real) r. tform_list (mk_tform (f0, r)) = r`,
    REWRITE_TAC[tform_list; dest_tform]);;
 
+let f1_mk = prove
+  (`!(f0:real^N->real) r. tform_f1 (mk_tform (f0, r)) = \x. sum_list r (\ (f1,e1,e2). f1 x * e1 x)`,
+   REWRITE_TAC[tform_f1; list_mk]);;
 
 let approx = new_definition
   `approx (dom:real^N->bool) h (t:(N)tform) <=> 
     (!x. x IN dom ==> 
-       h x = tform_f0 t x + sum_list (tform_list t) (\(f1, e1, e2). f1 x * e1 x) /\
+       h x = tform_f0 t x + tform_f1 t x /\
        ALL (\(f1, e1, e2). abs (e1 x) <= e2) (tform_list t))`;;
+
+
+let triple_exists = prove
+  (`!x'. ?(f1:real^N->real) (e1:real^N->real) (e2:real). x' = f1, e1, e2`,
+   MESON_TAC[PAIR_SURJECTIVE]);;
+
+let sum_list_mul1 = prove
+  (`!g list (x:real^N). sum_list (mul_f1 g list) (\ (f1,e1,e2:real). (f1 x * e1 x)) = 
+      g x * sum_list list (\ (f1,e1,e2). (f1 x * e1 x))`,
+   REWRITE_TAC[mul_f1; sum_list_map; GSYM sum_list_lmul] THEN REPEAT GEN_TAC THEN
+     MATCH_MP_TAC sum_list_eq THEN REWRITE_TAC[GSYM ALL_MEM] THEN REPEAT STRIP_TAC THEN
+     STRIP_ASSUME_TAC (SPEC_ALL triple_exists) THEN ASM_REWRITE_TAC[o_THM; REAL_MUL_ASSOC]);;
+
+let all_e12_mul1 = prove
+  (`!g list P. ALL (\ (f1:real^N->real,e1:real^N->real,e2:real). P e1 e2) list ==> 
+     ALL (\ (f1,e1,e2). P e1 e2) (mul_f1 g list)`,
+   REPEAT GEN_TAC THEN REWRITE_TAC[GSYM ALL_MEM; mul_f1; MEM_MAP] THEN
+     REPEAT STRIP_TAC THEN ASM_REWRITE_TAC[] THEN POP_ASSUM (K ALL_TAC) THEN
+     POP_ASSUM (fun th -> FIRST_X_ASSUM (MP_TAC o C MATCH_MP th)) THEN
+     STRIP_ASSUME_TAC (SPEC_ALL triple_exists) THEN ASM_REWRITE_TAC[]);;
+
 
 let approx_subset = prove
   (`!r1 r2 h (t:(N)tform). 
@@ -58,13 +88,10 @@ let approx_bound_gen = prove
           <= sum_list (tform_list t) (\ (f1, e1, e2). abs (f1 x) * e2)`,
    REWRITE_TAC[approx] THEN REPEAT STRIP_TAC THEN
      FIRST_X_ASSUM (MP_TAC o SPEC `x:real^N`) THEN ASM_REWRITE_TAC[] THEN STRIP_TAC THEN
-     ASM_REWRITE_TAC[REAL_ARITH `(a + b) - a = b:real`] THEN
+     ASM_REWRITE_TAC[REAL_ARITH `(a + b) - a = b:real`; tform_f1] THEN
      MATCH_MP_TAC sum_list_abs_le THEN POP_ASSUM MP_TAC THEN REWRITE_TAC[GSYM ALL_EL] THEN
      REPEAT STRIP_TAC THEN FIRST_X_ASSUM (MP_TAC o SPEC `i:num`) THEN ASM_REWRITE_TAC[] THEN
-     SUBGOAL_THEN `?(f1:real^N->real) (e1:real^N->real) (e2:real). EL i (tform_list t) = f1, e1, e2` STRIP_ASSUME_TAC THENL [
-       MESON_TAC[PAIR_SURJECTIVE];
-       ALL_TAC
-     ] THEN
+     STRIP_ASSUME_TAC (SPEC `EL i (tform_list (t:(N)tform))` triple_exists) THEN
      ASM_REWRITE_TAC[REAL_ABS_MUL] THEN DISCH_TAC THEN
      MATCH_MP_TAC REAL_LE_LMUL THEN ASM_REWRITE_TAC[REAL_ABS_POS]);;
 
@@ -92,10 +119,7 @@ let approx_bound_simple = prove
      MATCH_MP_TAC sum_list_le_gen THEN
      FIRST_X_ASSUM (MP_TAC o SPEC `x:real^N`) THEN ASM_REWRITE_TAC[I_THM] THEN
      REWRITE_TAC[all2_el] THEN REPEAT STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
-     SUBGOAL_THEN `?(f1:real^N->real) (e1:real^N->real) (e2:real). EL i (tform_list t) = f1, e1, e2` STRIP_ASSUME_TAC THENL [
-       MESON_TAC[PAIR_SURJECTIVE];
-       ALL_TAC
-     ] THEN
+     STRIP_ASSUME_TAC (SPEC `EL i (tform_list (t:(N)tform))` triple_exists) THEN
      FIRST_X_ASSUM (MP_TAC o SPEC `i:num`) THEN ASM_SIMP_TAC[]);;
 
 (* ---------------------------- *)
@@ -105,7 +129,7 @@ let approx_bound_simple = prove
 let approx_const = prove
   (`!s c. approx s (\x:real^N. c)
                    (mk_tform ((\x. c), []))`,
-   REWRITE_TAC[approx; f0_mk; list_mk; sum_list_nil; ALL; REAL_ADD_RID]);;
+   REWRITE_TAC[approx; tform_f1; f0_mk; list_mk; sum_list_nil; ALL; REAL_ADD_RID]);;
 
 (* ---------------------------- *)
 (* var                          *)
@@ -114,7 +138,7 @@ let approx_const = prove
 let approx_var = prove
   (`!s i. approx s (\x:real^N. x$i)
                    (mk_tform ((\x. x$i), []))`,
-   REWRITE_TAC[approx; f0_mk; list_mk; sum_list_nil; ALL; REAL_ADD_RID]);;
+   REWRITE_TAC[approx; tform_f1; f0_mk; list_mk; sum_list_nil; ALL; REAL_ADD_RID]);;
 
 
 (* ---------------------------- *)
@@ -126,24 +150,18 @@ let approx_neg = prove
      ==> approx s (\x:real^N. --h x) 
                   (mk_tform ((\x. --tform_f0 t x),
 			     MAP (\ (f1,e1,e2). (\x. --f1 x), e1, e2) (tform_list t)))`,
-   REWRITE_TAC[approx] THEN REPEAT STRIP_TAC THEN ASM_SIMP_TAC[f0_mk; list_mk] THENL [
+   REWRITE_TAC[approx; tform_f1] THEN REPEAT STRIP_TAC THEN ASM_SIMP_TAC[f0_mk; list_mk] THENL [
      REWRITE_TAC[REAL_ARITH `(--(a + b) = --a + c) <=> --b = c`] THEN
        REWRITE_TAC[sum_list_map; sum_list_neg] THEN
        MATCH_MP_TAC sum_list_eq THEN REWRITE_TAC[GSYM ALL_EL] THEN REPEAT STRIP_TAC THEN
-       SUBGOAL_THEN `?(f1:real^N->real) (e1:real^N->real) (e2:real). EL i (tform_list t) = f1, e1, e2` STRIP_ASSUME_TAC THENL [
-	 MESON_TAC[PAIR_SURJECTIVE];
-	 ALL_TAC
-       ] THEN
-	 ASM_REWRITE_TAC[o_THM; REAL_MUL_LNEG];
+       STRIP_ASSUME_TAC (SPEC `EL i (tform_list (t:(N)tform))` triple_exists) THEN
+       ASM_REWRITE_TAC[o_THM; REAL_MUL_LNEG];
      ALL_TAC
    ] THEN
      FIRST_X_ASSUM (MP_TAC o SPEC `x:real^N`) THEN ASM_REWRITE_TAC[] THEN
      REWRITE_TAC[GSYM ALL_EL; LENGTH_MAP] THEN REPEAT STRIP_TAC THEN
      FIRST_X_ASSUM (MP_TAC o SPEC `i:num`) THEN ASM_REWRITE_TAC[] THEN
-     SUBGOAL_THEN `?(f1:real^N->real) (e1:real^N->real) (e2:real). EL i (tform_list t) = f1, e1, e2` STRIP_ASSUME_TAC THENL [
-       MESON_TAC[PAIR_SURJECTIVE];
-       ALL_TAC
-     ] THEN
+     STRIP_ASSUME_TAC (SPEC `EL i (tform_list (t:(N)tform))` triple_exists) THEN
      ASM_SIMP_TAC[EL_MAP]);;
 
 (* ---------------------------- *)
@@ -155,7 +173,8 @@ let approx_add = prove
      ==> approx s (\x:real^N. h1 x + h2 x)
                   (mk_tform ((\x. tform_f0 t1 x + tform_f0 t2 x),
 			     tform_list t1 ++ tform_list t2))`,
-   REWRITE_TAC[approx] THEN REPEAT STRIP_TAC THEN ASM_SIMP_TAC[f0_mk; list_mk; ALL_APPEND] THEN
+   REWRITE_TAC[approx; tform_f1] THEN REPEAT STRIP_TAC THEN 
+     ASM_SIMP_TAC[f0_mk; list_mk; ALL_APPEND] THEN
      REWRITE_TAC[sum_list_append] THEN REAL_ARITH_TAC);;
 
 (* ---------------------------- *)
@@ -183,81 +202,34 @@ let approx_sub = prove
 
 let approx_mul = prove
   (`!s h1 h2 t1 t2 m2 e2. 
-   let r = (\x. sum_list (tform_list t1) (\ (f1,e1,e2). f1 x * e1 x) *
-	      sum_list (tform_list t2) (\ (f1,e1,e2). f1 x * e1 x)) in
      approx s h1 t1 /\ approx s h2 t2 /\
-     (!x. x IN s ==> abs (r x) <= m2 * e2) /\ 
+     (!x. x IN s ==> abs (tform_f1 t1 x * tform_f1 t2 x) <= m2 * e2) /\ 
      &0 < e2
      ==> approx s (\x:real^N. h1 x * h2 x)
                   (mk_tform ((\x. tform_f0 t1 x * tform_f0 t2 x),
-			     (MAP (\ (f1,e1,e2). (\x. tform_f0 t2 x * f1 x), e1, e2) (tform_list t1) ++
-				MAP (\ (f1,e1,e2). (\x. tform_f0 t1 x * f1 x), e1, e2) (tform_list t2) ++
-				[(\x. m2), (\x. r x / m2), e2])))`,
-   REWRITE_TAC[approx] THEN REPEAT STRIP_TAC THEN ASM_SIMP_TAC[f0_mk; list_mk] THEN LET_TAC THEN
+			     (mul_f1 (tform_f0 t2) (tform_list t1) ++
+				mul_f1 (tform_f0 t1) (tform_list t2) ++
+				[(\x. m2), (\x. (tform_f1 t1 x * tform_f1 t2 x) / m2), e2])))`,
+   REWRITE_TAC[approx; tform_f1] THEN REPEAT GEN_TAC THEN ASM_SIMP_TAC[f0_mk; list_mk] THEN
      STRIP_TAC THEN GEN_TAC THEN DISCH_TAC THEN
+     ABBREV_TAC `r = \x:real^N. tform_f1 t1 x * tform_f1 t2 x` THEN
      STRIP_TAC THENL [
-       REWRITE_TAC[sum_list_append; sum_list_map] THEN
+       REWRITE_TAC[sum_list_append; sum_list_mul1] THEN
 	 REWRITE_TAC[REAL_ARITH `(a + b) * (c + d) = a * c + c * b + a * d + b * d`] THEN
-	 ASM_REWRITE_TAC[REAL_EQ_ADD_LCANCEL] THEN
-	 MATCH_MP_TAC (REAL_ARITH `a1 = a2 /\ b1 = b2 /\ c1 = c2 ==> a1 + b1 + c1 = a2 + b2 + c2`) THEN
-	 CONJ_TAC THENL [
-	   REWRITE_TAC[GSYM sum_list_lmul] THEN MATCH_MP_TAC sum_list_eq THEN 
-	     REWRITE_TAC[GSYM ALL_MEM] THEN REPEAT STRIP_TAC THEN
-	     SUBGOAL_THEN `?(f1:real^N->real) (e1:real^N->real) (e2:real). x' = f1, e1, e2` STRIP_ASSUME_TAC THENL [
-	       MESON_TAC[PAIR_SURJECTIVE];
-	       ALL_TAC
-	     ] THEN
-	       ASM_REWRITE_TAC[o_THM; REAL_MUL_ASSOC];
-	   ALL_TAC
-	 ] THEN
-	 CONJ_TAC THENL [
-	   REWRITE_TAC[GSYM sum_list_lmul] THEN MATCH_MP_TAC sum_list_eq THEN 
-	     REWRITE_TAC[GSYM ALL_MEM] THEN REPEAT STRIP_TAC THEN
-	     SUBGOAL_THEN `?(f1:real^N->real) (e1:real^N->real) (e2:real). x' = f1, e1, e2` STRIP_ASSUME_TAC THENL [
-	       MESON_TAC[PAIR_SURJECTIVE];
-	       ALL_TAC
-	     ] THEN
-	       ASM_REWRITE_TAC[o_THM; REAL_MUL_ASSOC];
-	   ALL_TAC
-	 ] THEN
-	 REWRITE_TAC[sum_list_sing] THEN
-	 SUBGOAL_THEN `m2 * r (x:real^N) / m2 = r x` ASSUME_TAC THENL [
+	 ASM_REWRITE_TAC[REAL_EQ_ADD_LCANCEL; sum_list_sing] THEN
+	 SUBGOAL_THEN `m2 * r (x:real^N) / m2 = r x` MP_TAC THENL [
 	   ASM_CASES_TAC `m2 = &0` THENL [
 	     FIRST_X_ASSUM (MP_TAC o SPEC `x:real^N`) THEN ASM_REWRITE_TAC[REAL_MUL_LZERO] THEN
-	       REAL_ARITH_TAC;
+	       EXPAND_TAC "r" THEN REWRITE_TAC[tform_f1] THEN REAL_ARITH_TAC;
 	     ALL_TAC
 	   ] THEN
-	     POP_ASSUM MP_TAC THEN CONV_TAC REAL_FIELD;
+	     ASM_SIMP_TAC[REAL_ARITH `m2 * a / m2 = (m2 / m2) * a`; REAL_DIV_REFL; REAL_MUL_LID];
 	   ALL_TAC
 	 ] THEN
-	 ASM_REWRITE_TAC[] THEN EXPAND_TAC "r" THEN REWRITE_TAC[];
+	 EXPAND_TAC "r" THEN SIMP_TAC[tform_f1];
        ALL_TAC
      ] THEN
-     REWRITE_TAC[ALL_APPEND; ALL_MAP; ALL] THEN
-     CONJ_TAC THENL [
-       REPLICATE_TAC 2 (FIRST_X_ASSUM (K ALL_TAC o SPEC `x:real^N`)) THEN
-	 FIRST_X_ASSUM (MP_TAC o SPEC `x:real^N`) THEN ASM_REWRITE_TAC[GSYM ALL_MEM] THEN
-	 REPEAT STRIP_TAC THEN
-	 SUBGOAL_THEN `?(f1:real^N->real) (e1:real^N->real) (e2:real). x' = f1, e1, e2` STRIP_ASSUME_TAC THENL [
-	   MESON_TAC[PAIR_SURJECTIVE];
-	   ALL_TAC
-	 ] THEN
-	 FIRST_X_ASSUM (MP_TAC o SPEC `x':(real^N->real)#(real^N->real)#real`) THEN
-	 ASM_REWRITE_TAC[o_THM];
-       ALL_TAC
-     ] THEN
-     CONJ_TAC THENL [
-       REPLICATE_TAC 1 (FIRST_X_ASSUM (K ALL_TAC o SPEC `x:real^N`)) THEN
-	 FIRST_X_ASSUM (MP_TAC o SPEC `x:real^N`) THEN ASM_REWRITE_TAC[GSYM ALL_MEM] THEN
-	 REPEAT STRIP_TAC THEN
-	 SUBGOAL_THEN `?(f1:real^N->real) (e1:real^N->real) (e2:real). x' = f1, e1, e2` STRIP_ASSUME_TAC THENL [
-	   MESON_TAC[PAIR_SURJECTIVE];
-	   ALL_TAC
-	 ] THEN
-	 FIRST_X_ASSUM (MP_TAC o SPEC `x':(real^N->real)#(real^N->real)#real`) THEN
-	 ASM_REWRITE_TAC[o_THM];
-       ALL_TAC
-     ] THEN
+     REWRITE_TAC[ALL_APPEND; ALL] THEN ASM_SIMP_TAC[all_e12_mul1] THEN
      ASM_CASES_TAC `m2 = &0` THENL [
        ASM_REWRITE_TAC[real_div; REAL_INV_0; REAL_MUL_RZERO] THEN
 	 ASM_SIMP_TAC[REAL_ABS_0; REAL_LT_IMP_LE];
@@ -276,8 +248,6 @@ let approx_mul = prove
      ASM_SIMP_TAC[REAL_ABS_DIV; REAL_ARITH `&0 < m2 ==> abs m2 = m2`] THEN
      REWRITE_TAC[REAL_ARITH `a * b / c = a / c * b`; real_div] THEN
      ASM_SIMP_TAC[REAL_MUL_RINV; REAL_MUL_LID]);;
-
-
 
 (* ---------------------------- *)
 (* rounding                     *)
@@ -326,7 +296,7 @@ let approx_rnd_0 = prove
        approx s (rnd o h) 
 	 (mk_tform (tform_f0 t,
 		    ((\x. &1), d, d2 :: tform_list t)))`,
-   REWRITE_TAC[approx] THEN REPEAT STRIP_TAC THEN ASM_SIMP_TAC[f0_mk; list_mk] THEN
+   REWRITE_TAC[approx; tform_f1] THEN REPEAT STRIP_TAC THEN ASM_SIMP_TAC[f0_mk; list_mk] THEN
      REPEAT LET_TAC THEN
      MP_TAC (ISPECL[`rnd:real->real`; `h:real^N->real`; `s:real^N->bool`; `s2:real->bool`; `&0`; `d2:real`] is_rnd_select) THEN
      ASM_REWRITE_TAC[] THEN DISCH_THEN (ASSUME_TAC o CONV_RULE let_CONV) THEN
@@ -343,24 +313,23 @@ let approx_rnd_0 = prove
 let approx_rnd_alt = prove
   (`!s h t rnd e2 d2 s2 m2. approx s h t /\ is_rnd(e2,d2) s2 rnd /\
      (!x:real^N. x IN s ==> h x IN s2) /\
-     (!x. x IN s ==> abs (sum_list (tform_list t) (\ (f1,e1,dd). f1 x * e1 x)) <= m2)
+     (!x. x IN s ==> abs (tform_f1 t x) <= m2)
      ==> let e, d = select_rnd(e2,d2) s rnd h in
-         let r = (\x. e x * sum_list (tform_list t) (\ (f1,e1,dd). f1 x * e1 x)) in
-	   approx s (rnd o h) 
-	     (mk_tform (tform_f0 t,
-			((tform_f0 t, e, e2) :: ((\x. m2), (\x. r x / m2), e2) :: ((\x. &1), d, d2)
-			 :: tform_list t)))`,
-   REWRITE_TAC[approx] THEN REPEAT STRIP_TAC THEN ASM_SIMP_TAC[f0_mk; list_mk] THEN
+       approx s (rnd o h) 
+	 (mk_tform (tform_f0 t,
+		    ((tform_f0 t, e, e2) :: ((\x. m2), (\x. (e x * tform_f1 t x) / m2), e2) 
+		     :: ((\x. &1), d, d2) :: tform_list t)))`,
+   REWRITE_TAC[approx; tform_f1] THEN REPEAT STRIP_TAC THEN ASM_SIMP_TAC[f0_mk; list_mk] THEN
      REPEAT LET_TAC THEN
-     MP_TAC ((SPEC_ALL o ISPECL[`rnd:real->real`; `h:real^N->real`; `t:(N)tform`]) is_rnd_select) THEN
+     MP_TAC ((SPEC_ALL o ISPECL[`rnd:real->real`; `h:real^N->real`]) is_rnd_select) THEN
      ASM_REWRITE_TAC[] THEN DISCH_THEN (ASSUME_TAC o CONV_RULE let_CONV) THEN
      GEN_TAC THEN DISCH_TAC THEN
      ABBREV_TAC `p = sum_list (tform_list (t:(N)tform)) (\(f1,e1,dd). f1 x * e1 x)` THEN
      REPEAT STRIP_TAC THENL [
        ASM_SIMP_TAC[o_THM; sum_list_cons] THEN
-	 SUBGOAL_THEN `m2 * r (x:real^N) / m2 = r x` (fun th -> REWRITE_TAC[th]) THENL [
+	 SUBGOAL_THEN `m2 * (e (x:real^N) * p) / m2 = e x * p` (fun th -> REWRITE_TAC[th]) THENL [
 	   ASM_CASES_TAC `m2 = &0` THENL [
-	     ASM_REWRITE_TAC[REAL_MUL_LZERO; EQ_SYM_EQ] THEN EXPAND_TAC "r" THEN 
+	     ASM_REWRITE_TAC[REAL_MUL_LZERO; EQ_SYM_EQ] THEN
 	       REWRITE_TAC[REAL_ENTIRE] THEN DISJ2_TAC THEN
 	       FIRST_X_ASSUM (K ALL_TAC o SPEC `x:real^N`) THEN
 	       FIRST_X_ASSUM (MP_TAC o SPEC `x:real^N`) THEN ASM_REWRITE_TAC[] THEN
@@ -370,7 +339,7 @@ let approx_rnd_alt = prove
 	     POP_ASSUM MP_TAC THEN CONV_TAC REAL_FIELD;
 	   ALL_TAC
 	 ] THEN
-	 EXPAND_TAC "r" THEN ASM_REWRITE_TAC[] THEN REAL_ARITH_TAC;
+	 REAL_ARITH_TAC;
        ALL_TAC
      ] THEN
      ASM_SIMP_TAC[ALL] THEN
@@ -380,7 +349,7 @@ let approx_rnd_alt = prove
 	 REAL_ARITH_TAC;
        ALL_TAC
      ] THEN
-     EXPAND_TAC "r" THEN REWRITE_TAC[REAL_ARITH `(a * b) / c = a * (b / c)`; REAL_ABS_MUL] THEN
+     REWRITE_TAC[REAL_ARITH `(a * b) / c = a * (b / c)`; REAL_ABS_MUL] THEN
      MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `e2 * &1` THEN
      CONJ_TAC THENL [ ALL_TAC; REAL_ARITH_TAC ] THEN
      MATCH_MP_TAC REAL_LE_MUL2 THEN ASM_SIMP_TAC[REAL_ABS_POS] THEN
@@ -395,7 +364,7 @@ let approx_rnd_alt = prove
 let approx_rnd = prove
   (`!s h t rnd e2 d2 s2 m2. approx s h t /\ is_rnd(e2,d2) s2 rnd /\
      (!x:real^N. x IN s ==> h x IN s2) /\
-     (!x. x IN s ==> abs (sum_list (tform_list t) (\ (f1,e1,dd). f1 x * e1 x)) <= m2) /\
+     (!x. x IN s ==> abs (tform_f1 t x) <= m2) /\
      ~(e2 = &0)
      ==> let e, d = select_rnd(e2,d2) s rnd h in
          let r = (\x. e x * sum_list (tform_list t) (\ (f1,e1,dd). f1 x * e1 x) + d x) in
@@ -404,7 +373,7 @@ let approx_rnd = prove
 			CONS (tform_f0 t, e, e2)
 			  (CONS ((\x. m2 + d2 / e2), (\x. r x / (m2 + d2 / e2)), e2)
 			     (tform_list t))))`,
-   REWRITE_TAC[approx] THEN REPEAT STRIP_TAC THEN ASM_SIMP_TAC[f0_mk; list_mk] THEN
+   REWRITE_TAC[approx; tform_f1] THEN REPEAT STRIP_TAC THEN ASM_SIMP_TAC[f0_mk; list_mk] THEN
      REPEAT LET_TAC THEN
      MP_TAC ((SPEC_ALL o ISPECL[`rnd:real->real`; `h:real^N->real`]) is_rnd_select) THEN
      ASM_REWRITE_TAC[] THEN DISCH_THEN (ASSUME_TAC o CONV_RULE let_CONV) THEN
@@ -476,16 +445,630 @@ let approx_rnd = prove
      ASM_SIMP_TAC[real_div; REAL_MUL_RINV; REAL_MUL_RID; REAL_ARITH `&0 < e2 ==> abs e2 <= e2`]);;
 
 
+(* --------------------------- *)
+(* Taylor 2                    *)
+(* --------------------------- *)
+
+let taylor2 = prove
+  (`!f f' f'' a t.
+     (!x. abs x <= abs t ==> 
+	(f has_real_derivative f'(a + x)) (atreal (a + x)) /\
+	(f' has_real_derivative f''(a + x)) (atreal (a + x)))
+     ==> ?p. abs p <= abs t /\ 
+             f(a + t) = f(a) + f'(a) * t + f''(a + p) * t pow 2 / &2`,
+   REPEAT STRIP_TAC THEN
+     ABBREV_TAC `g = \i. EL i [f:real->real; f'; f'']` THEN
+     SUBGOAL_THEN `g 0 = (f:real->real) /\ g 1 = f' /\ g 2 = f''` ASSUME_TAC THENL [
+       EXPAND_TAC "g" THEN REWRITE_TAC[ONE; TWO; EL; HD; TL];
+       ALL_TAC
+     ] THEN
+     ASM_CASES_TAC `t = &0` THENL [
+       EXISTS_TAC `&0` THEN ASM_REWRITE_TAC[REAL_LE_REFL] THEN
+	 REWRITE_TAC[REAL_MUL_RZERO; REAL_ADD_RID; REAL_POW_2; real_div; REAL_MUL_LZERO];
+       ALL_TAC
+     ] THEN
+     ASM_CASES_TAC `&0 < t` THENL [
+       MP_TAC (SPECL[`g:num->real->real`; `a:real`; `a + t:real`; `1`] REAL_TAYLOR_MVT_POS) THEN
+	 ANTS_TAC THENL [
+	   CONJ_TAC THENL [ POP_ASSUM MP_TAC THEN REAL_ARITH_TAC; ALL_TAC ] THEN
+	     REWRITE_TAC[IN_REAL_INTERVAL; ARITH_RULE `i <= 1 <=> i = 0 \/ i = 1`] THEN 
+	     REPEAT STRIP_TAC THEN ASM_REWRITE_TAC[ADD; ARITH_RULE `1 + 1 = 2`] THENL [
+	       MATCH_MP_TAC HAS_REAL_DERIVATIVE_ATREAL_WITHIN THEN
+		 FIRST_X_ASSUM (MP_TAC o SPEC `t' - a:real`) THEN 
+		 ANTS_TAC THENL [ ASM_ARITH_TAC; ALL_TAC ] THEN
+		 SIMP_TAC[REAL_ARITH `a + t' - a = t'`];
+	       ALL_TAC
+	     ] THEN
+	     MATCH_MP_TAC HAS_REAL_DERIVATIVE_ATREAL_WITHIN THEN
+	     FIRST_X_ASSUM (MP_TAC o SPEC `t' - a:real`) THEN 
+	     ANTS_TAC THENL [ ASM_ARITH_TAC; ALL_TAC ] THEN
+	     SIMP_TAC[REAL_ARITH `a + t' - a = t'`];
+	   ALL_TAC
+	 ] THEN
+	 CONV_TAC ((ONCE_DEPTH_CONV EXPAND_SUM_CONV) THENC NUM_REDUCE_CONV) THEN
+	 ASM_REWRITE_TAC[IN_REAL_INTERVAL; real_pow; REAL_POW_1] THEN STRIP_TAC THEN
+	 EXISTS_TAC `t' - a:real` THEN
+	 ASM_REWRITE_TAC[REAL_ARITH `!t. (a + t) - a = t /\ a + t - a = t`] THEN
+	 ASM_ARITH_TAC;
+       ALL_TAC
+     ] THEN
+     MP_TAC (SPECL[`g:num->real->real`; `a:real`; `a + t:real`; `1`] REAL_TAYLOR_MVT_NEG) THEN
+     ANTS_TAC THENL [
+       CONJ_TAC THENL [ ASM_ARITH_TAC; ALL_TAC ] THEN
+	 REWRITE_TAC[IN_REAL_INTERVAL; ARITH_RULE `i <= 1 <=> i = 0 \/ i = 1`] THEN 
+	 REPEAT STRIP_TAC THEN ASM_REWRITE_TAC[ADD; ARITH_RULE `1 + 1 = 2`] THENL [
+	   MATCH_MP_TAC HAS_REAL_DERIVATIVE_ATREAL_WITHIN THEN
+	     FIRST_X_ASSUM (MP_TAC o SPEC `t' - a:real`) THEN 
+	     ANTS_TAC THENL [ ASM_ARITH_TAC; ALL_TAC ] THEN
+	     SIMP_TAC[REAL_ARITH `a + t' - a = t'`];
+	   ALL_TAC
+	 ] THEN
+	 MATCH_MP_TAC HAS_REAL_DERIVATIVE_ATREAL_WITHIN THEN
+	 FIRST_X_ASSUM (MP_TAC o SPEC `t' - a:real`) THEN 
+	 ANTS_TAC THENL [ ASM_ARITH_TAC; ALL_TAC ] THEN
+	 SIMP_TAC[REAL_ARITH `a + t' - a = t'`];
+       ALL_TAC
+     ] THEN
+     CONV_TAC ((ONCE_DEPTH_CONV EXPAND_SUM_CONV) THENC NUM_REDUCE_CONV) THEN
+     ASM_REWRITE_TAC[IN_REAL_INTERVAL; real_pow; REAL_POW_1] THEN STRIP_TAC THEN
+     EXISTS_TAC `t' - a:real` THEN
+     ASM_REWRITE_TAC[REAL_ARITH `!t. (a + t) - a = t /\ a + t - a = t`] THEN
+     ASM_ARITH_TAC);;
+
+let diff2_sin_cos = prove
+  (`!x. (sin has_real_derivative cos x) (atreal x) /\
+        (cos has_real_derivative --sin x) (atreal x) /\
+	((\x. --sin x) has_real_derivative --cos x) (atreal x)`,
+   GEN_TAC THEN REWRITE_TAC[HAS_REAL_DERIVATIVE_SIN; HAS_REAL_DERIVATIVE_COS] THEN
+     MATCH_MP_TAC HAS_REAL_DERIVATIVE_NEG THEN REWRITE_TAC[HAS_REAL_DERIVATIVE_SIN]);;
+     
+
+let diff2_atn = prove
+  (`!x. (atn has_real_derivative inv (&1 + x pow 2)) (atreal x) /\
+        ((\x. inv (&1 + x pow 2)) has_real_derivative -- &2 * x * inv(&1 + x pow 2) pow 2) (atreal x)`,
+   GEN_TAC THEN REWRITE_TAC[HAS_REAL_DERIVATIVE_ATN] THEN
+     REAL_DIFF_TAC THEN
+     REWRITE_TAC[ARITH_RULE `2 - 1 = 1`; REAL_POW_1; real_div; REAL_INV_POW] THEN
+     CONJ_TAC THENL [ ALL_TAC; REAL_ARITH_TAC ] THEN
+     MATCH_MP_TAC (REAL_ARITH `&0 <= x ==> ~(&1 + x = &0)`) THEN
+     REWRITE_TAC[REAL_LE_POW_2]);;
+
+let diff2_acs = prove
+  (`!x. abs x < &1 ==>
+     (acs has_real_derivative --inv (sqrt (&1 - x pow 2))) (atreal x) /\
+     ((\x. --inv (sqrt (&1 - x pow 2))) has_real_derivative --x * inv (sqrt (&1 - x pow 2) pow 3)) (atreal x)`,
+   REPEAT STRIP_TAC THENL [
+     ASM_SIMP_TAC[HAS_REAL_DERIVATIVE_ACS];
+     REAL_DIFF_TAC THEN REWRITE_TAC[SQRT_EQ_0] THEN
+       ABBREV_TAC `r = &1 - x pow 2` THEN
+       SUBGOAL_THEN `&0 < r` ASSUME_TAC THENL [
+	 SUBGOAL_THEN `abs (x pow 2) < &1` MP_TAC THENL [
+	   ASM_REWRITE_TAC[REAL_ABS_POW; ABS_SQUARE_LT_1; REAL_ABS_ABS];
+	   ALL_TAC
+	 ] THEN
+	   EXPAND_TAC "r" THEN REAL_ARITH_TAC;
+	 ALL_TAC
+       ] THEN
+       ASM_SIMP_TAC[REAL_ARITH `&0 < r ==> ~(r = &0)`] THEN
+       REWRITE_TAC[real_div; REAL_INV_POW; REAL_INV_MUL; ARITH_RULE `2 - 1 = 1`] THEN
+       REAL_ARITH_TAC
+   ]);;
+
+let diff2_asn = prove
+  (`!x. abs x < &1 ==>
+     (asn has_real_derivative inv (sqrt (&1 - x pow 2))) (atreal x) /\
+     ((\x. inv (sqrt (&1 - x pow 2))) has_real_derivative x * inv (sqrt (&1 - x pow 2) pow 3)) (atreal x)`,
+   REPEAT STRIP_TAC THENL [
+     ASM_SIMP_TAC[HAS_REAL_DERIVATIVE_ASN];
+     REAL_DIFF_TAC THEN REWRITE_TAC[SQRT_EQ_0] THEN
+       ABBREV_TAC `r = &1 - x pow 2` THEN
+       SUBGOAL_THEN `&0 < r` ASSUME_TAC THENL [
+	 SUBGOAL_THEN `abs (x pow 2) < &1` MP_TAC THENL [
+	   ASM_REWRITE_TAC[REAL_ABS_POW; ABS_SQUARE_LT_1; REAL_ABS_ABS];
+	   ALL_TAC
+	 ] THEN
+	   EXPAND_TAC "r" THEN REAL_ARITH_TAC;
+	 ALL_TAC
+       ] THEN
+       ASM_SIMP_TAC[REAL_ARITH `&0 < r ==> ~(r = &0)`] THEN
+       REWRITE_TAC[real_div; REAL_INV_POW; REAL_INV_MUL; ARITH_RULE `2 - 1 = 1`] THEN
+       REAL_ARITH_TAC
+   ]);;
+
+let diff2_exp = prove
+  (`!x. (exp has_real_derivative exp x) (atreal x)`,
+   REWRITE_TAC[HAS_REAL_DERIVATIVE_EXP]);;
+
+let diff2_log = prove
+  (`!x. &0 < x ==>
+     (log has_real_derivative inv x) (atreal x) /\
+     (inv has_real_derivative --inv (x pow 2)) (atreal x)`,
+   REPEAT STRIP_TAC THENL [
+     ASM_SIMP_TAC[HAS_REAL_DERIVATIVE_LOG];
+     ASM_SIMP_TAC[HAS_REAL_DERIVATIVE_INV_BASIC; REAL_ARITH `&0 < t ==> ~(t = &0)`];
+   ]);;
+
+let diff2_inv = prove
+  (`!x. ~(x = &0) ==>
+     (inv has_real_derivative --inv (x pow 2)) (atreal x) /\
+     ((\x. --inv (x pow 2)) has_real_derivative &2 * inv (x pow 3)) (atreal x)`,
+   REPEAT STRIP_TAC THENL [
+     ASM_SIMP_TAC[HAS_REAL_DERIVATIVE_INV_BASIC];
+     REAL_DIFF_TAC THEN ASM_SIMP_TAC[REAL_POW_2; REAL_ENTIRE] THEN
+       REWRITE_TAC[ARITH_RULE `2 - 1 = 1`; GSYM REAL_POW_2; REAL_POW_POW] THEN
+       REWRITE_TAC[REAL_ARITH `--(--(&2 * t * &1) / r) = &2 * (t / r)`] THEN
+       ASM_SIMP_TAC[REAL_DIV_POW2; ARITH_RULE `~(2 * 2 <= 1)`; ARITH_RULE `2 * 2 - 1 = 3`]
+   ]);;
+
+let diff2_sqrt = prove
+  (`!x. &0 < x ==>
+     (sqrt has_real_derivative inv (&2 * sqrt x)) (atreal x) /\
+     ((\x. inv (&2 * sqrt x)) has_real_derivative --inv (&4 * sqrt x pow 3)) (atreal x)`,
+   REPEAT STRIP_TAC THENL [
+     ASM_SIMP_TAC[HAS_REAL_DERIVATIVE_SQRT];
+     REAL_DIFF_TAC THEN ASM_SIMP_TAC[REAL_POW_2; REAL_ENTIRE; SQRT_EQ_0] THEN
+       ASM_SIMP_TAC[REAL_ARITH `&0 < x ==> ~(x = &0)`; REAL_ARITH `~(&2 = &0)`] THEN
+       REWRITE_TAC[REAL_INV_MUL; real_div; REAL_INV_POW] THEN
+       REAL_ARITH_TAC
+   ]);;
+   
+
+let taylor2_sin = prove
+  (`!a t. ?p. abs p <= abs t /\ 
+              sin (a + t) = sin a + cos a * t - sin (a + p) * t pow 2 / &2`,
+   REPEAT STRIP_TAC THEN
+     MP_TAC (SPECL[`sin`; `cos`; `\x. --sin x`; `a:real`; `t:real`] taylor2) THEN
+     REWRITE_TAC[diff2_sin_cos] THEN STRIP_TAC THEN 
+     EXISTS_TAC `p:real` THEN ASM_REWRITE_TAC[] THEN REAL_ARITH_TAC);;
+
+let taylor2_cos = prove
+  (`!a t. ?p. abs p <= abs t /\
+              cos (a + t) = cos a - sin a * t - cos (a + p) * t pow 2 / &2`,
+   REPEAT STRIP_TAC THEN
+     MP_TAC (SPECL[`cos`; `\x. --sin x`; `\x. --cos x`; `a:real`; `t:real`] taylor2) THEN
+     REWRITE_TAC[diff2_sin_cos] THEN STRIP_TAC THEN
+     EXISTS_TAC `p:real` THEN ASM_REWRITE_TAC[] THEN REAL_ARITH_TAC);;
+
+let taylor2_atn = prove
+  (`!a t. ?p. abs p <= abs t /\
+              atn (a + t) = atn a + inv (&1 + a pow 2) * t
+                               - ((a + p) / (&1 + (a + p) pow 2) pow 2) * t pow 2`,
+   REPEAT STRIP_TAC THEN
+     MP_TAC (SPECL[`atn`; `\x. inv (&1 + x pow 2)`; `\x. -- &2 * x * inv (&1 + x pow 2) pow 2`; `a:real`; `t:real`] taylor2) THEN
+     REWRITE_TAC[diff2_atn] THEN STRIP_TAC THEN
+     EXISTS_TAC `p:real` THEN ASM_REWRITE_TAC[real_div; REAL_INV_POW] THEN 
+     REAL_ARITH_TAC);;
+
+let taylor2_acs = prove
+  (`!a t. (!x. abs x <= abs t ==> abs (a + x) < &1)
+     ==> ?p. abs p <= abs t /\
+             acs (a + t) = acs a - inv (sqrt (&1 - a pow 2)) * t 
+	                      - (a + p) * inv (sqrt (&1 - (a + p) pow 2) pow 3) * t pow 2 / &2`,
+   REPEAT STRIP_TAC THEN
+     MP_TAC (SPECL[`acs`; `\x. --inv (sqrt (&1 - x pow 2))`; `\x. --x * inv (sqrt (&1 - x pow 2) pow 3)`; `a:real`; `t:real`] taylor2) THEN
+     ASM_SIMP_TAC[diff2_acs] THEN STRIP_TAC THEN
+     EXISTS_TAC `p:real` THEN ASM_REWRITE_TAC[real_div; REAL_INV_POW] THEN 
+     REAL_ARITH_TAC);;
+
+let taylor2_asn = prove
+  (`!a t. (!x. abs x <= abs t ==> abs (a + x) < &1)
+     ==> ?p. abs p <= abs t /\
+             asn (a + t) = asn a + inv (sqrt (&1 - a pow 2)) * t 
+	                      + (a + p) * inv (sqrt (&1 - (a + p) pow 2) pow 3) * t pow 2 / &2`,
+   REPEAT STRIP_TAC THEN
+     MP_TAC (SPECL[`asn`; `\x. inv (sqrt (&1 - x pow 2))`; `\x. x * inv (sqrt (&1 - x pow 2) pow 3)`; `a:real`; `t:real`] taylor2) THEN
+     ASM_SIMP_TAC[diff2_asn] THEN STRIP_TAC THEN
+     EXISTS_TAC `p:real` THEN ASM_REWRITE_TAC[real_div; REAL_INV_POW] THEN 
+     REAL_ARITH_TAC);;
+     
+let taylor2_exp = prove
+  (`!a t. ?p. abs p <= abs t /\
+              exp (a + t) = exp a + exp a * t + exp (a + p) * t pow 2 / &2`,
+   REPEAT STRIP_TAC THEN
+     MP_TAC (SPECL[`exp`; `exp`; `exp`; `a:real`; `t:real`] taylor2) THEN
+     REWRITE_TAC[diff2_exp] THEN STRIP_TAC THEN
+     EXISTS_TAC `p:real` THEN ASM_REWRITE_TAC[]);;
+
+let taylor2_inv = prove
+  (`!a t. (!x. abs x <= abs t ==> ~(a + x = &0))
+     ==> ?p. abs p <= abs t /\
+             inv (a + t) = inv a - inv(a pow 2) * t + inv((a + p) pow 3) * t pow 2`,
+   REPEAT STRIP_TAC THEN
+     MP_TAC (SPECL[`inv`; `\x. --inv (x pow 2)`; `\x. &2 * inv (x pow 3)`; `a:real`; `t:real`] taylor2) THEN
+     ASM_SIMP_TAC[diff2_inv] THEN STRIP_TAC THEN
+     EXISTS_TAC `p:real` THEN ASM_REWRITE_TAC[] THEN REAL_ARITH_TAC);;
+
+let taylor2_sqrt = prove
+  (`!a t. (!x. abs x <= abs t ==> &0 < a + x)
+     ==> ?p. abs p <= abs t /\
+             sqrt (a + t) =  sqrt a + inv(sqrt a) * t / &2 - inv(sqrt (a + p) pow 3) * t pow 2 / &8`,
+   REPEAT STRIP_TAC THEN
+     MP_TAC (SPECL[`sqrt`; `\x. inv (&2 * sqrt x)`; `\x. --inv(&4 * sqrt x pow 3)`; `a:real`; `t:real`] taylor2) THEN
+     ASM_SIMP_TAC[diff2_sqrt] THEN STRIP_TAC THEN
+     EXISTS_TAC `p:real` THEN ASM_REWRITE_TAC[REAL_INV_MUL; real_div] THEN
+     REAL_ARITH_TAC);;
+
+let taylor2_log = prove
+  (`!a t. (!x. abs x <= abs t ==> &0 < a + x)
+     ==> ?p. abs p <= abs t /\
+             log (a + t) =  log a + inv a * t - inv((a + p) pow 2) * t pow 2 / &2`,
+   REPEAT STRIP_TAC THEN
+     MP_TAC (SPECL[`log`; `inv`; `\x. --inv(x pow 2)`; `a:real`; `t:real`] taylor2) THEN
+     ASM_SIMP_TAC[diff2_log] THEN STRIP_TAC THEN
+     EXISTS_TAC `p:real` THEN ASM_REWRITE_TAC[] THEN REAL_ARITH_TAC);;
 
 
-       
+(* --------------------------- *)
+(* Approx Taylor 2             *)
+(* --------------------------- *)
+
+let approx_taylor2 = prove
+  (`!f f' f'' s h t m1 m2 e2 b. 
+     (!x. x IN s ==> abs (tform_f1 t x) <= m1 /\ abs (tform_f1 t x pow 2) <= m2 * e2) /\
+     (!x y. x IN s /\ abs y <= m1 ==> 
+	let z = tform_f0 t x + y in
+	  (f has_real_derivative f' z) (atreal z) /\
+	  (f' has_real_derivative f'' z) (atreal z) /\
+	    abs (f'' z / &2) <= b) /\
+       approx s h t /\
+       &0 < b /\ &0 <= m2 /\ &0 <= e2
+     ==> approx s (\x:real^N. f (h x))
+       (mk_tform ((\x. f (tform_f0 t x)),
+		  (mul_f1 (\x. f' (tform_f0 t x)) (tform_list t) ++
+		     [(\x. b * m2), 
+		      (\x. (f (h x) - f (tform_f0 t x) - f' (tform_f0 t x) * tform_f1 t x) / 
+			 (b * m2)),
+		      e2])))`,
+   REWRITE_TAC[approx; tform_f1] THEN REPEAT GEN_TAC THEN ASM_SIMP_TAC[f0_mk; list_mk] THEN
+     CONV_TAC (DEPTH_CONV let_CONV) THEN STRIP_TAC THEN GEN_TAC THEN DISCH_TAC THEN
+     ABBREV_TAC `r = sum_list (tform_list t) (\ (f1,e1,e2). f1 (x:real^N) * e1 x)` THEN
+     STRIP_TAC THENL [
+       REWRITE_TAC[sum_list_append; sum_list_mul1; sum_list_sing] THEN
+	 ASM_CASES_TAC `(b * m2 = &0)` THENL [
+	   ASM_REWRITE_TAC[real_div; REAL_INV_0; REAL_MUL_LZERO; REAL_ADD_RID] THEN
+             SUBGOAL_THEN `r = &0` ASSUME_TAC THENL [
+	       SUBGOAL_THEN `m2 = &0` ASSUME_TAC THENL [
+		 POP_ASSUM MP_TAC THEN 
+		   ASM_SIMP_TAC[REAL_ENTIRE; REAL_ARITH `&0 < b ==> ~(b = &0)`];
+		 ALL_TAC
+	       ] THEN
+		 REPEAT (FIRST_X_ASSUM (MP_TAC o SPEC `x:real^N`)) THEN
+		 ASM_REWRITE_TAC[REAL_MUL_LZERO; REAL_ABS_MUL; REAL_POW_2] THEN
+		 SUBGOAL_THEN `abs r * abs r <= &0 ==> r = &0` ASSUME_TAC THENL [
+		   REWRITE_TAC[REAL_ARITH `a * b <= &0 <=> &0 <= (--a) * b`] THEN
+		     REWRITE_TAC[REAL_MUL_POS_LE] THEN REAL_ARITH_TAC;
+		   ALL_TAC
+		 ] THEN
+		 ASM_SIMP_TAC[];
+	       ALL_TAC
+	     ] THEN
+	     ASM_REWRITE_TAC[REAL_ADD_RID; REAL_MUL_RZERO];
+	   ALL_TAC
+	 ] THEN
+	 ASM_SIMP_TAC[REAL_ARITH `x * y / x = (x / x) * y`; REAL_DIV_REFL] THEN
+         REAL_ARITH_TAC;
+     ALL_TAC
+   ] THEN
+   ASM_SIMP_TAC[ALL_APPEND; all_e12_mul1; ALL] THEN
+   MP_TAC (SPECL[`f:real->real`; `f':real->real`; `f'':real->real`; `tform_f0 (t:(N)tform) x`; `r:real`] taylor2) THEN
+   ANTS_TAC THENL [
+     GEN_TAC THEN DISCH_TAC THEN
+       REPEAT (FIRST_X_ASSUM (MP_TAC o SPEC `x:real^N`)) THEN ASM_REWRITE_TAC[] THEN
+       DISCH_TAC THEN DISCH_THEN (MP_TAC o SPEC `x':real`) THEN
+       ANTS_TAC THENL [ POP_ASSUM MP_TAC THEN POP_ASSUM MP_TAC THEN REAL_ARITH_TAC; ALL_TAC ] THEN
+       SIMP_TAC[];
+     ALL_TAC
+   ] THEN
+   STRIP_TAC THEN
+   ASM_REWRITE_TAC[REAL_ARITH `(a + b + c) - a - b = c`] THEN
+   ASM_CASES_TAC `b * m2 = &0` THENL [
+     ASM_REWRITE_TAC[real_div; REAL_INV_0; REAL_MUL_RZERO; REAL_ABS_0];
+     ALL_TAC
+   ] THEN
+   MATCH_MP_TAC REAL_LE_LCANCEL_IMP THEN EXISTS_TAC `b * m2` THEN
+   CONJ_TAC THENL [
+     MATCH_MP_TAC REAL_LT_MUL THEN
+       POP_ASSUM MP_TAC THEN ASM_REWRITE_TAC[REAL_ENTIRE; DE_MORGAN_THM] THEN
+       UNDISCH_TAC `&0 <= m2` THEN REAL_ARITH_TAC;
+     ALL_TAC
+   ] THEN
+   REWRITE_TAC[REAL_ABS_DIV; REAL_ABS_NEG; REAL_ABS_MUL; REAL_ABS_NUM] THEN
+   SUBGOAL_THEN `abs b = b /\ abs m2 = m2` (fun th -> REWRITE_TAC[th]) THENL [
+     ASM_SIMP_TAC[REAL_ABS_REFL; REAL_LT_IMP_LE];
+     ALL_TAC
+   ] THEN
+   ASM_SIMP_TAC[REAL_ARITH `x * y / x = (x / x) * y`; REAL_DIV_REFL; REAL_MUL_LID] THEN
+   REWRITE_TAC[REAL_ARITH `abs x * y / &2 = abs (x / &2) * y`] THEN
+   REWRITE_TAC[GSYM REAL_MUL_ASSOC] THEN MATCH_MP_TAC REAL_LE_MUL2 THEN
+   EXPAND_TAC "r" THEN ASM_SIMP_TAC[REAL_ABS_POS] THEN
+   FIRST_X_ASSUM (MP_TAC o SPECL[`x:real^N`; `p:real`]) THEN ANTS_TAC THENL [
+     ASM_REWRITE_TAC[] THEN
+       MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `abs r` THEN 
+       EXPAND_TAC "r" THEN ASM_SIMP_TAC[];
+     ALL_TAC
+   ] THEN
+   SIMP_TAC[]);;
+
+(* --------------------------- *)
+(* inv                         *)
+(* --------------------------- *)
+
+let approx_inv = prove
+  (`!s h t m1 m2 e2 b. 
+     (!x. x IN s ==> abs (tform_f1 t x) <= m1 /\ abs (tform_f1 t x pow 2) <= m2 * e2) /\
+     (!x y. x IN s /\ abs y <= m1 ==> abs (inv ((tform_f0 t x + y) pow 3)) <= b /\
+	                              ~(tform_f0 t x + y = &0)) /\
+       approx s h t /\
+       &0 < b /\ &0 <= m2 /\ &0 <= e2
+     ==> approx s (\x:real^N. inv (h x))
+       (mk_tform ((\x. inv (tform_f0 t x)),
+		  (mul_f1 (\x. --inv (tform_f0 t x pow 2)) (tform_list t) ++
+		     [(\x. b * m2), 
+		      (\x. (inv (h x) - inv (tform_f0 t x) + inv (tform_f0 t x pow 2) * tform_f1 t x) / 
+			 (b * m2)),
+		      e2])))`,
+   REPEAT STRIP_TAC THEN
+     MP_TAC ((SPEC_ALL o SPECL[`inv`; `\x. --inv (x pow 2)`; `\x. &2 * inv (x pow 3)`]) approx_taylor2) THEN
+     ASM_REWRITE_TAC[] THEN ANTS_TAC THENL [
+       REPEAT STRIP_TAC THEN LET_TAC THEN
+	 FIRST_X_ASSUM (MP_TAC o SPECL[`x:real^N`; `y:real`]) THEN ASM_REWRITE_TAC[] THEN
+	 SIMP_TAC[diff2_inv; REAL_ARITH `(&2 * x) / &2 = x`];
+       ALL_TAC
+     ] THEN
+     REWRITE_TAC[REAL_ARITH `a - b - --c * d = a - b + c * d`]);;
+
+(* --------------------------- *)
+(* sqrt                        *)
+(* --------------------------- *)
+
+let approx_sqrt = prove
+  (`!s h t m1 m2 e2 b. 
+     (!x. x IN s ==> abs (tform_f1 t x) <= m1 /\ abs (tform_f1 t x pow 2) <= m2 * e2) /\
+     (!x y. x IN s /\ abs y <= m1 ==> abs (inv (sqrt (tform_f0 t x + y) pow 3) / &8) <= b /\
+	                              &0 < tform_f0 t x + y) /\
+       approx s h t /\
+       &0 < b /\ &0 <= m2 /\ &0 <= e2
+     ==> approx s (\x:real^N. sqrt (h x))
+       (mk_tform ((\x. sqrt (tform_f0 t x)),
+		  (mul_f1 (\x. inv (&2 * sqrt (tform_f0 t x))) (tform_list t) ++
+		     [(\x. b * m2), 
+		      (\x. (sqrt (h x) - sqrt (tform_f0 t x) - 
+			      inv (&2 * sqrt (tform_f0 t x)) * tform_f1 t x) / (b * m2)),
+		      e2])))`,
+   REPEAT STRIP_TAC THEN
+     MP_TAC ((SPEC_ALL o SPECL[`sqrt`; `\x. inv (&2 * sqrt x)`; `\x. --inv (&4 * sqrt x pow 3)`]) approx_taylor2) THEN
+     ASM_REWRITE_TAC[] THEN ANTS_TAC THENL [
+       REPEAT STRIP_TAC THEN LET_TAC THEN
+	 FIRST_X_ASSUM (MP_TAC o SPECL[`x:real^N`; `y:real`]) THEN ASM_REWRITE_TAC[] THEN
+	 SIMP_TAC[diff2_sqrt; REAL_INV_MUL; real_div; REAL_ARITH `--a * b = --(a * b)`] THEN
+	 SIMP_TAC[REAL_ABS_NEG; GSYM REAL_INV_MUL; REAL_ARITH `(&4 * a) * &2 = a * &8`];
+       ALL_TAC
+     ] THEN
+     REWRITE_TAC[]);;
+
+(* --------------------------- *)
+(* sin                         *)
+(* --------------------------- *)
+
+let approx_sin = prove
+  (`!s h t m1 m2 e2 b. 
+     (!x. x IN s ==> abs (tform_f1 t x) <= m1 /\ abs (tform_f1 t x pow 2) <= m2 * e2) /\
+       (!x y. x IN s /\ abs y <= m1 ==> abs (sin (tform_f0 t x + y) / &2) <= b) /\
+       approx s h t /\
+       &0 < b /\ &0 <= m2 /\ &0 <= e2
+     ==> approx s (\x:real^N. sin (h x))
+       (mk_tform ((\x. sin (tform_f0 t x)),
+		  (mul_f1 (\x. cos (tform_f0 t x)) (tform_list t) ++
+		     [(\x. b * m2), 
+		      (\x. (sin (h x) - sin (tform_f0 t x) - cos (tform_f0 t x) * tform_f1 t x) / 
+			 (b * m2)),
+		      e2])))`,
+   REPEAT STRIP_TAC THEN
+     MP_TAC ((SPEC_ALL o SPECL[`sin`; `cos`; `\x. --sin x`]) approx_taylor2) THEN
+     ASM_REWRITE_TAC[] THEN ANTS_TAC THENL [
+       CONV_TAC (DEPTH_CONV let_CONV) THEN REWRITE_TAC[diff2_sin_cos] THEN
+	 REPEAT STRIP_TAC THEN ASM_SIMP_TAC[REAL_ARITH `abs (--a / &2) = abs (a / &2)`];
+       ALL_TAC
+     ] THEN
+     REWRITE_TAC[]);;
+
+(* --------------------------- *)
+(* cos                         *)
+(* --------------------------- *)
+
+let approx_cos = prove
+  (`!s h t m1 m2 e2 b. 
+     (!x. x IN s ==> abs (tform_f1 t x) <= m1 /\ abs (tform_f1 t x pow 2) <= m2 * e2) /\
+       (!x y. x IN s /\ abs y <= m1 ==> abs (cos (tform_f0 t x + y) / &2) <= b) /\
+       approx s h t /\
+       &0 < b /\ &0 <= m2 /\ &0 <= e2
+     ==> approx s (\x:real^N. cos (h x))
+       (mk_tform ((\x. cos (tform_f0 t x)),
+		  (mul_f1 (\x. --sin (tform_f0 t x)) (tform_list t) ++
+		     [(\x. b * m2), 
+		      (\x. (cos (h x) - cos (tform_f0 t x) + sin (tform_f0 t x) * tform_f1 t x) / 
+			 (b * m2)),
+		      e2])))`,
+   REPEAT STRIP_TAC THEN
+     MP_TAC ((SPEC_ALL o SPECL[`cos`; `\x. --sin x`; `\x. --cos x`]) approx_taylor2) THEN
+     ASM_REWRITE_TAC[] THEN ANTS_TAC THENL [
+       CONV_TAC (DEPTH_CONV let_CONV) THEN REWRITE_TAC[diff2_sin_cos] THEN
+	 REPEAT STRIP_TAC THEN ASM_SIMP_TAC[REAL_ARITH `abs (--a / &2) = abs (a / &2)`];
+       ALL_TAC
+     ] THEN
+     REWRITE_TAC[REAL_ARITH `a - b - --c * d = a - b + c * d`]);;
+
+(* --------------------------- *)
+(* exp                         *)
+(* --------------------------- *)
+
+let approx_exp = prove
+  (`!s h t m1 m2 e2 b. 
+     (!x. x IN s ==> abs (tform_f1 t x) <= m1 /\ abs (tform_f1 t x pow 2) <= m2 * e2) /\
+       (!x y. x IN s /\ abs y <= m1 ==> abs (exp (tform_f0 t x + y) / &2) <= b) /\
+       approx s h t /\
+       &0 < b /\ &0 <= m2 /\ &0 <= e2
+     ==> approx s (\x:real^N. exp (h x))
+       (mk_tform ((\x. exp (tform_f0 t x)),
+		  (mul_f1 (\x. exp (tform_f0 t x)) (tform_list t) ++
+		     [(\x. b * m2), 
+		      (\x. (exp (h x) - exp (tform_f0 t x) - exp (tform_f0 t x) * tform_f1 t x) / 
+			 (b * m2)),
+		      e2])))`,
+   REPEAT STRIP_TAC THEN
+     MP_TAC ((SPEC_ALL o SPECL[`exp`; `exp`; `exp`]) approx_taylor2) THEN
+     ASM_REWRITE_TAC[] THEN ANTS_TAC THENL [
+       CONV_TAC (DEPTH_CONV let_CONV) THEN REWRITE_TAC[diff2_exp] THEN
+	 REPEAT STRIP_TAC THEN ASM_SIMP_TAC[];
+       ALL_TAC
+     ] THEN
+     REWRITE_TAC[]);;
+
+(* --------------------------- *)
+(* atn                         *)
+(* --------------------------- *)
+
+let approx_atn = prove
+  (`!s h t m1 m2 e2 b. 
+     (!x. x IN s ==> abs (tform_f1 t x) <= m1 /\ abs (tform_f1 t x pow 2) <= m2 * e2) /\
+     (!x y. x IN s /\ abs y <= m1 ==> 
+	abs ((tform_f0 t x + y) * inv (&1 + (tform_f0 t x + y) pow 2) pow 2) <= b) /\
+     approx s h t /\
+     &0 < b /\ &0 <= m2 /\ &0 <= e2
+     ==> approx s (\x:real^N. atn (h x))
+       (mk_tform ((\x. atn (tform_f0 t x)),
+		  (mul_f1 (\x. inv (&1 + (tform_f0 t x) pow 2)) (tform_list t) ++
+		     [(\x. b * m2), 
+		      (\x. (atn (h x) - atn (tform_f0 t x) - 
+			      inv (&1 + (tform_f0 t x) pow 2) * tform_f1 t x) / (b * m2)),
+		      e2])))`,
+   REPEAT STRIP_TAC THEN
+     MP_TAC ((SPEC_ALL o SPECL[`atn`; `\x. inv (&1 + x pow 2)`; `\x. -- &2 * x * inv (&1 + x pow 2) pow 2`]) approx_taylor2) THEN
+     ASM_REWRITE_TAC[] THEN ANTS_TAC THENL [
+       REPEAT STRIP_TAC THEN LET_TAC THEN REWRITE_TAC[diff2_atn] THEN
+	 FIRST_X_ASSUM (MP_TAC o SPECL[`x:real^N`; `y:real`]) THEN ASM_REWRITE_TAC[] THEN
+	 REWRITE_TAC[REAL_ARITH `abs ((-- &2 * x) / &2) = abs x`];
+       ALL_TAC
+     ] THEN
+     REWRITE_TAC[]);;
+
+(* --------------------------- *)
+(* log                         *)
+(* --------------------------- *)
+
+let approx_log = prove
+  (`!s h t m1 m2 e2 b. 
+     (!x. x IN s ==> abs (tform_f1 t x) <= m1 /\ abs (tform_f1 t x pow 2) <= m2 * e2) /\
+     (!x y. x IN s /\ abs y <= m1 ==> abs (inv ((tform_f0 t x + y) pow 2) / &2) <= b /\
+	                              &0 < tform_f0 t x + y) /\
+       approx s h t /\
+       &0 < b /\ &0 <= m2 /\ &0 <= e2
+     ==> approx s (\x:real^N. log (h x))
+       (mk_tform ((\x. log (tform_f0 t x)),
+		  (mul_f1 (\x. inv (tform_f0 t x)) (tform_list t) ++
+		     [(\x. b * m2), 
+		      (\x. (log (h x) - log (tform_f0 t x) - 
+			      inv (tform_f0 t x) * tform_f1 t x) / (b * m2)),
+		      e2])))`,
+   REPEAT STRIP_TAC THEN
+     MP_TAC ((SPEC_ALL o SPECL[`log`; `inv`; `\x. --inv (x pow 2)`]) approx_taylor2) THEN
+     ASM_REWRITE_TAC[] THEN ANTS_TAC THENL [
+       REPEAT STRIP_TAC THEN LET_TAC THEN
+	 FIRST_X_ASSUM (MP_TAC o SPECL[`x:real^N`; `y:real`]) THEN ASM_REWRITE_TAC[] THEN
+	 SIMP_TAC[diff2_log; REAL_ARITH `abs (--a / &2) = abs (a / &2)`];
+       ALL_TAC
+     ] THEN
+     REWRITE_TAC[]);;
+
+(* --------------------------- *)
+(* acs                         *)
+(* --------------------------- *)
+
+let approx_acs = prove
+  (`!s h t m1 m2 e2 b. 
+     (!x. x IN s ==> abs (tform_f1 t x) <= m1 /\ abs (tform_f1 t x pow 2) <= m2 * e2) /\
+     (!x y. x IN s /\ abs y <= m1 ==> 
+	abs ((tform_f0 t x + y) * inv (sqrt (&1 - (tform_f0 t x + y) pow 2) pow 3) / &2) <= b /\
+	abs (tform_f0 t x + y) < &1) /\
+     approx s h t /\
+     &0 < b /\ &0 <= m2 /\ &0 <= e2
+     ==> approx s (\x:real^N. acs (h x))
+       (mk_tform ((\x. acs (tform_f0 t x)),
+		  (mul_f1 (\x. --inv (sqrt (&1 - tform_f0 t x pow 2))) (tform_list t) ++
+		     [(\x. b * m2), 
+		      (\x. (acs (h x) - acs (tform_f0 t x) + 
+			      inv (sqrt (&1 - tform_f0 t x pow 2)) * tform_f1 t x) / (b * m2)),
+		      e2])))`,
+   REPEAT STRIP_TAC THEN
+     MP_TAC ((SPEC_ALL o SPECL[`acs`; `\x. --inv (sqrt (&1 - x pow 2))`; `\x. --x * inv (sqrt (&1 - x pow 2) pow 3)`]) approx_taylor2) THEN
+     ASM_REWRITE_TAC[] THEN ANTS_TAC THENL [
+       REPEAT STRIP_TAC THEN LET_TAC THEN
+	 FIRST_X_ASSUM (MP_TAC o SPECL[`x:real^N`; `y:real`]) THEN ASM_REWRITE_TAC[] THEN
+	 SIMP_TAC[diff2_acs; REAL_ARITH `abs ((--a * b) / &2) = abs (a * b / &2)`];
+       ALL_TAC
+     ] THEN
+     REWRITE_TAC[REAL_ARITH `a - b - --c * d = a - b + c * d`]);;
+
+(* --------------------------- *)
+(* asn                         *)
+(* --------------------------- *)
+
+let approx_asn = prove
+  (`!s h t m1 m2 e2 b. 
+     (!x. x IN s ==> abs (tform_f1 t x) <= m1 /\ abs (tform_f1 t x pow 2) <= m2 * e2) /\
+     (!x y. x IN s /\ abs y <= m1 ==> 
+	abs ((tform_f0 t x + y) * inv (sqrt (&1 - (tform_f0 t x + y) pow 2) pow 3) / &2) <= b /\
+	abs (tform_f0 t x + y) < &1) /\
+     approx s h t /\
+     &0 < b /\ &0 <= m2 /\ &0 <= e2
+     ==> approx s (\x:real^N. asn (h x))
+       (mk_tform ((\x. asn (tform_f0 t x)),
+		  (mul_f1 (\x. inv (sqrt (&1 - tform_f0 t x pow 2))) (tform_list t) ++
+		     [(\x. b * m2), 
+		      (\x. (asn (h x) - asn (tform_f0 t x) - 
+			      inv (sqrt (&1 - tform_f0 t x pow 2)) * tform_f1 t x) / (b * m2)),
+		      e2])))`,
+   REPEAT STRIP_TAC THEN
+     MP_TAC ((SPEC_ALL o SPECL[`asn`; `\x. inv (sqrt (&1 - x pow 2))`; `\x. x * inv (sqrt (&1 - x pow 2) pow 3)`]) approx_taylor2) THEN
+     ASM_REWRITE_TAC[] THEN ANTS_TAC THENL [
+       REPEAT STRIP_TAC THEN LET_TAC THEN
+	 FIRST_X_ASSUM (MP_TAC o SPECL[`x:real^N`; `y:real`]) THEN ASM_REWRITE_TAC[] THEN
+	 SIMP_TAC[diff2_asn; real_div; REAL_MUL_ASSOC];
+       ALL_TAC
+     ] THEN
+     REWRITE_TAC[]);;
 
 
-`approx dom h1 (tform f0 f1s) /\ approx dom h2 (tfrom g0 g1s)
-  /\ (!x. x IN dom ==> 
-	sum_list f1s (\ (f, e). sum_list g1s (\ (g, e2). f x * g x)) <= m2)
-  /\ (!x. x IN dom ==> 
-	(!i. i < LENGTH f1s ==> SND (EL i f1s) x <= e2 x) /\
-	(!i. i < LENGTH g1s ==> SND (EL i g1s) x <= e2 x))
-  ==> approx dom (\x. h1 x + h2 x) (tmul (m2, e2) (f0, f1s) (g0, g1s))`;;
+
+
+(* --------------------------- *)
+(* simpl                       *)
+(* --------------------------- *)
+
+let approx_simpl = prove
+  (`!s h t:(N)tform i j.
+     approx s h t /\ i < j /\ j < LENGTH (tform_list t)
+     ==>  let (f1,e1,e2) = EL i (tform_list t) and
+	 (f1',e1',e2') = EL j (tform_list t) in
+       e1 = e1' 
+	     ==> approx s h 
+	     (mk_tform (tform_f0 t,
+			(((\x. f1 x + f1' x), e1, e2) :: 
+			   delete_at i (delete_at j (tform_list t)))))`,
+   REWRITE_TAC[approx] THEN REPEAT STRIP_TAC THEN LET_TAC THEN
+     ASM_SIMP_TAC[f0_mk; list_mk; tform_f1] THEN STRIP_TAC THEN
+     REPEAT STRIP_TAC THENL [
+       SUBGOAL_THEN `i < LENGTH (delete_at j (tform_list (t:(N)tform)))` ASSUME_TAC THENL [
+	 ASM_SIMP_TAC[length_delete_at] THEN ASM_ARITH_TAC;
+	 ALL_TAC
+       ] THEN
+	 ASM_SIMP_TAC[sum_list_cons; sum_list_delete_at; el_delete_at] THEN
+	 REAL_ARITH_TAC;
+       ALL_TAC
+     ] THEN
+     ASM_SIMP_TAC[all_delete_at_imp; ALL] THEN
+     FIRST_X_ASSUM (MP_TAC o SPEC `x:real^N`) THEN ASM_REWRITE_TAC[GSYM ALL_EL] THEN
+     STRIP_TAC THEN FIRST_X_ASSUM (MP_TAC o SPEC `i:num`) THEN
+     ANTS_TAC THENL [ ASM_ARITH_TAC; ALL_TAC ] THEN
+     ASM_REWRITE_TAC[]);;
 

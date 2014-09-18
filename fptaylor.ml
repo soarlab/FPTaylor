@@ -213,12 +213,27 @@ let errors =
     let _ = report "" in
     pi
 
+let safety_check e =
+  try
+    Rounding_simpl.check_expr var_bound_float e
+  with Rounding_simpl.Exceptional_operation (e0, str) ->
+    let msg =
+      Printf.sprintf "\nPotential exception detected: %s at:\n%s"
+	str (print_expr_str e0) in
+    if Config.fail_on_exception then
+      failwith msg
+    else
+      let _ = warning msg in
+	zero_I
+
 let compute_form pi e =
   let _ = report "\n*************************************" in
   let _ = report ("Taylor form for: " ^ print_expr_str e) in
   let start = Unix.gettimeofday() in
   let pi = 
     try
+      let bound0 = safety_check e in
+      let _ = report ("\nConservative bound: " ^ (sprintf_I "%f" bound0)) in
       let e = Rounding_simpl.simplify_rounding e in
       let _ = report ("\nSimplified rounding: " ^ print_expr_str e) in
       let vars = var_bound_float in

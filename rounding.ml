@@ -8,6 +8,8 @@ type value_type = {
 type rnd_type = Rnd_ne | Rnd_up | Rnd_down | Rnd_0
 
 type rnd_info = {
+  (* Approximation of the maximum value *)
+  max_val : float;
   eps_exp : int;
   delta_exp : int;
   coefficient : float;
@@ -31,6 +33,16 @@ let eps_delta_from_bits bits =
     | 128 -> -113, -16382
     | _ -> failwith ("Unsupported fp size: " ^ string_of_int bits)
 
+let max_value_from_bits bits =
+  let p, emax =
+    match bits with
+      | 16 -> 10, 15
+      | 32 -> 23, 127
+      | 64 -> 52, 1023
+      | 128 -> 112, 16383 
+      | _ -> failwith ("max_value_from_bits: Unsupported fp size: " ^ string_of_int bits) in
+  (2.0 -. ldexp 1.0 (-p)) *. ldexp 1.0 emax
+
 let string_to_rnd_type str =
   match str with
     | "ne" | "nearest" -> false, Rnd_ne
@@ -43,6 +55,7 @@ let create_rounding bits rnd c =
   let fp_type = { bits = bits } in
   let dir_flag, rnd_type = string_to_rnd_type rnd in
   let eps, delta = eps_delta_from_bits bits in {
+    max_val = max_value_from_bits bits;
     eps_exp = eps;
     delta_exp = delta;
     coefficient = if dir_flag then 2.0 *. c else c;
@@ -51,6 +64,7 @@ let create_rounding bits rnd c =
   }
 
 let create_explicit_rounding bits rnd c eps delta = {
+  max_val = max_value_from_bits bits;
   eps_exp = eps;
   delta_exp = delta;
   coefficient = c;
