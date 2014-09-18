@@ -5248,3 +5248,66 @@ let FLOAT_RD_NINF_REL_ERROR =
 (* Delta bound                                                                *)
 (* -------------------------------------------------------------------------- *)
 
+let FLOAT_RD_NEAR_REL_DELTA =
+  prove(`!(fmt:flformat) (x:real). ~(x = &0) ==>
+	  (?(d:real). flround(fmt) To_near x = (&1 + d) * x /\
+	              abs(d) <= fl_eps(fmt))`,
+	REPEAT GEN_TAC THEN DISCH_THEN (LABEL_TAC "xneq0") THEN
+	EXISTS_TAC `((flround(fmt) To_near x) - x) / x` THEN
+	REWRITE_TAC[REAL_ADD_RDISTRIB] THEN
+	
+	SUBGOAL_THEN `!z. z / x * x = z` (fun thm -> REWRITE_TAC[thm]) THENL [
+	  GEN_TAC THEN MATCH_MP_TAC REAL_DIV_RMUL THEN ASM_REWRITE_TAC[];
+	  ALL_TAC] THEN
+
+	CONJ_TAC THENL [ ARITH_TAC; ALL_TAC ] THEN
+	REWRITE_TAC[GSYM rerror] THEN
+	MATCH_MP_TAC FLOAT_RD_NEAR_REL_ERROR THEN ASM_REWRITE_TAC[]);;
+
+let FLOAT_RD_ZERO_REL_DELTA =
+  prove(`!(fmt:flformat) (x:real). ~(x = &0) ==>
+	  (?(d:real). flround(fmt) To_zero x = (&1 + d) * x /\
+	              abs(d) <= &2 * fl_eps(fmt))`,
+	REPEAT GEN_TAC THEN DISCH_THEN (LABEL_TAC "xneq0") THEN
+	EXISTS_TAC `((flround(fmt) To_zero x) - x) / x` THEN
+	REWRITE_TAC[REAL_ADD_RDISTRIB] THEN
+	
+	SUBGOAL_THEN `!z. z / x * x = z` (fun thm -> REWRITE_TAC[thm]) THENL [
+	  GEN_TAC THEN MATCH_MP_TAC REAL_DIV_RMUL THEN ASM_REWRITE_TAC[];
+	  ALL_TAC] THEN
+
+	CONJ_TAC THENL [ ARITH_TAC; ALL_TAC ] THEN
+	REWRITE_TAC[GSYM rerror] THEN
+	MATCH_MP_TAC FLOAT_RD_ZERO_REL_ERROR THEN ASM_REWRITE_TAC[]);;
+
+let FLOAT_RD_PINF_REL_DELTA =
+  prove(`!(fmt:flformat) (x:real). ~(x = &0) ==>
+	  (?(d:real). flround(fmt) To_pinf x = (&1 + d) * x /\
+	              abs(d) <= &2 * fl_eps(fmt))`,
+	REPEAT GEN_TAC THEN DISCH_THEN (LABEL_TAC "xneq0") THEN
+	EXISTS_TAC `((flround(fmt) To_pinf x) - x) / x` THEN
+	REWRITE_TAC[REAL_ADD_RDISTRIB] THEN
+	
+	SUBGOAL_THEN `!z. z / x * x = z` (fun thm -> REWRITE_TAC[thm]) THENL [
+	  GEN_TAC THEN MATCH_MP_TAC REAL_DIV_RMUL THEN ASM_REWRITE_TAC[];
+	  ALL_TAC] THEN
+
+	CONJ_TAC THENL [ ARITH_TAC; ALL_TAC ] THEN
+	REWRITE_TAC[GSYM rerror] THEN
+	MATCH_MP_TAC FLOAT_RD_PINF_REL_ERROR THEN ASM_REWRITE_TAC[]);;
+
+let FLOAT_RD_NINF_REL_DELTA =
+  prove(`!(fmt:flformat) (x:real). ~(x = &0) ==>
+	  (?(d:real). flround(fmt) To_ninf x = (&1 + d) * x /\
+	              abs(d) <= &2 * fl_eps(fmt))`,
+	REPEAT GEN_TAC THEN DISCH_THEN (LABEL_TAC "xneq0") THEN
+	EXISTS_TAC `((flround(fmt) To_ninf x) - x) / x` THEN
+	REWRITE_TAC[REAL_ADD_RDISTRIB] THEN
+	
+	SUBGOAL_THEN `!z. z / x * x = z` (fun thm -> REWRITE_TAC[thm]) THENL [
+	  GEN_TAC THEN MATCH_MP_TAC REAL_DIV_RMUL THEN ASM_REWRITE_TAC[];
+	  ALL_TAC] THEN
+
+	CONJ_TAC THENL [ ARITH_TAC; ALL_TAC ] THEN
+	REWRITE_TAC[GSYM rerror] THEN
+	MATCH_MP_TAC FLOAT_RD_NINF_REL_ERROR THEN ASM_REWRITE_TAC[]);;
