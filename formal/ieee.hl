@@ -58,8 +58,8 @@ let ieee_to_flformat = define
 (* Largest ieee fp magnitude = f_max * r^(emax - p + 1) *)
 let max_ieee = define
   `max_ieee (fmt:ieee_format) =
-  &(((ieee_r fmt) EXP (ieee_p fmt)) - 1) * 
-  &(ieee_r fmt) ipow ((ieee_emax fmt) - &(ieee_p fmt) + &1)`;;
+  (&(((ieee_r fmt) EXP (ieee_p fmt)) - 1) * 
+   &(ieee_r fmt) ipow ((ieee_emax fmt) - &(ieee_p fmt) + &1))`;;
 
 (* If a real number's magnitude is larger than threshold, it gets absorbed    *)
 (* into the +/- ieee infinity equivalence classes (depending on the real      *)
@@ -74,21 +74,21 @@ let max_ieee = define
 (*                                                                            *)
 let ieee_threshold = define
   `ieee_threshold (fmt:ieee_format) =
-  max_ieee(fmt) + 
-    &(ieee_r fmt) ipow ((ieee_emax fmt) - &(ieee_p fmt) + &1)`;;
-  `
+  (max_ieee(fmt) + 
+   &(ieee_r fmt) ipow ((ieee_emax fmt) - &(ieee_p fmt) + &1))`;;
+
 let is_ieee_pinf = define
   `is_ieee_pinf (fmt:ieee_format) (x:real) = ((ieee_threshold fmt) <= x)`;;
 
 let is_ieee_ninf = define
-  `is_ieee_ninf (fmt:ieee_format) (x:real) = (x <= -- (ieee_threshold fmt))`;;
+  `is_ieee_ninf (fmt:ieee_format) (x:real) = (x <= (-- (ieee_threshold fmt)))`;;
 
 let is_ieee = define
   `is_ieee (fmt:ieee_format) (x:real) =
-  is_fixed(ieee_to_fformat fmt) x \/
-  is_float(ieee_to_flformat fmt) x \/
-  is_ieee_pinf(fmt) x \/
-  is_ieee_ninf(fmt) x`;;
+  (is_fixed(ieee_to_fformat fmt) x \/
+     is_float(ieee_to_flformat fmt) x \/
+     is_ieee_pinf(fmt) x \/
+     is_ieee_ninf(fmt) x)`;;
 
 (* -------------------------------------------------------------------------- *)
 (* Rounding                                                                   *)
@@ -112,46 +112,51 @@ let is_ieee = define
 (*       ans = most positive ieee fp number if x is positive                  *)
 (*       ans = x (= - ieee infinity) if x is negative                         *)
 let ieee_round = define
-  `ieee_round (fmt:flformat) (mode:roundmode) (x:real) =
-
-  ((ieee_round (fmt:flformat) (To_near) (x:real) =
+  `((ieee_round (fmt:ieee_format) (To_near) (x:real) =
        (if (abs(x) <= (finf (ieee_to_fformat fmt)))
 	then
 	  (fround(ieee_to_fformat fmt) To_near x)
 	else if (abs(x) <= (ieee_threshold fmt))
+	then
 	  (flround(ieee_to_flformat fmt) To_near x)
 	else
 	  x))                                        /\
 
-   (ieee_round (fmt:flformat) (To_zero) (x:real) =
+   (ieee_round (fmt:ieee_format) (To_zero) (x:real) =
        (if (abs(x) <= (finf (ieee_to_fformat fmt)))
 	then
 	  (fround(ieee_to_fformat fmt) To_zero x)
 	else if (abs(x) <= (ieee_threshold fmt))
+	then
 	  (flround(ieee_to_flformat fmt) To_zero x)
 	else if (x > (ieee_threshold fmt))
+	then
 	  (max_ieee fmt)
 	else
-	  -- (max_ieee fmt)))                        /\
+	  (-- (max_ieee fmt))))                        /\
 
-   (ieee_round (fmt:flformat) (To_pinf) (x:real) =
+   (ieee_round (fmt:ieee_format) (To_pinf) (x:real) =
        (if (abs(x) <= (finf (ieee_to_fformat fmt)))
 	then
 	  (fround(ieee_to_fformat fmt) To_pinf x)
 	else if (abs(x) <= (ieee_threshold fmt))
+	then
 	  (flround(ieee_to_flformat fmt) To_pinf x)
 	else if (x > (ieee_threshold fmt))
+	then
 	  x
 	else
-	  -- (max_ieee fmt)))                        /\
+	  (-- (max_ieee fmt))))                        /\
 
-   (ieee_round (fmt:flformat) (To_ninf) (x:real) =
+   (ieee_round (fmt:ieee_format) (To_ninf) (x:real) =
        (if (abs(x) <= (finf (ieee_to_fformat fmt)))
 	then
 	  (fround(ieee_to_fformat fmt) To_pinf x)
 	else if (abs(x) <= (ieee_threshold fmt))
+	then
 	  (flround(ieee_to_flformat fmt) To_pinf x)
 	else if (x > (ieee_threshold fmt))
+	then
 	  (max_ieee fmt)
 	else
 	  x)))`;;
@@ -162,4 +167,4 @@ let ieee_round = define
 
 (* Simple wrapper around floating point machine eps.                          *)
 let ieee_eps = define
-  `ieee_eps (fmt:ieee_format) = (fl_eps (to_flformat fmt))`;;
+  `ieee_eps (fmt:ieee_format) = (fl_eps (ieee_to_flformat fmt))`;;
