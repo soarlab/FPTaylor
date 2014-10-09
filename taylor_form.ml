@@ -17,9 +17,19 @@ type error_info = {
 }
 
 type taylor_form = {
+  form_index : int;
   v0 : expr;
   v1 : (expr * error_info) list;
 }
+
+let reset_form_index, next_form_index =
+  let index = ref 0 in
+  let reset () = index := 0 in
+  let next () =
+    let i = !index in
+    let _ = incr index in
+    i in
+  reset, next
 
 let mk_err_var index exp = {
   index = index;
@@ -28,6 +38,15 @@ let mk_err_var index exp = {
 
 let ( +^ ) = Fpu.fadd_high and
     ( *^ ) = Fpu.fmul_high
+
+let make_stronger f =
+  if Config.proof_flag then
+    if f = 0.0 then
+      0.0
+    else
+      More_num.next_float f
+  else
+    f
 
 let add2 (x1, e1) (x2, e2) =
   (* Swap if e1 > e2 *)
@@ -96,16 +115,20 @@ let find_index, expr_for_index, reset_index_counter, current_index =
 (* constant *)
 let const_form e = 
   match e with
-    | Const _ -> {
-      v0 = e;
-      v1 = []
-    }
+    | Const c -> 
+      let i = next_form_index() in
+      let _ = Proof.add_const_step i c.rational_v in {
+	form_index = i;
+	v0 = e;
+	v1 = []
+      }
     | _ -> failwith ("const_form: not a constant" ^ print_expr_str e)
 
 (* constant with rounding *)
 let const_rnd_form rnd e =
   match e with
     | Const c -> {
+      form_index = next_form_index();
       v0 = e;
       v1 =
 	begin
@@ -133,11 +156,14 @@ let get_var_uncertainty eps_exp var_name =
 (* variable *)
 let var_form e =
   match e with
-    | Var v -> {
-      v0 = e;
+    | Var v -> 
+      let i = next_form_index() in
+      let _ = Proof.add_var_step i v in {
+	form_index = i;
+	v0 = e;
       (* FIXME: what is the right value of eps_exp here? *)
-      v1 = if Config.uncertainty then get_var_uncertainty (-53) v else [];
-    }
+	v1 = if Config.uncertainty then get_var_uncertainty (-53) v else [];
+      }
     | _ -> failwith ("var_form: not a variable" ^ print_expr_str e)
 
 (* variable with rounding *)
@@ -164,6 +190,7 @@ let var_rnd_form rnd e =
 	(* TODO: subnormal values of variables *)
 	[err_expr, mk_err_var (find_index (mk_rounding rnd e)) rnd.eps_exp] in
       {
+	form_index = next_form_index();
 	v0 = e;
 	v1 = v1_uncertainty @ v1_rnd;
       }
@@ -172,6 +199,7 @@ let var_rnd_form rnd e =
 (* rounding *)
 let rounded_form vars original_expr rnd f =
   if rnd.eps_exp = 0 then {
+    form_index = next_form_index();
     v0 = f.v0;
     v1 = f.v1 @ [fp_to_const rnd.coefficient, mk_err_var (-1) rnd.delta_exp]
   }
@@ -191,28 +219,42 @@ let rounded_form vars original_expr rnd f =
 	r', m2'
       else
 	mk_mul (fp_to_const rnd.coefficient) r', rnd.coefficient *^ m2' in
+    let form_index = next_form_index() in
+    let m2 = make_stronger m2 in
+    let _ = Proof.add_rnd_step form_index rnd.fp_type.bits f.form_index m2 in
     {
+      form_index = form_index;
       v0 = f.v0;
-      v1 = ((r, mk_err_var i rnd.eps_exp) :: f.v1) @ [fp_to_const m2, mk_err_var (-1) rnd.eps_exp];
+      v1 = ((r, mk_err_var i rnd.eps_exp) :: f.v1) @ 
+	[fp_to_const m2, mk_err_var (-1) rnd.eps_exp];
     }
 
 (* negation *)
-let neg_form f = {
-  v0 = mk_neg f.v0;
-  v1 = map (fun (e, err) -> mk_neg e, err) f.v1;
-}
+let neg_form f = 
+  let i = next_form_index() in
+  let _ = Proof.add_neg_step i f.form_index in {
+    form_index = i;
+    v0 = mk_neg f.v0;
+    v1 = map (fun (e, err) -> mk_neg e, err) f.v1;
+  }
 
 (* addition *)
-let add_form f1 f2 = {
-  v0 = mk_add f1.v0 f2.v0;
-  v1 = f1.v1 @ f2.v1;
-}
+let add_form f1 f2 = 
+  let i = next_form_index() in
+  let _ = Proof.add_add_step i f1.form_index f2.form_index in {
+    form_index = i;
+    v0 = mk_add f1.v0 f2.v0;
+    v1 = f1.v1 @ f2.v1;
+  }
 
 (* subtraction *)
-let sub_form f1 f2 = {
-  v0 = mk_sub f1.v0 f2.v0;
-  v1 = f1.v1 @ map (fun (e, err) -> mk_neg e, err) f2.v1;
-}
+let sub_form f1 f2 =
+  let i = next_form_index() in
+  let _ = Proof.add_sub_step i f1.form_index f2.form_index in {
+    form_index = i;
+    v0 = mk_sub f1.v0 f2.v0;
+    v1 = f1.v1 @ map (fun (e, err) -> mk_neg e, err) f2.v1;
+  }
 
 (* multiplication *)
 let mul_form =
@@ -221,7 +263,11 @@ let mul_form =
     let x1 = abs_eval_v1 vars f1.v1 and
 	y1 = abs_eval_v1 vars f2.v1 in
     let m2, m2_exp = sum2_high x1 y1 in
+    let m2 = make_stronger m2 in
+    let form_index = next_form_index() in
+    let _ = Proof.add_mul_step form_index f1.form_index f2.form_index m2 in
     {
+      form_index = form_index;
       v0 = mk_mul f1.v0 f2.v0;
       v1 = mul1 f1.v0 f2.v1 @ mul1 f2.v0 f1.v1 @ [fp_to_const m2, mk_err_var (-1) m2_exp];
     }
@@ -238,7 +284,11 @@ let inv_form vars f =
   let r_high = (abs_I (inv_I d)).high in
   let m2', m2_exp = sum2_high x1 x1 in
   let m2 = r_high *^ m2' in
+  let m2 = make_stronger m2 in
+  let form_index = next_form_index() in
+  let _ = Proof.add_inv_step form_index f.form_index m2 in
   {
+    form_index = form_index;
     v0 = mk_div const_1 f.v0;
     v1 = map (fun (e, err) -> mk_neg (mk_div e (mk_mul f.v0 f.v0)), err) f.v1
       @ [fp_to_const m2, mk_err_var (-1) m2_exp];
@@ -261,7 +311,11 @@ let sqrt_form vars f =
   let m2', m2_exp = sum2_high x1 x1 in
   let m2 = 0.125 *^ r_high *^ m2' in
   let sqrt_v0 = mk_sqrt f.v0 in 
+  let m2 = make_stronger m2 in
+  let form_index = next_form_index() in
+  let _ = Proof.add_sqrt_step form_index f.form_index m2 in
   {
+    form_index = next_form_index();
     v0 = sqrt_v0;
     v1 = map (fun (e, err) -> mk_div e (mk_mul const_2 sqrt_v0), err) f.v1
       @ [fp_to_const m2, mk_err_var (-1) m2_exp];
@@ -282,6 +336,7 @@ let sin_form vars f =
   let sin_v0 = mk_sin f.v0 in
   let cos_v0 = mk_cos f.v0 in 
   {
+    form_index = next_form_index();
     v0 = sin_v0;
     v1 = map (fun (e, err) -> mk_mul cos_v0 e, err) f.v1
       @ [fp_to_const m2, mk_err_var (-1) m2_exp];
@@ -302,6 +357,7 @@ let cos_form vars f =
   let sin_v0 = mk_sin f.v0 in
   let cos_v0 = mk_cos f.v0 in 
   {
+    form_index = next_form_index();
     v0 = cos_v0;
     v1 = map (fun (e, err) -> mk_neg (mk_mul sin_v0 e), err) f.v1
       @ [fp_to_const m2, mk_err_var (-1) m2_exp];
@@ -321,6 +377,7 @@ let exp_form vars f =
   let m2 = 0.5 *^ r_high *^ m2' in
   let exp_v0 = mk_exp f.v0 in 
   {
+    form_index = next_form_index();
     v0 = exp_v0;
     v1 = map (fun (e, err) -> mk_mul exp_v0 e, err) f.v1
       @ [fp_to_const m2, mk_err_var (-1) m2_exp];
@@ -340,6 +397,7 @@ let log_form vars f =
   let m2 = 0.5 *^ r_high *^ m2' in
   let log_v0 = mk_log f.v0 in 
   {
+    form_index = next_form_index();
     v0 = log_v0;
     v1 = map (fun (e, err) -> mk_div e f.v0, err) f.v1
       @ [fp_to_const m2, mk_err_var (-1) m2_exp];
@@ -351,8 +409,10 @@ let build_form vars =
     match e with
       | Const _ -> const_form e
       | Var _ -> var_form e
-      | Rounding (rnd, Const c) -> const_rnd_form rnd (Const c)
-      | Rounding (rnd, Var v) -> var_rnd_form rnd (Var v)
+      | Rounding (rnd, Const c) 
+	  when not Config.proof_flag -> const_rnd_form rnd (Const c)
+      | Rounding (rnd, Var v) 
+	  when not Config.proof_flag -> var_rnd_form rnd (Var v)
       | Rounding (rnd, arg) -> 
 	let arg_form = build arg in
 	rounded_form vars e rnd arg_form
@@ -392,6 +452,7 @@ let build_form vars =
 	end
   in
   fun e ->
+    let _ = reset_form_index() in
     let _ = reset_index_counter() in
     build e
 

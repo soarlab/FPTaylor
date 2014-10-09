@@ -70,6 +70,9 @@ let find_variable name =
 let find_definition name =
   Hashtbl.find env.definitions name
 
+let all_variables () =
+  Hashtbl.fold (fun _ v s -> v :: s) env.variables []
+
 let variable_interval name =
   let v = find_variable name in {
     low = v.lo_bound.interval_v.low;

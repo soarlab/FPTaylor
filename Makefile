@@ -14,6 +14,7 @@ SRC=	lib.ml\
 	input_parser.ml\
 	input_lexer.ml\
 	parser.ml\
+	proof.ml\
 	maxima.ml\
 	config.mli\
 	config.ml\

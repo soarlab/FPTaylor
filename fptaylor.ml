@@ -229,6 +229,7 @@ let safety_check e =
 let compute_form pi e =
   let _ = report "\n*************************************" in
   let _ = report ("Taylor form for: " ^ print_expr_str e) in
+  let _ = if Config.proof_flag then Proof.new_proof () in
   let start = Unix.gettimeofday() in
   let pi = 
     try
@@ -238,9 +239,14 @@ let compute_form pi e =
       let _ = report ("\nSimplified rounding: " ^ print_expr_str e) in
       let vars = var_bound_float in
       let form' = build_form vars e in
-      let form = simplify_form vars form' in
+      let form = 
+	if not Config.proof_flag then
+	  simplify_form vars form'
+	else
+	  form' in
       let form = 
 	if Config.simplification then {
+	  form_index = form.form_index;
 	  v0 = Maxima.simplify form.v0;
 	  v1 = map (fun (e, err) -> (if err.index < 0 then e else Maxima.simplify e), err) form.v1;
 	}
@@ -254,6 +260,9 @@ let compute_form pi e =
   in
   let stop = Unix.gettimeofday() in
   let _ = report (Format.sprintf "Elapsed time: %.5f" (stop -. start)) in
+  let _ = if Config.proof_flag then
+      let _ = report ("Saving a proof certificate for " ^ pi.name) in
+      Proof.save_proof (pi.name ^ ".proof") in
   {pi with elapsed_time = stop -. start}
 
 

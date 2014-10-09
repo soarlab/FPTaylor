@@ -1,0 +1,131 @@
+needs "ipow.hl";;
+needs "arith/arith_float.hl";;
+needs "arith/float_pow.hl";;
+needs "arith/more_float.hl";;
+needs "arith/eval_interval.hl";;
+
+open Num;;
+open Arith_nat;;
+open Arith_float;;
+open More_float;;
+open Float_pow;;
+open Misc_functions;;
+open Misc_vars;;
+
+let bin_float = new_definition
+  `bin_float s m e = (if s then (-- &1) else &1) * &m * &2 ipow e`;;
+
+let bin_float_const = `bin_float` and
+    neg_int_const = `(--) : int->int` and
+    int_const = `(&) : num->int`;;
+
+let e_var_int = `e : int`;;
+
+let dest_bin_float tm =
+  match tm with
+    | Comb (Comb (Comb (Const ("bin_float", _), Const (s_name, _)), m_tm), e_tm) ->
+	let s = (s_name = "T") in
+	  s, m_tm, e_tm;;
+
+let mk_small_int =
+    fun n ->
+      if n >= 0 then
+	mk_comb (int_const, mk_small_numeral n)
+      else
+	mk_comb (neg_int_const, mk_comb (int_const, mk_small_numeral (-n)));;
+
+let dest_fp =
+  let rec dest f (m, e) =
+    if f <= 0.0 then (m, e)
+    else
+      let d = int_of_float f in
+      let f' = ldexp (f -. float_of_int d) 1 in
+	dest f' (Int 2 */ m +/ Int d, e - 1) in
+    fun f ->
+      let m, e = frexp f in
+      let m, sign = if m < 0.0 then -.m, true else m, false in
+	sign, dest m (Int 0, e + 1);;
+
+let mk_bin_float f =
+  let s, (m, e) = dest_fp f in
+  let s_tm = if s then t_const else f_const in
+  let m_tm = mk_numeral m in
+  let e_tm = mk_small_int e in
+    mk_comb (mk_comb (mk_comb (bin_float_const, s_tm), m_tm), e_tm);;
+
+let inv2_interval = 
+  GEN_REWRITE_RULE LAND_CONV [GSYM float_inv2_th] More_float.inv2_interval;;
+
+let ipow2_pos = (SYM o prove)
+  (`&2 ipow (&n) = &2 pow n`,
+   REWRITE_TAC[IPOW_NUM]);;
+
+let ipow2_neg = (SYM o prove)
+  (`&2 ipow (-- &n) = inv(&2) pow n`,
+   REWRITE_TAC[IPOW_NEG; SYM ipow2_pos; REAL_INV_POW]);;
+
+let ipow2_interval pp e_tm =
+  match e_tm with
+    | Comb (Const ("int_of_num", _), n_tm) ->
+	let n = dest_small_numeral n_tm in
+	  ONCE_REWRITE_RULE[ipow2_pos] (float_interval_pow pp n two_interval)
+    | Comb (Const ("int_neg", _), Comb (Const ("int_of_num", _), n_tm)) ->
+	let n = dest_small_numeral n_tm in
+	  ONCE_REWRITE_RULE[ipow2_neg] (float_interval_pow pp n inv2_interval)
+    | _ -> failwith "ipow2_interval";;
+
+let bin_float_pos = prove
+  (`interval_arith (&m * &2 ipow e) bounds
+     <=> interval_arith (bin_float F m e) bounds`,
+   REWRITE_TAC[bin_float; REAL_MUL_LID]);;
+
+let bin_float_neg = prove
+  (`interval_arith (-- (&m * &2 ipow e)) bounds
+     <=> interval_arith (bin_float T m e) bounds`,
+   REWRITE_TAC[bin_float; REAL_MUL_LNEG; REAL_MUL_LID]);;
+
+let bin_float_interval pp tm =
+  let s, m_tm, e_tm = dest_bin_float tm in
+  let m_th = mk_float_interval_num (dest_numeral m_tm) in
+  let ipow2_th = ipow2_interval pp e_tm in
+  let th1 = float_interval_mul pp m_th ipow2_th in
+    if s then
+      let th2 = float_interval_neg th1 in
+      let bounds = rand (concl th2) in
+      let th0 = INST[m_tm, m_var_num; e_tm, e_var_int;
+		     bounds, bounds_var] bin_float_neg in
+	EQ_MP th0 th2
+    else
+      let bounds = rand (concl th1) in
+      let th0 = INST[m_tm, m_var_num; e_tm, e_var_int;
+		     bounds, bounds_var] bin_float_pos in
+	EQ_MP th0 th1;;
+
+let bin_float_rat_conv =
+    REWRITE_CONV[bin_float; SYM ipow2_neg; SYM ipow2_pos] THENC REAL_RAT_REDUCE_CONV;;
+
+bin_float_interval 28 (mk_bin_float (0.1));;
+
+let f_tm = mk_bin_float (ldexp 1.0 (-100));;
+INT_RAT_REDUCE_CONV;;
+  
+
+(*********************)
+
+
+let th1 = ipow2_interval 10 `-- &250 : int`;;
+let th2 = ipow2_interval 10 `&10000 : int`;;
+
+float_interval_add 10 th1 th2;;
+
+ipow2_test 10 `-- &1000`;;
+inv2_interval;;
+error;;
+
+dest_small_numeral;;
+dest_numeral_small;;
+float_interval_pow 3 4 
+
+mk_float_interval_num (Int 1000);;
+NUMERAL_TO_NUM_CONV `100`;;
+  

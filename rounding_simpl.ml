@@ -71,7 +71,9 @@ let simplify_rounding =
 		  Rounding (rnd, arg)
 	      (* Plus or minus *)
 	      | Bin_op (Op_add, e1, e2) | Bin_op (Op_sub, e1, e2) ->
-		if is_subtype (get_type e1) rnd.fp_type && is_subtype (get_type e2) rnd.fp_type then
+		if (is_subtype (get_type e1) rnd.fp_type && 
+		      is_subtype (get_type e2) rnd.fp_type &&
+		      not Config.proof_flag) then
 		(* Delta = 0 *)
 		  Rounding ({rnd with delta_exp = 0}, arg)
 		else
@@ -83,7 +85,9 @@ let simplify_rounding =
 		arg
 	      (* Division *)
 	      | Bin_op (Op_div, e1, e2) when
-		  is_power_of_2_or_0 e2 && is_subtype (get_type e1) rnd.fp_type ->
+		  is_power_of_2_or_0 e2 && 
+		    is_subtype (get_type e1) rnd.fp_type &&
+		    not Config.proof_flag ->
 		(* Eps = 0 *)
 		Rounding ({rnd with eps_exp = 0}, arg)
 	      | _ -> Rounding (rnd, arg)

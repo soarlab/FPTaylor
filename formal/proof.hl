@@ -1,0 +1,48 @@
+module Proof = struct
+
+open Num
+
+type proof_var = {
+  name : string;
+  low : num;
+  high : num;
+}
+
+type proof_op =
+  | Proof_var of string
+  | Proof_const of num
+  (* TODO: all rounding operations *)
+  | Proof_rnd of int
+  | Proof_neg
+  | Proof_add
+  | Proof_sub
+  | Proof_mul
+  | Proof_inv
+  | Proof_sqrt
+  | Proof_sin
+  | Proof_cos
+
+type proof_args = {
+  arg_indices : int list;
+  err_indices : int list;
+  bounds : float list;
+}
+
+type proof_step = {
+  step_index : int;
+  proof_op : proof_op;
+  proof_args : proof_args;
+}
+
+type proof = {
+  mutable proof_vars : proof_var list;
+  mutable proof_steps : proof_step list;
+}
+
+let load_proof fname =
+  let ic = open_in_bin fname in
+  let p : proof = input_value ic in
+  let _ = close_in ic in
+  p
+
+end

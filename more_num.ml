@@ -102,3 +102,10 @@ let is_power_of_two n =
     Big_int.eq_big_int r Big_int.zero_big_int
   else
     false
+
+let next_float =
+  let t = ldexp 1.0 (-53) in
+  fun f ->
+    let m, e = frexp f in
+    ldexp (m +. t) e
+
