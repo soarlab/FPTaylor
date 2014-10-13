@@ -86,9 +86,19 @@ let is_ieee_ninf = define
 let is_ieee = define
   `is_ieee (fmt:ieee_format) (x:real) =
   (is_fixed(ieee_to_fformat fmt) x \/
-     is_float(ieee_to_flformat fmt) x \/
+     (is_float(ieee_to_flformat fmt) x /\ 
+	(ieee_emin fmt) <= (greatest_e(ieee_to_flformat fmt) x) /\
+	(greatest_e(ieee_to_flformat fmt) x) <= (ieee_emax fmt)) \/
      is_ieee_pinf(fmt) x \/
      is_ieee_ninf(fmt) x)`;;
+
+let ieee_exp = define
+  `ieee_exp (fmt:ieee_format) (x:real) =
+  (if (is_fixed(ieee_to_fformat fmt) x)
+   then
+     (ieee_emin fmt)
+   else
+     (greatest_e(ieee_to_flformat fmt) x))`;;
 
 (* -------------------------------------------------------------------------- *)
 (* Rounding                                                                   *)
@@ -139,27 +149,21 @@ let ieee_round = define
        (if (abs(x) <= (finf (ieee_to_fformat fmt)))
 	then
 	  (fround(ieee_to_fformat fmt) To_pinf x)
-	else if (abs(x) <= (ieee_threshold fmt))
+	else if x <= (-- (max_ieee fmt))
 	then
-	  (flround(ieee_to_flformat fmt) To_pinf x)
-	else if (x > (ieee_threshold fmt))
-	then
-	  x
+	  (-- (max_ieee fmt))
 	else
-	  (-- (max_ieee fmt))))                        /\
+	  (flround(ieee_to_flformat fmt) To_pinf x))) /\
 
    (ieee_round (fmt:ieee_format) (To_ninf) (x:real) =
        (if (abs(x) <= (finf (ieee_to_fformat fmt)))
 	then
-	  (fround(ieee_to_fformat fmt) To_pinf x)
-	else if (abs(x) <= (ieee_threshold fmt))
-	then
-	  (flround(ieee_to_flformat fmt) To_pinf x)
-	else if (x > (ieee_threshold fmt))
+	  (fround(ieee_to_fformat fmt) To_ninf x)
+	else if (max_ieee fmt) <= x
 	then
 	  (max_ieee fmt)
 	else
-	  x)))`;;
+	  (flround(ieee_to_flformat fmt) To_ninf x))))`;;
 
 (* -------------------------------------------------------------------------- *)
 (* Machine Epsilon                                                            *)

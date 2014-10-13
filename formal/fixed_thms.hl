@@ -1826,6 +1826,50 @@ let FIXED_RD_LE_0_2 =
           ASM_REWRITE_TAC[] THEN REWRITE_TAC[FIXED_GLB_LE_0_2];
           ASM_REWRITE_TAC[] THEN REWRITE_TAC[FIXED_LUB_LE_0_2]]);;
 
+let FIXED_RD_MONO =
+  prove(`!(fmt:fformat) (x:real) (y:real) (m:roundmode). 
+	  abs(x) <= (finf fmt) /\ is_fixed(fmt) y /\ x <= y ==> 
+	  (fround(fmt) m x) <= y`,
+	REPEAT GEN_TAC THEN 
+	DISCH_THEN (LABEL_CONJUNCTS_TAC ["absx"; "yfixed"; "xleqy"]) THEN 
+	MATCH_MP_TAC REAL_LE_TRANS THEN
+	EXISTS_TAC `lub(fmt) x` THEN
+	CONJ_TAC THENL [
+	  DISJ_CASES_TAC (SPECL [`fmt:fformat`; `x:real`; `m:roundmode`] 
+            FIXED_RD_IS_GLB_LUB_2) THENL [
+	    ASM_REWRITE_TAC[] THEN
+	    USE_THEN "absx" (fun absx -> 
+             REWRITE_TAC[MATCH_MP FIXED_GLB_LUB_BOUNDS absx]);
+	    ASM_ARITH_TAC];
+	  
+	  USE_THEN "absx" (fun absx -> dump_glb_lub_info absx) THEN
+	  ASM_REWRITE_TAC[] THEN
+	  USE_THEN "lub4" (fun lub4 -> MATCH_MP_TAC lub4) THEN
+	  REWRITE_TAC[is_ub] THEN REWRITE_TAC[fixed] THEN
+	  REWRITE_TAC[IN_ELIM_THM] THEN ASM_REWRITE_TAC[]]);;
+
+let FIXED_RD_MONO_2 =
+  prove(`!(fmt:fformat) (x:real) (y:real) (m:roundmode). 
+	  abs(x) <= (finf fmt) /\ is_fixed(fmt) y /\ y <= x ==> 
+	  y <= (fround(fmt) m x)`,
+	REPEAT GEN_TAC THEN 
+	DISCH_THEN (LABEL_CONJUNCTS_TAC ["absx"; "yfixed"; "yleqx"]) THEN 
+	MATCH_MP_TAC REAL_LE_TRANS THEN
+	EXISTS_TAC `glb(fmt) x` THEN
+	CONJ_TAC THENL [
+	  USE_THEN "absx" (fun absx -> dump_glb_lub_info absx) THEN
+	  ASM_REWRITE_TAC[] THEN
+	  USE_THEN "glb4" (fun glb4 -> MATCH_MP_TAC glb4) THEN
+	  REWRITE_TAC[is_lb] THEN REWRITE_TAC[fixed] THEN
+	  REWRITE_TAC[IN_ELIM_THM] THEN ASM_REWRITE_TAC[];
+
+	  DISJ_CASES_TAC (SPECL [`fmt:fformat`; `x:real`; `m:roundmode`] 
+            FIXED_RD_IS_GLB_LUB_2) THENL [
+	    ASM_ARITH_TAC;
+	    ASM_REWRITE_TAC[] THEN
+	    USE_THEN "absx" (fun absx -> 
+             REWRITE_TAC[MATCH_MP FIXED_GLB_LUB_BOUNDS absx])]]);;
+
 let FIXED_RD_EQ_0 =
   prove(`!(fmt:fformat) (m:roundmode). (fround(fmt) m (&0)) = &0`,
 	REPEAT GEN_TAC THEN
@@ -2327,3 +2371,8 @@ let FIXED_RD_NEAREST_REL_ERROR =
               MATCH_MP_TAC FIXED_RD_NEAREST_ABS_ERROR THEN ASM_REWRITE_TAC[];
 	      ASM_ARITH_TAC]]]);;
 
+(* -------------------------------------------------------------------------- *)
+(* Some lemmas for rounding                                                   *)
+(* -------------------------------------------------------------------------- *)
+
+let FIXED_RD_
