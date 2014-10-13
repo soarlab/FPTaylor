@@ -56,11 +56,11 @@ let mk_bin_float f =
 let inv2_interval = 
   GEN_REWRITE_RULE LAND_CONV [GSYM float_inv2_th] More_float.inv2_interval;;
 
-let ipow2_pos = (SYM o prove)
+let ipow2_pos_num = (SYM o prove)
   (`&2 ipow (&n) = &2 pow n`,
    REWRITE_TAC[IPOW_NUM]);;
 
-let ipow2_neg = (SYM o prove)
+let ipow2_neg_num = (SYM o prove)
   (`&2 ipow (-- &n) = inv(&2) pow n`,
    REWRITE_TAC[IPOW_NEG; SYM ipow2_pos; REAL_INV_POW]);;
 
@@ -104,6 +104,7 @@ let bin_float_interval pp tm =
 let bin_float_rat_conv =
     REWRITE_CONV[bin_float; SYM ipow2_neg; SYM ipow2_pos] THENC REAL_RAT_REDUCE_CONV;;
 
+(*
 bin_float_interval 28 (mk_bin_float (0.1));;
 
 let f_tm = mk_bin_float (ldexp 1.0 (-100));;
@@ -129,3 +130,4 @@ float_interval_pow 3 4
 mk_float_interval_num (Int 1000);;
 NUMERAL_TO_NUM_CONV `100`;;
   
+*)

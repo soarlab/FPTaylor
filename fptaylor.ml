@@ -48,6 +48,14 @@ let print_problem_info =
     print_opt "Relative error (exact)" pi.rel_error_exact;
     report (Printf.sprintf "\nElapsed time: %.5f\n" pi.elapsed_time)
   
+let get_problem_error pi =
+  let get_val v =
+    match v with
+      | Some x -> x
+      | None -> infinity in
+  let e1 = get_val pi.abs_error_approx and
+      e2 = get_val pi.abs_error_exact in
+  min e1 e2
 
 
 let exprs () = env.expressions
@@ -231,7 +239,7 @@ let compute_form pi e =
   let _ = report ("Taylor form for: " ^ print_expr_str e) in
   let _ = if Config.proof_flag then Proof.new_proof () in
   let start = Unix.gettimeofday() in
-  let pi = 
+  let pi, tform = 
     try
       let bound0 = safety_check e in
       let _ = report ("\nConservative bound: " ^ (sprintf_I "%f" bound0)) in
@@ -255,15 +263,28 @@ let compute_form pi e =
       let _ = print_form form in
       let _ = report "" in
       let pi = errors pi form in
-      pi
-    with Failure msg -> let _ = error msg in pi
+      pi, form
+    with Failure msg -> let _ = error msg in pi, dummy_tform
   in
   let stop = Unix.gettimeofday() in
   let _ = report (Format.sprintf "Elapsed time: %.5f" (stop -. start)) in
-  let _ = if Config.proof_flag then
+  let _ = 
+    if Config.proof_flag then
       let _ = report ("Saving a proof certificate for " ^ pi.name) in
       Proof.save_proof (pi.name ^ ".proof") in
-  {pi with elapsed_time = stop -. start}
+  {pi with elapsed_time = stop -. start}, tform
+
+let approximate_constraint pi c =
+  let e = 
+    match c with
+      | Le (a, b) -> mk_sub a b
+      | Lt (a, b) -> mk_sub a b
+      | Eq (a, b) -> failwith "approximate_constraint: Eq is not supported" in
+  let _ = report "Constraint form" in
+  let r, tform = compute_form pi e in
+  let err = get_problem_error r in
+  let _ = report (Printf.sprintf "\n%s error: %e\n" r.name err) in
+  Le (tform.v0, Const (const_of_float err))
 
 
 let process_input fname =
@@ -275,10 +296,17 @@ let process_input fname =
       | _ -> () in
   let _ = parse_file fname in
   let names, es = unzip (exprs ()) in
+  let cnames, cs = unzip (all_constraints ()) in
   let problems0 = map (fun name -> {default_problem_info with name = name}) names in
+  let constraints0 = map (fun name -> {default_problem_info with name = name}) cnames in
+  let constraints = 
+    if cs = [] then [] else
+      let _ = report "\n****** Approximating constraints *******\n" in
+      map2 approximate_constraint constraints0 cs in
+  let _ = set_active_constraints (zip cnames constraints) in
   let problems = map2 compute_form problems0 es in
   let _ = report "*************************************\n" in
-  let _ = map print_problem_info problems in
+  let _ = map (fun (p, _) -> print_problem_info p) problems in
   let _ = close_log () in
   report ""
 

@@ -22,6 +22,12 @@ type taylor_form = {
   v1 : (expr * error_info) list;
 }
 
+let dummy_tform = {
+  form_index = 0;
+  v0 = const_0;
+  v1 = [];
+}
+
 let reset_form_index, next_form_index =
   let index = ref 0 in
   let reset () = index := 0 in

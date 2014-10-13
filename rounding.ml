@@ -27,6 +27,7 @@ let is_subtype type1 type2 =
 
 let eps_delta_from_bits bits =
   match bits with
+    | 0 -> 0, 0
     | 16 -> -11, -14
     | 32 -> -24, -126
     | 64 -> -53, -1022
@@ -36,6 +37,7 @@ let eps_delta_from_bits bits =
 let max_value_from_bits bits =
   let p, emax =
     match bits with
+      | 0 -> 0, 0
       | 16 -> 10, 15
       | 32 -> 23, 127
       | 64 -> 52, 1023
