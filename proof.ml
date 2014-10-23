@@ -91,9 +91,9 @@ let add_const_step i c =
   let args = mk_proof_args [] [] [] in
   add_proof_step i op args
 
-let add_rnd_step i bits arg bound =
+let add_rnd_step i bits arg s1_bound m2_bound =
   let op = Proof_rnd bits in
-  let args = mk_proof_args [arg] [] [bound] in
+  let args = mk_proof_args [arg] [] [s1_bound; m2_bound] in
   add_proof_step i op args
 
 let add_neg_step i arg =
@@ -111,9 +111,9 @@ let add_sub_step i arg1 arg2 =
   let args = mk_proof_args [arg1; arg2] [] [] in
   add_proof_step i op args
 
-let add_mul_step i arg1 arg2 bound =
+let add_mul_step i arg1 arg2 m2_bound e2 =
   let op = Proof_mul in
-  let args = mk_proof_args [arg1; arg2] [] [bound] in
+  let args = mk_proof_args [arg1; arg2] [] [m2_bound; e2] in
   add_proof_step i op args
 
 let add_inv_step i arg bound =

@@ -12,8 +12,42 @@ open Float_pow;;
 open Misc_functions;;
 open Misc_vars;;
 
+prioritize_real();;
+
+let ipow2 = new_definition `ipow2 (e:int) = &2 ipow e`;;
+
 let bin_float = new_definition
-  `bin_float s m e = (if s then (-- &1) else &1) * &m * &2 ipow e`;;
+  `bin_float s m e = (if s then (-- &1) else &1) * &m * ipow2 e`;;
+
+
+let ipow2_0 = prove
+  (`ipow2 (&0) = &1`,
+   REWRITE_TAC[ipow2; IPOW_0]);;
+
+let ipow2_add = prove
+  (`!e1 e2. ipow2 (e1 + e2) = ipow2 e1 * ipow2 e2`,
+   ASM_SIMP_TAC[ipow2; IPOW_ADD; REAL_ARITH `~(&2 = &0)`]);;
+
+let ipow2_sub = prove
+  (`!e1 e2. ipow2 (e1 - e2) = ipow2 e1 * ipow2 (--e2)`,
+   ASM_SIMP_TAC[ipow2; IPOW_SUB; REAL_ARITH `~(&2 = &0)`]);;
+
+let ipow2_pos = prove
+  (`!e. &0 < ipow2 e`,
+   ASM_SIMP_TAC[ipow2; IPOW_LT_0; REAL_ARITH `&0 < &2`]);;
+
+let ipow2_pos_le = prove
+  (`!e. &0 <= ipow2 e`,
+   SIMP_TAC[ipow2_pos; REAL_LT_IMP_LE]);;
+
+let ipow2_pos_num = prove
+  (`!n. ipow2 (&n) = &2 pow n`,
+   REWRITE_TAC[ipow2; IPOW_NUM]);;
+
+let ipow2_neg_num = prove
+  (`!n. ipow2 (-- &n) = inv (&2) pow n`,
+   REWRITE_TAC[ipow2; IPOW_NEG; INV_IPOW; IPOW_NUM]);;
+
 
 let bin_float_const = `bin_float` and
     neg_int_const = `(--) : int->int` and
@@ -25,7 +59,8 @@ let dest_bin_float tm =
   match tm with
     | Comb (Comb (Comb (Const ("bin_float", _), Const (s_name, _)), m_tm), e_tm) ->
 	let s = (s_name = "T") in
-	  s, m_tm, e_tm;;
+	  s, m_tm, e_tm
+    | _ -> error "dest_bin_float" [tm] [];;
 
 let mk_small_int =
     fun n ->
@@ -56,31 +91,39 @@ let mk_bin_float f =
 let inv2_interval = 
   GEN_REWRITE_RULE LAND_CONV [GSYM float_inv2_th] More_float.inv2_interval;;
 
-let ipow2_pos_num = (SYM o prove)
-  (`&2 ipow (&n) = &2 pow n`,
-   REWRITE_TAC[IPOW_NUM]);;
+let ipow2_interval =
+  let ipow2_pos = (SYM o SPEC_ALL) ipow2_pos_num and
+      ipow2_neg = (SYM o SPEC_ALL) ipow2_neg_num in
+    fun pp e_tm ->
+      match e_tm with
+	| Comb (Const ("int_of_num", _), n_tm) ->
+	    let n = dest_small_numeral n_tm in
+	      ONCE_REWRITE_RULE[ipow2_pos] (float_interval_pow pp n two_interval)
+	| Comb (Const ("int_neg", _), Comb (Const ("int_of_num", _), n_tm)) ->
+	    let n = dest_small_numeral n_tm in
+	      ONCE_REWRITE_RULE[ipow2_neg] (float_interval_pow pp n inv2_interval)
+	| _ -> failwith "ipow2_interval";;
 
-let ipow2_neg_num = (SYM o prove)
-  (`&2 ipow (-- &n) = inv(&2) pow n`,
-   REWRITE_TAC[IPOW_NEG; SYM ipow2_pos; REAL_INV_POW]);;
+let bin_float_T_eq = prove
+  (`!m e. bin_float T m e = --bin_float F m e`,
+   REWRITE_TAC[bin_float; REAL_MUL_LNEG]);;
 
-let ipow2_interval pp e_tm =
-  match e_tm with
-    | Comb (Const ("int_of_num", _), n_tm) ->
-	let n = dest_small_numeral n_tm in
-	  ONCE_REWRITE_RULE[ipow2_pos] (float_interval_pow pp n two_interval)
-    | Comb (Const ("int_neg", _), Comb (Const ("int_of_num", _), n_tm)) ->
-	let n = dest_small_numeral n_tm in
-	  ONCE_REWRITE_RULE[ipow2_neg] (float_interval_pow pp n inv2_interval)
-    | _ -> failwith "ipow2_interval";;
+let pos_bin_float = prove
+  (`!m e. &0 <= bin_float F m e`,
+   REWRITE_TAC[bin_float; REAL_MUL_LID] THEN REPEAT GEN_TAC THEN
+     MATCH_MP_TAC REAL_LE_MUL THEN REWRITE_TAC[REAL_POS; ipow2_pos_le]);;
+
+let neg_bin_float = prove
+  (`!m e. bin_float T m e <= &0`,
+   REWRITE_TAC[bin_float_T_eq; REAL_NEG_LE0; pos_bin_float]);;
 
 let bin_float_pos = prove
-  (`interval_arith (&m * &2 ipow e) bounds
+  (`interval_arith (&m * ipow2 e) bounds
      <=> interval_arith (bin_float F m e) bounds`,
    REWRITE_TAC[bin_float; REAL_MUL_LID]);;
 
 let bin_float_neg = prove
-  (`interval_arith (-- (&m * &2 ipow e)) bounds
+  (`interval_arith (-- (&m * ipow2 e)) bounds
      <=> interval_arith (bin_float T m e) bounds`,
    REWRITE_TAC[bin_float; REAL_MUL_LNEG; REAL_MUL_LID]);;
 
@@ -102,10 +145,19 @@ let bin_float_interval pp tm =
 	EQ_MP th0 th1;;
 
 let bin_float_rat_conv =
-    REWRITE_CONV[bin_float; SYM ipow2_neg; SYM ipow2_pos] THENC REAL_RAT_REDUCE_CONV;;
+    REWRITE_CONV[bin_float; ipow2_neg_num; ipow2_pos_num] THENC REAL_RAT_REDUCE_CONV;;
+
+
+(***************************)
 
 (*
+
 bin_float_interval 28 (mk_bin_float (0.1));;
+let x1 = bin_float_interval 15 (mk_bin_float (ldexp 1.0 (-1074)));;
+let x2 = bin_float_interval 15 (mk_bin_float 1.5);;
+bin_float_rat_conv (mk_bin_float (ldexp 1.0 (-1074)));;
+
+float_interval_add 15 x1 x2;;
 
 let f_tm = mk_bin_float (ldexp 1.0 (-100));;
 INT_RAT_REDUCE_CONV;;

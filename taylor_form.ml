@@ -212,7 +212,7 @@ let rounded_form vars original_expr rnd f =
   else
     let i = find_index original_expr in
     let s1', exp1 = sum_high (abs_eval_v1 vars f.v1) in
-    let s1 = get_eps exp1 *^ s1' in
+    let s1 = make_stronger (get_eps exp1 *^ s1') in
     let r', m2' =
       if Config.fp_power2_model then
 	mk_floor_power2 (mk_add f.v0 (mk_sym_interval (fp_to_const s1))),
@@ -227,7 +227,7 @@ let rounded_form vars original_expr rnd f =
 	mk_mul (fp_to_const rnd.coefficient) r', rnd.coefficient *^ m2' in
     let form_index = next_form_index() in
     let m2 = make_stronger m2 in
-    let _ = Proof.add_rnd_step form_index rnd.fp_type.bits f.form_index m2 in
+    let _ = Proof.add_rnd_step form_index rnd.fp_type.bits f.form_index s1 m2 in
     {
       form_index = form_index;
       v0 = f.v0;
@@ -271,7 +271,8 @@ let mul_form =
     let m2, m2_exp = sum2_high x1 y1 in
     let m2 = make_stronger m2 in
     let form_index = next_form_index() in
-    let _ = Proof.add_mul_step form_index f1.form_index f2.form_index m2 in
+    let _ = Proof.add_mul_step form_index
+      f1.form_index f2.form_index m2 (float_of_int m2_exp) in
     {
       form_index = form_index;
       v0 = mk_mul f1.v0 f2.v0;
@@ -369,6 +370,48 @@ let cos_form vars f =
       @ [fp_to_const m2, mk_err_var (-1) m2_exp];
   }
 
+(* tangent *)
+let tan_form vars f =
+  let x0_int = Eval.eval_interval_expr vars f.v0 in
+  let x1 = abs_eval_v1 vars f.v1 in
+  let s1 = itlist (fun (x,x_exp) s -> 
+    let eps = get_eps x_exp in
+    let xi = {low = -. eps; high = eps} in
+    (xi *$. x) +$ s) x1 zero_I in
+  let xi = x0_int +$ s1 in
+  let d = tan_I xi /$ pow_I_i (cos_I xi) 2 in
+  let r_high = (abs_I d).high in
+  let m2', m2_exp = sum2_high x1 x1 in
+  let m2 = r_high *^ m2' in
+  let v1_0 = mk_mul (mk_cos f.v0) (mk_cos f.v0) in
+  {
+    form_index = next_form_index();
+    v0 = mk_tan f.v0;
+    v1 = map (fun (e, err) -> mk_div e v1_0, err) f.v1
+      @ [fp_to_const m2, mk_err_var (-1) m2_exp];
+  }
+
+(* arctangent *)
+let atan_form vars f =
+  let x0_int = Eval.eval_interval_expr vars f.v0 in
+  let x1 = abs_eval_v1 vars f.v1 in
+  let s1 = itlist (fun (x,x_exp) s -> 
+    let eps = get_eps x_exp in
+    let xi = {low = -. eps; high = eps} in
+    (xi *$. x) +$ s) x1 zero_I in
+  let xi = x0_int +$ s1 in
+  let d = ~-$ (xi /$ pow_I_i (pow_I_i xi 2 +$ one_I) 2) in
+  let r_high = (abs_I d).high in
+  let m2', m2_exp = sum2_high x1 x1 in
+  let m2 = r_high *^ m2' in
+  let v1_0 = mk_add (mk_mul f.v0 f.v0) const_1 in
+  {
+    form_index = next_form_index();
+    v0 = mk_atan f.v0;
+    v1 = map (fun (e, err) -> mk_div e v1_0, err) f.v1
+      @ [fp_to_const m2, mk_err_var (-1) m2_exp];
+  }
+
 (* exp *)
 let exp_form vars f =
   let x0_int = Eval.eval_interval_expr vars f.v0 in
@@ -431,6 +474,8 @@ let build_form vars =
 	    | Op_sqrt -> sqrt_form vars arg_form
 	    | Op_sin -> sin_form vars arg_form
 	    | Op_cos -> cos_form vars arg_form
+	    | Op_tan -> tan_form vars arg_form
+	    | Op_atan -> atan_form vars arg_form
 	    | Op_exp -> exp_form vars arg_form
 	    | Op_log -> log_form vars arg_form
 	    | _ -> failwith 

@@ -157,6 +157,7 @@ let check_expr vars =
 	  | Op_sin -> sin_I x
 	  | Op_cos -> cos_I x
 	  | Op_tan -> tan_I x
+	  | Op_atan -> atan_I x
 	  | Op_exp -> exp_I x
 	  | Op_log -> 
 	    if x.low <= 0.0 then

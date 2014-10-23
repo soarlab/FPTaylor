@@ -2,8 +2,8 @@ Variables
 	real x in [-10, 10];
 
 Expressions
-	r1 = x,
-	r2 = rnd32(x),
-	r3 = rnd64(x),
-	r4 rnd32= x + x
+	r1 = rnd32(x),
+	r2 rnd32= x + x,
+	r3 = x * x,
+	r4 rnd32 = x * x
 ;

@@ -151,6 +151,7 @@ let rec transform_raw_expr = function
 	| "sin" -> U_op (Op_sin, e1)
 	| "cos" -> U_op (Op_cos, e1)
 	| "tan" -> U_op (Op_tan, e1)
+	| "atan" -> U_op (Op_atan, e1)
 	| "exp" -> U_op (Op_exp, e1)
 	| "log" -> U_op (Op_log, e1)
 	| "floor_power2" -> U_op (Op_floor_power2, e1)

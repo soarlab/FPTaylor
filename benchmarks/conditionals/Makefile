@@ -18,6 +18,21 @@ rosa-tri1: rosa-dir
 		--functions=triangle1 \
 		Rosa/TriangleProgression.scala
 
+rosa-tri-high: rosa-dir
+	$(ROSA) --specGen \
+		--functions=triangle10:triangle11:triangle12 \
+		Rosa/TriangleProgression.scala
+
+rosa-tri9: rosa-dir
+	$(ROSA) --specGen \
+		--functions=triangle9 \
+		Rosa/TriangleProgression.scala
+
+rosa-tri8: rosa-dir
+	$(ROSA) --specGen \
+		--functions=triangle8 \
+		Rosa/TriangleProgression.scala
+
 rosa-tri: rosa-dir
 	$(ROSA) --specGen \
 		--functions=_triangle1:_triangle2:_triangle3:_triangle12 \

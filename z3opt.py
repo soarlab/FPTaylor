@@ -46,8 +46,8 @@ def maximize(f, constraints, lb, ub, tol, timeout):
     
 
 def find_bounds(f, constraints, tol, timeout):
-    ub = find_upper_bound(f, constraints, 0, timeout)
-    lb = -find_upper_bound(-f, constraints, 0, timeout)
+    ub = find_upper_bound(f, constraints, 0, 0)
+    lb = -find_upper_bound(-f, constraints, 0, 0)
     u1, u2 = maximize(f, constraints, lb, ub, tol, timeout)
     l1, l2 = maximize(-f, constraints, -ub, -lb, tol, timeout)
     return -l2, u2

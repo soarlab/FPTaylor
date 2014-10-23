@@ -1,3 +1,4 @@
+open Num
 open List
 open Lib
 open Expr
@@ -15,9 +16,10 @@ let gen_z3py_opt_code fmt =
   let tail tol =
     p "";
     p (Format.sprintf "fTol = %f" tol);
-    p "l, u = find_bounds(f, var_constraints + constraints, fTol, 0)";
-    p "print l";
-    p "print u" in
+    p (Format.sprintf "l, u = find_bounds(f, var_constraints + constraints, fTol, %s)"
+	 (Config.get_option "z3-timeout" "1000"));
+    p "print '%.25f' % l";
+    p "print '%.25f' % u" in
 
   let num_to_z3 n =
     let s = Big_int.string_of_big_int in
@@ -30,7 +32,7 @@ let gen_z3py_opt_code fmt =
     match c with
       | Le (e, Const c) ->
 	print_expr_in_env z3py_print_env fmt e;
-	p' " <= ";
+	p' " < ";
 	p' (num_to_z3 c.rational_v)
       | _ -> failwith "z3opt: print_constraint(): unsupported constraint" in
 
@@ -51,14 +53,37 @@ let gen_z3py_opt_code fmt =
     if var_names = [] then 
       p "var_constraints = []"
     else
+      let eq_vars, neq_vars = partition
+	(fun (name, (low, high)) -> low =/ high)
+	(zip var_names var_bounds) in
+
+      let eqs = map
+	(fun (name, (low, high)) ->
+	  Format.sprintf "%s = %s" name (num_to_z3 low))
+	eq_vars in
+      let constraints = map
+	(fun (name, (low, high)) ->
+	  if low =/ high then
+	    Format.sprintf "%s >= %s, %s <= %s" name (num_to_z3 low) name (num_to_z3 high)
+	  else
+	    Format.sprintf "%s > %s, %s < %s" name (num_to_z3 low) name (num_to_z3 high))
+	neq_vars in
+      let names =  String.concat ", " var_names in
+      p (Format.sprintf "[%s] = Reals('%s')" names names);
+      p (String.concat "\n" eqs);
+      p (Format.sprintf "var_constraints = [%s]" (String.concat ", " constraints)) in
+	
+
+(*
       let low, high = unzip var_bounds in
-      let low_str = String.concat ", " (map2 (Format.sprintf "%s >= %s") 
+      let low_str = String.concat ", " (map2 (Format.sprintf "%s > %s") 
 					  var_names (map num_to_z3 low)) in
-      let high_str = String.concat ", " (map2 (Format.sprintf "%s <= %s") 
+      let high_str = String.concat ", " (map2 (Format.sprintf "%s < %s") 
 					   var_names (map num_to_z3 high)) in
       let names =  String.concat ", " var_names in
       p (Format.sprintf "[%s] = Reals('%s')" names names);
       p (Format.sprintf "var_constraints = [%s, %s]" low_str high_str) in
+*)
 
   let expr e = 
     p' "f = ";

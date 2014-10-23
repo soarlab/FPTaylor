@@ -191,7 +191,7 @@ expr:
   | TANH LPAREN expr RPAREN { raise TODO }
   | ACOS LPAREN expr RPAREN { raise TODO }
   | ASIN LPAREN expr RPAREN { raise TODO }
-  | ATAN LPAREN expr RPAREN { raise TODO }
+  | ATAN LPAREN expr RPAREN { Raw_u_op ("atan", $3) }
   | ACOSH LPAREN expr RPAREN { raise TODO }
   | ASINH LPAREN expr RPAREN { raise TODO }
   | ATANH LPAREN expr RPAREN { raise TODO }

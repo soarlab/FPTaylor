@@ -1,6 +1,7 @@
 needs "update_database.ml";;
 
 needs "tform.hl";;
+needs "bin_float.hl";;
 
 open List;;
 
@@ -177,8 +178,8 @@ let mk_hidden name =
   let v = mk_var (name, bool_ty) in
     mk_icomb (`HIDDEN:A->B->B`, v);;
 
-let hidden_eq x_tm =
-  let g = mk_eq (x_tm, mk_icomb (mk_hidden "...", x_tm)) in
+let hidden_eq name x_tm =
+  let g = mk_eq (x_tm, mk_icomb (mk_hidden name, x_tm)) in
     prove(g, REWRITE_TAC[hidden_def]);;
 
 let print_hidden fmt = function
@@ -203,7 +204,7 @@ let hide_and_abbrev_e1s, reset_index =
 	[] in
       fun tm ->
 	path path0 (follow_path path0 tm) in
-  let test_hyp h i =
+(*  let test_hyp h i =
     try
       let name = fst (dest_var (snd (dest_eq h))) in
 	if String.sub name 0 2 = "e'" then
@@ -211,22 +212,28 @@ let hide_and_abbrev_e1s, reset_index =
 	    if k >= i then k + 1 else i
 	else
 	  i
-    with _ -> i in
-  let h_th = hidden_eq `t:A` in
-  let hide_and_abbrev approx_th =
+    with _ -> i in*)
+  let hide_and_abbrev abbrev_flag approx_th =
     let tm = concl approx_th in
     (*let index = itlist test_hyp (hyp approx_th) 1 in*)
     let index = !global_index in
     let ps = get_paths tm in
-    let conv = itlist (fun p c -> c THENC PATH_CONV p (REWR_CONV h_th)) ps ALL_CONV in
+    let index2 = index + length ps - 1 in
+    let _ = global_index := index2 + 1 in
+    let h_ths = map (fun i -> hidden_eq ("e" ^ string_of_int i) `t:A`) (index--index2) in
+    let conv = itlist2
+      (fun p h_th c -> c THENC PATH_CONV p (REWR_CONV h_th)) 
+      ps h_ths ALL_CONV in
     let th1 = EQ_MP (conv tm) approx_th in
     let tms = map (C follow_path (concl th1)) ps in
-    let index2 = index + length tms - 1 in
-    let names = map (fun i -> "e'" ^ string_of_int i) (index--index2) in
-    let _ = global_index := index2 + 1 in
-      itlist2 ABBREV_CONCL_RULE names tms th1
+      if abbrev_flag then
+	let names = map (fun i -> "e'" ^ string_of_int i) (index--index2) in
+	  itlist2 ABBREV_CONCL_RULE names tms th1
+      else
+	th1
   in
     hide_and_abbrev, (fun () -> global_index := 1);;
+
 
 let mk_vector_type =
   let real_ty = `:real` in
@@ -247,7 +254,6 @@ let dest_set_type =
 	else
 	  failwith ("dest_set_type: not a set type: " ^ string_of_type ty);;
 
-
 let dest_approx tm =
   let ltm, t_tm = dest_comb tm in
   let ltm, h_tm = dest_comb ltm in
@@ -260,6 +266,9 @@ let dest_approx tm =
 let build_var_tform =
     fun dom_tm i ->
       ISPECL[dom_tm; mk_small_numeral i] approx_var;;
+
+let build_const_tform dom_tm c_tm =
+  ISPECL[dom_tm; c_tm] approx_const;;
 
 let build_add_tform approx1_th approx2_th =
   let dom1_tm, h1_tm, t1_tm = dest_approx (concl approx1_th) and
@@ -299,33 +308,28 @@ let let_pair = prove
        REMOVE_THEN "h" MP_TAC THEN REWRITE_TAC[]
    ]);;
 
-let build_rnd_tform rnd_th approx_th =
+let build_rnd_tform rnd_th m2_tm b_tm approx_th =
   let (e2_tm, d2_tm), rnd_dom_tm, rnd_tm = dest_is_rnd (concl rnd_th) in
   let dom_tm, h_tm, t_tm = dest_approx (concl approx_th) in
-  let m2_tm = `m2:real` in
-  let b_tm = `b:real` in
   let th0 = ISPECL[dom_tm; h_tm; t_tm; rnd_tm; e2_tm; d2_tm; rnd_dom_tm; m2_tm; b_tm] approx_rnd in
   let th1 = PURE_REWRITE_RULE[GSYM IMP_IMP; let_pair] (CONV_RULE (DEPTH_CONV let_CONV) th0) in
   let th2 = MP (MP th1 approx_th) rnd_th in
   let th3 = UNDISCH_ALL th2 in
   let th4 = REWRITE_RULE[f0_mk; list_mk] th3 in
-    hide_and_abbrev_e1s th4;;
+    hide_and_abbrev_e1s false th4;;
 
-
-let build_mul_tform approx1_th approx2_th =
+let build_mul_tform m2_tm e2_tm approx1_th approx2_th =
   let dom1_tm, h1_tm, t1_tm = dest_approx (concl approx1_th) and
       dom2_tm, h2_tm ,t2_tm = dest_approx (concl approx2_th) in
     if dom1_tm <> dom2_tm then
       failwith ("build_mul_tform: distinct domains")
     else
-      let m2_tm = `m2:real` in
-      let e2_tm = `e2:real` in
       let th0 = ISPECL[dom1_tm; h1_tm; h2_tm; t1_tm; t2_tm; m2_tm; e2_tm] approx_mul in
       let th1 = PURE_REWRITE_RULE[GSYM IMP_IMP] th0 in
       let th2 = MP (MP th1 approx1_th) approx2_th in
       let th3 = UNDISCH_ALL th2 in
       let th4 = REWRITE_RULE[mul_f1; MAP; APPEND; f0_mk; list_mk] th3 in
-	hide_and_abbrev_e1s th4;;
+	hide_and_abbrev_e1s false th4;;
 
 let build_inv_tform approx_th =
   let dom_tm, h_tm, t_tm = dest_approx (concl approx_th) in
@@ -338,16 +342,19 @@ let build_inv_tform approx_th =
   let th2 = MP th1 approx_th in
   let th3 = UNDISCH_ALL (REWRITE_RULE[f0_mk; list_mk] th2) in
   let th4 = REWRITE_RULE[mul_f1; MAP; APPEND; f0_mk; list_mk] th3 in
-    hide_and_abbrev_e1s th4;;
+    hide_and_abbrev_e1s false th4;;
 
 
+(*
 let build_tform dom_tm tree =
   let rec build tree =
     match tree with
       | Variable i -> build_var_tform dom_tm i
       | Rounding (rnd, t) ->
 	  let f = build t in
-	    build_rnd_tform rnd.rnd_thm f
+	  let m2_tm = `m2:real` in
+	  let b_tm = `b:real` in
+	    build_rnd_tform rnd.rnd_thm m2_tm b_tm f
       | Bin_op (op, t1, t2) ->
 	  begin
 	    let f1 = build t1 in
@@ -372,8 +379,9 @@ let build_tform dom_tm tree =
       | _ -> failwith "Not implemented"
   in
     build tree;;
+*)
 
-
+(*
 approx_rnd;;
 approx_mul;;
 approx_inv;;
@@ -432,3 +440,4 @@ hidden_eq;;
 ONE;;
 
 
+*)
