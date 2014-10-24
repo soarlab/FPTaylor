@@ -473,3 +473,31 @@ let sum_list_le_gen = prove
 let all_delete_at_imp = prove
   (`!s:(A)list k P. ALL P s ==> ALL P (delete_at k s)`,
    LIST_INDUCT_TAC THEN INDUCT_TAC THEN ASM_SIMP_TAC[ALL; delete_at]);;
+
+(* --------------------------------------------- *)
+(* Conversions                                   *)
+(* --------------------------------------------- *)
+
+let rec EL_CONV tm =
+  let n_tm, list_tm = dest_binary "EL" tm in
+    try
+      let suc_th = num_CONV n_tm in
+      let conv = GEN_REWRITE_CONV LAND_CONV [suc_th] THENC REWRITE_CONV[EL; TL; HD] in
+	if dest_small_numeral n_tm = 1 then
+	  conv tm
+	else
+	  (conv THENC EL_CONV) tm
+    with Failure _ ->
+      REWRITE_CONV[EL; HD] tm;;
+
+let rec delete_at_conv tm =
+  let n_tm, list_tm = dest_binary "delete_at" tm in
+    try
+      let suc_th = num_CONV n_tm in
+      let conv = GEN_REWRITE_CONV LAND_CONV [suc_th] THENC REWRITE_CONV[delete_at] in
+	if dest_small_numeral n_tm = 1 then
+	  conv tm
+	else
+	  (conv THENC RAND_CONV delete_at_conv) tm
+    with Failure _ ->
+      REWRITE_CONV[delete_at] tm;;

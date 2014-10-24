@@ -66,11 +66,11 @@ let dest_mk_tform tm =
 	dest_pair p_tm
     | _ -> error "dest_mk_tform" [tm] [];;
 
-let dest_approx tm =
+let dest_approx_mk tm =
   match tm with
     | Comb (Comb (Comb (Const ("approx", _), s_tm), h_tm), mk_tm) ->
 	s_tm, h_tm, dest_mk_tform mk_tm
-    | _ -> error "dest_approx" [tm] [];;
+    | _ -> error "dest_approx_mk" [tm] [];;
 
 let dest_f1_list tm =
   let el_tms = dest_list tm in
@@ -80,7 +80,7 @@ let dest_f1_list tm =
 	     tm1, tm2, tm3) el_tms;;
 
 let find_max_ipow2 tm =
-  let _, _, (_, list_tm) = dest_approx tm in
+  let _, _, (_, list_tm) = dest_approx_mk tm in
   let e2_tms = map (fun (_, _, tm) -> tm) (dest_f1_list list_tm) in
   let ints = map (fun tm -> dest_intconst (rand tm)) e2_tms in
     if ints = [] then

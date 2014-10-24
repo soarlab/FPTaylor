@@ -10,6 +10,8 @@ open Expr
 
 (* Describes an error variable *)
 type error_info = {
+  (* Unique index for proofs *)
+  proof_index : int;
   (* Error variables with the same index are the same *)
   index : int;
   (* The upper bound of the error is 2^exp *)
@@ -37,10 +39,15 @@ let reset_form_index, next_form_index =
     i in
   reset, next
 
-let mk_err_var index exp = {
-  index = index;
-  exp = exp;
-}
+let mk_err_var, reset_error_index =
+  let err_index = ref 0 in
+  let mk index exp = {
+    proof_index = (let _ = incr err_index in !err_index);
+    index = index;
+    exp = exp;
+  } in
+  let reset () = err_index := 0 in
+  mk, reset
 
 let ( +^ ) = Fpu.fadd_high and
     ( *^ ) = Fpu.fmul_high
@@ -83,25 +90,34 @@ let abs_eval_v1 vars = map (fun (ex, err) -> abs_eval vars ex, err.exp)
 
 let fp_to_const f = mk_const (const_of_float f)
 
-let simplify_form vars =
-  let rec add_adjacent s =
+let simplify_form vars f =
+  let rec add_adjacent arg_index s =
     match s with
       | (ex1, err1) :: (ex2, err2) :: t when err1.index = -1 && err2.index = -1 ->
 	let f1, exp1 = abs_eval vars ex1, err1.exp and
 	    f2, exp2 = abs_eval vars ex2, err2.exp in
 	let f, exp = add2 (f1, exp1) (f2, exp2) in
-	add_adjacent ((fp_to_const f, mk_err_var (-1) exp) :: t)
+	let f = make_stronger f in
+	let i = next_form_index() in
+	let err = mk_err_var (-1) exp in
+	let _ = Proof.add_simpl_add_step i arg_index 
+	  err1.proof_index err2.proof_index err.proof_index f exp in
+	add_adjacent i ((fp_to_const f, err) :: t)
       | (e1, err1) :: (e2, err2) :: t ->
 	if err1.index = err2.index then
 	  (* we must have err1.exp = err2.exp here *)
 	  let _ = assert(err1.exp = err2.exp) in
-	  add_adjacent ((mk_add e1 e2, err1) :: t)
+	  let i = next_form_index() in
+	  let _ = Proof.add_simpl_eq_step i arg_index 
+	    err1.proof_index err2.proof_index in
+	  add_adjacent i ((mk_add e1 e2, err1) :: t)
 	else
-	  (e1, err1) :: add_adjacent ((e2, err2) :: t)
-      | _ -> s in
-  fun f ->
-    let v1 = sort (fun (_, err1) (_, err2) -> compare err1.index err2.index) f.v1 in
-    {f with v1 = add_adjacent v1}
+	  let index, s = add_adjacent arg_index ((e2, err2) :: t) in
+	  index, (e1, err1) :: s
+      | _ -> arg_index, s in
+  let v1 = sort (fun (_, err1) (_, err2) -> compare err1.index err2.index) f.v1 in
+  let i, v1_new = add_adjacent f.form_index v1 in
+  {f with form_index = i; v1 = v1_new}
 
 let find_index, expr_for_index, reset_index_counter, current_index =
   let counter = ref 0 in
@@ -227,12 +243,15 @@ let rounded_form vars original_expr rnd f =
 	mk_mul (fp_to_const rnd.coefficient) r', rnd.coefficient *^ m2' in
     let form_index = next_form_index() in
     let m2 = make_stronger m2 in
-    let _ = Proof.add_rnd_step form_index rnd.fp_type.bits f.form_index s1 m2 in
+    let r_err = mk_err_var i rnd.eps_exp and
+	m2_err = mk_err_var (-1) rnd.eps_exp in
+    let _ = Proof.add_rnd_step form_index rnd.fp_type.bits 
+      f.form_index s1 m2 r_err.proof_index m2_err.proof_index in
     {
       form_index = form_index;
       v0 = f.v0;
-      v1 = ((r, mk_err_var i rnd.eps_exp) :: f.v1) @ 
-	[fp_to_const m2, mk_err_var (-1) rnd.eps_exp];
+      v1 = ((r, r_err) :: f.v1) @ 
+	[fp_to_const m2, m2_err];
     }
 
 (* negation *)
@@ -271,12 +290,13 @@ let mul_form =
     let m2, m2_exp = sum2_high x1 y1 in
     let m2 = make_stronger m2 in
     let form_index = next_form_index() in
+    let m2_err = mk_err_var (-1) m2_exp in
     let _ = Proof.add_mul_step form_index
-      f1.form_index f2.form_index m2 (float_of_int m2_exp) in
+      f1.form_index f2.form_index m2 (float_of_int m2_exp) m2_err.proof_index in
     {
       form_index = form_index;
       v0 = mk_mul f1.v0 f2.v0;
-      v1 = mul1 f1.v0 f2.v1 @ mul1 f2.v0 f1.v1 @ [fp_to_const m2, mk_err_var (-1) m2_exp];
+      v1 = mul1 f1.v0 f2.v1 @ mul1 f2.v0 f1.v1 @ [fp_to_const m2, m2_err];
     }
 
 (* reciprocal *)
@@ -503,6 +523,7 @@ let build_form vars =
 	end
   in
   fun e ->
+    let _ = reset_error_index() in
     let _ = reset_form_index() in
     let _ = reset_index_counter() in
     build e

@@ -174,6 +174,10 @@ let EXPAND_CONCL_RULE var_name th =
 
 let hidden_def = new_definition `HIDDEN v x = x`;;
 
+let eq_hidden = prove
+  (`HIDDEN a x = HIDDEN b y <=> x = y`,
+   REWRITE_TAC[hidden_def]);;
+
 let mk_hidden name =
   let v = mk_var (name, bool_ty) in
     mk_icomb (`HIDDEN:A->B->B`, v);;
@@ -213,14 +217,15 @@ let hide_and_abbrev_e1s, reset_index =
 	else
 	  i
     with _ -> i in*)
-  let hide_and_abbrev abbrev_flag approx_th =
+  let hide_and_abbrev abbrev_flag err_indices approx_th =
     let tm = concl approx_th in
     (*let index = itlist test_hyp (hyp approx_th) 1 in*)
     let index = !global_index in
     let ps = get_paths tm in
+    let _ = assert (length ps = length err_indices) in
     let index2 = index + length ps - 1 in
     let _ = global_index := index2 + 1 in
-    let h_ths = map (fun i -> hidden_eq ("e" ^ string_of_int i) `t:A`) (index--index2) in
+    let h_ths = map (fun i -> hidden_eq ("e" ^ string_of_int i) `t:A`) err_indices in
     let conv = itlist2
       (fun p h_th c -> c THENC PATH_CONV p (REWR_CONV h_th)) 
       ps h_ths ALL_CONV in
@@ -234,6 +239,11 @@ let hide_and_abbrev_e1s, reset_index =
   in
     hide_and_abbrev, (fun () -> global_index := 1);;
 
+let extract_index tm =
+  let h_tm = fst (dest_pair (snd (dest_pair tm))) in
+  let v, _ = dest_binary "HIDDEN" h_tm in
+  let name = fst (dest_var v) in
+    int_of_string (String.sub name 1 (String.length name - 1));;
 
 let mk_vector_type =
   let real_ty = `:real` in
@@ -262,6 +272,18 @@ let dest_approx tm =
       dom_tm, h_tm, t_tm
     else
       failwith ("dest_approx: " ^ string_of_term tm);;
+
+let dest_mk_tform tm =
+  match tm with
+    | Comb (Const ("mk_tform", _), p_tm) ->
+	dest_pair p_tm
+    | _ -> error "dest_mk_tform" [tm] [];;
+
+let dest_approx_mk tm =
+  match tm with
+    | Comb (Comb (Comb (Const ("approx", _), s_tm), h_tm), mk_tm) ->
+	s_tm, h_tm, dest_mk_tform mk_tm
+    | _ -> error "dest_approx_mk" [tm] [];;
 
 let build_var_tform =
     fun dom_tm i ->
@@ -308,7 +330,7 @@ let let_pair = prove
        REMOVE_THEN "h" MP_TAC THEN REWRITE_TAC[]
    ]);;
 
-let build_rnd_tform rnd_th m2_tm b_tm approx_th =
+let build_rnd_tform rnd_th m2_tm b_tm err_indices approx_th =
   let (e2_tm, d2_tm), rnd_dom_tm, rnd_tm = dest_is_rnd (concl rnd_th) in
   let dom_tm, h_tm, t_tm = dest_approx (concl approx_th) in
   let th0 = ISPECL[dom_tm; h_tm; t_tm; rnd_tm; e2_tm; d2_tm; rnd_dom_tm; m2_tm; b_tm] approx_rnd in
@@ -316,9 +338,49 @@ let build_rnd_tform rnd_th m2_tm b_tm approx_th =
   let th2 = MP (MP th1 approx_th) rnd_th in
   let th3 = UNDISCH_ALL th2 in
   let th4 = REWRITE_RULE[f0_mk; list_mk] th3 in
-    hide_and_abbrev_e1s false th4;;
+    hide_and_abbrev_e1s false err_indices th4;;
 
-let build_mul_tform m2_tm e2_tm approx1_th approx2_th =
+let let_triple = prove
+  (`!Q p:A#B#C. (let a,b,c = p in Q a b c) <=> Q (FST p) (FST (SND p)) (SND (SND p))`,
+   REPEAT GEN_TAC THEN EQ_TAC THENL [
+     LET_TAC THEN ASM_REWRITE_TAC[];
+     DISCH_THEN (LABEL_TAC "h") THEN LET_TAC THEN
+       REMOVE_THEN "h" MP_TAC THEN REWRITE_TAC[]
+   ]);;
+
+let build_simpl_add_tform i j b_tm e_tm err_indices approx_th =
+  let dom_tm, h_tm, t_tm = dest_approx (concl approx_th) in
+  let f0_tm, f1_tm = dest_mk_tform t_tm in
+  let indices = map extract_index (dest_list f1_tm) in
+  let i' = index i indices and
+      j' = index j indices in
+  let i_tm, j_tm = 
+    let i, j = if i' < j' then i', j' else j', i' in
+      mk_small_numeral i, mk_small_numeral j in
+  let th0 = ISPECL[dom_tm; h_tm; t_tm; i_tm; j_tm; b_tm; e_tm] approx_simpl_add in
+  let th1 = PURE_REWRITE_RULE[GSYM IMP_IMP; let_triple] (CONV_RULE (DEPTH_CONV let_CONV) th0) in
+  let th2 = MP th1 approx_th in
+  let th3 = REWRITE_RULE[f0_mk; list_mk; LENGTH] th2 in
+  let th4 = REWRITE_RULE[] (CONV_RULE (DEPTH_CONV (FIRST_CONV [EL_CONV; delete_at_conv])) th3) in
+  let th5 = UNDISCH_ALL th4 in
+    hide_and_abbrev_e1s false err_indices th5;;
+
+let build_simpl_eq_tform i j approx_th =
+  let dom_tm, h_tm, t_tm = dest_approx (concl approx_th) in
+  let f0_tm, f1_tm = dest_mk_tform t_tm in
+  let indices = map extract_index (dest_list f1_tm) in
+  let i' = index i indices and
+      j' = index j indices in
+  let i_tm, j_tm = mk_small_numeral i', mk_small_numeral j' in
+  let eq_th = if i' < j' then approx_simpl_eq else approx_simpl_eq_swap in
+  let th0 = ISPECL[dom_tm; h_tm; t_tm; i_tm; j_tm] eq_th in
+  let th1 = PURE_REWRITE_RULE[GSYM IMP_IMP; let_triple] (CONV_RULE (DEPTH_CONV let_CONV) th0) in
+  let th2 = MP th1 approx_th in
+  let th3 = REWRITE_RULE[f0_mk; list_mk; LENGTH] th2 in
+  let th4 = REWRITE_RULE[eq_hidden] (CONV_RULE (DEPTH_CONV (FIRST_CONV [EL_CONV; delete_at_conv])) th3) in
+    UNDISCH_ALL th4;;
+
+let build_mul_tform m2_tm e2_tm err_indices approx1_th approx2_th =
   let dom1_tm, h1_tm, t1_tm = dest_approx (concl approx1_th) and
       dom2_tm, h2_tm ,t2_tm = dest_approx (concl approx2_th) in
     if dom1_tm <> dom2_tm then
@@ -329,7 +391,7 @@ let build_mul_tform m2_tm e2_tm approx1_th approx2_th =
       let th2 = MP (MP th1 approx1_th) approx2_th in
       let th3 = UNDISCH_ALL th2 in
       let th4 = REWRITE_RULE[mul_f1; MAP; APPEND; f0_mk; list_mk] th3 in
-	hide_and_abbrev_e1s false th4;;
+	hide_and_abbrev_e1s false err_indices th4;;
 
 let build_inv_tform approx_th =
   let dom_tm, h_tm, t_tm = dest_approx (concl approx_th) in
@@ -342,7 +404,7 @@ let build_inv_tform approx_th =
   let th2 = MP th1 approx_th in
   let th3 = UNDISCH_ALL (REWRITE_RULE[f0_mk; list_mk] th2) in
   let th4 = REWRITE_RULE[mul_f1; MAP; APPEND; f0_mk; list_mk] th3 in
-    hide_and_abbrev_e1s false th4;;
+    hide_and_abbrev_e1s false [] th4;;
 
 
 (*

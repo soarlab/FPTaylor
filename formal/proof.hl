@@ -13,6 +13,8 @@ type proof_op =
   | Proof_const of num
   (* TODO: all rounding operations *)
   | Proof_rnd of int
+  | Proof_simpl_eq of int * int
+  | Proof_simpl_add of int * int
   | Proof_neg
   | Proof_add
   | Proof_sub
@@ -21,6 +23,7 @@ type proof_op =
   | Proof_sqrt
   | Proof_sin
   | Proof_cos
+  | Proof_opt_approx
 
 type proof_args = {
   arg_indices : int list;

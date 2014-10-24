@@ -80,7 +80,8 @@ let opt tol e =
 let print_form f =
   let _ = report (Format.sprintf "v0 = %s" (print_expr_str f.v0)) in
   let _ = map (fun (e, err) -> 
-    report (Format.sprintf "%d: exp = %d: %s" err.index err.exp (print_expr_str e))) f.v1 in
+    report (Format.sprintf "%d (%d): exp = %d: %s" 
+	      err.index err.proof_index err.exp (print_expr_str e))) f.v1 in
   let _ = report "\nCorresponding original subexpressions:" in
   let _ = map (fun (_, err) ->
     let i = err.index in
@@ -132,17 +133,24 @@ let errors =
   in
   let abs_error tol f =
     let v1, v2 = split f.v1 in
-    let bounds2 = map (compute_bound tol) v2 in
+    let bounds2' = map (compute_bound tol) v2 in
+    let bounds2 = map (fun (e, exp) -> make_stronger e, exp) bounds2' in
     let total2', exp2 = sum_high bounds2 in
     let total2 = get_eps exp2 *^ total2' in
     let err_approx =
       if Config.opt_approx then
 	let _ = report "\nSolving the approximate optimization problem" in
 	let _ = report "\nAbsolute errors:" in
-	let bounds1 = map (compute_bound tol) v1 in
+	let bounds1' = map (compute_bound tol) v1 in
+	let bounds1 = map (fun (e, exp) -> make_stronger e, exp) bounds1' in
 	let total1', exp1 = sum_high bounds1 in
 	let total1 = get_eps exp1 *^ total1' in
-	let total = total1 +^ total2 in
+	let total = make_stronger (total1 +^ total2) in
+	let all_bounds = map fst bounds1 @ map fst bounds2 in
+	let all_indices = map (fun (_, err) -> err.proof_index) v1 
+	  @ map (fun (_, err) -> err.proof_index) v2 in
+	let _ = Proof.add_opt_approx_step (next_form_index()) f.form_index 
+	  all_indices all_bounds total in
 	let _ = report (Format.sprintf "total1: %e\ntotal2: %e\ntotal: %e" total1 total2 total) in
 	Some total
       else None in
@@ -247,11 +255,7 @@ let compute_form pi e =
       let _ = report ("\nSimplified rounding: " ^ print_expr_str e) in
       let vars = var_bound_float in
       let form' = build_form vars e in
-      let form = 
-	if not Config.proof_flag then
-	  simplify_form vars form'
-	else
-	  form' in
+      let form = simplify_form vars form' in
       let form = 
 	if Config.simplification then {
 	  form_index = form.form_index;

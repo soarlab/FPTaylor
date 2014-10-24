@@ -13,6 +13,8 @@ type proof_op =
   | Proof_const of num
   (* TODO: all rounding operations *)
   | Proof_rnd of int
+  | Proof_simpl_eq of int * int
+  | Proof_simpl_add of int * int
   | Proof_neg
   | Proof_add
   | Proof_sub
@@ -21,6 +23,7 @@ type proof_op =
   | Proof_sqrt
   | Proof_sin
   | Proof_cos
+  | Proof_opt_approx
 
 type proof_args = {
   arg_indices : int list;
@@ -91,9 +94,19 @@ let add_const_step i c =
   let args = mk_proof_args [] [] [] in
   add_proof_step i op args
 
-let add_rnd_step i bits arg s1_bound m2_bound =
+let add_rnd_step i bits arg s1_bound m2_bound r_index m2_index =
   let op = Proof_rnd bits in
-  let args = mk_proof_args [arg] [] [s1_bound; m2_bound] in
+  let args = mk_proof_args [arg] [r_index; m2_index] [s1_bound; m2_bound] in
+  add_proof_step i op args
+
+let add_simpl_eq_step i arg err_i1 err_i2 =
+  let op = Proof_simpl_eq (err_i1, err_i2) in
+  let args = mk_proof_args [arg] [] [] in
+  add_proof_step i op args
+
+let add_simpl_add_step i arg err_i1 err_i2 err_i f e =
+  let op = Proof_simpl_add (err_i1, err_i2) in
+  let args = mk_proof_args [arg] [err_i] [f; float_of_int e] in
   add_proof_step i op args
 
 let add_neg_step i arg =
@@ -111,9 +124,9 @@ let add_sub_step i arg1 arg2 =
   let args = mk_proof_args [arg1; arg2] [] [] in
   add_proof_step i op args
 
-let add_mul_step i arg1 arg2 m2_bound e2 =
+let add_mul_step i arg1 arg2 m2_bound e2 m2_index =
   let op = Proof_mul in
-  let args = mk_proof_args [arg1; arg2] [] [m2_bound; e2] in
+  let args = mk_proof_args [arg1; arg2] [m2_index] [m2_bound; e2] in
   add_proof_step i op args
 
 let add_inv_step i arg bound =
@@ -134,4 +147,9 @@ let add_sin_step i arg bound =
 let add_cos_step i arg bound =
   let op = Proof_cos in
   let args = mk_proof_args [arg] [] [bound] in
+  add_proof_step i op args
+
+let add_opt_approx_step i arg indices bounds bound =
+  let op = Proof_opt_approx in
+  let args = mk_proof_args [arg] indices (bound :: bounds) in
   add_proof_step i op args

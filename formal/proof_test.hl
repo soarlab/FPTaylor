@@ -26,9 +26,6 @@ let rnd64 = prove
   (`is_rnd (ipow2 (-- &53), ipow2 (-- &1022)) (:real) rnd64`, 
    REWRITE_TAC[rnd64_def] THEN MATCH_MP_TAC id_rnd THEN REWRITE_TAC[ipow2_pos_le]);;
 
-
-let pp = 5;;
-
 let enumerate =
   let rec enum n acc = function
     | [] -> rev acc
@@ -48,6 +45,43 @@ let build_domain pp vars =
     x_tm, dom_tm, dom_vars, var_index;;
 
 
+let le_lemma = prove
+  (`interval_arith x (a, b) ==> 
+     interval_arith y (c, d) ==>
+     b <= c
+     ==> x <= y`,
+   REWRITE_TAC[interval_arith] THEN REAL_ARITH_TAC);;
+
+let eval_le_expr pp dom_vars expr_tm =
+  let eq_th = bin_float_rat_conv expr_tm in
+  let expr_tm2 = rand (concl eq_th) in
+    if expr_tm2 = t_const then
+      EQT_ELIM eq_th
+    else
+      let ltm, rtm = dest_binary "real_le" expr_tm2 in
+      let ifun1 = build_interval_fun ltm and
+	  ifun2 = build_interval_fun rtm in
+      let ltm_interval = eval_interval_fun pp ifun1 dom_vars [] and
+	  rtm_interval = eval_interval_fun pp ifun2 dom_vars [] in
+      let th1 = MATCH_MP (MATCH_MP le_lemma ltm_interval) rtm_interval in
+      let le_tm = fst (dest_imp (concl th1)) in
+      let a_tm, b_tm = dest_binary "real_le" le_tm in
+	try
+	  ONCE_REWRITE_RULE[SYM eq_th] (MP th1 (EQT_ELIM (float_le a_tm b_tm)))
+	with Failure _ -> error "eval_le_expr" [expr_tm; a_tm; b_tm] [];;
+
+let prove_le_expr pp dom_vars h_tm =
+  try
+    EQT_ELIM (bin_float_rat_conv h_tm)
+  with Failure _ ->
+    let expr_tm = snd (dest_imp (snd (dest_forall h_tm))) in
+    let th0 = eval_le_expr pp dom_vars expr_tm in
+    let in_hyp = find (is_binary "IN") (hyp th0) in
+    let x_tm = lhand in_hyp in
+    let th1 = GEN x_tm (DISCH in_hyp th0) in
+    let _ = assert (h_tm = concl th1) in
+      th1;;
+
 let lemma1 = prove
   (`(!x:real^N. x IN s ==> abs (tform_f1 f x) <= r) ==> r <= b
    ==> (!x. x IN s ==> abs (tform_f1 f x) <= b)`,
@@ -66,7 +100,6 @@ let prove_bound1 pp dom_vars approx_th h_tm =
   let th3 = MATCH_MP th2 r2 in
   let _ = assert (h_tm = concl th3) in
     th3;;
-
 
 let lemma2 = prove
   (`(!x:real^N. x IN s ==> abs (tform_f1 f1 x) <= r1) ==> 
@@ -103,6 +136,9 @@ let prove_forall_hyp =
     `!x:real^N. x IN s ==> h x IN (:real)`,
     (fun pp dom_vars arg_ths h_tm ->
        prove(h_tm, REWRITE_TAC[IN_UNIV]));
+    `!x:real^N. x IN s ==> abs a + abs b <= c`,
+    (fun pp dom_vars arg_ths h_tm ->
+       prove_le_expr pp dom_vars h_tm);
   ] in
     fun pp dom_vars arg_ths h_tm ->
       let _, f = find (fun (tm, _) -> can (term_match [] tm) h_tm) table in
@@ -118,6 +154,7 @@ let replay_proof pp proof =
       | step :: rest ->
 	  let args = step.proof_args in
 	  let arg_ths = map (fun i -> assoc i acc) args.arg_indices in
+	  let err_indices = args.err_indices in
 	  let th0 =
 	    begin
 	      match step.proof_op with
@@ -133,7 +170,7 @@ let replay_proof pp proof =
 				    | 32 -> rnd32
 				    | 64 -> rnd64
 				    | _ -> failwith "Unsupported rnd mode") in
-		      build_rnd_tform rnd_th m2_tm b_tm arg
+		      build_rnd_tform rnd_th m2_tm b_tm err_indices arg
 		| Proof_add ->
 		    let arg1 = nth arg_ths 0 and
 			arg2 = nth arg_ths 1 in
@@ -147,21 +184,31 @@ let replay_proof pp proof =
 			e_tm = mk_ipow2 (Int (int_of_float (nth args.bounds 1))) in
 		    let arg1 = nth arg_ths 0 and
 			arg2 = nth arg_ths 1 in
-		      build_mul_tform m2_tm e_tm arg1 arg2
-		| _ -> failwith "Not implemented"
+		      build_mul_tform m2_tm e_tm err_indices arg1 arg2
+		| Proof_simpl_eq (i, j) ->
+		    let arg = nth arg_ths 0 in
+		      build_simpl_eq_tform i j arg
+		| Proof_simpl_add (i, j) ->
+		    let b_tm = mk_bin_float (nth args.bounds 0) and
+			e_tm = mk_ipow2 (Int (int_of_float (nth args.bounds 1))) in
+		    let arg = nth arg_ths 0 in
+		      build_simpl_add_tform i j b_tm e_tm err_indices arg
+		| _ -> error "Not implemented" 
+		    (map mk_bin_float args.bounds @ map mk_small_numeral err_indices)
+		      arg_ths
 	    end in
 	  let hs_forall, hs = partition is_forall (hyp th0) in
 	  let hs_rat = filter (fun tm -> frees tm = []) hs in
 	  let th1 = 
 	    begin
 	      try
-		let rat_ths = map (EQT_ELIM o bin_float_rat_conv) hs_rat in
+		let rat_ths = map (EQT_ELIM o (NUM_REDUCE_CONV THENC bin_float_rat_conv)) hs_rat in
 		let forall_ths = map (prove_forall_hyp pp dom_vars arg_ths) hs_forall in
 		  itlist MY_PROVE_HYP (forall_ths @ rat_ths) th0
 (*		th0 *)
 	      with 
 		| Failure msg -> error ("replay: " ^ msg) (hyp th0) (th0 :: arg_ths)
-		| _ -> error "error" (hyp th0) (th0 :: arg_ths)
+		| Not_found -> error "Not_found" (hyp th0) (th0 :: arg_ths)
 	    end in
 	    replay ((step.step_index, th1) :: acc) rest
   in
@@ -169,20 +216,24 @@ let replay_proof pp proof =
 
 (*******************)
 
+let pp = 15;;
+
 install_user_printer ("hidden", print_hidden);;
 
-let proof = p4;;
+(**************)
 
-let ths = 
+let proof = p1;;
+
+let tms, ths = 
   try
-    replay_proof 10 proof
+    [], replay_proof pp proof
   with Error(msg, tms, ths) ->
     let _ = print_endline msg in
-      enumerate ths;;
+      tms, enumerate ths;;
 
 hd ths;;
-
 let x_tm, dom_tm, dom_vars, var_index = build_domain pp proof.proof_vars;;
+
 
 let th = snd (nth ths 0);;
 let arg1_th = snd (nth ths 1);;
@@ -190,230 +241,45 @@ let arg2_th = snd (nth ths 2);;
 
 let hs_forall, hs = partition is_forall (hyp th);;
 let hs_rat = filter (fun tm -> frees tm = []) hs;;
-let rat_ths = map (EQT_ELIM o bin_float_rat_conv) hs_rat;;
+let rat_ths = map (EQT_ELIM o (NUM_REDUCE_CONV THENC bin_float_rat_conv)) hs_rat;;
 
 let h_tm = last hs_forall;;
-prove_forall_hyp pp dom_vars [arg1_th; arg2_th] h_tm;;
 
-let approx_ths = [arg_th];;
-
-(**********)
-
-let lemma2 = prove
-  (`(!x:real^N. x IN s ==> abs (tform_f1 f1 x) <= r1) ==> 
-     (!x. x IN s ==> abs (tform_f1 f2 x) <= r2) ==>
-     r1 * r2 <= b
-     ==> (!x. x IN s ==> abs (tform_f1 f1 x * tform_f1 f2 x) <= b)`,
-   REPEAT STRIP_TAC THEN MATCH_MP_TAC REAL_LE_TRANS THEN
-     EXISTS_TAC `r1 * r2` THEN ASM_REWRITE_TAC[REAL_ABS_MUL] THEN
-     MATCH_MP_TAC REAL_LE_MUL2 THEN ASM_SIMP_TAC[REAL_ABS_POS]);;
-
-
-let prove_bound2 pp dom_vars approx1_th approx2_th h_tm = 0;;
-
-let approx1_th = arg1_th and
-    approx2_th = arg2_th;;
-
-
-let bound1 = eval_tform1_bound pp approx1_th dom_vars;;
-let bound2 = eval_tform1_bound pp approx2_th dom_vars;;
-let in_hyp = find (is_binary "IN") (hyp bound1);;
-let x_tm = lhand in_hyp;;
-let t1 = GEN x_tm (DISCH in_hyp bound1);;
-let t2 = GEN x_tm (DISCH in_hyp bound2);;
-let th2 = MATCH_MP (MATCH_MP lemma2 t1) t2;;
-let b_tm = rand (rand (snd (dest_forall h_tm)));;
-let r1 = fst (dest_imp (concl (INST[b_tm, b_var_real] th2)));;
-let r2 = EQT_ELIM ((DEPTH_CONV FLOAT_TO_NUM_CONV THENC bin_float_rat_conv) r1);;
-let th3 = MATCH_MP th2 r2;;
-let _ = assert (h_tm = concl th3);;
-th3;;
-
-
-(***************)
-
-th0;;
-MATCH_MP lemma1 th0;;
-h_tm;;
-
-
-let th1 = (GEN_ALL o DISCH_ALL) th0;;
-
-g h_tm;;
-e (MATCH_MP_TAC lemma1);;
-e (EXISTS_TAC r_tm THEN REWRITE_TAC[th1]);;
-e (CONV_TAC (DEPTH_CONV FLOAT_TO_NUM_CONV));;
-e (CONV_TAC (bin_float_rat_conv));;
-
-
-
-
-(********************)
-
-let approx_th = arg_th;;
-let i = find_max_ipow2 (concl approx_th);;
-let th1 = MATCH_MP tform_f1_bound approx_th;;
-let th2 = (UNDISCH_ALL o SPEC_ALL) th1;;
-let sum_tm = rand (concl th2);;
-let eq1_th =
-  let conv1 = REWRITE_CONV[list_mk; sum_list_cons; sum_list_nil; REAL_ADD_RID] in
-    if i =/ Int 0 then
-      (conv1 THENC ONCE_REWRITE_CONV[lemma_ipow2_0_mul]) sum_tm
-    else
-      let conv2 = ONCE_REWRITE_CONV[SPEC (mk_intconst i) lemma_ipow2_mul] in
-      let conv3 = REWRITE_CONV[REAL_ADD_RDISTRIB; GSYM REAL_MUL_ASSOC; GSYM ipow2_add] in
-      let conv4 = REWRITE_CONV[ipow2_0; REAL_MUL_LID; REAL_MUL_RID; 
-			       REAL_ADD_RID; REAL_ADD_LID] in
-	(conv1 THENC conv2 THENC conv3 THENC INT_REDUCE_CONV THENC conv4) sum_tm;;
-
-let expr_tm1 = rand (rand (concl eq1_th));;
-let conv5 = bin_float_rat_conv;;
-let eq2_th = conv5 expr_tm1;;
-let eq_th = GEN_REWRITE_RULE (RAND_CONV o RAND_CONV) [eq2_th] eq1_th;;
-let expr_tm2 = rand (concl eq2_th);;
-let ifun = build_interval_fun expr_tm2;;
-let expr_interval = eval_interval_fun pp ifun dom_vars [];;
-let r2 = REWRITE_RULE[eq_th] th2;;
-let t1 = CONJ expr_interval r2;;
-MATCH_MP lemma_trans t1;;
-
-
-
-
-
-
-
-
-
-
-let x = 2;;
-
-(*******************)
-
-
-  let r_tm = rand (concl th0) in
-  let th1 = (GEN_ALL o DISCH_ALL) th0 in
-
-
-;;
-build_const_tform;;
-
-
-let dom_tm, dom_vars, var_index = build_domain pp p2.proof_vars;;
-
-
-
-let f1 = build_var_tform dom_tm 1;;
-let f2 = build_rnd_tform rnd32 f1;;
-
-let step = nth p2.proof_steps 0;;
-let bs = step.proof_args.bounds;;
-let b = nth bs 0;;
-
-let m2_tm = mk_bin_float 0.0;;
-let b_tm = mk_bin_float b;;
-
-let f2_0 = INST[m2_tm, `m2:real`; b_tm, `b:real`] f2;;
-
-let hs = filter (fun tm -> frees tm = []) (hyp f2_0);;
-let hs_forall, hs_rat = partition is_forall hs;;
-
-let rat_ths = map (EQT_ELIM o bin_float_rat_conv) hs_rat;;
-
-let h = nth hs_forall 1;;
-
-bin_float_rat_conv h;;
-let th0 = eval_tform1_bound f1 dom_vars;;
-let r_tm = rand (concl th0);;
-let th1 = (GEN_ALL o DISCH_ALL) th0;;
-
-let lemma1 = prove
-  (`!r. (!x:real^N. x IN s ==> abs (tform_f1 f x) <= r) /\ r <= b
-   ==> (!x. x IN s ==> abs (tform_f1 f x) <= b)`,
-   REPEAT STRIP_TAC THEN MATCH_MP_TAC REAL_LE_TRANS THEN
-     EXISTS_TAC `r:real` THEN ASM_SIMP_TAC[]);;
-
-
-let tform1_tac1 approx_th dom_vars =
-  let th0 = eval_tform1_bound approx_th dom_vars in
-  let r_tm = rand (concl th0) in
-  let th1 = (GEN_ALL o DISCH_ALL) th0 in
-    MATCH_MP_TAC lemma1 THEN
-      EXISTS_TAC r_tm THEN REWRITE_TAC[th1] THEN
-      CONV_TAC (DEPTH_CONV FLOAT_TO_NUM_CONV) THEN
-      CONV_TAC (REWRITE_CONV[ipow2] THENC bin_float_rat_conv);;
-
-let forall_ths = map 
-  (fun h -> prove(h, REWRITE_TAC[IN_UNIV] THEN tform1_tac1 f1 dom_vars))
-  hs_forall;;
-
-itlist MY_PROVE_HYP (forall_ths @ rat_ths) f2_0;;
-
-      
-lemma1;;
-let bound1_term = `!x:real^N. x IN s ==> abs (tform_f1 f x) <= b`;;
-let rnd_bound_term = `!x:real^N. x IN s ==> h x IN r`;;
-term_match [] bound1_term h_tm;;
-term_match [] rnd_bound_term h_tm;;
-h_tm;;
-
-      
-
-g h;;
-MATCH_MP_TAC lemma1
-EXISTS_TAC r_tm
-REWRITE_TAC[th1]
-CONV_TAC (DEPTH_CONV FLOAT_TO_NUM_CONV)
-CONV_TAC (REWRITE_CONV[ipow2] THENC bin_float_rat_conv)
-
-MP_TAC th1
-
-
-(****************************)
-
-let a1 = f1;;
-let vars = dom_vars;;
-
-let i = find_max_ipow2 (concl a1);;
-let i_tm = mk_ipow2 i;;
-
-let th1 = MATCH_MP tform_f1_bound a1;;
-let th2 = (UNDISCH_ALL o SPEC_ALL) th1;;
-let sum_tm = rand (concl th2);;
-
-let eq1_th =
-  let conv1 = REWRITE_CONV[list_mk; sum_list_cons; sum_list_nil; REAL_ADD_RID] in
-    if i =/ Int 0 then
-      (conv1 THENC ONCE_REWRITE_CONV[lemma_ipow2_0_mul]) sum_tm
-    else
-      let conv2 = ONCE_REWRITE_CONV[SPEC (mk_intconst i) lemma_ipow2_mul] in
-      let conv3 = REWRITE_CONV[REAL_ADD_RDISTRIB; GSYM REAL_MUL_ASSOC; GSYM ipow2_add] in
-      let conv4 = REWRITE_CONV[ipow2_0; REAL_MUL_LID; REAL_MUL_RID; REAL_ADD_RID; REAL_ADD_LID] in
-	(conv1 THENC conv2 THENC conv3 THENC INT_REDUCE_CONV THENC conv4) sum_tm;;
-
-let expr_tm1 = rand (rand (concl eq1_th));;
-let conv5 = REWRITE_CONV[ipow2_pos_num; ipow2_neg_num];;
-let eq2_th = conv5 expr_tm1;;
-let eq_th = GEN_REWRITE_RULE (RAND_CONV o RAND_CONV) [eq2_th] eq1_th;;
-let expr_tm2 = rand (concl eq2_th);;
-
-let ifun = build_interval_fun expr_tm2;;
-
-let expr_interval = eval_interval_fun pp ifun vars [];;
-
-let r1 = expr_interval;;
-let r2 = REWRITE_RULE[eq_th] th2;;
-let r3 = SPEC (rand (rand (concl r1))) REAL_LE_REFL;;
-
-let t1 = CONJ r1 (CONJ r2 r3);;
-MATCH_MP lemma2 t1;;
-
-let tform1_tac1 pp approx_ths dom_vars =
-  let th0 = eval_tform1_bound pp (hd approx_ths) dom_vars in
-  let r_tm = rand (concl th0) in
-  let th1 = (GEN_ALL o DISCH_ALL) th0 in
-    MATCH_MP_TAC lemma1 THEN
-      EXISTS_TAC r_tm THEN REWRITE_TAC[th1] THEN
-      CONV_TAC (DEPTH_CONV FLOAT_TO_NUM_CONV) THEN
-      CONV_TAC bin_float_rat_conv;;
+(*************)
+
+let approx_th = snd (hd ths);;
+
+let [total_tm; bound1; bound2; i1; i2] = tms;;
+
+let bounds = [bound1; bound2] and
+    indices = map dest_small_numeral [i1; i2];;
+
+let opt_approx_th = prove
+  (`!s h t bounds total. approx s h t /\
+     (!x. x IN s ==> ALL2 (\ (f1,e1,e2) b. abs (f1 x) <= b) (tform_list t) bounds) /\
+     sum_list (ZIP (tform_list t) bounds) (\ ((f1,e1,e2), b). e2 * b) <= total
+     ==> !x:real^N. x IN s ==> abs (h x - tform_f0 t x) <= total`,
+   REPEAT GEN_TAC THEN STRIP_TAC THEN
+     MATCH_MP_TAC approx_bound THEN EXISTS_TAC `s:real^N->bool` THEN
+     ASM_REWRITE_TAC[SUBSET_REFL] THEN REPEAT STRIP_TAC THEN
+     MATCH_MP_TAC REAL_LE_TRANS THEN
+     EXISTS_TAC `sum_list (ZIP (tform_list (t:(N)tform)) bounds) (\((f1,e1,e2),b). e2 * b)` THEN
+     ASM_REWRITE_TAC[] THEN MATCH_MP_TAC sum_list_le_gen THEN
+     FIRST_X_ASSUM (MP_TAC o SPEC `x:real^N`) THEN ASM_REWRITE_TAC[] THEN
+     REWRITE_TAC[all2_el] THEN REPEAT STRIP_TAC THEN ASM_SIMP_TAC[length_zip; el_zip] THEN
+     STRIP_ASSUME_TAC (SPEC `EL i (tform_list (t:(N)tform))` triple_exists) THEN
+     FIRST_X_ASSUM (MP_TAC o SPEC `i:num`) THEN ASM_REWRITE_TAC[REAL_MUL_SYM] THEN
+     DISCH_TAC THEN MATCH_MP_TAC REAL_LE_LMUL THEN ASM_REWRITE_TAC[] THEN
+     UNDISCH_TAC `approx s h (t:(N)tform)` THEN REWRITE_TAC[approx] THEN
+     DISCH_THEN (MP_TAC o SPEC `x:real^N`) THEN ASM_REWRITE_TAC[] THEN
+     REWRITE_TAC[GSYM ALL_EL] THEN STRIP_TAC THEN
+     FIRST_X_ASSUM (MP_TAC o SPEC `i:num`) THEN ASM_REWRITE_TAC[] THEN
+     REAL_ARITH_TAC);;
+
+
+let bounds_tm = mk_list (bounds, real_ty);;
+
+let th0 = REWRITE_RULE[GSYM IMP_IMP] opt_approx_th;;
+let th1 = SPECL[bounds_tm; total_tm] (MATCH_MP th0 approx_th);;
+let th2 = REWRITE_RULE[f0_mk; list_mk; ZIP; ALL2; sum_list_cons; sum_list_nil; REAL_ADD_RID] th1;;
 
