@@ -23,6 +23,8 @@ type proof_op =
   | Proof_sqrt
   | Proof_sin
   | Proof_cos
+
+type proof_opt_type =
   | Proof_opt_approx
 
 type proof_args = {
@@ -37,9 +39,17 @@ type proof_step = {
   proof_args : proof_args;
 }
 
+type proof_opt = {
+  opt_type : proof_opt_type;
+  opt_bounds : float list;
+  opt_indices : int list;
+  total_bound : float;
+}
+
 type proof = {
   mutable proof_vars : proof_var list;
   mutable proof_steps : proof_step list;
+  mutable proof_opts : proof_opt list;
 }
 
 let load_proof fname =

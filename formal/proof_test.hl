@@ -26,23 +26,140 @@ let rnd64 = prove
   (`is_rnd (ipow2 (-- &53), ipow2 (-- &1022)) (:real) rnd64`, 
    REWRITE_TAC[rnd64_def] THEN MATCH_MP_TAC id_rnd THEN REWRITE_TAC[ipow2_pos_le]);;
 
-let enumerate =
+let gen_enumerate =
   let rec enum n acc = function
     | [] -> rev acc
     | x :: xs -> enum (n + 1) ((n, x) :: acc) xs in
-    fun s ->
-      enum 0 [] s;;
+    fun n s ->
+      enum n [] s;;
+
+let enumerate s = gen_enumerate 0 s;;
 
 let build_domain pp vars =
   let names = map (fun v -> v.name) vars and
       ls = map (fun v -> mk_realintconst v.low) vars and
       hs = map (fun v -> mk_realintconst v.high) vars in
-  let name_list = enumerate names in
+  let name_list = gen_enumerate 1 names in
   let low = mk_list (ls, real_ty) and
       high = mk_list (hs, real_ty) in
   let x_tm, dom_tm, dom_vars = create_domain pp low high in
-  let var_index name = rev_assoc name name_list + 1 in
-    x_tm, dom_tm, dom_vars, var_index;;
+    x_tm, dom_tm, dom_vars, name_list;;
+
+
+(******************)
+
+let opt_approx_th = prove
+  (`!s h t bounds total. approx s h t /\
+     (!x. x IN s ==> ALL2 (\ (f1,e1,e2) b. abs (f1 x) <= b) (tform_list t) bounds) /\
+     sum_list (ZIP (tform_list t) bounds) (\ ((f1,e1,e2), b). e2 * b) <= total
+     ==> !x:real^N. x IN s ==> abs (h x - tform_f0 t x) <= total`,
+   REPEAT GEN_TAC THEN STRIP_TAC THEN
+     MATCH_MP_TAC approx_bound THEN EXISTS_TAC `s:real^N->bool` THEN
+     ASM_REWRITE_TAC[SUBSET_REFL] THEN REPEAT STRIP_TAC THEN
+     MATCH_MP_TAC REAL_LE_TRANS THEN
+     EXISTS_TAC `sum_list (ZIP (tform_list (t:(N)tform)) bounds) (\((f1,e1,e2),b). e2 * b)` THEN
+     ASM_REWRITE_TAC[] THEN MATCH_MP_TAC sum_list_le_gen THEN
+     FIRST_X_ASSUM (MP_TAC o SPEC `x:real^N`) THEN ASM_REWRITE_TAC[] THEN
+     REWRITE_TAC[all2_el] THEN REPEAT STRIP_TAC THEN ASM_SIMP_TAC[length_zip; el_zip] THEN
+     STRIP_ASSUME_TAC (SPEC `EL i (tform_list (t:(N)tform))` triple_exists) THEN
+     FIRST_X_ASSUM (MP_TAC o SPEC `i:num`) THEN ASM_REWRITE_TAC[REAL_MUL_SYM] THEN
+     DISCH_TAC THEN MATCH_MP_TAC REAL_LE_LMUL THEN ASM_SIMP_TAC[REAL_LT_IMP_LE] THEN
+     UNDISCH_TAC `approx s h (t:(N)tform)` THEN REWRITE_TAC[approx] THEN
+     DISCH_THEN (MP_TAC o SPEC `x:real^N`) THEN ASM_REWRITE_TAC[] THEN
+     REWRITE_TAC[GSYM ALL_EL] THEN STRIP_TAC THEN
+     FIRST_X_ASSUM (MP_TAC o SPEC `i:num`) THEN ASM_REWRITE_TAC[] THEN
+     REAL_ARITH_TAC);;
+
+let gen_vec_eq =
+  let comp_op = `($)` in
+    fun var_names ->
+      let n = length var_names in
+      let x_tm = mk_var ("x", M_taylor.n_vector_type_array.(n)) in
+      let x_comps = 
+	let x_app = mk_icomb (comp_op, x_tm) in
+	  map (fun i -> mk_comb (x_app, mk_small_numeral i)) (1--n) in
+      let x_vec = M_taylor.mk_vector_list x_comps in
+      let comp_th = end_itlist CONJ (Array.to_list M_taylor.comp_thms_array.(n)) in
+      let x_eq = prove(mk_eq (x_tm, x_vec),
+		       REWRITE_TAC[CART_EQ; M_taylor.dimindex_array.(n); 
+				   M_taylor.gen_in_interval n; comp_th]) in
+      let x_list = map (fun i -> mk_var (assoc i var_names, real_ty)) (1--n) in
+      let x_vec2 = M_taylor.mk_vector_list x_list in
+      let eq_tm = mk_eq (mk_forall (x_tm, mk_icomb (`P:A->bool`, x_tm)), 
+			 list_mk_forall (x_list, mk_icomb (`P:A->bool`, x_vec2))) in
+	prove(eq_tm,
+	      EQ_TAC THEN REPEAT STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
+		ONCE_REWRITE_TAC[x_eq] THEN ASM_REWRITE_TAC[]);;
+
+let prove_bound_cond pp tm =
+  let eq_th = bin_float_rat_conv tm in
+    if rand (concl eq_th) = t_const then
+      EQT_ELIM eq_th
+    else
+      let vars, ineq_tm = strip_forall (rand (concl eq_th)) in
+      let ineq_th, stat = M_verifier_main.verify_ineq M_verifier_main.default_params pp ineq_tm in
+      let ineq_th1 = SPEC_ALL ineq_th in
+      let imp_tm = mk_imp (concl ineq_th1, ineq_tm) in
+      let ineq_th2 = MP (REAL_ARITH imp_tm) ineq_th1 in
+	ONCE_REWRITE_RULE[GSYM eq_th] (itlist GEN vars ineq_th2);;
+
+let strip_binop name =
+  let rec strip tm =
+    match tm with
+      | Comb (Comb (Const (op, _), tm1), tm2) when op = name ->
+	  tm1 :: strip tm2
+      | _ -> [tm] in
+    strip;;
+
+let forall_imp_conj = MESON[]
+  `(!x. P x ==> A x /\ B x) <=> (!x. P x ==> A x) /\ (!x. P x ==> B x)`;;
+
+let abs_lt_eq =
+  REAL_ARITH `!a b. abs a < b <=> a < b /\ --a < b`;;
+
+let abs_le_eq =
+  REAL_ARITH `!a b. abs a <= b <=> a <= b /\ --a <= b`;;
+
+
+let prove_opt_approx pp var_names bounds_tm total_tm approx_th =
+  try
+    let th0 = REWRITE_RULE[GSYM IMP_IMP] opt_approx_th in
+    let th1 = SPECL[bounds_tm; total_tm] (MATCH_MP th0 approx_th) in
+    let th2 = REWRITE_RULE[f0_mk; list_mk; ZIP; ALL2; 
+			   sum_list_cons; sum_list_nil; REAL_ADD_RID] th1 in
+    let n = length var_names in
+    let th3 = PURE_ONCE_REWRITE_RULE[gen_vec_eq var_names] th2 in
+    let comp_th = end_itlist CONJ (Array.to_list M_taylor.comp_thms_array.(n)) in
+    let th4 = PURE_REWRITE_RULE[IN_INTERVAL; M_taylor.dimindex_array.(n); 
+				M_taylor.gen_in_interval n; comp_th] th3 in
+    let th5 = REWRITE_RULE[forall_imp_conj; FORALL_AND_THM] th4 in
+    let bound_conds0 = fst (dest_imp (concl th5)) in
+    let bound_eq = REWRITE_CONV[abs_lt_eq; abs_le_eq; forall_imp_conj; 
+				FORALL_AND_THM; GSYM CONJ_ASSOC] bound_conds0 in
+    let bound_conds = strip_binop "/\\" (rand (concl bound_eq)) in
+    let bound_ths = map (prove_bound_cond pp) bound_conds in
+    let bound_th = ONCE_REWRITE_RULE[GSYM bound_eq] (end_itlist CONJ bound_ths) in
+    let th6 = MP th5 bound_th in
+      CONV_RULE (LAND_CONV bin_float_rat_conv THENC REWRITE_CONV[]) th6
+  with Failure _ ->
+    error "prove_opt_approx" [bounds_tm; total_tm] [approx_th];;
+
+
+let get_bounds_tm bounds indices approx_th =
+  let _, _, t_tm = dest_approx (concl approx_th) in
+  let _, f1_tm = dest_mk_tform t_tm in
+  let indices0 = map extract_index (dest_list f1_tm) in
+  let indices1 = map (fun i -> index i indices0) indices in
+  let bnds = sort (fun (i1, _) (i2, _) -> compare i1 i2) (zip indices1 bounds) in
+    (* Check that all bounds are present *)
+  let _ = map2 (fun (i1, _) i2 -> 
+		  if i1 <> i2 then error "get_bounds_tm" bounds [approx_th])
+    bnds (0--(length bounds - 1)) in
+    mk_list (map snd bnds, real_ty);;
+    
+
+
+(**********************)
 
 
 let le_lemma = prove
@@ -144,9 +261,9 @@ let prove_forall_hyp =
       let _, f = find (fun (tm, _) -> can (term_match [] tm) h_tm) table in
 	f pp dom_vars arg_ths h_tm;;
 
-let replay_proof pp proof =
+let build_tform pp proof =
   let _ = reset_index() in
-  let x_tm, dom_tm, dom_vars, var_index = build_domain pp proof.proof_vars in
+  let x_tm, dom_tm, dom_vars, var_names = build_domain pp proof.proof_vars in
   let steps = sort (fun s1 s2 -> compare s1.step_index s2.step_index) proof.proof_steps in
   let rec replay acc steps =
     match steps with
@@ -159,7 +276,7 @@ let replay_proof pp proof =
 	    begin
 	      match step.proof_op with
 		| Proof_var name ->
-		    build_var_tform dom_tm (var_index name)
+		    build_var_tform dom_tm (rev_assoc name var_names)
 		| Proof_const n ->
 		    build_const_tform dom_tm (mk_realintconst n)
 		| Proof_rnd rnd ->
@@ -216,23 +333,53 @@ let replay_proof pp proof =
 
 (*******************)
 
+let prove_bound pp proof approx_th =
+  let x_tm, dom_tm, dom_vars, var_names = build_domain pp proof.proof_vars in
+  let opt = hd proof.proof_opts in
+  let bounds = map mk_bin_float opt.opt_bounds in
+  let total_tm = mk_bin_float opt.total_bound in
+  let bounds_tm = get_bounds_tm bounds opt.opt_indices approx_th in
+    prove_opt_approx pp var_names bounds_tm total_tm approx_th;;
+
+let replay_proof pp proof =
+  let ths = build_tform pp proof in
+  let approx_th = snd (hd ths) in
+  let bound_th =
+    if proof.proof_opts = [] then
+      TRUTH
+    else
+      prove_bound pp proof approx_th in
+    approx_th, bound_th;;
+
+
+
+(************************)
+
 let pp = 15;;
 
 install_user_printer ("hidden", print_hidden);;
 
 (**************)
 
+replay_proof pp p1;;
+replay_proof pp p2;;
+replay_proof pp p4;;
+replay_proof pp p3;;
+
 let proof = p1;;
 
 let tms, ths = 
   try
-    [], replay_proof pp proof
+    [], build_tform pp proof
   with Error(msg, tms, ths) ->
     let _ = print_endline msg in
       tms, enumerate ths;;
 
+let approx_th = snd (hd ths);;
+
+
 hd ths;;
-let x_tm, dom_tm, dom_vars, var_index = build_domain pp proof.proof_vars;;
+let x_tm, dom_tm, dom_vars, var_names = build_domain pp proof.proof_vars;;
 
 
 let th = snd (nth ths 0);;
@@ -248,38 +395,56 @@ let h_tm = last hs_forall;;
 (*************)
 
 let approx_th = snd (hd ths);;
+let x_tm, dom_tm, dom_vars, var_names = build_domain pp proof.proof_vars;;
 
-let [total_tm; bound1; bound2; i1; i2] = tms;;
+let opt = hd proof.proof_opts;;
 
-let bounds = [bound1; bound2] and
-    indices = map dest_small_numeral [i1; i2];;
+let bounds = map mk_bin_float opt.opt_bounds;;
+let total_tm = mk_bin_float opt.total_bound;;
+let bounds_tm = get_bounds_tm bounds opt.opt_indices approx_th;;
+let th = prove_opt_approx pp var_names bounds_tm total_tm approx_th;;
 
-let opt_approx_th = prove
-  (`!s h t bounds total. approx s h t /\
-     (!x. x IN s ==> ALL2 (\ (f1,e1,e2) b. abs (f1 x) <= b) (tform_list t) bounds) /\
-     sum_list (ZIP (tform_list t) bounds) (\ ((f1,e1,e2), b). e2 * b) <= total
-     ==> !x:real^N. x IN s ==> abs (h x - tform_f0 t x) <= total`,
-   REPEAT GEN_TAC THEN STRIP_TAC THEN
-     MATCH_MP_TAC approx_bound THEN EXISTS_TAC `s:real^N->bool` THEN
-     ASM_REWRITE_TAC[SUBSET_REFL] THEN REPEAT STRIP_TAC THEN
-     MATCH_MP_TAC REAL_LE_TRANS THEN
-     EXISTS_TAC `sum_list (ZIP (tform_list (t:(N)tform)) bounds) (\((f1,e1,e2),b). e2 * b)` THEN
-     ASM_REWRITE_TAC[] THEN MATCH_MP_TAC sum_list_le_gen THEN
-     FIRST_X_ASSUM (MP_TAC o SPEC `x:real^N`) THEN ASM_REWRITE_TAC[] THEN
-     REWRITE_TAC[all2_el] THEN REPEAT STRIP_TAC THEN ASM_SIMP_TAC[length_zip; el_zip] THEN
-     STRIP_ASSUME_TAC (SPEC `EL i (tform_list (t:(N)tform))` triple_exists) THEN
-     FIRST_X_ASSUM (MP_TAC o SPEC `i:num`) THEN ASM_REWRITE_TAC[REAL_MUL_SYM] THEN
-     DISCH_TAC THEN MATCH_MP_TAC REAL_LE_LMUL THEN ASM_REWRITE_TAC[] THEN
-     UNDISCH_TAC `approx s h (t:(N)tform)` THEN REWRITE_TAC[approx] THEN
-     DISCH_THEN (MP_TAC o SPEC `x:real^N`) THEN ASM_REWRITE_TAC[] THEN
-     REWRITE_TAC[GSYM ALL_EL] THEN STRIP_TAC THEN
-     FIRST_X_ASSUM (MP_TAC o SPEC `i:num`) THEN ASM_REWRITE_TAC[] THEN
-     REAL_ARITH_TAC);;
-
-
-let bounds_tm = mk_list (bounds, real_ty);;
 
 let th0 = REWRITE_RULE[GSYM IMP_IMP] opt_approx_th;;
 let th1 = SPECL[bounds_tm; total_tm] (MATCH_MP th0 approx_th);;
-let th2 = REWRITE_RULE[f0_mk; list_mk; ZIP; ALL2; sum_list_cons; sum_list_nil; REAL_ADD_RID] th1;;
+let th2 = REWRITE_RULE[f0_mk; list_mk; ZIP; ALL2; 
+		       sum_list_cons; sum_list_nil; REAL_ADD_RID] th1;;
+let n = length var_names;;
+let th3 = PURE_ONCE_REWRITE_RULE[gen_vec_eq var_names] th2;;
+let comp_th = end_itlist CONJ (Array.to_list M_taylor.comp_thms_array.(n));;
+let th4 = PURE_REWRITE_RULE[IN_INTERVAL; M_taylor.dimindex_array.(n); 
+			    M_taylor.gen_in_interval n; comp_th] th3;;
+let th5 = REWRITE_RULE[forall_imp_conj; FORALL_AND_THM] th4;;
+let bound_conds0 = fst (dest_imp (concl th5));;
+let bound_eq = REWRITE_CONV[abs_lt_eq; forall_imp_conj; 
+			    FORALL_AND_THM; GSYM CONJ_ASSOC] bound_conds0;;
+let bound_conds = strip_binop "/\\" (rand (concl bound_eq));;
+let bound_ths = map (prove_bound_cond pp) bound_conds;;
 
+
+let tm = nth bound_conds 2;;
+
+let eq_th = bin_float_rat_conv tm;;
+if rand (concl eq_th) = t_const then
+  EQT_ELIM eq_th
+else
+  TRUTH;;
+      
+let vars, ineq_tm = strip_forall (rand (concl eq_th));;
+let ineq_th, stat = M_verifier_main.verify_ineq M_verifier_main.default_params pp ineq_tm;;
+let ineq_th1 = SPEC_ALL ineq_th;;
+let imp_tm = mk_imp (concl ineq_th1, ineq_tm);;
+let ineq_th2 = MP (REAL_ARITH imp_tm) ineq_th1;;
+itlist GEN vars ineq_th2;;
+
+let imp_tm = mk_imp (concl ineq_th, rand (concl eq_th));;
+REAL_ imp_tm;;
+
+let ineq_th2 = MP (REAL_ARITH imp_tm) ineq_th;;
+	ONCE_REWRITE_RULE[GSYM eq_th] ineq_th2;;
+
+
+
+    let bound_th = ONCE_REWRITE_RULE[GSYM bound_eq] (end_itlist CONJ bound_ths) in
+    let th6 = MP th5 bound_th in
+      CONV_RULE (LAND_CONV bin_float_rat_conv THENC REWRITE_CONV[]) th6

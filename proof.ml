@@ -23,6 +23,8 @@ type proof_op =
   | Proof_sqrt
   | Proof_sin
   | Proof_cos
+
+type proof_opt_type =
   | Proof_opt_approx
 
 type proof_args = {
@@ -37,14 +39,23 @@ type proof_step = {
   proof_args : proof_args;
 }
 
+type proof_opt = {
+  opt_type : proof_opt_type;
+  opt_bounds : float list;
+  opt_indices : int list;
+  total_bound : float;
+}
+
 type proof = {
   mutable proof_vars : proof_var list;
   mutable proof_steps : proof_step list;
+  mutable proof_opts : proof_opt list;
 }
 
 let proof = {
   proof_vars = [];
   proof_steps = [];
+  proof_opts = [];
 }
 
 let save_proof fname =
@@ -66,13 +77,23 @@ let mk_proof_args args errs bounds = {
   bounds = bounds;
 }
 
+let mk_proof_opt opt indices bounds total = {
+  opt_type = opt;
+  opt_bounds = bounds;
+  opt_indices = indices;
+  total_bound = total;
+}
+
 let add_proof_step i op args = 
   let step = {
     step_index = i;
     proof_op = op;
     proof_args = args;
   } in
-  proof.proof_steps <- step :: proof.proof_steps
+  proof.proof_steps <- proof.proof_steps @ [step]
+
+let add_proof_opt opt =
+  proof.proof_opts <- proof.proof_opts @ [opt]
 
 let new_proof () =
   let vars0 = all_variables () in
@@ -82,7 +103,8 @@ let new_proof () =
     high = v.hi_bound.Expr.rational_v;
   }) vars0 in
   proof.proof_vars <- vars;
-  proof.proof_steps <- []
+  proof.proof_steps <- [];
+  proof.proof_opts <- []
 
 let add_var_step i name =
   let op = Proof_var name in
@@ -149,7 +171,6 @@ let add_cos_step i arg bound =
   let args = mk_proof_args [arg] [] [bound] in
   add_proof_step i op args
 
-let add_opt_approx_step i arg indices bounds bound =
-  let op = Proof_opt_approx in
-  let args = mk_proof_args [arg] indices (bound :: bounds) in
-  add_proof_step i op args
+let add_opt_approx indices bounds total =
+  let opt = Proof_opt_approx in
+  add_proof_opt (mk_proof_opt opt indices bounds total)

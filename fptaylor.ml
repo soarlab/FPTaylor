@@ -149,8 +149,7 @@ let errors =
 	let all_bounds = map fst bounds1 @ map fst bounds2 in
 	let all_indices = map (fun (_, err) -> err.proof_index) v1 
 	  @ map (fun (_, err) -> err.proof_index) v2 in
-	let _ = Proof.add_opt_approx_step (next_form_index()) f.form_index 
-	  all_indices all_bounds total in
+	let _ = Proof.add_opt_approx all_indices all_bounds total in
 	let _ = report (Format.sprintf "total1: %e\ntotal2: %e\ntotal: %e" total1 total2 total) in
 	Some total
       else None in
