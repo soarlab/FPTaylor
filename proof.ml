@@ -151,9 +151,9 @@ let add_mul_step i arg1 arg2 m2_bound e2 m2_index =
   let args = mk_proof_args [arg1; arg2] [m2_index] [m2_bound; e2] in
   add_proof_step i op args
 
-let add_inv_step i arg bound =
+let add_inv_step i arg m1 m2 e2 b m3 m3_index =
   let op = Proof_inv in
-  let args = mk_proof_args [arg] [] [bound] in
+  let args = mk_proof_args [arg] [m3_index] [m1; m2; float_of_int e2; b; m3] in
   add_proof_step i op args
 
 let add_sqrt_step i arg bound =

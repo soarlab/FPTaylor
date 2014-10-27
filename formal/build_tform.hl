@@ -174,10 +174,6 @@ let EXPAND_CONCL_RULE var_name th =
 
 let hidden_def = new_definition `HIDDEN v x = x`;;
 
-let eq_hidden = prove
-  (`HIDDEN a x = HIDDEN b y <=> x = y`,
-   REWRITE_TAC[hidden_def]);;
-
 let mk_hidden name =
   let v = mk_var (name, bool_ty) in
     mk_icomb (`HIDDEN:A->B->B`, v);;
@@ -377,7 +373,7 @@ let build_simpl_eq_tform i j approx_th =
   let th1 = PURE_REWRITE_RULE[GSYM IMP_IMP; let_triple] (CONV_RULE (DEPTH_CONV let_CONV) th0) in
   let th2 = MP th1 approx_th in
   let th3 = REWRITE_RULE[f0_mk; list_mk; LENGTH] th2 in
-  let th4 = REWRITE_RULE[eq_hidden] (CONV_RULE (DEPTH_CONV (FIRST_CONV [EL_CONV; delete_at_conv])) th3) in
+  let th4 = REWRITE_RULE[] (CONV_RULE (DEPTH_CONV (FIRST_CONV [EL_CONV; delete_at_conv])) th3) in
     UNDISCH_ALL th4;;
 
 let build_mul_tform m2_tm e2_tm err_indices approx1_th approx2_th =
@@ -393,18 +389,14 @@ let build_mul_tform m2_tm e2_tm err_indices approx1_th approx2_th =
       let th4 = REWRITE_RULE[mul_f1; MAP; APPEND; f0_mk; list_mk] th3 in
 	hide_and_abbrev_e1s false err_indices th4;;
 
-let build_inv_tform approx_th =
+let build_inv_tform m1_tm m2_tm e2_tm b_tm m3_tm err_indices approx_th =
   let dom_tm, h_tm, t_tm = dest_approx (concl approx_th) in
-  let m1_tm = `m1:real` in
-  let m2_tm = `m2:real` in
-  let e2_tm = `e2:real` in
-  let b_tm = `b:real` in
-  let th0 = ISPECL[dom_tm; h_tm; t_tm; m1_tm; m2_tm; e2_tm; b_tm] approx_inv in
+  let th0 = ISPECL[dom_tm; h_tm; t_tm; m1_tm; m2_tm; e2_tm; b_tm; m3_tm] approx_inv in
   let th1 = PURE_REWRITE_RULE[GSYM IMP_IMP] th0 in
   let th2 = MP th1 approx_th in
   let th3 = UNDISCH_ALL (REWRITE_RULE[f0_mk; list_mk] th2) in
   let th4 = REWRITE_RULE[mul_f1; MAP; APPEND; f0_mk; list_mk] th3 in
-    hide_and_abbrev_e1s false [] th4;;
+    hide_and_abbrev_e1s false err_indices th4;;
 
 
 (*

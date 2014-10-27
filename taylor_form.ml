@@ -307,18 +307,27 @@ let inv_form vars f =
     let eps = get_eps x_exp in
     let xi = {low = -. eps; high = eps} in
     (xi *$. x) +$ s) x1 zero_I in
-  let d = pow_I_i (x0_int +$ s1) 3 in
-  let r_high = (abs_I (inv_I d)).high in
-  let m2', m2_exp = sum2_high x1 x1 in
-  let m2 = r_high *^ m2' in
+  let m1 = make_stronger (abs_I s1).high in
+  let d =
+    if Config.proof_flag then
+      pow_I_i (x0_int +$ {low = -.m1; high = m1}) 3
+    else
+      pow_I_i (x0_int +$ s1) 3 in
+  let b_high = (abs_I (inv_I d)).high in
+  let b_high = make_stronger b_high in
+  let m2, m2_exp = sum2_high x1 x1 in
   let m2 = make_stronger m2 in
+  let m3 = b_high *^ m2 in
+  let m3 = make_stronger m3 in
   let form_index = next_form_index() in
-  let _ = Proof.add_inv_step form_index f.form_index m2 in
+  let m3_err = mk_err_var (-1) m2_exp in
+  let _ = Proof.add_inv_step form_index f.form_index 
+    m1 m2 m2_exp b_high m3 m3_err.proof_index in
   {
     form_index = form_index;
     v0 = mk_div const_1 f.v0;
     v1 = map (fun (e, err) -> mk_neg (mk_div e (mk_mul f.v0 f.v0)), err) f.v1
-      @ [fp_to_const m2, mk_err_var (-1) m2_exp];
+      @ [fp_to_const m3, m3_err];
   }
 
 (* division *)

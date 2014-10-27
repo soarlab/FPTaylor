@@ -774,7 +774,7 @@ let taylor2_log = prove
 (* --------------------------- *)
 
 let approx_taylor2 = prove
-  (`!f f' f'' s h t m1 m2 e2 b. 
+  (`!f f' f'' s h t m1 m2 e2 b m3. 
      (!x. x IN s ==> abs (tform_f1 t x) <= m1 /\ abs (tform_f1 t x pow 2) <= m2 * e2) /\
      (!x y. x IN s /\ abs y <= m1 ==> 
 	let z = tform_f0 t x + y in
@@ -782,38 +782,42 @@ let approx_taylor2 = prove
 	  (f' has_real_derivative f'' z) (atreal z) /\
 	    abs (f'' z / &2) <= b) /\
        approx s h t /\
-       &0 < b /\ &0 <= m2 /\ &0 <= e2
+       &0 < b /\ &0 <= m2 /\ &0 <= e2 /\ b * m2 <= m3
      ==> approx s (\x:real^N. f (h x))
        (mk_tform ((\x. f (tform_f0 t x)),
 		  (mul_f1 (\x. f' (tform_f0 t x)) (tform_list t) ++
-		     [(\x. b * m2), 
-		      (\x. (f (h x) - f (tform_f0 t x) - f' (tform_f0 t x) * tform_f1 t x) / 
-			 (b * m2)),
+		     [(\x. m3), 
+		      (\x. (f (h x) - f (tform_f0 t x) - f' (tform_f0 t x) * tform_f1 t x) / m3),
 		      e2])))`,
    REWRITE_TAC[approx; tform_f1] THEN REPEAT GEN_TAC THEN ASM_SIMP_TAC[f0_mk; list_mk] THEN
      CONV_TAC (DEPTH_CONV let_CONV) THEN STRIP_TAC THEN GEN_TAC THEN DISCH_TAC THEN
      ABBREV_TAC `r = sum_list (tform_list t) (\ (f1,e1,e2). f1 (x:real^N) * e1 x)` THEN
+     SUBGOAL_THEN `&0 <= b * m2` ASSUME_TAC THENL [
+       MATCH_MP_TAC REAL_LE_MUL THEN ASM_SIMP_TAC[REAL_LT_IMP_LE];
+       ALL_TAC
+     ] THEN
+     SUBGOAL_THEN `b * m2 = &0 ==> r = &0` ASSUME_TAC THENL [
+       DISCH_TAC THEN
+	 SUBGOAL_THEN `m2 = &0` ASSUME_TAC THENL [
+	   POP_ASSUM MP_TAC THEN 
+	     ASM_SIMP_TAC[REAL_ENTIRE; REAL_ARITH `&0 < b ==> ~(b = &0)`];
+	   ALL_TAC
+	 ] THEN
+	 REPEAT (FIRST_X_ASSUM (MP_TAC o SPEC `x:real^N`)) THEN
+         ASM_REWRITE_TAC[REAL_MUL_LZERO; REAL_ABS_MUL; REAL_POW_2] THEN
+	 SUBGOAL_THEN `abs r * abs r <= &0 ==> r = &0` ASSUME_TAC THENL [
+	   REWRITE_TAC[REAL_ARITH `a * b <= &0 <=> &0 <= (--a) * b`] THEN
+	     REWRITE_TAC[REAL_MUL_POS_LE] THEN REAL_ARITH_TAC;
+	   ALL_TAC
+	 ] THEN
+	 ASM_SIMP_TAC[];
+       ALL_TAC
+     ] THEN
      STRIP_TAC THENL [
        REWRITE_TAC[sum_list_append; sum_list_mul1; sum_list_sing] THEN
-	 ASM_CASES_TAC `(b * m2 = &0)` THENL [
-	   ASM_REWRITE_TAC[real_div; REAL_INV_0; REAL_MUL_LZERO; REAL_ADD_RID] THEN
-             SUBGOAL_THEN `r = &0` ASSUME_TAC THENL [
-	       SUBGOAL_THEN `m2 = &0` ASSUME_TAC THENL [
-		 POP_ASSUM MP_TAC THEN 
-		   ASM_SIMP_TAC[REAL_ENTIRE; REAL_ARITH `&0 < b ==> ~(b = &0)`];
-		 ALL_TAC
-	       ] THEN
-		 REPEAT (FIRST_X_ASSUM (MP_TAC o SPEC `x:real^N`)) THEN
-		 ASM_REWRITE_TAC[REAL_MUL_LZERO; REAL_ABS_MUL; REAL_POW_2] THEN
-		 SUBGOAL_THEN `abs r * abs r <= &0 ==> r = &0` ASSUME_TAC THENL [
-		   REWRITE_TAC[REAL_ARITH `a * b <= &0 <=> &0 <= (--a) * b`] THEN
-		     REWRITE_TAC[REAL_MUL_POS_LE] THEN REAL_ARITH_TAC;
-		   ALL_TAC
-		 ] THEN
-		 ASM_SIMP_TAC[];
-	       ALL_TAC
-	     ] THEN
-	     ASM_REWRITE_TAC[REAL_ADD_RID; REAL_MUL_RZERO];
+	 ASM_CASES_TAC `m3 = &0` THENL [
+	   SUBGOAL_THEN `b * m2 = &0` ASSUME_TAC THENL [ ASM_ARITH_TAC; ALL_TAC ] THEN
+	     ASM_SIMP_TAC[real_div; REAL_INV_0; REAL_MUL_LZERO; REAL_ADD_RID; REAL_MUL_RZERO];
 	   ALL_TAC
 	 ] THEN
 	 ASM_SIMP_TAC[REAL_ARITH `x * y / x = (x / x) * y`; REAL_DIV_REFL] THEN
@@ -821,6 +825,20 @@ let approx_taylor2 = prove
      ALL_TAC
    ] THEN
    ASM_SIMP_TAC[ALL_APPEND; all_e12_mul1; ALL] THEN
+   ASM_CASES_TAC `b * m2 = &0` THENL [
+     ASM_SIMP_TAC[REAL_MUL_RZERO; REAL_SUB_RZERO; REAL_ADD_RID; REAL_SUB_REFL] THEN
+       ASM_REWRITE_TAC[real_div; REAL_MUL_LZERO; REAL_ABS_0];
+     ALL_TAC
+   ] THEN
+   MATCH_MP_TAC REAL_LE_TRANS THEN
+   EXISTS_TAC `abs ((f (tform_f0 t x + r) - f (tform_f0 (t:(N)tform) x) - f' (tform_f0 t x) * r) / (b * m2))` THEN
+   CONJ_TAC THENL [
+     REWRITE_TAC[real_div; REAL_ABS_MUL] THEN
+       MATCH_MP_TAC REAL_LE_MUL2 THEN REWRITE_TAC[REAL_ABS_POS; REAL_LE_REFL] THEN
+       REWRITE_TAC[REAL_ABS_INV; REAL_LE_INV] THEN
+       MATCH_MP_TAC REAL_LE_INV2 THEN ASM_ARITH_TAC;
+     ALL_TAC
+   ] THEN
    MP_TAC (SPECL[`f:real->real`; `f':real->real`; `f'':real->real`; `tform_f0 (t:(N)tform) x`; `r:real`] taylor2) THEN
    ANTS_TAC THENL [
      GEN_TAC THEN DISCH_TAC THEN
@@ -832,14 +850,10 @@ let approx_taylor2 = prove
    ] THEN
    STRIP_TAC THEN
    ASM_REWRITE_TAC[REAL_ARITH `(a + b + c) - a - b = c`] THEN
-   ASM_CASES_TAC `b * m2 = &0` THENL [
-     ASM_REWRITE_TAC[real_div; REAL_INV_0; REAL_MUL_RZERO; REAL_ABS_0];
-     ALL_TAC
-   ] THEN
    MATCH_MP_TAC REAL_LE_LCANCEL_IMP THEN EXISTS_TAC `b * m2` THEN
    CONJ_TAC THENL [
      MATCH_MP_TAC REAL_LT_MUL THEN
-       POP_ASSUM MP_TAC THEN ASM_REWRITE_TAC[REAL_ENTIRE; DE_MORGAN_THM] THEN
+       UNDISCH_TAC `~(b * m2 = &0)` THEN ASM_REWRITE_TAC[REAL_ENTIRE; DE_MORGAN_THM] THEN
        UNDISCH_TAC `&0 <= m2` THEN REAL_ARITH_TAC;
      ALL_TAC
    ] THEN
@@ -865,18 +879,18 @@ let approx_taylor2 = prove
 (* --------------------------- *)
 
 let approx_inv = prove
-  (`!s h t m1 m2 e2 b. 
+  (`!s h t m1 m2 e2 b m3. 
      approx s h t /\
      (!x. x IN s ==> abs (tform_f1 t x) <= m1 /\ abs (tform_f1 t x pow 2) <= m2 * e2) /\
      (!x y. x IN s /\ abs y <= m1 ==> abs (inv ((tform_f0 t x + y) pow 3)) <= b /\
 	                              ~(tform_f0 t x + y = &0)) /\
-       &0 < b /\ &0 <= m2 /\ &0 <= e2
+       &0 < b /\ &0 <= m2 /\ &0 <= e2 /\ b * m2 <= m3
      ==> approx s (\x:real^N. inv (h x))
        (mk_tform ((\x. inv (tform_f0 t x)),
 		  (mul_f1 (\x. --inv (tform_f0 t x pow 2)) (tform_list t) ++
-		     [(\x. b * m2), 
+		     [(\x. m3), 
 		      (\x. (inv (h x) - inv (tform_f0 t x) + inv (tform_f0 t x pow 2) * tform_f1 t x) / 
-			 (b * m2)),
+			 m3),
 		      e2])))`,
    REPEAT STRIP_TAC THEN
      MP_TAC ((SPEC_ALL o SPECL[`inv`; `\x. --inv (x pow 2)`; `\x. &2 * inv (x pow 3)`]) approx_taylor2) THEN
@@ -893,18 +907,18 @@ let approx_inv = prove
 (* --------------------------- *)
 
 let approx_sqrt = prove
-  (`!s h t m1 m2 e2 b. 
+  (`!s h t m1 m2 e2 b m3. 
      approx s h t /\
      (!x. x IN s ==> abs (tform_f1 t x) <= m1 /\ abs (tform_f1 t x pow 2) <= m2 * e2) /\
      (!x y. x IN s /\ abs y <= m1 ==> abs (inv (sqrt (tform_f0 t x + y) pow 3) / &8) <= b /\
 	                              &0 < tform_f0 t x + y) /\
-       &0 < b /\ &0 <= m2 /\ &0 <= e2
+       &0 < b /\ &0 <= m2 /\ &0 <= e2 /\ b * m2 <= m3
      ==> approx s (\x:real^N. sqrt (h x))
        (mk_tform ((\x. sqrt (tform_f0 t x)),
 		  (mul_f1 (\x. inv (&2 * sqrt (tform_f0 t x))) (tform_list t) ++
-		     [(\x. b * m2), 
+		     [(\x. m3), 
 		      (\x. (sqrt (h x) - sqrt (tform_f0 t x) - 
-			      inv (&2 * sqrt (tform_f0 t x)) * tform_f1 t x) / (b * m2)),
+			      inv (&2 * sqrt (tform_f0 t x)) * tform_f1 t x) / m3),
 		      e2])))`,
    REPEAT STRIP_TAC THEN
      MP_TAC ((SPEC_ALL o SPECL[`sqrt`; `\x. inv (&2 * sqrt x)`; `\x. --inv (&4 * sqrt x pow 3)`]) approx_taylor2) THEN
@@ -922,17 +936,16 @@ let approx_sqrt = prove
 (* --------------------------- *)
 
 let approx_sin = prove
-  (`!s h t m1 m2 e2 b. 
+  (`!s h t m1 m2 e2 b m3. 
      approx s h t /\
      (!x. x IN s ==> abs (tform_f1 t x) <= m1 /\ abs (tform_f1 t x pow 2) <= m2 * e2) /\
        (!x y. x IN s /\ abs y <= m1 ==> abs (sin (tform_f0 t x + y) / &2) <= b) /\
-       &0 < b /\ &0 <= m2 /\ &0 <= e2
+       &0 < b /\ &0 <= m2 /\ &0 <= e2 /\ b * m2 <= m3
      ==> approx s (\x:real^N. sin (h x))
        (mk_tform ((\x. sin (tform_f0 t x)),
 		  (mul_f1 (\x. cos (tform_f0 t x)) (tform_list t) ++
-		     [(\x. b * m2), 
-		      (\x. (sin (h x) - sin (tform_f0 t x) - cos (tform_f0 t x) * tform_f1 t x) / 
-			 (b * m2)),
+		     [(\x. m3), 
+		      (\x. (sin (h x) - sin (tform_f0 t x) - cos (tform_f0 t x) * tform_f1 t x) / m3),
 		      e2])))`,
    REPEAT STRIP_TAC THEN
      MP_TAC ((SPEC_ALL o SPECL[`sin`; `cos`; `\x. --sin x`]) approx_taylor2) THEN
@@ -948,17 +961,16 @@ let approx_sin = prove
 (* --------------------------- *)
 
 let approx_cos = prove
-  (`!s h t m1 m2 e2 b. 
+  (`!s h t m1 m2 e2 b m3. 
      approx s h t /\
      (!x. x IN s ==> abs (tform_f1 t x) <= m1 /\ abs (tform_f1 t x pow 2) <= m2 * e2) /\
        (!x y. x IN s /\ abs y <= m1 ==> abs (cos (tform_f0 t x + y) / &2) <= b) /\
-       &0 < b /\ &0 <= m2 /\ &0 <= e2
+       &0 < b /\ &0 <= m2 /\ &0 <= e2 /\ b * m2 <= m3
      ==> approx s (\x:real^N. cos (h x))
        (mk_tform ((\x. cos (tform_f0 t x)),
 		  (mul_f1 (\x. --sin (tform_f0 t x)) (tform_list t) ++
-		     [(\x. b * m2), 
-		      (\x. (cos (h x) - cos (tform_f0 t x) + sin (tform_f0 t x) * tform_f1 t x) / 
-			 (b * m2)),
+		     [(\x. m3), 
+		      (\x. (cos (h x) - cos (tform_f0 t x) + sin (tform_f0 t x) * tform_f1 t x) / m3),
 		      e2])))`,
    REPEAT STRIP_TAC THEN
      MP_TAC ((SPEC_ALL o SPECL[`cos`; `\x. --sin x`; `\x. --cos x`]) approx_taylor2) THEN
@@ -974,17 +986,16 @@ let approx_cos = prove
 (* --------------------------- *)
 
 let approx_exp = prove
-  (`!s h t m1 m2 e2 b. 
+  (`!s h t m1 m2 e2 b m3. 
      approx s h t /\
      (!x. x IN s ==> abs (tform_f1 t x) <= m1 /\ abs (tform_f1 t x pow 2) <= m2 * e2) /\
        (!x y. x IN s /\ abs y <= m1 ==> abs (exp (tform_f0 t x + y) / &2) <= b) /\
-       &0 < b /\ &0 <= m2 /\ &0 <= e2
+       &0 < b /\ &0 <= m2 /\ &0 <= e2 /\ b * m2 <= m3
      ==> approx s (\x:real^N. exp (h x))
        (mk_tform ((\x. exp (tform_f0 t x)),
 		  (mul_f1 (\x. exp (tform_f0 t x)) (tform_list t) ++
-		     [(\x. b * m2), 
-		      (\x. (exp (h x) - exp (tform_f0 t x) - exp (tform_f0 t x) * tform_f1 t x) / 
-			 (b * m2)),
+		     [(\x. m3), 
+		      (\x. (exp (h x) - exp (tform_f0 t x) - exp (tform_f0 t x) * tform_f1 t x) / m3),
 		      e2])))`,
    REPEAT STRIP_TAC THEN
      MP_TAC ((SPEC_ALL o SPECL[`exp`; `exp`; `exp`]) approx_taylor2) THEN
@@ -1000,18 +1011,18 @@ let approx_exp = prove
 (* --------------------------- *)
 
 let approx_atn = prove
-  (`!s h t m1 m2 e2 b. 
+  (`!s h t m1 m2 e2 b m3.
      approx s h t /\
      (!x. x IN s ==> abs (tform_f1 t x) <= m1 /\ abs (tform_f1 t x pow 2) <= m2 * e2) /\
      (!x y. x IN s /\ abs y <= m1 ==> 
 	abs ((tform_f0 t x + y) * inv (&1 + (tform_f0 t x + y) pow 2) pow 2) <= b) /\
-     &0 < b /\ &0 <= m2 /\ &0 <= e2
+     &0 < b /\ &0 <= m2 /\ &0 <= e2 /\ b * m2 <= m3
      ==> approx s (\x:real^N. atn (h x))
        (mk_tform ((\x. atn (tform_f0 t x)),
 		  (mul_f1 (\x. inv (&1 + (tform_f0 t x) pow 2)) (tform_list t) ++
-		     [(\x. b * m2), 
+		     [(\x. m3), 
 		      (\x. (atn (h x) - atn (tform_f0 t x) - 
-			      inv (&1 + (tform_f0 t x) pow 2) * tform_f1 t x) / (b * m2)),
+			      inv (&1 + (tform_f0 t x) pow 2) * tform_f1 t x) / m3),
 		      e2])))`,
    REPEAT STRIP_TAC THEN
      MP_TAC ((SPEC_ALL o SPECL[`atn`; `\x. inv (&1 + x pow 2)`; `\x. -- &2 * x * inv (&1 + x pow 2) pow 2`]) approx_taylor2) THEN
@@ -1028,18 +1039,18 @@ let approx_atn = prove
 (* --------------------------- *)
 
 let approx_log = prove
-  (`!s h t m1 m2 e2 b. 
+  (`!s h t m1 m2 e2 b m3.
      approx s h t /\
      (!x. x IN s ==> abs (tform_f1 t x) <= m1 /\ abs (tform_f1 t x pow 2) <= m2 * e2) /\
      (!x y. x IN s /\ abs y <= m1 ==> abs (inv ((tform_f0 t x + y) pow 2) / &2) <= b /\
 	                              &0 < tform_f0 t x + y) /\
-       &0 < b /\ &0 <= m2 /\ &0 <= e2
+       &0 < b /\ &0 <= m2 /\ &0 <= e2 /\ b * m2 <= m3
      ==> approx s (\x:real^N. log (h x))
        (mk_tform ((\x. log (tform_f0 t x)),
 		  (mul_f1 (\x. inv (tform_f0 t x)) (tform_list t) ++
-		     [(\x. b * m2), 
+		     [(\x. m3), 
 		      (\x. (log (h x) - log (tform_f0 t x) - 
-			      inv (tform_f0 t x) * tform_f1 t x) / (b * m2)),
+			      inv (tform_f0 t x) * tform_f1 t x) / m3),
 		      e2])))`,
    REPEAT STRIP_TAC THEN
      MP_TAC ((SPEC_ALL o SPECL[`log`; `inv`; `\x. --inv (x pow 2)`]) approx_taylor2) THEN
@@ -1056,19 +1067,19 @@ let approx_log = prove
 (* --------------------------- *)
 
 let approx_acs = prove
-  (`!s h t m1 m2 e2 b. 
+  (`!s h t m1 m2 e2 b m3.
      approx s h t /\
      (!x. x IN s ==> abs (tform_f1 t x) <= m1 /\ abs (tform_f1 t x pow 2) <= m2 * e2) /\
      (!x y. x IN s /\ abs y <= m1 ==> 
 	abs ((tform_f0 t x + y) * inv (sqrt (&1 - (tform_f0 t x + y) pow 2) pow 3) / &2) <= b /\
 	abs (tform_f0 t x + y) < &1) /\
-     &0 < b /\ &0 <= m2 /\ &0 <= e2
+     &0 < b /\ &0 <= m2 /\ &0 <= e2 /\ b * m2 <= m3
      ==> approx s (\x:real^N. acs (h x))
        (mk_tform ((\x. acs (tform_f0 t x)),
 		  (mul_f1 (\x. --inv (sqrt (&1 - tform_f0 t x pow 2))) (tform_list t) ++
-		     [(\x. b * m2), 
+		     [(\x. m3), 
 		      (\x. (acs (h x) - acs (tform_f0 t x) + 
-			      inv (sqrt (&1 - tform_f0 t x pow 2)) * tform_f1 t x) / (b * m2)),
+			      inv (sqrt (&1 - tform_f0 t x pow 2)) * tform_f1 t x) / m3),
 		      e2])))`,
    REPEAT STRIP_TAC THEN
      MP_TAC ((SPEC_ALL o SPECL[`acs`; `\x. --inv (sqrt (&1 - x pow 2))`; `\x. --x * inv (sqrt (&1 - x pow 2) pow 3)`]) approx_taylor2) THEN
@@ -1085,19 +1096,19 @@ let approx_acs = prove
 (* --------------------------- *)
 
 let approx_asn = prove
-  (`!s h t m1 m2 e2 b. 
+  (`!s h t m1 m2 e2 b m3.
      approx s h t /\
      (!x. x IN s ==> abs (tform_f1 t x) <= m1 /\ abs (tform_f1 t x pow 2) <= m2 * e2) /\
      (!x y. x IN s /\ abs y <= m1 ==> 
 	abs ((tform_f0 t x + y) * inv (sqrt (&1 - (tform_f0 t x + y) pow 2) pow 3) / &2) <= b /\
 	abs (tform_f0 t x + y) < &1) /\
-     &0 < b /\ &0 <= m2 /\ &0 <= e2
+     &0 < b /\ &0 <= m2 /\ &0 <= e2 /\ b * m2 <= m3
      ==> approx s (\x:real^N. asn (h x))
        (mk_tform ((\x. asn (tform_f0 t x)),
 		  (mul_f1 (\x. inv (sqrt (&1 - tform_f0 t x pow 2))) (tform_list t) ++
-		     [(\x. b * m2), 
+		     [(\x. m3), 
 		      (\x. (asn (h x) - asn (tform_f0 t x) - 
-			      inv (sqrt (&1 - tform_f0 t x pow 2)) * tform_f1 t x) / (b * m2)),
+			      inv (sqrt (&1 - tform_f0 t x pow 2)) * tform_f1 t x) / m3),
 		      e2])))`,
    REPEAT STRIP_TAC THEN
      MP_TAC ((SPEC_ALL o SPECL[`asn`; `\x. inv (sqrt (&1 - x pow 2))`; `\x. x * inv (sqrt (&1 - x pow 2) pow 3)`]) approx_taylor2) THEN
