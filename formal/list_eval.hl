@@ -1,0 +1,75 @@
+needs "lib.hl";;
+needs "list/list_conversions.hl";;
+needs "misc/misc_vars.hl";;
+needs "misc/misc_functions.hl";;
+
+module List_eval = struct
+
+open Arith_nat;;
+open Lib;;
+open Misc_functions;;
+open Misc_vars;;
+
+(* --------------------------------------------- *)
+(* EL                                            *)
+(* --------------------------------------------- *)
+
+let eval_el n_tm list_tm =
+  let n_eq = (NUMERAL_TO_NUM_CONV THENC REWRITE_CONV[Arith_num.NUM_THM]) n_tm in
+  let th0 = List_conversions.eval_el (rand (concl n_eq)) list_tm in
+  let ltm, rtm = dest_comb (lhand (concl th0)) in
+  let el_tm = rator ltm in
+    TRANS (AP_THM (AP_TERM el_tm n_eq) rtm) th0;;
+
+(* --------------------------------------------- *)
+(* LENGTH                                        *)
+(* --------------------------------------------- *)
+
+let eval_length list_tm =
+  let th0 = List_conversions.eval_length list_tm in
+  let n_tm = rand (concl th0) in
+  let eq1 = SYM (INST[n_tm, n_var_num] Arith_num.NUM_THM) in
+  let eq2 = NUM_TO_NUMERAL_CONV (rand (concl eq1)) in
+    TRANS (TRANS th0 eq1) eq2;;
+
+(* --------------------------------------------- *)
+(* delete_at                                     *)
+(* --------------------------------------------- *)
+
+let eval_delete_at =
+  let delete_at_nil = prove(`delete_at n [] = []:(A)list`, 
+			    REWRITE_TAC[delete_at]) in
+  let delete_at_0 = prove(`delete_at 0 (CONS (h:A) t) = t`,
+			  REWRITE_TAC[delete_at]) in
+  let delete_at_suc = prove(`n = SUC m ==> delete_at n (CONS (h:A) t) = CONS h (delete_at m t)`,
+			    SIMP_TAC[delete_at]) in
+  let zero_const = `0` in
+    fun n_tm list_tm ->
+      let list_ty = type_of list_tm in
+      let ty = (hd o snd o dest_type) list_ty in
+      let inst_t = INST_TYPE[ty, aty] in
+      let del_nil = inst_t delete_at_nil and
+	  del_0 = inst_t delete_at_0 and
+	  del_suc = inst_t delete_at_suc in
+      let h_var, t_var = mk_var("h", ty), mk_var("t", list_ty) in
+      let rec eval n_tm list_tm =
+	match list_tm with
+	  | Const ("NIL", _) ->
+	      INST[n_tm, n_var_num] del_nil
+	  | Comb (Comb (Const ("CONS", _), h_tm), t_tm) ->
+	      if n_tm = zero_const then
+		INST[h_tm, h_var; t_tm, t_var] del_0
+	      else
+		let suc_th = num_CONV n_tm in
+		let m_tm = rand (rand (concl suc_th)) in
+		let th0 = INST[n_tm, n_var_num; m_tm, m_var_num; 
+			       h_tm, h_var; t_tm, t_var] del_suc in
+		let th1 = MP th0 suc_th in
+		let cons_op = rator (rand (concl th1)) in
+		let r_th = eval m_tm t_tm in
+		  TRANS th1 (AP_TERM cons_op r_th)
+	  | _ -> error "eval_delete_at" [n_tm; list_tm] []
+      in
+	eval n_tm list_tm;;
+
+end;;
