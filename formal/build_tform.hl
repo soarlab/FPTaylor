@@ -434,9 +434,7 @@ let build_simpl_eq_tform i j approx_th =
   let indices = map extract_index (dest_list t1_tm) in
   let i' = index i indices and
       j' = index j indices in
-  let i_tm, j_tm = 
-    let i, j = if i' < j' then i', j' else j', i' in
-      mk_small_numeral i, mk_small_numeral j in
+  let i_tm, j_tm = mk_small_numeral i', mk_small_numeral j' in
   let el_i = eval_el i_tm t1_tm and
       el_j = eval_el j_tm t1_tm in
   let f1_tm, e1_tm, e2_tm = dest_triple (rand (concl el_i)) and

@@ -1,7 +1,18 @@
 needs "build_tform2.hl";;
 
-open Proof;;
 open List;;
+open List_eval;;
+open Interval_arith;;
+open Arith_float;;
+open More_float;;
+open Lib;;
+open Tform;;
+open Build_tform;;
+open Bin_float;;
+open Eval_expr;;
+open Proof;;
+open Misc_functions;;
+open Misc_vars;;
 open Build_tform2;;
 
 let path = "../benchmarks/proofs/proofs";;
@@ -191,5 +202,3 @@ let t1 = CONJ expr_interval r2;;
 
 (**********************)
 
-let approx_th = build_var_tform dom_tm 1;;
-build_rnd_tform rnd32 `&2` `&1:real` [1;2] approx_th;;
