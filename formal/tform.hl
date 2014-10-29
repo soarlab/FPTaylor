@@ -1,5 +1,9 @@
 needs "lib.hl";;
 
+module Tform = struct
+
+open Lib;;
+
 prioritize_real();;
 
 parse_as_infix ("::", (12, "right"));;
@@ -514,7 +518,6 @@ let approx_rnd = prove
      ] THEN
      REWRITE_TAC[GSYM REAL_ADD_LDISTRIB; REAL_ARITH `(a * b) / b = a * b / b`] THEN
      ASM_SIMP_TAC[real_div; REAL_MUL_RINV; REAL_MUL_RID; REAL_ARITH `&0 < e2 ==> abs e2 <= e2`]);;
-
 
 (* --------------------------- *)
 (* Taylor 2                    *)
@@ -1253,3 +1256,5 @@ let approx_simpl_add = prove
      ASM_SIMP_TAC[REAL_DIV_REFL; REAL_ARITH `b * x / b = (b / b) * x`] THEN
      MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `abs (f1 x * e1 x) + abs (f1' (x:real^N) * e1' x)` THEN
      ASM_REWRITE_TAC[REAL_MUL_LID; REAL_ABS_TRIANGLE]);;
+
+end;;

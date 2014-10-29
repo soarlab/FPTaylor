@@ -133,7 +133,7 @@ let add_simpl_add_step i arg err_i1 err_i2 err_i f e =
 
 let add_neg_step i arg =
   let op = Proof_neg in
-  let args = mk_proof_args [] [] [] in
+  let args = mk_proof_args [arg] [] [] in
   add_proof_step i op args
 
 let add_add_step i arg1 arg2 =

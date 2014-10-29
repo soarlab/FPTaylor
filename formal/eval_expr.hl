@@ -1,0 +1,214 @@
+needs "misc/misc_functions.hl";;
+needs "arith/eval_interval.hl";;
+needs "ipow.hl";;
+needs "bin_float.hl";;
+
+module Eval_expr = struct
+
+open Interval_arith;;
+open Arith_float;;
+open More_float;;
+open Float_pow;;
+open Eval_interval;;
+open Atn_eval;;
+open Asn_acs_eval;;
+open Sin_eval;;
+open Cos_eval;;
+open Bin_float;;
+open Misc_functions;;
+open Misc_vars;;
+
+prioritize_real();;
+
+let dest_interval tm =
+  match tm with
+    | Comb (Comb (Const ("interval_arith", _), x), Comb (Comb (Const (",", _), a), b)) ->
+	x, a, b
+    | _ -> error "dest_interval" [tm] [];;
+
+let float_interval_le =
+  let th_rule = UNDISCH_ALL o PURE_REWRITE_RULE[GSYM IMP_IMP] in
+  let le_lemma1 = (th_rule o prove)
+    (`interval_arith x (a, b) /\ interval_arith y (c, d) /\ (b <= c <=> T)
+       ==> (x <= y <=> T)`,
+     REWRITE_TAC[interval_arith] THEN REAL_ARITH_TAC) in
+  let le_lemma2 = (th_rule o prove)
+    (`interval_arith x (a, b) /\ interval_arith y (c, d) /\ (d < a <=> T)
+       ==> (x <= y <=> F)`,
+     REWRITE_TAC[interval_arith] THEN REAL_ARITH_TAC) in
+  let d_var_real = `d:real` in
+    fun th1 th2 ->
+      let x_tm, a_tm, b_tm = dest_interval (concl th1) and
+	  y_tm, c_tm, d_tm = dest_interval (concl th2) in
+      let flag, cmp_th = float_prove_le b_tm c_tm in
+      let inst = INST[x_tm, x_var_real; a_tm, a_var_real; b_tm, b_var_real;
+		      y_tm, y_var_real; c_tm, c_var_real; d_tm, d_var_real] in
+	if flag then
+	  MY_PROVE_HYP cmp_th (MY_PROVE_HYP th1 (MY_PROVE_HYP th2 (inst le_lemma1)))
+	else
+	  let flag, cmp_th = float_prove_lt d_tm a_tm in
+	    if flag then
+	      MY_PROVE_HYP cmp_th (MY_PROVE_HYP th1 (MY_PROVE_HYP th2 (inst le_lemma2)))
+	    else
+	      error "float_interval_le" [] [th1; th2];;
+
+let float_interval_lt =
+  let th_rule = UNDISCH_ALL o PURE_REWRITE_RULE[GSYM IMP_IMP] in
+  let lt_lemma1 = (th_rule o prove)
+    (`interval_arith x (a, b) /\ interval_arith y (c, d) /\ (b < c <=> T)
+       ==> (x < y <=> T)`,
+     REWRITE_TAC[interval_arith] THEN REAL_ARITH_TAC) in
+  let lt_lemma2 = (th_rule o prove)
+    (`interval_arith x (a, b) /\ interval_arith y (c, d) /\ (d <= a <=> T)
+       ==> (x < y <=> F)`,
+     REWRITE_TAC[interval_arith] THEN REAL_ARITH_TAC) in
+  let d_var_real = `d:real` in
+    fun th1 th2 ->
+      let x_tm, a_tm, b_tm = dest_interval (concl th1) and
+	  y_tm, c_tm, d_tm = dest_interval (concl th2) in
+      let flag, cmp_th = float_prove_lt b_tm c_tm in
+      let inst = INST[x_tm, x_var_real; a_tm, a_var_real; b_tm, b_var_real;
+		      y_tm, y_var_real; c_tm, c_var_real; d_tm, d_var_real] in
+	if flag then
+	  MY_PROVE_HYP cmp_th (MY_PROVE_HYP th1 (MY_PROVE_HYP th2 (inst lt_lemma1)))
+	else
+	  let flag, cmp_th = float_prove_le d_tm a_tm in
+	    if flag then
+	      MY_PROVE_HYP cmp_th (MY_PROVE_HYP th1 (MY_PROVE_HYP th2 (inst lt_lemma2)))
+	    else
+	      error "float_interval_lt" [] [th1; th2];;
+
+let float_interval_eq =
+  let th_rule = UNDISCH_ALL o PURE_REWRITE_RULE[GSYM IMP_IMP] in
+  let eq_lemma1 = (th_rule o prove)
+    (`interval_arith x (a, b) /\ interval_arith y (c, d) /\ (d <= a <=> T) /\ (b <= c <=> T)
+       ==> (x = y <=> T)`,
+     REWRITE_TAC[interval_arith] THEN REAL_ARITH_TAC) in
+  let eq_lemma2 = (th_rule o prove)
+    (`interval_arith x (a, b) /\ interval_arith y (c, d) /\ (d < a <=> T)
+       ==> (x = y <=> F)`,
+     REWRITE_TAC[interval_arith] THEN REAL_ARITH_TAC) in
+  let eq_lemma3 = (th_rule o prove)
+    (`interval_arith x (a, b) /\ interval_arith y (c, d) /\ (b < c <=> T)
+       ==> (x = y <=> F)`,
+     REWRITE_TAC[interval_arith] THEN REAL_ARITH_TAC) in
+  let d_var_real = `d:real` in
+    fun th1 th2 ->
+      let x_tm, a_tm, b_tm = dest_interval (concl th1) and
+	  y_tm, c_tm, d_tm = dest_interval (concl th2) in
+      let inst = INST[x_tm, x_var_real; a_tm, a_var_real; b_tm, b_var_real;
+		      y_tm, y_var_real; c_tm, c_var_real; d_tm, d_var_real] in
+      let flag1, cmp1_th = float_prove_le d_tm a_tm in
+	if flag1 then
+	  let flag2, cmp2_th = float_prove_le b_tm c_tm in
+	    if flag2 then
+	      itlist MY_PROVE_HYP [cmp1_th; cmp2_th; th1; th2] (inst eq_lemma1)
+	    else
+	      let flag, cmp_th = float_prove_lt d_tm a_tm in
+		if flag then
+		  itlist MY_PROVE_HYP [cmp_th; th1; th2] (inst eq_lemma2)
+		else
+		  error "float_interval_eq" [] [th1; th2]
+	else
+	  let flag, cmp_th = float_prove_lt b_tm c_tm in
+	    if flag then
+	      itlist MY_PROVE_HYP [cmp_th; th1; th2] (inst eq_lemma3)
+	    else
+	      error "float_interval_eq" [] [th1; th2];;
+
+
+let eval_expr0 pp tm vars =
+  let find_var tm =
+    try assoc tm vars 
+    with Not_found -> failwith ("Variable not found: " ^ string_of_term tm) in
+  let logic_rule = CONV_RULE (RAND_CONV (REWRITE_CONV[])) and
+      neg_op = `~` and
+      and_op = `/\` and
+      or_op = `\/` in
+  let rec eval tm =
+    match tm with
+      | Var _ -> find_var tm
+      | Comb (Const (op_name, _), arg1) ->
+	  begin
+	    match op_name with
+	      | "real_of_num" ->
+		  mk_float_interval_num (dest_numeral arg1)
+	      | "ipow2" ->
+		  ipow2_interval pp arg1
+	      | "real_neg" ->
+		  float_interval_neg (eval arg1)
+	      | "real_abs" ->
+		  float_interval_abs (eval arg1)
+	      | "real_inv" ->
+		  float_interval_inv pp (eval arg1)
+	      | "sqrt" ->
+		  float_interval_sqrt pp (eval arg1)
+	      | "atn" ->
+		  float_interval_atn pp (eval arg1)
+	      | "acs" ->
+		  float_interval_acs pp (eval arg1)
+	      | "asn" ->
+		  float_interval_asn pp (eval arg1)
+	      | "sin" ->
+		  float_interval_sin pp (eval arg1)
+	      | "cos" ->
+		  float_interval_cos pp (eval arg1)
+	      | "~" ->
+		  logic_rule (AP_TERM neg_op (eval arg1))
+	      | _ -> failwith ("Unknown unary operation: " ^ op_name)
+	  end
+      | Comb (Comb (Const (op_name, _), arg1), arg2) ->
+	  begin
+	    match op_name with
+	      | "$" ->
+		  find_var tm
+	      | "DECIMAL" ->
+		  mk_float_interval_decimal pp tm
+	      | "real_add" ->
+		  float_interval_add pp (eval arg1) (eval arg2)
+	      | "real_sub" ->
+		  float_interval_sub pp (eval arg1) (eval arg2)
+	      | "real_mul" ->
+		  float_interval_mul pp (eval arg1) (eval arg2)
+	      | "real_div" ->
+		  float_interval_div pp (eval arg1) (eval arg2)
+	      | "real_pow" ->
+		  float_interval_pow pp (dest_small_numeral arg2) (eval arg1)
+	      | "real_le" ->
+		  float_interval_le (eval arg1) (eval arg2)
+	      | "real_lt" ->
+		  float_interval_lt (eval arg1) (eval arg2)
+	      | "=" ->
+		  float_interval_eq (eval arg1) (eval arg2)
+	      | "/\\" ->
+		  logic_rule (MK_COMB (AP_TERM and_op (eval arg1), eval arg2))
+	      | "\\/" ->
+		  logic_rule (MK_COMB (AP_TERM or_op (eval arg1), eval arg2))
+	      | _ -> failwith ("Unknown binary operation: " ^ op_name)
+	  end
+      | Comb (Comb (Comb (Const (op_name, _), arg1), arg2), arg3) ->
+	  begin
+	    match op_name with
+	      | "float_num" ->
+		  mk_const_interval tm
+	      | "bin_float" ->
+		  bin_float_interval pp tm
+	      | _ -> failwith ("Unknown ternary operation: " ^ op_name)
+	  end
+      | _ -> failwith "Illegal expression"
+  in
+    try
+      eval tm
+    with Failure msg ->
+      error ("eval_form_expr0: " ^ msg) [tm] [];;
+
+let eval_expr pp tm vars eqs =
+  let eq_th = REWRITE_CONV (GSYM REAL_POW_2 :: eqs) tm in
+  let expr = rand (concl eq_th) in
+  let th = eval_expr0 pp expr vars in
+    if is_eq (concl th) then
+      TRANS eq_th th
+    else
+      GEN_REWRITE_RULE LAND_CONV [SYM eq_th] th;;
+
+end;;
