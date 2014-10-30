@@ -31,7 +31,7 @@ let p6 = load "i2.proof";;
 
 (************************)
 
-let pp = 15;;
+let pp = 10;;
 
 install_user_printer ("hidden", print_hidden);;
 delete_user_printer "hidden";;
@@ -77,13 +77,13 @@ validate_proof pp proof;;
 let proof = load "sqroot.proof";;
 validate_proof pp proof;;
 
-let proof = load "doppler1.proof";; (* Mul: 47 *)
+let proof = load "doppler1.proof";;
 validate_proof pp proof;;
 
-let proof = load "doppler2.proof";; (* Mul: 47 (div 0) *)
+let proof = load "doppler2.proof";;
 validate_proof pp proof;;
 
-let proof = load "doppler3.proof";; (* Mul: 47 *)
+let proof = load "doppler3.proof";;
 validate_proof pp proof;;
 
 let proof = load "turbine1.proof";;
@@ -101,12 +101,14 @@ validate_proof pp proof;;
 
 (*******************)
 
+let proof = proof_nonlin2;;
+
 let x_tm, dom_tm, dom_vars, var_names = build_domain pp proof.proof_vars;;
 let tf = snd (hd (build_tform pp proof));;
 let result = prove_bound pp proof tf;;
 CONV_RULE bin_float_rat_conv result;;
 
-let proof = p2;;
+let proof = p1;;
 
 let tms, ths = 
   try
@@ -202,3 +204,95 @@ let t1 = CONJ expr_interval r2;;
 
 (**********************)
 
+let tms, ths = 
+try 
+  let _ = prove_bound pp proof tf in
+    failwith ""
+with Error (msg, tms, ths) -> tms, ths;;
+
+
+
+let get_bounds_tm bounds indices approx_th =
+  let _, _, t_tm = dest_approx (concl approx_th) in
+  let _, f1_tm = dest_mk_tform t_tm in
+  let indices0 = map extract_index (dest_list f1_tm) in
+  let indices1 = map (fun i -> index i indices0) indices in
+  let bnds = sort (fun (i1, _) (i2, _) -> compare i1 i2) (zip indices1 bounds) in
+    (* Check that all bounds are present *)
+  let _ = map2 (fun (i1, _) i2 -> 
+		  if i1 <> i2 then error "get_bounds_tm" bounds [approx_th])
+    bnds (0--(length bounds - 1)) in
+    mk_list (map snd bnds, real_ty);;
+
+let approx_th = tf;;
+let x_tm, dom_tm, dom_vars, var_names = build_domain pp proof.proof_vars;;
+let opt = hd proof.proof_opts;;
+let bounds = map mk_bin_float opt.opt_bounds;;
+let total_tm = mk_bin_float opt.total_bound;;
+let bounds_tm = get_bounds_tm bounds opt.opt_indices approx_th;;
+
+
+let th0 = REWRITE_RULE[GSYM IMP_IMP] opt_approx_th;;
+let th1 = SPECL[bounds_tm; total_tm] (MATCH_MP th0 approx_th);;
+let th2 = REWRITE_RULE[f0_mk; list_mk; ZIP; ALL2; 
+		       sum_list_cons; sum_list_nil; REAL_ADD_RID] th1;;
+let n = length var_names;;
+let th3 = PURE_ONCE_REWRITE_RULE[gen_vec_eq var_names] th2;;
+let comp_th = end_itlist CONJ (Array.to_list M_taylor.comp_thms_array.(n));;
+let th4 = PURE_REWRITE_RULE[IN_INTERVAL; M_taylor.dimindex_array.(n); 
+			    M_taylor.gen_in_interval n; comp_th] th3;;
+let th5 = REWRITE_RULE[forall_imp_conj; FORALL_AND_THM] th4;;
+let bound_conds0 = fst (dest_imp (concl th5));;
+let bound_eq = REWRITE_CONV[abs_lt_eq; abs_le_eq; forall_imp_conj; 
+			    FORALL_AND_THM; GSYM CONJ_ASSOC] bound_conds0;;
+let bound_conds = strip_binop "/\\" (rand (concl bound_eq));;
+let tm = hd bound_conds;;
+
+
+
+let eq_th = bin_float_rat_conv tm;;
+let vars, ineq_tm = strip_forall (rand (concl eq_th));;
+
+let ineq_tm = `-- &30 <= t /\
+   t <= &50 /\
+   &20 <= v /\
+   v <= &20000 /\
+   -- &100 <= u /\
+   u <= &100
+   ==> (--(&1657 / &5 + &3 / &5 * t) * v) *
+       -- &1 *
+       ((&1657 / &5 + &3 / &5 * t) + u) *
+       ((&1657 / &5 + &3 / &5 * t) + u) +
+       (--(&1657 / &5 + &3 / &5 * t) * v) *
+       -- &1 *
+       ((&1657 / &5 + &3 / &5 * t) + u) *
+       ((&1657 / &5 + &3 / &5 * t) + u) <=
+       &4843360242950681 / &17592186044416 * 
+	 ((((&1657 / &5 + &3 / &5 * t) + u) *
+           ((&1657 / &5 + &3 / &5 * t) + u)) pow 2)`;;
+
+
+let ineq_th, stat = M_verifier_main.verify_ineq M_verifier_main.default_params pp ineq_tm;;
+      let ineq_th1 = SPEC_ALL ineq_th in
+      let imp_tm = mk_imp (concl ineq_th1, ineq_tm) in
+      let ineq_th2 = MP (REAL_ARITH imp_tm) ineq_th1 in
+	ONCE_REWRITE_RULE[GSYM eq_th] (itlist GEN vars ineq_th2);;
+
+
+
+let tm = `(\x:real^4. (\x. (\x. (x$2 * x$4 - &1) *
+                      --inv (((x$2 * x$4) * x$2 * x$4 - &1) pow 2) *
+                      (x$2 * x$4) *
+                      x$2 *
+                      x$4)
+                 x +
+                 (\x. (x$2 * x$4 - &1) *
+                      --inv (((x$2 * x$4) * x$2 * x$4 - &1) pow 2) *
+                      (x$2 * x$4) *
+                      x$2 *
+                      x$4)
+                 x)
+            x +
+            (\x. inv ((x$2 * x$4) * x$2 * x$4 - &1) * x$2 * x$4) x)`;;
+
+let tm1 = rand (concl (REWRITE_CONV[] tm));;

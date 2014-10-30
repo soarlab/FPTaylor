@@ -22,9 +22,13 @@ open Misc_vars;;
 (* Temporary rounding definitions                *)
 (* --------------------------------------------- *)
 
-let rnd32_def = new_definition `rnd32 = I`;;
+let rnd32_def = new_definition 
+  `rnd32 = @r. is_rnd (ipow2 (-- &24), ipow2 (-- &126)) 
+  (real_interval [--ipow2 (&127), ipow2 (&127)]) r`;;
 
-let rnd64_def = new_definition `rnd64 = I`;;
+let rnd64_def = new_definition 
+  `rnd64 = @r. is_rnd (ipow2 (-- &53), ipow2 (-- &1022)) 
+  (real_interval [--ipow2 (&1023), ipow2 (&1023)]) r`;;
 
 let id_rnd = prove
   (`!e2 d2 s2. &0 <= e2 /\ &0 <= d2 ==> is_rnd (e2,d2) s2 I`,
@@ -33,13 +37,17 @@ let id_rnd = prove
 
 let rnd32 = prove
   (`is_rnd (ipow2 (-- &24), ipow2 (-- &126)) 
-     (real_interval [--ipow2 (&127), ipow2 (&127)]) rnd32`, 
-   REWRITE_TAC[rnd32_def] THEN MATCH_MP_TAC id_rnd THEN REWRITE_TAC[ipow2_pos_le]);;
+     (real_interval [--ipow2 (&127), ipow2 (&127)]) rnd32`,
+   REWRITE_TAC[rnd32_def] THEN CONV_TAC SELECT_CONV THEN
+     EXISTS_TAC `I:real->real` THEN
+     MATCH_MP_TAC id_rnd THEN REWRITE_TAC[ipow2_pos_le]);;
 
 let rnd64 = prove
   (`is_rnd (ipow2 (-- &53), ipow2 (-- &1022)) 
      (real_interval [--ipow2 (&1023), ipow2 (&1023)]) rnd64`, 
-   REWRITE_TAC[rnd64_def] THEN MATCH_MP_TAC id_rnd THEN REWRITE_TAC[ipow2_pos_le]);;
+   REWRITE_TAC[rnd64_def] THEN CONV_TAC SELECT_CONV THEN
+     EXISTS_TAC `I:real->real` THEN
+     MATCH_MP_TAC id_rnd THEN REWRITE_TAC[ipow2_pos_le]);;
 
 (* --------------------------------------------- *)
 (* Misc                                          *)
@@ -104,65 +112,18 @@ let opt_approx_th = prove
 (* tform_f1 estimation                           *)
 (* --------------------------------------------- *)
 
-let dest_f1_list tm =
-  let el_tms = dest_list tm in
-    map (fun tm ->
-	   let tm1, rtm = dest_pair tm in
-	   let tm2, tm3 = dest_pair rtm in
-	     tm1, tm2, tm3) el_tms;;
-
-let find_max_ipow2 tm =
-  let _, _, (_, list_tm) = dest_approx_mk tm in
-  let e2_tms = map (fun (_, _, tm) -> tm) (dest_f1_list list_tm) in
-  let ints = map (fun tm -> dest_intconst (rand tm)) e2_tms in
-    if ints = [] then
-      Int 0
-    else
-      itlist max_num (tl ints) (hd ints);;
-
-let lemma_ipow2_mul = prove
-  (`!n. a = ipow2 n * (a * ipow2 (--n))`,
-   REWRITE_TAC[REAL_MUL_AC; GSYM ipow2_sub; INT_SUB_REFL; ipow2_0; REAL_MUL_RID]);;
-
-let lemma_ipow2_0_mul = prove
-  (`a = ipow2 (&0) * a`,
-   REWRITE_TAC[ipow2_0; REAL_MUL_LID]);;
-
 let lemma_trans = prove
-  (`interval_arith x (lo, hi) /\ a <= ipow2 n * x
-     ==> a <= hi * ipow2 n`,
-   REWRITE_TAC[interval_arith] THEN STRIP_TAC THEN
-     ONCE_REWRITE_TAC[REAL_MUL_AC] THEN
-     MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `ipow2 n * x` THEN
-     ASM_REWRITE_TAC[] THEN MATCH_MP_TAC REAL_LE_LMUL THEN
-     ASM_SIMP_TAC[ipow2_pos; REAL_LT_IMP_LE] THEN ASM_ARITH_TAC);;
+  (`interval_arith x (lo, hi) /\ a <= x ==> a <= hi`,
+   REWRITE_TAC[interval_arith] THEN REAL_ARITH_TAC);;
 
-(* Returns results in the form |- tform1 <= b * ipow2 k *)
+(* Returns results in the form (x IN s |- tform1 <= b) *)
 let eval_tform1_bound pp approx_th dom_vars =
-  let i = find_max_ipow2 (concl approx_th) in
   let th1 = MATCH_MP tform_f1_bound approx_th in
   let th2 = (UNDISCH_ALL o SPEC_ALL) th1 in
   let sum_tm = rand (concl th2) in
-  let eq1_th =
-    let conv1 = PURE_REWRITE_CONV[list_mk; sum_list_cons; sum_list_nil; REAL_ADD_RID] in
-      if i =/ Int 0 then
-	(conv1 THENC PURE_ONCE_REWRITE_CONV[lemma_ipow2_0_mul]) sum_tm
-      else
-	let conv2 = PURE_ONCE_REWRITE_CONV[SPEC (mk_intconst i) lemma_ipow2_mul] in
-	let conv3 = PURE_REWRITE_CONV[REAL_ADD_RDISTRIB; GSYM REAL_MUL_ASSOC; GSYM ipow2_add] in
-	let conv4 = PURE_REWRITE_CONV[ipow2_0; REAL_MUL_LID; REAL_MUL_RID; 
-				      REAL_ADD_RID; REAL_ADD_LID] in
-	  (conv1 THENC conv2 THENC conv3 THENC INT_REDUCE_CONV THENC conv4) sum_tm in
-  let expr_tm1 = rand (rand (concl eq1_th)) in
-(*  let conv5 = bin_float_rat_conv in *)
-  let conv5 = ALL_CONV in
-  let eq2_th = conv5 expr_tm1 in
-  let eq_th = GEN_REWRITE_RULE (RAND_CONV o RAND_CONV) [eq2_th] eq1_th in
-  let expr_tm2 = rand (concl eq2_th) in
-  let expr_interval = eval_expr pp expr_tm2 dom_vars [] in
-  let r2 = PURE_REWRITE_RULE[eq_th] th2 in
-  let t1 = CONJ expr_interval r2 in
-    MATCH_MP lemma_trans t1;;
+  let sum_interval = eval_expr pp sum_tm dom_vars 
+    [list_mk; sum_list_cons; sum_list_nil] in
+    MATCH_MP lemma_trans (CONJ sum_interval th2);;
 
 (* --------------------------------------------- *)
 (* Domain initialization procedures              *)
