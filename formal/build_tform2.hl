@@ -1,6 +1,7 @@
 needs "build_tform.hl";;
 needs "bin_float.hl";;
 needs "eval_expr.hl";;
+needs "rat.hl";;
 needs "proof.hl";;
 
 module Build_tform2 = struct
@@ -17,6 +18,8 @@ open Eval_expr;;
 open Proof;;
 open Misc_functions;;
 open Misc_vars;;
+
+let use_rat_verifier = ref true;;
 
 (* --------------------------------------------- *)
 (* Temporary rounding definitions                *)
@@ -190,16 +193,22 @@ let gen_vec_eq =
 		ONCE_REWRITE_TAC[x_eq] THEN ASM_REWRITE_TAC[]);;
 
 let prove_bound_cond pp tm =
-  let eq_th = bin_float_rat_conv tm in
-    if rand (concl eq_th) = t_const then
-      EQT_ELIM eq_th
+  try
+    if !use_rat_verifier then
+      let th, _ = Rat.prove_rat_ineq pp bin_float_rat_conv tm in
+	th
     else
-      let vars, ineq_tm = strip_forall (rand (concl eq_th)) in
-      let ineq_th, stat = M_verifier_main.verify_ineq M_verifier_main.default_params pp ineq_tm in
-      let ineq_th1 = SPEC_ALL ineq_th in
-      let imp_tm = mk_imp (concl ineq_th1, ineq_tm) in
-      let ineq_th2 = MP (REAL_ARITH imp_tm) ineq_th1 in
-	ONCE_REWRITE_RULE[GSYM eq_th] (itlist GEN vars ineq_th2);;
+      let eq_th = bin_float_rat_conv tm in
+	if rand (concl eq_th) = t_const then
+	  EQT_ELIM eq_th
+	else
+	  let vars, ineq_tm = strip_forall (rand (concl eq_th)) in
+	  let ineq_th, stat = M_verifier_main.verify_ineq M_verifier_main.default_params pp ineq_tm in
+	  let ineq_th1 = SPEC_ALL ineq_th in
+	  let imp_tm = mk_imp (concl ineq_th1, ineq_tm) in
+	  let ineq_th2 = MP (REAL_ARITH imp_tm) ineq_th1 in
+	    ONCE_REWRITE_RULE[GSYM eq_th] (itlist GEN vars ineq_th2)
+  with _ -> error "prove_bound_cond" [tm] [];;
 
 let strip_binop name =
   let rec strip tm =

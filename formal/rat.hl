@@ -1,0 +1,373 @@
+needs "verifier/m_verifier_main.hl";;
+
+module Rat = struct
+
+open Misc_functions;;
+open Misc_vars;;
+
+prioritize_real();;
+
+let rat_rel = new_definition `rat_rel x y z <=> z = x / y /\ ~(y = &0)`;;
+
+let dest_rat_rel tm =
+  match tm with
+    | Comb (Comb (Comb (Const ("rat_rel", _), x), y), z) ->
+	x, y, z
+    | _ -> error "dest_rat_rel" [tm] [];;
+
+let rat_rel_neg = prove
+  (`!x y z. rat_rel x y z ==> rat_rel (--x) y (--z)`,
+   SIMP_TAC[rat_rel; real_div; REAL_MUL_LNEG]);;
+
+let rat_rel_mul = prove
+  (`!x1 y1 z1 x2 y2 z2.
+     rat_rel x1 y1 z1 /\ rat_rel x2 y2 z2
+     ==> rat_rel (x1 * x2) (y1 * y2) (z1 * z2)`,
+   SIMP_TAC[rat_rel; real_div; REAL_INV_MUL; REAL_MUL_AC; REAL_ENTIRE]);;
+
+let rat_rel_div = prove
+  (`!x1 y1 z1 x2 y2 z2.
+     rat_rel x1 y1 z1 /\ rat_rel x2 y2 z2 
+   ==> ~(x2 = &0)
+     ==> rat_rel (x1 * y2) (x2 * y1) (z1 / z2)`,
+   SIMP_TAC[rat_rel; real_div; REAL_INV_MUL; REAL_MUL_AC; REAL_ENTIRE; REAL_INV_INV]);;
+
+let rat_rel_add = prove
+  (`!x1 y1 z1 x2 y2 z2.
+     rat_rel x1 y1 z1 /\ rat_rel x2 y2 z2
+     ==> rat_rel (x1 * y2 + x2 * y1) (y1 * y2) (z1 + z2)`,
+   SIMP_TAC[rat_rel; REAL_ENTIRE] THEN CONV_TAC REAL_FIELD);;
+
+let rat_rel_add2 = prove
+  (`!x1 y1 z1 x2 y2 z2 d a b.
+     rat_rel x1 y1 z1 /\ rat_rel x2 y2 z2 /\
+     y1 = d * a /\ y2 = d * b
+      ==> rat_rel (x1 * b + x2 * a) (d * a * b) (z1 + z2)`,
+   REWRITE_TAC[rat_rel; REAL_ENTIRE] THEN CONV_TAC REAL_FIELD);;
+
+let rat_rel_sub = prove
+  (`!x1 y1 z1 x2 y2 z2.
+     rat_rel x1 y1 z1 /\ rat_rel x2 y2 z2
+     ==> rat_rel (x1 * y2 - x2 * y1) (y1 * y2) (z1 - z2)`,
+   SIMP_TAC[rat_rel; REAL_ENTIRE] THEN CONV_TAC REAL_FIELD);;
+
+let rat_rel_sub2 = prove
+  (`!x1 y1 z1 x2 y2 z2 d a b.
+     rat_rel x1 y1 z1 /\ rat_rel x2 y2 z2 /\
+     y1 = d * a /\ y2 = d * b
+      ==> rat_rel (x1 * b - x2 * a) (d * a * b) (z1 - z2)`,
+   REWRITE_TAC[rat_rel; REAL_ENTIRE] THEN CONV_TAC REAL_FIELD);;
+
+let rat_rel_pow = prove
+  (`!n x y z. rat_rel x y z
+     ==> rat_rel (x pow n) (y pow n) (z pow n)`,
+   SIMP_TAC[rat_rel; REAL_POW_NZ; REAL_POW_DIV]);;
+
+let rat_rel_inv = prove
+  (`!x y z. rat_rel x y z 
+   ==> ~(x = &0)
+   ==> rat_rel y x (inv z)`,
+   SIMP_TAC[rat_rel; real_div; REAL_INV_MUL; REAL_INV_INV; REAL_MUL_AC]);;
+
+let rat_rel_1 = prove
+  (`!x. rat_rel x (&1) x`,
+   REWRITE_TAC[rat_rel] THEN REAL_ARITH_TAC);;
+
+let rat_rel_neg_neg = prove
+  (`!x y z. rat_rel (--x) (--y) z <=> rat_rel x y z`,
+   REWRITE_TAC[rat_rel; real_div; REAL_INV_NEG; REAL_NEG_EQ_0; REAL_NEG_MUL2]);;
+
+let rat_rel_ge0_pos = prove
+  (`!x y z. rat_rel x y z /\ &0 <= y /\ &0 <= x
+   ==> &0 <= z`,
+   SIMP_TAC[rat_rel; REAL_LE_DIV]);;
+
+let rat_rel_ge0_neg = prove
+  (`!x y z. rat_rel x y z /\ y <= &0 /\ x <= &0
+   ==> &0 <= z`,
+   REPEAT STRIP_TAC THEN MATCH_MP_TAC rat_rel_ge0_pos THEN
+     MAP_EVERY EXISTS_TAC [`--x`; `--y`] THEN
+     ASM_REWRITE_TAC[rat_rel_neg_neg] THEN ASM_ARITH_TAC);;
+
+let factors =
+  let rec split tm =
+    match tm with
+      | Comb (Comb (Const ("real_mul", _), tm1), tm2) ->
+	  split tm1 @ split tm2
+      | Comb (Comb (Const ("real_pow", _), tm1), n_tm) ->
+	  let n = dest_small_numeral n_tm in
+	    map (fun (tm, e) -> tm, e * n) (split tm1)
+      | _ -> [tm, 1] in
+  let rec combine fs =
+    match fs with
+      | (tm1, n1) :: (tm2, n2) :: rest when tm1 = tm2 ->
+	  (tm1, n1 + n2) :: combine rest
+      | h :: rest -> h :: combine rest
+      | [] -> [] in
+    fun tm ->
+      let fs = split tm in
+	combine (List.sort (fun (tm1, _) (tm2, _) -> compare tm1 tm2) fs);;
+
+let rec gcd_factors fs1 fs2 =
+  match (fs1, fs2) with
+    | ([], _) -> [], fs2, []
+    | (_, []) -> fs1, [], []
+    | ((tm1, n1) :: t1, (tm2, n2) :: t2) ->
+	let c = compare tm1 tm2 in
+	  if c < 0 then
+	    let f1, f2, d = gcd_factors t1 fs2 in
+	      (tm1, n1) :: f1, f2, d
+	  else if c > 0 then
+	    let f1, f2, d = gcd_factors fs1 t2 in
+	      f1, (tm2, n2) :: f2, d
+	  else
+	    let k = min n1 n2 in
+	    let f1, f2, d = gcd_factors t1 t2 in
+	      (tm1, n1 - k) :: f1, (tm2, n2 - k) :: f2, (tm1, k) :: d;;
+
+let mul_factors fs =
+  let fs1 = map (fun (tm, n) -> 
+		   if n = 0 then `&1` 
+		   else if n = 1 then tm
+		   else mk_binary "real_pow" (tm, mk_small_numeral n)) fs in
+    if fs1 = [] then `&1` else
+      end_itlist (curry (mk_binary "real_mul")) fs1;;
+
+let simple_gcd tm1 tm2 =
+  let fs1 = factors tm1 and
+      fs2 = factors tm2 in
+  let a, b, d = gcd_factors fs1 fs2 in
+  let a_tm = mul_factors a and
+      b_tm = mul_factors b and
+      d_tm = mul_factors d in
+  let eq1 = mk_eq (tm1, mk_binary "real_mul" (d_tm, a_tm)) and
+      eq2 = mk_eq (tm2, mk_binary "real_mul" (d_tm, b_tm)) in
+    REAL_RING eq1, REAL_RING eq2, a_tm, b_tm, d_tm;;
+
+let build_rat_rel : term -> thm =
+  let cond_conv = 
+    REWRITE_CONV[REAL_ENTIRE; REAL_POW_EQ_0; DE_MORGAN_THM] THENC
+      NUM_REDUCE_CONV THENC REAL_RAT_REDUCE_CONV in
+  let norm_conv = 
+    REWRITE_CONV[REAL_MUL_LID; REAL_MUL_RID; REAL_INV_1; REAL_POW_ONE] in
+  let rat_rel_conv =
+    (RATOR_CONV o BINOP_CONV) norm_conv in
+  let conv tm =
+    if is_imp tm then
+      ((COMB2_CONV (RAND_CONV cond_conv) rat_rel_conv) THENC REWRITE_CONV[]) tm
+    else
+      rat_rel_conv tm in
+  let rewr = CONV_RULE conv in
+  let step0 arg =
+    SPEC arg rat_rel_1 in
+  let step1 th arg = 
+    UNDISCH_ALL (rewr (MATCH_MP th arg)) in
+  let step2 th arg1 arg2 =
+    UNDISCH_ALL (rewr (MATCH_MP th (CONJ arg1 arg2))) in
+  let step2_gcd th arg1 arg2 =
+    let _, y1, _ = dest_rat_rel (concl arg1) and
+	_, y2, _ = dest_rat_rel (concl arg2) in
+    let eq1, eq2, a, b, d = simple_gcd y1 y2 in
+    let args = end_itlist CONJ [arg1; arg2; eq1; eq2] in
+      UNDISCH_ALL (rewr (MATCH_MP th args)) in
+  let rec build tm =
+    if frees tm = [] then
+      step0 tm
+    else
+      match tm with
+	| Comb (Const (op_name, _), arg1) ->
+	    begin
+	      match op_name with
+		| "real_neg" -> 
+		    step1 rat_rel_neg (build arg1)
+		| "real_inv" ->
+		    step1 rat_rel_inv (build arg1)
+		| _ -> step0 tm
+	    end
+	| Comb (Comb (Const (op_name, _), arg1), arg2) ->
+	    begin
+	      match op_name with
+		| "real_add" ->
+(*		    step2 rat_rel_add (build arg1) (build arg2) *)
+		    step2_gcd rat_rel_add2 (build arg1) (build arg2)
+		| "real_sub" ->
+(*		    step2 rat_rel_sub (build arg1) (build arg2) *)
+		    step2_gcd rat_rel_sub2 (build arg1) (build arg2)
+		| "real_mul" ->
+		    step2 rat_rel_mul (build arg1) (build arg2)
+		| "real_div" ->
+		    step2 rat_rel_div (build arg1) (build arg2)
+		| "real_pow" ->
+		    step1 (SPEC arg2 rat_rel_pow) (build arg1)
+		| _ -> step0 tm
+	    end
+	| _ -> step0 tm
+  in
+    build;;
+
+let prove_ineq pp (conv : conv) tm =
+  let eq_th = conv tm in
+    if rand (concl eq_th) = t_const then
+      EQT_ELIM eq_th, 0.0
+    else
+      let vars, ineq_tm = strip_forall (rand (concl eq_th)) in
+      let ineq_th, stats = M_verifier_main.verify_ineq M_verifier_main.default_params pp ineq_tm in
+      let ineq_th1 = SPEC_ALL ineq_th in
+      let imp_tm = mk_imp (concl ineq_th1, ineq_tm) in
+      let ineq_th2 = MP (REAL_ARITH imp_tm) ineq_th1 in
+	ONCE_REWRITE_RULE[GSYM eq_th] (itlist GEN vars ineq_th2), 
+        stats.M_verifier_main.total_time;;
+
+let decide_ineq pp conv cond_tm tm =
+  let lt0_tm = mk_binary "real_lt" (tm, `&0`) and
+      gt0_tm = mk_binary "real_lt" (`&0`, tm) in
+  let lt0_ineq = mk_imp (cond_tm, lt0_tm) and
+      gt0_ineq = mk_imp (cond_tm, gt0_tm) in
+    try
+      let th, _ = prove_ineq pp conv lt0_ineq in
+	-1, th
+    with _ ->
+      let th, _ = prove_ineq pp conv gt0_ineq in
+	1, th
+
+let prove_rat_ineq pp conv ineq_tm =
+  let eq_th0 = conv ineq_tm in
+    if rand (concl eq_th0) = t_const then
+      EQT_ELIM eq_th0, 0.0
+    else
+      let vars, ineq_tm1 = strip_forall (rand (concl eq_th0)) in
+	if not (is_imp ineq_tm1) then
+	  prove_ineq pp conv ineq_tm
+	else
+	  let cond_tm, ineq_tm2 = dest_imp ineq_tm1 in
+	  let eq_th = PURE_ONCE_REWRITE_CONV[REAL_ARITH `a <= b <=> &0 <= b - a`] ineq_tm2 in
+	  let ineq_tm3 = rand (concl eq_th) in
+	  let rat_th = build_rat_rel (rand ineq_tm3) in
+	  let x_tm, y_tm, z_tm = dest_rat_rel (concl rat_th) in
+	  let y_sign, y_ineq = decide_ineq pp ALL_CONV cond_tm y_tm in
+	  let y_ineq1 = UNDISCH_ALL y_ineq in
+	  let y_neq0 = 
+	    if y_sign > 0 then
+	      MATCH_MP (REAL_ARITH `&0 < y ==> ~(y = &0)`) y_ineq1
+	    else
+	      MATCH_MP (REAL_ARITH `y < &0 ==> ~(y = &0)`) y_ineq1 in
+	  let rat_conds = hyp rat_th in
+	  let rat_th1 =
+	    if rat_conds = [] then
+	      rat_th
+	    else
+	      let imp1 = mk_imp (concl y_neq0, end_itlist (curry mk_conj) rat_conds) in
+	      let imp1_th = EQT_ELIM ((REWRITE_CONV[REAL_ENTIRE; REAL_POW_EQ_0] THENC 
+					 NUM_REDUCE_CONV THENC
+					 (EQT_INTRO o REAL_ARITH)) imp1) in
+	      let rat_conds_ths = CONJUNCTS (MP imp1_th y_neq0) in
+		itlist PROVE_HYP rat_conds_ths rat_th in
+	  let le_th = 
+	    if y_sign > 0 then 
+	      let th0 = PURE_REWRITE_RULE[GSYM IMP_IMP] rat_rel_ge0_pos in
+		MATCH_MP (MATCH_MP th0 rat_th1) (MATCH_MP REAL_LT_IMP_LE y_ineq1)
+	    else
+	      let th0 = PURE_REWRITE_RULE[GSYM IMP_IMP] rat_rel_ge0_neg in
+		MATCH_MP (MATCH_MP th0 rat_th1) (MATCH_MP REAL_LT_IMP_LE y_ineq1) in
+	  let x_ineq_tm = mk_imp (cond_tm, lhand (concl le_th)) in
+	  let x_ineq, t = prove_ineq pp ALL_CONV x_ineq_tm in
+	  let z_ineq1 = (MATCH_MP le_th (UNDISCH_ALL x_ineq)) in
+	  let z_ineq2 = ONCE_REWRITE_RULE[GSYM eq_th] z_ineq1 in
+	  let z_ineq3 = itlist GEN vars (DISCH cond_tm z_ineq2) in
+	    ONCE_REWRITE_RULE[GSYM eq_th0] z_ineq3, t;;
+
+end;;
+  
+
+(*
+
+(****************)
+build_rat_rel `x / (&2 * &3)`;;
+build_rat_rel `&1 + x * &1`;;
+build_rat_rel `x + &3 / &5 * y * inv (x + &3) + &2 / (x + &3) pow 3`;;
+
+let conv = ALL_CONV;;
+
+
+let pp = 10;;
+let ineq_tm = `!x y. &1 <= x /\ x <= &2000 /\ -- &4 <= y /\ y <= -- #0.001 ==> x * inv (x) + y / y <= #2.0000001`;;
+prove_rat_ineq pp REAL_RAT_REDUCE_CONV `&0 <= x /\ x <= &1 ==> &0 <= &1 * x + #0.001`;;
+REAL_RAT_REDUCE_CONV `&0 <= x /\ x <= &1 ==> &0 <= &1`;;
+
+let conv = REAL_RAT_REDUCE_CONV and
+    ineq_tm = `&0 <= x /\ x <= &1 ==> &0 <= &1 * x + #0.001`;;
+
+
+
+let ineq_tm =
+`!t v u.
+       -- &30 <= t /\
+       t <= &50 /\
+       &20 <= v /\
+       v <= &20000 /\
+       -- &100 <= u /\
+       u <= &100
+       ==> (--(&1657 / &5 + &3 / &5 * t) * v) *
+           --inv
+             ((((&1657 / &5 + &3 / &5 * t) + u) *
+               ((&1657 / &5 + &3 / &5 * t) + u)) pow
+              2) *
+           ((&1657 / &5 + &3 / &5 * t) + u) *
+           ((&1657 / &5 + &3 / &5 * t) + u) +
+           (--(&1657 / &5 + &3 / &5 * t) * v) *
+           --inv
+             ((((&1657 / &5 + &3 / &5 * t) + u) *
+               ((&1657 / &5 + &3 / &5 * t) + u)) pow
+              2) *
+           ((&1657 / &5 + &3 / &5 * t) + u) *
+           ((&1657 / &5 + &3 / &5 * t) + u) <=
+           bin_float F 4843360242950681 (-- &44)`;;
+
+let conv = bin_float_rat_conv;;
+
+
+
+let eq_th0 = conv ineq_tm;;
+let vars, ineq_tm1 = strip_forall (rand (concl eq_th0));;
+if not (is_imp ineq_tm1) then true else false;;
+
+let cond_tm, ineq_tm2 = dest_imp ineq_tm1;;
+let eq_th = PURE_ONCE_REWRITE_CONV[REAL_ARITH `a <= b <=> &0 <= b - a`] ineq_tm2;;
+let ineq_tm3 = rand (concl eq_th);;
+let rat_th = build_rat_rel (rand ineq_tm3);;
+let x_tm, y_tm, z_tm = dest_rat_rel (concl rat_th);;
+let y_sign, y_ineq = decide_ineq pp ALL_CONV cond_tm y_tm;;
+let y_ineq1 = UNDISCH_ALL y_ineq;;
+let y_neq0 = 
+  if y_sign > 0 then
+    MATCH_MP (REAL_ARITH `&0 < y ==> ~(y = &0)`) y_ineq1
+  else
+    MATCH_MP (REAL_ARITH `y < &0 ==> ~(y = &0)`) y_ineq1;;
+let rat_conds = hyp rat_th;;
+let rat_th1 =
+  if rat_conds = [] then
+    rat_th
+  else
+    let imp1 = mk_imp (concl y_neq0, end_itlist (curry mk_conj) rat_conds) in
+    let imp1_th = EQT_ELIM ((REWRITE_CONV[REAL_ENTIRE; REAL_POW_EQ_0] THENC 
+			       NUM_REDUCE_CONV THENC
+			       (EQT_INTRO o REAL_ARITH)) imp1) in
+    let rat_conds_ths = CONJUNCTS (MP imp1_th y_neq0) in
+      itlist PROVE_HYP rat_conds_ths rat_th;;
+let le_th = 
+  if y_sign > 0 then 
+    let th0 = PURE_REWRITE_RULE[GSYM IMP_IMP] rat_rel_ge0_pos in
+      MATCH_MP (MATCH_MP th0 rat_th1) (MATCH_MP REAL_LT_IMP_LE y_ineq1)
+  else
+    let th0 = PURE_REWRITE_RULE[GSYM IMP_IMP] rat_rel_ge0_neg in
+      MATCH_MP (MATCH_MP th0 rat_th1) (MATCH_MP REAL_LT_IMP_LE y_ineq1);;
+let x_ineq_tm = mk_imp (cond_tm, lhand (concl le_th));;
+let x_ineq, t = prove_ineq pp ALL_CONV x_ineq_tm;;
+let z_ineq1 = (MATCH_MP le_th (UNDISCH_ALL x_ineq));;
+let z_ineq2 = ONCE_REWRITE_RULE[GSYM eq_th] z_ineq1;;
+let z_ineq3 = itlist GEN vars (DISCH cond_tm z_ineq2);;
+ONCE_REWRITE_RULE[GSYM eq_th0] z_ineq3;;
+
+Verifier_options.info_print_level := 2;;
+
+*)

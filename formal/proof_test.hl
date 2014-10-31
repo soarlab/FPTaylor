@@ -66,7 +66,7 @@ let proof = load "verhulst.proof";;
 validate_proof pp proof;;
 
 let proof = load "carbon_gas.proof";;
-validate_proof pp proof;;
+validate_proof 15 proof;;
 
 let proof = load "sine.proof";;
 validate_proof pp proof;;
