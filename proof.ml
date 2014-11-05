@@ -11,6 +11,8 @@ type proof_var = {
 type proof_op =
   | Proof_var of string
   | Proof_const of num
+  | Proof_rnd_bin_var of int * string
+  | Proof_rnd_bin_const of int * num
   (* TODO: all rounding operations *)
   | Proof_rnd of int
   | Proof_simpl_eq of int * int
@@ -114,6 +116,16 @@ let add_var_step i name =
 let add_const_step i c =
   let op = Proof_const c in
   let args = mk_proof_args [] [] [] in
+  add_proof_step i op args
+
+let add_rnd_bin_var_step i name bits p2_exp bound err_index =
+  let op = Proof_rnd_bin_var (bits, name) in
+  let args = mk_proof_args [] [err_index] [float_of_int p2_exp; bound] in
+  add_proof_step i op args
+
+let add_rnd_bin_const_step i c bits p2_exp bound err_index =
+  let op = Proof_rnd_bin_const (bits, c) in
+  let args = mk_proof_args [] [err_index] [float_of_int p2_exp; bound] in
   add_proof_step i op args
 
 let add_rnd_step i bits arg s1_bound m2_bound r_index m2_index =

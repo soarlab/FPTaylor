@@ -227,13 +227,17 @@ let dest_approx_mk tm =
 	s_tm, h_tm, dest_mk_tform mk_tm
     | _ -> error "dest_approx_mk" [tm] [];;
 
-(* --------------------------------------------- *)
-(* Variable                                      *)
-(* --------------------------------------------- *)
+let dest_is_rnd tm =
+  match tm with
+    | Comb (Comb (Comb (Const ("is_rnd", _), e2d2), dom_tm), rnd_tm) ->
+	dest_pair e2d2, dom_tm, rnd_tm
+    | _ -> error "dest_is_rnd" [tm] [];;
 
-let build_var_tform =
-    fun dom_tm i ->
-      ISPECL[dom_tm; mk_small_numeral i] approx_var;;
+let dest_is_rnd_bin tm =
+  match tm with
+    | Comb (Comb (Comb (Const ("is_rnd_bin", _), e2d2), dom_tm), rnd_tm) ->
+	dest_pair e2d2, dom_tm, rnd_tm
+    | _ -> error "dest_is_rnd_bin" [tm] [];;
 
 (* --------------------------------------------- *)
 (* Constant                                      *)
@@ -241,6 +245,31 @@ let build_var_tform =
 
 let build_const_tform dom_tm c_tm =
   ISPECL[dom_tm; c_tm] approx_const;;
+
+let build_rnd_bin_const_tform dom_tm c_tm rnd_th n_tm b_tm err_indices =
+  let (e2_tm, d2_tm), rnd_dom_tm, rnd_tm = dest_is_rnd_bin (concl rnd_th) in
+  let th0 = PURE_REWRITE_RULE[GSYM IMP_IMP] approx_rnd_bin_const in
+  let th1 = ISPECL[dom_tm; c_tm; rnd_tm; e2_tm; d2_tm; 
+		   rnd_dom_tm; n_tm; b_tm] th0 in
+  let th2 = MP th1 rnd_th in
+  let th3 = UNDISCH_ALL th2 in
+    hide_e1s false err_indices th3;;
+
+(* --------------------------------------------- *)
+(* Variable                                      *)
+(* --------------------------------------------- *)
+
+let build_var_tform dom_tm i =
+  ISPECL[dom_tm; mk_small_numeral i] approx_var;;
+
+let build_rnd_bin_var_tform dom_tm i rnd_th n_tm b_tm err_indices =
+  let (e2_tm, d2_tm), rnd_dom_tm, rnd_tm = dest_is_rnd_bin (concl rnd_th) in
+  let th0 = PURE_REWRITE_RULE[GSYM IMP_IMP] approx_rnd_bin_var in
+  let th1 = ISPECL[dom_tm; mk_small_numeral i; rnd_tm; e2_tm; d2_tm; 
+		   rnd_dom_tm; n_tm; b_tm] th0 in
+  let th2 = MP th1 rnd_th in
+  let th3 = UNDISCH_ALL th2 in
+    hide_e1s false err_indices th3;;
 
 (* --------------------------------------------- *)
 (* Neg                                           *)
@@ -455,16 +484,6 @@ let build_simpl_eq_tform i j approx_th =
 (* --------------------------------------------- *)
 (* Rnd                                           *)
 (* --------------------------------------------- *)
-
-let dest_is_rnd tm =
-  let ltm, f_tm = dest_comb tm in
-  let ltm, dom_tm = dest_comb ltm in
-  let c_tm, e2d2 = dest_comb ltm in
-  let e2_tm, d2_tm = dest_pair e2d2 in
-    if fst (dest_const c_tm) = "is_rnd" then
-      (e2_tm, d2_tm), dom_tm, f_tm
-    else
-      failwith ("dest_is_rnd: " ^ string_of_term tm);;
 
 let build_rnd_tform_univ rnd_th m2_tm b_tm err_indices approx_th =
   let (e2_tm, d2_tm), rnd_dom_tm, rnd_tm = dest_is_rnd (concl rnd_th) in

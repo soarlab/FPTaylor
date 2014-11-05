@@ -169,6 +169,7 @@ let bin_float_interval =
 (* --------------------------------------------- *)
 
 let bin_float_rat_conv =
-    REWRITE_CONV[bin_float; ipow2_neg_num; ipow2_pos_num] THENC REAL_RAT_REDUCE_CONV;;
+    REWRITE_CONV[GSYM ipow2; bin_float; ipow2_neg_num; ipow2_pos_num] THENC 
+      REAL_RAT_REDUCE_CONV;;
 
 end;;

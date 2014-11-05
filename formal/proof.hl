@@ -11,6 +11,8 @@ type proof_var = {
 type proof_op =
   | Proof_var of string
   | Proof_const of num
+  | Proof_rnd_bin_var of int * string
+  | Proof_rnd_bin_const of int * num
   (* TODO: all rounding operations *)
   | Proof_rnd of int
   | Proof_simpl_eq of int * int

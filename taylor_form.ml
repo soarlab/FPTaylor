@@ -149,22 +149,36 @@ let const_form e =
 (* constant with rounding *)
 let const_rnd_form rnd e =
   match e with
-    | Const c -> {
-      form_index = next_form_index();
-      v0 = e;
-      v1 =
-	begin
-	  if is_fp_exact (get_eps rnd.eps_exp) c then [] else
-	    let bound = (abs_I c.interval_v).high in
-	    let err = rnd.coefficient *^ floor_power2 bound in
-	    let err_expr = fp_to_const err in
-	    let _ = Log.warning (Format.sprintf "Inexact constant: %s; err = %s" 
-				   (print_expr_str e) 
-				   (print_expr_str err_expr)) in
-	    (* TODO: subnormal constants (a very rare case) *)
-	    [err_expr, mk_err_var (find_index (mk_rounding rnd e)) rnd.eps_exp]
-	end;
-    }
+    | Const c -> 
+      if is_fp_exact (get_eps rnd.eps_exp) c then 
+	const_form e
+      else
+	let form_index = next_form_index() in
+	let bound = (abs_I c.interval_v).high in
+	let p2 = floor_power2 bound in
+	let _, p2_exp = frexp p2 in
+	let m2' =
+	  (* TODO: do not add d for constants in the normal range *)
+	  if Config.proof_flag then
+	    p2 +^ (get_eps rnd.delta_exp /. get_eps rnd.eps_exp)
+	  else
+	    p2 in
+	(* Don't need to apply make_stronger since 
+	   everything can be proved with rational numbers *)
+	let m2 = rnd.coefficient *^ m2' in
+	let err_expr = fp_to_const m2 in
+	let err = mk_err_var (find_index (mk_rounding rnd e)) rnd.eps_exp in
+	let _ = Log.warning (Format.sprintf "Inexact constant: %s; err = %s" 
+			       (print_expr_str e) 
+			       (print_expr_str err_expr)) in
+	let _ = 
+	  Proof.add_rnd_bin_const_step form_index c.rational_v 
+	    rnd.fp_type.bits p2_exp m2 err.proof_index in
+	{
+	  form_index = form_index;
+	  v0 = e;
+	  v1 = [err_expr, err]
+	}
     | _ -> failwith ("const_rnd_form: not a constant: " ^ print_expr_str e)
 
 let get_var_uncertainty eps_exp var_name =
@@ -192,30 +206,51 @@ let var_form e =
 let var_rnd_form rnd e =
   match e with
     | Var v -> 
-      let v1_uncertainty = 
-	if Config.uncertainty then get_var_uncertainty rnd.eps_exp v else [] in
-      let v1_rnd =
-	let err_expr0 = 
-	  if Config.const_approx_real_vars then
-	    let bound = (abs_I (Environment.variable_interval v)).high in
-	    let err = floor_power2 bound in
-	    fp_to_const err
-	  else if Config.fp_power2_model then
-	    mk_floor_power2 e
-	  else
-	    e in
-	let err_expr = 
-	  if rnd.coefficient <> 1.0 then
-	    mk_mul (fp_to_const rnd.coefficient) err_expr0 
-	  else 
-	    err_expr0 in
+      if Config.proof_flag then
+	let form_index = next_form_index() in
+	let bound = (abs_I (Environment.variable_interval v)).high in
+	let p2 = floor_power2 bound in
+	let _, p2_exp = frexp p2 in
+	let m2' =
+	    p2 +^ (get_eps rnd.delta_exp /. get_eps rnd.eps_exp) in
+	(* Don't need to apply make_stronger since 
+	   everything can be proved with rational numbers *)
+	let m2 = rnd.coefficient *^ m2' in
+	let err_expr = fp_to_const m2 in
+	let err = mk_err_var (find_index (mk_rounding rnd e)) rnd.eps_exp in
+	let _ = 
+	  Proof.add_rnd_bin_var_step form_index v 
+	    rnd.fp_type.bits p2_exp m2 err.proof_index in
+	{
+	  form_index = form_index;
+	  v0 = e;
+	  v1 = [err_expr, err]
+	}
+      else
+	let v1_uncertainty = 
+	  if Config.uncertainty then get_var_uncertainty rnd.eps_exp v else [] in
+	let v1_rnd =
+	  let err_expr0 = 
+	    if Config.const_approx_real_vars then
+	      let bound = (abs_I (Environment.variable_interval v)).high in
+	      let err = floor_power2 bound in
+	      fp_to_const err
+	    else if Config.fp_power2_model then
+	      mk_floor_power2 e
+	    else
+	      e in
+	  let err_expr = 
+	    if rnd.coefficient <> 1.0 then
+	      mk_mul (fp_to_const rnd.coefficient) err_expr0 
+	    else 
+	      err_expr0 in
 	(* TODO: subnormal values of variables *)
-	[err_expr, mk_err_var (find_index (mk_rounding rnd e)) rnd.eps_exp] in
-      {
-	form_index = next_form_index();
-	v0 = e;
-	v1 = v1_uncertainty @ v1_rnd;
-      }
+	  [err_expr, mk_err_var (find_index (mk_rounding rnd e)) rnd.eps_exp] in
+	{
+	  form_index = next_form_index();
+	  v0 = e;
+	  v1 = v1_uncertainty @ v1_rnd;
+	}
     | _ -> failwith ("var_rnd_form: not a variable" ^ print_expr_str e)
 
 (* rounding *)
@@ -488,9 +523,9 @@ let build_form vars =
       | Const _ -> const_form e
       | Var _ -> var_form e
       | Rounding (rnd, Const c) 
-	  when not Config.proof_flag -> const_rnd_form rnd (Const c)
+	  (* when not Config.proof_flag *) -> const_rnd_form rnd (Const c)
       | Rounding (rnd, Var v) 
-	  when not Config.proof_flag -> var_rnd_form rnd (Var v)
+	  (* when not Config.proof_flag *) -> var_rnd_form rnd (Var v)
       | Rounding (rnd, arg) -> 
 	let arg_form = build arg in
 	rounded_form vars e rnd arg_form

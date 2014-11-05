@@ -1,0 +1,429 @@
+needs "ipow.hl";;
+
+module Rounding = struct
+
+prioritize_real();;
+
+(* --------------------------------------------- *)
+(* Definitions                                   *)
+(* --------------------------------------------- *)
+
+let p2max = new_definition
+  `p2max x = real_sgn x * sup {&2 ipow n | &2 ipow n < abs x}`;;
+
+let is_rnd_gen = new_definition
+  `is_rnd_gen(g, c, e2, d2) dom rnd <=>
+  (!x. x IN dom ==>
+     ?e d. abs d <= d2 /\ abs e <= e2 /\
+           rnd(x) = x + c * (g(x) * e + d))`;;
+
+let is_rnd_def = new_definition
+  `is_rnd(e2, d2) = is_rnd_gen(I, &1, e2, d2)`;;
+
+let is_rnd_bin_def = new_definition
+  `is_rnd_bin(e2, d2) = is_rnd_gen(p2max, &1, e2, d2)`;;
+
+let select_rnd_gen = new_definition
+  `select_rnd_gen(g, c, e2, d2) s rnd (f:A->real) =
+  (@p. !x. x IN s ==> abs ((SND p) x) <= d2 /\ 
+     abs ((FST p) x) <= e2 /\ 
+     rnd(f x) = f x + c * (g (f x) * FST p x + SND p x))`;;
+
+let select_rnd = new_definition
+  `select_rnd(e2, d2) = select_rnd_gen(I, &1, e2, d2)`;;
+
+let select_rnd_bin = new_definition
+  `select_rnd_bin(e2, d2) = select_rnd_gen(p2max, &1, e2, d2)`;;
+
+(* --------------------------------------------- *)
+(* Theorems                                      *)
+(* --------------------------------------------- *)
+
+(* --------------------------------------------- *)
+(* p2max properties                              *)
+(* --------------------------------------------- *)
+
+let p2max_0 = prove
+  (`p2max (&0) = &0`,
+   REWRITE_TAC[p2max; REAL_SGN_0; REAL_MUL_LZERO]);;
+
+let p2max_neg = prove
+  (`!x. p2max (--x) = --p2max x`,
+   REWRITE_TAC[p2max; real_sgn; GSYM REAL_MUL_LNEG; REAL_ABS_NEG] THEN 
+     GEN_TAC THEN AP_THM_TAC THEN AP_TERM_TAC THEN REAL_ARITH_TAC);;
+
+let p2max_pos = prove
+  (`!x. &0 < x ==> p2max x = sup {&2 ipow n | &2 ipow n < x}`,
+   SIMP_TAC[p2max; real_sgn; REAL_MUL_LID; REAL_ARITH `&0 < x ==> abs x = x`]);;
+
+let sup_close = prove
+  (`!s b. ~(s = {}) /\ (!x. x IN s ==> x <= b)
+     ==> !e. &0 < e ==> ?y. y IN s /\ sup s - y <= e`,
+   REPEAT STRIP_TAC THEN
+     MP_TAC (SPEC `s:real->bool` SUP) THEN ANTS_TAC THENL [
+       ASM_REWRITE_TAC[] THEN EXISTS_TAC `b:real` THEN ASM_REWRITE_TAC[];
+       ALL_TAC
+     ] THEN
+     STRIP_TAC THEN POP_ASSUM MP_TAC THEN
+     ONCE_REWRITE_TAC[GSYM CONTRAPOS_THM] THEN
+     REWRITE_TAC[NOT_EXISTS_THM; NOT_FORALL_THM; NOT_IMP] THEN
+     REWRITE_TAC[TAUT `~(A /\ B) <=> (A ==> ~B)`; REAL_NOT_LE] THEN
+     DISCH_TAC THEN EXISTS_TAC `sup s - e` THEN
+     CONJ_TAC THENL [ ALL_TAC ; ASM_ARITH_TAC ] THEN
+     REPEAT STRIP_TAC THEN FIRST_X_ASSUM (MP_TAC o SPEC `x:real`) THEN
+     ASM_REWRITE_TAC[] THEN REAL_ARITH_TAC);;
+
+let sup_in_discrete = prove
+  (`!s e b. &0 < e /\ ~(s = {}) /\
+     (!x y. x IN s /\ y IN s /\ x < y ==> e <= y - x) /\
+     (!x. x IN s ==> x <= b)
+     ==> sup s IN s`,
+   REPEAT STRIP_TAC THEN
+     MP_TAC (SPECL[`s:real->bool`; `b:real`] sup_close) THEN 
+     MP_TAC (SPEC `s:real->bool` SUP) THEN ASM_REWRITE_TAC[] THEN 
+     ANTS_TAC THENL [ EXISTS_TAC `b:real` THEN ASM_REWRITE_TAC[]; ALL_TAC ] THEN
+     STRIP_TAC THEN DISCH_THEN (MP_TAC o SPEC `e / &2`) THEN
+     ANTS_TAC THENL [ ASM_ARITH_TAC; ALL_TAC ] THEN STRIP_TAC THEN
+     ASM_CASES_TAC `sup s = y` THEN ASM_REWRITE_TAC[] THEN
+     ABBREV_TAC `t = (sup s - y) / &2` THEN
+     SUBGOAL_THEN `&0 < t /\ y + t < sup s /\ t < e / &2` ASSUME_TAC THENL [
+       FIRST_X_ASSUM (fun th -> FIRST_X_ASSUM (MP_TAC o C MATCH_MP th)) THEN
+	 EXPAND_TAC "t" THEN ASM_ARITH_TAC;
+       ALL_TAC
+     ] THEN
+     FIRST_X_ASSUM (MP_TAC o SPEC `y + t`) THEN
+     ANTS_TAC THEN REPEAT STRIP_TAC THENL [
+       ASM_CASES_TAC `x <= y:real` THENL [ ASM_ARITH_TAC; ALL_TAC ] THEN
+	 FIRST_ASSUM (fun th -> FIRST_X_ASSUM (MP_TAC o C MATCH_MP th)) THEN
+	 FIRST_X_ASSUM (MP_TAC o SPECL[`y:real`; `x:real`]) THEN ASM_REWRITE_TAC[] THEN
+	 ASM_ARITH_TAC;
+       ALL_TAC
+     ] THEN
+     ASM_ARITH_TAC);;
+
+let ipow2_exists = prove
+  (`!x. &0 < x ==>
+     ?n. &2 ipow n < x /\ x <= &2 ipow (n + &1) /\ 
+         &2 ipow n = sup {&2 ipow k | &2 ipow k < x}`,
+   REPEAT STRIP_TAC THEN
+     MP_TAC (SPECL[`inv (&2)`; `x:real`] REAL_ARCH_POW_INV) THEN
+     ANTS_TAC THENL [ ASM_REWRITE_TAC[] THEN REAL_ARITH_TAC; ALL_TAC ] THEN
+     REWRITE_TAC[GSYM IPOW_NUM; GSYM IPOW_NEG; IPOW_INV] THEN STRIP_TAC THEN
+     ABBREV_TAC `s = {&2 ipow k | &2 ipow k < x /\ &2 ipow (-- &n) <= &2 ipow k}` THEN
+     SUBGOAL_THEN `~(s = {}) /\ !y. y IN s ==> y <= x` ASSUME_TAC THENL [
+       REWRITE_TAC[GSYM MEMBER_NOT_EMPTY] THEN CONJ_TAC THENL [
+	 EXISTS_TAC `&2 ipow (-- &n)` THEN EXPAND_TAC "s" THEN
+	   REWRITE_TAC[IN_ELIM_THM] THEN EXISTS_TAC `-- &n:int` THEN
+	   ASM_REWRITE_TAC[REAL_LE_REFL];
+	 ALL_TAC
+       ] THEN
+	 EXPAND_TAC "s" THEN REWRITE_TAC[IN_ELIM_THM] THEN REPEAT STRIP_TAC THEN
+	 ASM_ARITH_TAC;
+       ALL_TAC
+     ] THEN
+     ASSUME_TAC (REAL_ARITH `~(&2 = &0)`) THEN
+     SUBGOAL_THEN `sup s IN s` MP_TAC THENL [
+       MATCH_MP_TAC sup_in_discrete THEN
+	 MAP_EVERY EXISTS_TAC [`&2 ipow -- &n`; `x:real`] THEN
+	 ASM_REWRITE_TAC[] THEN CONJ_TAC THENL [
+	   MATCH_MP_TAC IPOW_LT_0 THEN REAL_ARITH_TAC;
+	   ALL_TAC
+	 ] THEN
+	 EXPAND_TAC "s" THEN REWRITE_TAC[IN_ELIM_THM] THEN REPEAT STRIP_TAC THEN
+	 POP_ASSUM MP_TAC THEN ASM_REWRITE_TAC[] THEN DISCH_TAC THEN
+	 SUBGOAL_THEN `&2 ipow k' - &2 ipow k = &2 ipow k * (&2 ipow (k' - k) - &1)` MP_TAC THENL [
+	   ASM_SIMP_TAC[REAL_SUB_LDISTRIB; GSYM IPOW_ADD; REAL_MUL_RID] THEN
+	     REWRITE_TAC[INT_ARITH `k + k' - k = k':int`];
+	   ALL_TAC
+	 ] THEN
+	 DISCH_THEN (fun th -> REWRITE_TAC[th]) THEN
+         ONCE_REWRITE_TAC[REAL_ARITH `a <= b <=> a * &1 <= b`] THEN
+	 MATCH_MP_TAC REAL_LE_MUL2 THEN ASM_REWRITE_TAC[REAL_LE_01] THEN
+	 CONJ_TAC THENL [ MATCH_MP_TAC IPOW_LE_0 THEN REAL_ARITH_TAC; ALL_TAC ] THEN
+	 REWRITE_TAC[REAL_ARITH `&1 <= a - &1 <=> &2 pow 1 <= a`; GSYM IPOW_NUM] THEN
+	 MATCH_MP_TAC IPOW_MONO THEN REWRITE_TAC[REAL_ARITH `&1 <= &2`] THEN
+	 MATCH_MP_TAC (INT_ARITH `~(k = k') /\ k <= k' ==> &1 <= k' - k:int`) THEN
+	 CONJ_TAC THENL [
+	   ASM_CASES_TAC `k = k':int` THEN ASM_REWRITE_TAC[] THEN
+	     UNDISCH_TAC `&2 ipow k < &2 ipow k'` THEN ASM_REWRITE_TAC[REAL_LT_REFL];
+	   ALL_TAC
+	 ] THEN
+	 MATCH_MP_TAC IPOW_MONOTONE THEN EXISTS_TAC `2` THEN
+	 ASM_SIMP_TAC[REAL_LT_IMP_LE; LE_REFL];
+       ALL_TAC
+     ] THEN
+     ABBREV_TAC `t = sup s` THEN EXPAND_TAC "s" THEN REWRITE_TAC[IN_ELIM_THM] THEN
+     STRIP_TAC THEN EXISTS_TAC `k:int` THEN ASM_REWRITE_TAC[] THEN
+     CONJ_TAC THENL [
+       ASM_CASES_TAC `x <= &2 ipow (k + &1)` THEN ASM_REWRITE_TAC[] THEN
+	 MP_TAC (SPEC `s:real->bool` SUP) THEN ANTS_TAC THENL [
+	   ASM_REWRITE_TAC[] THEN EXISTS_TAC `x:real` THEN ASM_REWRITE_TAC[];
+	   ALL_TAC
+	 ] THEN
+	 STRIP_TAC THEN POP_ASSUM (K ALL_TAC) THEN POP_ASSUM MP_TAC THEN
+	 REWRITE_TAC[NOT_FORALL_THM; NOT_IMP] THEN
+	 EXISTS_TAC `&2 ipow (k + &1)` THEN CONJ_TAC THENL [
+	   EXPAND_TAC "s" THEN REWRITE_TAC[IN_ELIM_THM] THEN EXISTS_TAC `k + &1:int` THEN
+	     ASM_REWRITE_TAC[] THEN CONJ_TAC THENL [ ASM_ARITH_TAC; ALL_TAC ] THEN
+	     MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `&2 ipow k` THEN
+	     ASM_REWRITE_TAC[] THEN MATCH_MP_TAC IPOW_MONO THEN ARITH_TAC;
+	   ALL_TAC
+	 ] THEN
+	 ASM_SIMP_TAC[REAL_NOT_LE; IPOW_ADD; IPOW_1] THEN
+	 REWRITE_TAC[REAL_ARITH `a < a * &2 <=> &0 < a`] THEN
+	 MATCH_MP_TAC IPOW_LT_0 THEN ARITH_TAC;
+       ALL_TAC
+     ] THEN
+     POP_ASSUM (fun th -> REWRITE_TAC[GSYM th]) THEN
+     UNDISCH_TAC `sup s = t` THEN DISCH_THEN (fun th -> REWRITE_TAC[GSYM th]) THEN
+     MATCH_MP_TAC SUP_EQ THEN EXPAND_TAC "s" THEN REWRITE_TAC[IN_ELIM_THM] THEN
+     GEN_TAC THEN EQ_TAC THEN REPEAT STRIP_TAC THEN ASM_REWRITE_TAC[] THENL [
+       ASM_CASES_TAC `-- &n <= k':int` THENL [
+	 FIRST_X_ASSUM (MP_TAC o SPEC `&2 ipow k'`) THEN DISCH_THEN MATCH_MP_TAC THEN
+	   EXISTS_TAC `k':int` THEN ASM_REWRITE_TAC[] THEN
+	   MATCH_MP_TAC IPOW_MONO THEN ASM_REWRITE_TAC[] THEN ARITH_TAC;
+	 ALL_TAC
+       ] THEN
+	 FIRST_X_ASSUM (MP_TAC o SPEC `&2 ipow (-- &n)`) THEN ANTS_TAC THENL [
+	   EXISTS_TAC `-- &n:int` THEN ASM_REWRITE_TAC[REAL_LE_REFL];
+	   ALL_TAC
+	 ] THEN
+	 DISCH_TAC THEN MATCH_MP_TAC REAL_LE_TRANS THEN
+	 EXISTS_TAC `&2 ipow (-- &n)` THEN ASM_REWRITE_TAC[] THEN
+	 MATCH_MP_TAC IPOW_MONO THEN ASM_ARITH_TAC;
+       ALL_TAC
+     ] THEN
+     FIRST_X_ASSUM (MP_TAC o SPEC `&2 ipow k'`) THEN DISCH_THEN MATCH_MP_TAC THEN
+     EXISTS_TAC `k':int` THEN ASM_REWRITE_TAC[]);;
+
+let p2max_eq = prove
+  (`!x y. &0 < x ==>
+     (p2max x = y <=> ?n. y = &2 ipow n /\ &2 ipow n < x /\ x <= &2 ipow (n + &1))`,
+   REPEAT STRIP_TAC THEN ASM_SIMP_TAC[p2max_pos] THEN
+     EQ_TAC THEN REPEAT STRIP_TAC THENL [
+       MP_TAC (SPEC `x:real` ipow2_exists) THEN ASM_REWRITE_TAC[] THEN STRIP_TAC THEN
+	 EXISTS_TAC `n:int` THEN ASM_REWRITE_TAC[];
+       ALL_TAC
+     ] THEN
+     ASM_REWRITE_TAC[] THEN MATCH_MP_TAC REAL_SUP_UNIQUE THEN
+     REWRITE_TAC[IN_ELIM_THM] THEN REPEAT STRIP_TAC THEN ASM_REWRITE_TAC[] THENL [
+       MATCH_MP_TAC IPOW_MONO THEN CONJ_TAC THENL [ REAL_ARITH_TAC; ALL_TAC ] THEN
+	 ASM_CASES_TAC `n' <= n:int` THEN ASM_REWRITE_TAC[] THEN
+	 SUBGOAL_THEN `&2 ipow (n + &1) <= &2 ipow n'` MP_TAC THENL [
+	   MATCH_MP_TAC IPOW_MONO THEN ASM_ARITH_TAC;
+	   ALL_TAC
+	 ] THEN
+	 ASM_ARITH_TAC;
+       ALL_TAC
+     ] THEN
+     EXISTS_TAC `&2 ipow n` THEN CONJ_TAC THEN ASM_REWRITE_TAC[] THEN
+     EXISTS_TAC `n:int` THEN ASM_REWRITE_TAC[]);;
+
+let p2max_eq_imp = prove
+  (`!x n. &2 ipow n < x /\ x <= &2 ipow (n + &1) ==> p2max x = &2 ipow n`,
+   REPEAT STRIP_TAC THEN
+     SUBGOAL_THEN `&0 < x` ASSUME_TAC THENL [
+       MATCH_MP_TAC REAL_LT_TRANS THEN EXISTS_TAC `&2 ipow n` THEN
+	 ASM_REWRITE_TAC[] THEN MATCH_MP_TAC IPOW_LT_0 THEN ARITH_TAC;
+       ALL_TAC
+     ] THEN
+     ASM_SIMP_TAC[p2max_eq] THEN EXISTS_TAC `n:int` THEN ASM_REWRITE_TAC[]);;
+
+let p2max_ipow2 = prove
+  (`!n. p2max (&2 ipow n) = &2 ipow (n - &1)`,
+   GEN_TAC THEN MP_TAC (SPECL[`&2 ipow n`; `&2 ipow (n - &1)`] p2max_eq) THEN
+     ANTS_TAC THENL [ MATCH_MP_TAC IPOW_LT_0 THEN REAL_ARITH_TAC; ALL_TAC ] THEN
+     DISCH_THEN (fun th -> REWRITE_TAC[th]) THEN EXISTS_TAC `n - &1:int` THEN
+     ASM_REWRITE_TAC[INT_ARITH `n - a + a = n:int`; REAL_LE_REFL] THEN
+     MATCH_MP_TAC IPOW_MONO_LT THEN ARITH_TAC);;
+
+let p2max_pos_lt = prove
+  (`!x. &0 < x ==> &0 < p2max x`,
+   REPEAT STRIP_TAC THEN
+     MP_TAC (SPECL[`x:real`; `p2max x`] p2max_eq) THEN ASM_REWRITE_TAC[] THEN
+     STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
+     MATCH_MP_TAC IPOW_LT_0 THEN ARITH_TAC);;
+
+let p2max_pos = prove
+  (`!x. &0 <= x ==> &0 <= p2max x`,
+   REWRITE_TAC[REAL_LE_LT] THEN REPEAT STRIP_TAC THENL [
+     ASM_SIMP_TAC[p2max_pos_lt];
+     POP_ASSUM (fun th -> REWRITE_TAC[SYM th; p2max_0])
+   ]);;
+
+let p2max_mono = prove
+  (`!x y. x <= y ==> p2max x <= p2max y`,
+   SUBGOAL_THEN `!x y. &0 < x /\ x <= y ==> p2max x <= p2max y` ASSUME_TAC THENL [
+     REPEAT STRIP_TAC THEN
+       MP_TAC (SPECL[`x:real`; `p2max x`] p2max_eq) THEN
+       MP_TAC (SPECL[`y:real`; `p2max y`] p2max_eq) THEN
+       ANTS_TAC THENL [ ASM_ARITH_TAC; ALL_TAC ] THEN ASM_SIMP_TAC[] THEN
+       REPEAT STRIP_TAC THEN ASM_REWRITE_TAC[] THEN
+       MATCH_MP_TAC IPOW_MONO THEN CONJ_TAC THENL [ ARITH_TAC; ALL_TAC ] THEN
+       SUBGOAL_THEN `&2 ipow n' < &2 ipow (n + &1)` ASSUME_TAC THENL [
+	 ASM_ARITH_TAC;
+	 ALL_TAC
+       ] THEN
+       SUBGOAL_THEN `n' < n + &1:int` MP_TAC THENL [
+	 REWRITE_TAC[INT_LT_LE] THEN CONJ_TAC THENL [
+	   MATCH_MP_TAC IPOW_MONOTONE THEN EXISTS_TAC `2` THEN
+	     ASM_SIMP_TAC[REAL_LT_IMP_LE; LE_REFL];
+	   ALL_TAC
+	 ] THEN
+	   POP_ASSUM (LABEL_TAC "h") THEN DISCH_TAC THEN REMOVE_THEN "h" MP_TAC THEN
+	   ASM_REWRITE_TAC[REAL_LT_REFL];
+	 ALL_TAC
+       ] THEN
+       INT_ARITH_TAC;
+     ALL_TAC
+   ] THEN
+     REPEAT STRIP_TAC THEN
+     DISJ_CASES_TAC (REAL_ARITH `&0 < x \/ x = &0 \/ x < &0`) THENL [
+       FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_REWRITE_TAC[];
+       ALL_TAC
+     ] THEN
+     POP_ASSUM DISJ_CASES_TAC THENL [
+       ASM_REWRITE_TAC[p2max_0] THEN MATCH_MP_TAC p2max_pos THEN
+	 ASM_ARITH_TAC;
+       ALL_TAC
+     ] THEN
+     DISJ_CASES_TAC (REAL_ARITH `y < &0 \/ y = &0 \/ &0 < y`) THENL [
+       ONCE_REWRITE_TAC[GSYM REAL_LE_NEG] THEN REWRITE_TAC[GSYM p2max_neg] THEN
+	 FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_ARITH_TAC;
+       ALL_TAC
+     ] THEN
+     POP_ASSUM DISJ_CASES_TAC THENL [
+       ONCE_REWRITE_TAC[GSYM REAL_LE_NEG] THEN REWRITE_TAC[GSYM p2max_neg] THEN
+	 ASM_REWRITE_TAC[REAL_NEG_0; p2max_0] THEN MATCH_MP_TAC p2max_pos THEN
+	 ASM_ARITH_TAC;
+       ALL_TAC
+     ] THEN
+     MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `&0` THEN
+     CONJ_TAC THENL [
+       ONCE_REWRITE_TAC[GSYM REAL_LE_NEG] THEN REWRITE_TAC[GSYM p2max_neg] THEN
+	 REWRITE_TAC[REAL_NEG_0] THEN MATCH_MP_TAC p2max_pos THEN ASM_ARITH_TAC;
+       ALL_TAC
+     ] THEN
+     MATCH_MP_TAC p2max_pos THEN ASM_ARITH_TAC);;
+
+let p2max_bound = prove
+  (`!x n. x <= &2 ipow n ==> p2max x <= &2 ipow (n - &1)`,
+   REPEAT STRIP_TAC THEN ONCE_REWRITE_TAC[GSYM p2max_ipow2] THEN
+     MATCH_MP_TAC p2max_mono THEN ASM_REWRITE_TAC[]);;
+
+let p2max_abs = prove
+  (`!x. abs (p2max x) = p2max (abs x)`,
+   GEN_TAC THEN MP_TAC (REAL_ARITH `x < &0 \/ x = &0 \/ &0 < x`) THEN REPEAT STRIP_TAC THENL [
+     GEN_REWRITE_TAC (LAND_CONV o RAND_CONV o RAND_CONV) [GSYM REAL_NEG_NEG] THEN
+       ONCE_REWRITE_TAC[p2max_neg] THEN REWRITE_TAC[REAL_ABS_NEG] THEN
+       ASM_SIMP_TAC[REAL_ARITH `x < &0 ==> abs x = --x`] THEN
+       REWRITE_TAC[REAL_ABS_REFL] THEN MATCH_MP_TAC p2max_pos THEN
+       ASM_ARITH_TAC;
+     ASM_REWRITE_TAC[p2max_0; REAL_ABS_0];
+     ASM_SIMP_TAC[REAL_ARITH `&0 < x ==> abs x = x`] THEN
+       REWRITE_TAC[REAL_ABS_REFL] THEN MATCH_MP_TAC p2max_pos THEN
+       ASM_ARITH_TAC
+   ]);;
+
+let p2max_x_bound = prove
+  (`!x. abs (p2max x) <= abs x`,
+   GEN_TAC THEN REWRITE_TAC[p2max_abs] THEN
+     ASM_CASES_TAC `x = &0` THEN ASM_REWRITE_TAC[p2max_0; REAL_ABS_0; REAL_LE_REFL] THEN
+       MP_TAC (SPECL[`abs x:real`; `p2max (abs x)`] p2max_eq) THEN
+       ASM_SIMP_TAC[REAL_ARITH `~(x = &0) ==> &0 < abs x`] THEN
+       STRIP_TAC THEN ASM_SIMP_TAC[REAL_LT_IMP_LE]);;
+   
+(* --------------------------------------------- *)
+(* is_rnd properties                             *)
+(* --------------------------------------------- *)
+
+let is_rnd = prove
+  (`!e2 d2 dom rnd. is_rnd(e2, d2) dom rnd <=>
+     (!x. x IN dom ==> 
+	?e d. abs d <= d2 /\ abs e <= e2 /\ rnd(x) = x * (&1 + e) + d)`,
+   REWRITE_TAC[is_rnd_def; is_rnd_gen; I_THM] THEN
+     REWRITE_TAC[REAL_ARITH `x + &1 * (x * e + d) = x * (&1 + e) + d`]);;
+
+let is_rnd_bin = prove
+  (`!e2 d2 dom rnd. is_rnd_bin(e2, d2) dom rnd <=>
+     (!x. x IN dom ==> 
+	?e d. abs d <= d2 /\ abs e <= e2 /\ rnd(x) = x + p2max x * e + d)`,
+   REWRITE_TAC[is_rnd_bin_def; is_rnd_gen; REAL_MUL_LID]);;
+
+let abs_div_le_1 = prove
+  (`!a b. abs (a / b) <= &1 <=> (b = &0 \/ abs a <= abs b)`,
+   REPEAT GEN_TAC THEN ASM_CASES_TAC `b = &0` THENL [
+     ASM_REWRITE_TAC[real_div; REAL_INV_0; REAL_MUL_RZERO; REAL_ABS_0; REAL_LE_01];
+     ALL_TAC
+   ] THEN
+     REWRITE_TAC[REAL_ABS_DIV] THEN
+     ASM_SIMP_TAC[REAL_ARITH `~(b = &0) ==> &0 < abs b`; REAL_LE_LDIV_EQ] THEN
+     REWRITE_TAC[REAL_MUL_LID]);;
+       
+let is_rnd_bin_is_rnd = prove
+  (`!e2 d2 dom rnd. is_rnd_bin(e2, d2) dom rnd ==> is_rnd(e2, d2) dom rnd`,
+   REWRITE_TAC[is_rnd_bin; is_rnd] THEN REPEAT STRIP_TAC THEN
+     FIRST_X_ASSUM (MP_TAC o SPEC `x:real`) THEN ASM_REWRITE_TAC[] THEN STRIP_TAC THEN
+     ASM_CASES_TAC `x = &0` THENL [
+       MAP_EVERY EXISTS_TAC [`e:real`; `d:real`] THEN
+	 ASM_REWRITE_TAC[p2max_0] THEN REAL_ARITH_TAC;
+       ALL_TAC
+     ] THEN
+     MAP_EVERY EXISTS_TAC [`(p2max x / x) * e`; `d:real`] THEN
+     ASM_REWRITE_TAC[REAL_ARITH `x * (&1 + (a / x) * e) = x + a * (x / x) * e`] THEN
+     ASM_SIMP_TAC[REAL_DIV_REFL; REAL_MUL_LID; REAL_ADD_ASSOC] THEN
+     MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `&1 * e2` THEN
+     REWRITE_TAC[REAL_ABS_MUL; REAL_ARITH `&1 * e2 <= e2`] THEN
+     MATCH_MP_TAC REAL_LE_MUL2 THEN ASM_REWRITE_TAC[REAL_ABS_POS] THEN
+     ASM_REWRITE_TAC[abs_div_le_1; p2max_x_bound]);;
+
+let is_rnd_gen_select = prove
+  (`!rnd (f:A->real) s s2 g c e2 d2. 
+     is_rnd_gen(g, c, e2, d2) s2 rnd /\ (!x. x IN s ==> f x IN s2)
+     ==> let e, d = select_rnd_gen(g, c, e2,d2) s rnd f in
+       (!x. x IN s ==> rnd (f x) = f x + c * (g (f x) * e x + d x) /\
+	    abs (e x) <= e2 /\
+	    abs (d x) <= d2)`,
+   REWRITE_TAC[select_rnd_gen] THEN REPEAT STRIP_TAC THEN LET_TAC THEN
+     ABBREV_TAC `p = e:A->real,d:A->real` THEN
+     SUBGOAL_THEN `e = FST (p:(A->real)#(A->real)) /\ d = (SND p)` 
+	 (fun th -> REWRITE_TAC[th]) THENL [
+       EXPAND_TAC "p" THEN REWRITE_TAC[];
+       ALL_TAC
+     ] THEN
+     POP_ASSUM (K ALL_TAC) THEN
+     EXPAND_TAC "p" THEN SELECT_ELIM_TAC THEN GEN_TAC THEN DISCH_TAC THEN
+     UNDISCH_TAC `is_rnd_gen(g,c,e2,d2) s2 rnd` THEN
+     REWRITE_TAC[is_rnd_gen; SKOLEM_THM_GEN] THEN
+     DISCH_THEN (X_CHOOSE_THEN `e:real->real` MP_TAC) THEN
+     DISCH_THEN (X_CHOOSE_THEN `d:real->real` ASSUME_TAC) THEN
+     FIRST_X_ASSUM 
+       (MP_TAC o 
+	  SPECL[`s:A->bool`; `d2:real`; `e2:real`; `rnd:real->real`; 
+		`c:real`; `g:real->real`; `f:A->real`; 
+		`(\x. (e:real->real) ((f:A->real) x)), (\x. (d:real->real) ((f:A->real) x))`]) THEN
+     ASM_SIMP_TAC[]);;
+
+let is_rnd_bin_select = prove
+  (`!rnd (f:A->real) s s2 e2 d2. is_rnd_bin(e2, d2) s2 rnd /\
+     (!x. x IN s ==> f x IN s2)
+     ==> let e, d = select_rnd_bin(e2,d2) s rnd f in
+       (!x. x IN s ==> rnd (f x) = f x + p2max (f x) * e x + d x /\
+	    abs (e x) <= e2 /\
+	    abs (d x) <= d2)`,
+   REWRITE_TAC[is_rnd_bin_def; select_rnd_bin] THEN
+     REPEAT GEN_TAC THEN DISCH_THEN (MP_TAC o MATCH_MP is_rnd_gen_select) THEN
+     REWRITE_TAC[REAL_MUL_LID]);;
+
+let is_rnd_select = prove
+  (`!rnd (f:A->real) s s2 e2 d2. is_rnd(e2, d2) s2 rnd /\
+     (!x. x IN s ==> f x IN s2)
+     ==> let e, d = select_rnd(e2,d2) s rnd f in
+       (!x. x IN s ==> rnd (f x) = f x * (&1 + e x) + d x /\
+	    abs (e x) <= e2 /\
+	    abs (d x) <= d2)`,
+   REWRITE_TAC[is_rnd_def; select_rnd] THEN
+     REPEAT GEN_TAC THEN DISCH_THEN (MP_TAC o MATCH_MP is_rnd_gen_select) THEN
+     REWRITE_TAC[REAL_MUL_LID; I_THM; REAL_ADD_LDISTRIB; REAL_MUL_RID; REAL_ADD_ASSOC]);;
+
+end;;
