@@ -15,6 +15,18 @@ open Misc_functions;;
 open Misc_vars;;
 open Build_tform2;;
 
+let trans_bound bound_th bound_tm =
+  let vars, tm = strip_forall (concl bound_th) in
+  let ineq_th = UNDISCH_ALL (SPEC_ALL bound_th) in
+  let cond, ineq = dest_imp tm in
+  let bound0_tm = rand ineq in
+  let ineq2 = mk_binary "real_le" (bound0_tm, bound_tm) in
+  let ineq2_th = EQT_ELIM ((REWRITE_CONV[IPOW_NEG; IPOW_NUM] THENC bin_float_rat_conv) ineq2) in
+  let trans_th = MATCH_MP REAL_LE_TRANS (CONJ ineq_th ineq2_th) in
+  let r1 = DISCH cond trans_th in
+    itlist GEN vars r1;;
+
+
 let path = "../benchmarks/proofs/proofs";;
 
 let load name =
@@ -40,6 +52,8 @@ let pp = 10;;
 install_user_printer ("hidden", print_hidden);;
 delete_user_printer "hidden";;
 
+
+
 (**************)
 
 validate_proof pp t1;;
@@ -61,56 +75,76 @@ validate_proof pp proof_sum;;
 validate_proof pp proof_nonlin1;;
 validate_proof pp proof_nonlin2;;
 
-let proof = load "rigidBody1.proof";;
-validate_proof pp proof;;
-
-let proof = load "rigidBody2.proof";;
-validate_proof pp proof;;
-
-let proof = load "predatorPrey.proof";;
-validate_proof pp proof;;
+let proof = load "carbon_gas.proof";;
+let form_th, bound_th = validate_proof 15 proof;;
+trans_bound bound_th `#1.240 * &10 ipow (-- &8)`;;
 
 let proof = load "verhulst.proof";;
-validate_proof pp proof;;
+let form_th, bound_th = validate_proof pp proof;;
+trans_bound bound_th `#3.491 * &10 ipow (-- &16)`;;
 
-let proof = load "carbon_gas.proof";;
-validate_proof 15 proof;;
+let proof = load "predatorPrey.proof";;
+let form_th, bound_th = validate_proof pp proof;;
+trans_bound bound_th `#1.865 * &10 ipow (-- &16)`;;
 
-let proof = load "sine.proof";;
-validate_proof pp proof;;
+let proof = load "rigidBody1.proof";;
+let form_th, bound_th = validate_proof pp proof;;
+trans_bound bound_th `#3.865 * &10 ipow (-- &13)`;;
 
-let proof = load "sineOrder3.proof";;
-validate_proof pp proof;;
-
-let proof = load "sqroot.proof";;
-validate_proof pp proof;;
+let proof = load "rigidBody2.proof";;
+let form_th, bound_th = validate_proof pp proof;;
+trans_bound bound_th `#5.233 * &10 ipow (-- &11)`;;
 
 let proof = load "doppler1.proof";;
-validate_proof pp proof;;
+let form_th, bound_th = validate_proof pp proof;;
+trans_bound bound_th `#1.569 * &10 ipow (-- &13)`;;
 
 let proof = load "doppler2.proof";;
-validate_proof pp proof;;
+let form_th, bound_th = validate_proof pp proof;;
+trans_bound bound_th `#2.870 * &10 ipow (-- &13)`;;
 
 let proof = load "doppler3.proof";;
-validate_proof pp proof;;
+let form_th, bound_th = validate_proof pp proof;;
+trans_bound bound_th `#8.150 * &10 ipow (-- &14)`;;
+
+let proof = load "sine.proof";;
+let form_th, bound_th = validate_proof pp proof;;
+trans_bound bound_th `#6.701 * &10 ipow (-- &16)`;;
+
+let proof = load "sqroot.proof";;
+let form_th, bound_th = validate_proof pp proof;;
+trans_bound bound_th `#7.863 * &10 ipow (-- &16)`;;
+
+let proof = load "sineOrder3.proof";;
+let form_th, bound_th = validate_proof 15 proof;;
+trans_bound bound_th `#9.960 * &10 ipow (-- &16)`;;
 
 let proof = load "turbine1.proof";;
-validate_proof pp proof;;
+let form_th, bound_th = validate_proof pp proof;;
+trans_bound bound_th `#2.493 * &10 ipow (-- &14)`;;
 
 let proof = load "turbine2.proof";;
-validate_proof pp proof;;
+let form_th, bound_th = validate_proof pp proof;;
+trans_bound bound_th `#3.336 * &10 ipow (-- &14)`;;
 
 let proof = load "turbine3.proof";;
-validate_proof pp proof;;
+let form_th, bound_th = validate_proof pp proof;;
+trans_bound bound_th `#1.793 * &10 ipow (-- &14)`;;
 
 let proof = load "jet.proof";;
-validate_proof pp proof;;
+let form_th, bound_th = validate_proof pp proof;;
+trans_bound bound_th `#1.483 * &10 ipow (-- &11)`;;
 
 
 (*******************)
 
+trans_bound bound_th `&10 ipow (-- &1)`;;    
+;;
+REAL_LE_TRANS;;
+
+
 let pp = 10;;
-let proof = t2;;
+let proof = load "v1.proof";;
 
 let x_tm, dom_tm, dom_vars, var_names = build_domain pp proof.proof_vars;;
 let tf = snd (hd (build_tform pp proof));;

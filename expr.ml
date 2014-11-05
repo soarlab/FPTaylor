@@ -158,7 +158,7 @@ let c_print_env = {
   env_print = (fun p _ e ->
     match e with
       | Const f -> 
-	let _ = p (string_of_float f.float_v) in
+	let _ = p ("(" ^ string_of_float f.float_v ^ ")") in
 	true
       | _ -> false);
 }
@@ -177,7 +177,7 @@ let z3py_print_env = {
   env_print = (fun p _ e ->
     match e with
       | Const f -> 
-	let _ = p (string_of_num f.rational_v) in
+	let _ = p ("(" ^ string_of_num f.rational_v ^ ")") in
 	true
       | _ -> false);
 }
@@ -202,7 +202,7 @@ let ocaml_float_print_env = {
     match e with
       | Var v -> let _ = p ("var_" ^ v) in true
       | Const f -> 
-	let _ = p (string_of_float f.float_v) in
+	let _ = p ("(" ^ string_of_float f.float_v ^ ")") in
 	true
       | _ -> false);
 }
@@ -264,7 +264,7 @@ let print_expr_in_env env fmt =
     let b = env.env_print p print e in
     if b then () else
       match e with
-	| Const f -> p (string_of_num f.rational_v)
+	| Const f -> p ("(" ^ string_of_num f.rational_v ^ ")")
 	| Var v -> p v
 	| Rounding (rnd, arg) ->
 	  begin
