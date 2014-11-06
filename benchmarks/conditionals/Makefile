@@ -13,6 +13,21 @@ taylor:
 rosa-dir:
 	mkdir -p generated
 
+rosa-test1 : rosa-dir
+	$(ROSA) --specGen \
+		--functions=test1 \
+		Rosa/test.scala
+
+rosa-test2 : rosa-dir
+	$(ROSA) --specGen \
+		--functions=test2 \
+		Rosa/test.scala
+
+rosa-test3 : rosa-dir
+	$(ROSA) --specGen \
+		--functions=test3 \
+		Rosa/test.scala
+
 rosa-tri1: rosa-dir
 	$(ROSA) --specGen \
 		--functions=triangle1 \

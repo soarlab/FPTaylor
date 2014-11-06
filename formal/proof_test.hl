@@ -77,7 +77,7 @@ validate_proof pp proof_nonlin2;;
 
 let proof = load "carbon_gas.proof";;
 let form_th, bound_th = validate_proof 15 proof;;
-trans_bound bound_th `#1.240 * &10 ipow (-- &8)`;;
+trans_bound bound_th `#1.241 * &10 ipow (-- &8)`;;
 
 let proof = load "verhulst.proof";;
 let form_th, bound_th = validate_proof pp proof;;

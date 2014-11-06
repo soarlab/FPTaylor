@@ -2,7 +2,6 @@ import leon.Real
 import Real._
 
 object PathError {
-
   def smartRoot(a: Real, b: Real, c: Real): Real = {
     require(3 <= a && a <= 3 && 3.5 <= b && b <= 3.5 && -2 < c && c < 2 &&
       b*b - a * c * 4.0 > 0.1)
