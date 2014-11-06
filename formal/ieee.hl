@@ -94,7 +94,7 @@ let is_ieee = define
 
 let ieee_exp = define
   `ieee_exp (fmt:ieee_format) (x:real) =
-  (if (is_fixed(ieee_to_fformat fmt) x)
+  (if abs(x) <= (finf(ieee_to_fformat fmt))
    then
      (ieee_emin fmt)
    else

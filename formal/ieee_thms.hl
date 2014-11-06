@@ -330,51 +330,21 @@ let IEEE_MAX_IEEE_IS_IEEE =
        REWRITE_TAC[IEEE_FORMAT_EMIN_LE_EMAX] THEN ARITH_TAC);;
 
 (* -------------------------------------------------------------------------- *)
-(* Two ieee fp numbers are fixed and float                                    *)
-(* -------------------------------------------------------------------------- *)
-
-let IEEE_FIXED_AND_FLOAT =
-  prove(`!(fmt:ieee_format) (x:real). 
-	  is_ieee(fmt) x /\ 
-	  is_float(ieee_to_flformat fmt) x /\
-	  is_fixed(ieee_to_fformat fmt) x ==>
-	  x = &(ieee_r fmt) ipow (ieee_emin fmt) \/
-	  x = -- (&(ieee_r fmt) ipow (ieee_emin fmt))`,
-	REPEAT GEN_TAC THEN 
-	DISCH_THEN (LABEL_CONJUNCTS_TAC ["isieee"; "isfloat"; "isfixed"]) THEN
-	
-	SUBGOAL_THEN `abs(x) <= &(ieee_r fmt) ipow (ieee_emin fmt)`
-	  (LABEL_TAC "upper") THENL [
-	  REWRITE_TAC[GSYM IEEE_FORMAT_TO_FFORMAT] THEN
-	  REWRITE_TAC[GSYM finf] THEN
-	  MATCH_MP_TAC (ARITH_RULE 
-			`&0 <= z /\ -- z <= x /\ x <= z ==> abs(x) <= z`) THEN
-	  CONJ_TAC THENL [
-	    REWRITE_TAC[finf] THEN REWRITE_TAC[FFORMAT_RADIX_IPOW_LE_0];
-	    MATCH_MP_TAC FIXED_FINF_BOUNDS THEN 
-	    REWRITE_TAC[fixed] THEN REWRITE_TAC[IN_ELIM_THM] THEN
-	    ASM_REWRITE_TAC[]]; ALL_TAC] THEN
-
-	
-
-(* -------------------------------------------------------------------------- *)
 (* Absolute error theorems                                                    *)
 (* -------------------------------------------------------------------------- *)
+
+(* rounding to pinf / ninf requires tricky logic, so I'm ommitting them  *)
+(* for now *)
 
 let IEEE_ROUND_NEAR_ABS_ERR =
   prove(`!(fmt:ieee_format) (x:real). abs(x) <= (ieee_threshold fmt) ==>
 	  abs(x - (ieee_round(fmt) To_near x)) <=
-	  &(ieee_r fmt) ipow ((ieee_exp(fmt) (ieee_round(fmt) To_near x)) - 
-			      &(ieee_p fmt) + &1) / &2`,
+	  &(ieee_r fmt) ipow ((ieee_exp(fmt) x) - &(ieee_p fmt) + &1) / &2`,
 	REPEAT GEN_TAC THEN DISCH_THEN (LABEL_TAC "absxthresh") THEN
 	REWRITE_TAC[ieee_round] THEN
 	COND_CASES_TAC THENL [
 	  REWRITE_TAC[ieee_exp] THEN
-	  SUBGOAL_THEN `is_fixed (ieee_to_fformat fmt) 
-	                  (fround (ieee_to_fformat fmt) To_near x)`
-	    (fun thm -> REWRITE_TAC[thm]) THENL [
-	      MATCH_MP_TAC FIXED_RD_IS_FIXED THEN
-              ASM_REWRITE_TAC[]; ALL_TAC] THEN
+	  ASM_REWRITE_TAC[] THEN
 	  ONCE_REWRITE_TAC[GSYM IEEE_FORMAT_TO_FFORMAT] THEN
 	  REWRITE_TAC[GSYM fulp] THEN
 	  ONCE_REWRITE_TAC[ARITH_RULE `abs(x - y) = abs(y - x)`] THEN
@@ -382,20 +352,109 @@ let IEEE_ROUND_NEAR_ABS_ERR =
 	  ASM_REWRITE_TAC[];
 
 	  ASM_REWRITE_TAC[] THEN REWRITE_TAC[ieee_exp] THEN
-	  
-	  COND_CASES_TAC THENL [
-	    ONCE_REWRITE_TAC[ARITH_RULE `abs(x - y) = abs(y - x)`] THEN
-	    REWRITE_TAC[GSYM IEEE_FORMAT_TO_FFORMAT] THEN
-	    REWRITE_TAC[GSYM fulp] THEN
+	  ASM_REWRITE_TAC[] THEN
 
-	    SUBGOAL_THEN `greatest_e(ieee_to_flformat fmt) 
-	            (flround (ieee_to_flformat fmt) To_near x) =
-	      (ieee_emin fmt)` (LABEL_TAC "eqemin") THENL [
-		
+      ONCE_REWRITE_TAC[ARITH_RULE `abs(x - y) = abs(y - x)`] THEN
+
+      SUBGOAL_THEN `&(ieee_r fmt) ipow
+              (greatest_e (ieee_to_flformat fmt) x - &(ieee_p fmt) + &1) =
+	    fulp (to_fformat (ieee_to_flformat fmt) 
+		             (greatest_e (ieee_to_flformat fmt) x))`
+	  (fun thm -> REWRITE_TAC[thm]) THENL [
 	    
-            SUBGOAL_THEN `(fulp (ieee_to_fformat fmt)) =
-	      
-	    MATCH_MP_TAC FLOAT_RD_NEAR_ABS_ERR
+	    REWRITE_TAC[fulp] THEN
+	    REWRITE_TAC[FLFORMAT_TO_FFORMAT_2] THEN
+	    REWRITE_TAC[IEEE_FORMAT_TO_FLFORMAT]; ALL_TAC] THEN
 
-	  
-	  
+      MATCH_MP_TAC FLOAT_RD_NEAR_ABS_ERR THEN
+      MATCH_MP_TAC (ARITH_RULE `&0 < abs(x) ==> ~(x = &0)`) THEN
+      MATCH_MP_TAC REAL_LT_TRANS THEN
+      EXISTS_TAC `finf (ieee_to_fformat fmt)` THEN
+      CONJ_TAC THENL [
+	REWRITE_TAC[finf] THEN
+	REWRITE_TAC[FFORMAT_RADIX_IPOW_LT_0];
+	ASM_ARITH_TAC]]);;
+
+let IEEE_ROUND_ZERO_ABS_ERR =
+  prove(`!(fmt:ieee_format) (x:real). abs(x) <= (ieee_threshold fmt) ==>
+	  abs(x - (ieee_round(fmt) To_zero x)) <=
+	  &(ieee_r fmt) ipow ((ieee_exp(fmt) x) - &(ieee_p fmt) + &1)`,
+	REPEAT GEN_TAC THEN DISCH_THEN (LABEL_TAC "absxthresh") THEN
+	REWRITE_TAC[ieee_round] THEN
+	COND_CASES_TAC THENL [
+	  REWRITE_TAC[ieee_exp] THEN
+	  ASM_REWRITE_TAC[] THEN
+	  ONCE_REWRITE_TAC[GSYM IEEE_FORMAT_TO_FFORMAT] THEN
+	  REWRITE_TAC[GSYM fulp] THEN
+	  ONCE_REWRITE_TAC[ARITH_RULE `abs(x - y) = abs(y - x)`] THEN
+	  MATCH_MP_TAC FIXED_RD_ZERO_ABS_ERROR THEN
+	  ASM_REWRITE_TAC[];
+
+	  ASM_REWRITE_TAC[] THEN REWRITE_TAC[ieee_exp] THEN
+	  ASM_REWRITE_TAC[] THEN
+
+      ONCE_REWRITE_TAC[ARITH_RULE `abs(x - y) = abs(y - x)`] THEN
+
+      SUBGOAL_THEN `&(ieee_r fmt) ipow
+              (greatest_e (ieee_to_flformat fmt) x - &(ieee_p fmt) + &1) =
+	    fulp (to_fformat (ieee_to_flformat fmt) 
+		             (greatest_e (ieee_to_flformat fmt) x))`
+	  (fun thm -> REWRITE_TAC[thm]) THENL [
+	    
+	    REWRITE_TAC[fulp] THEN
+	    REWRITE_TAC[FLFORMAT_TO_FFORMAT_2] THEN
+	    REWRITE_TAC[IEEE_FORMAT_TO_FLFORMAT]; ALL_TAC] THEN
+
+      MATCH_MP_TAC FLOAT_RD_ZERO_ABS_ERR THEN
+      MATCH_MP_TAC (ARITH_RULE `&0 < abs(x) ==> ~(x = &0)`) THEN
+      MATCH_MP_TAC REAL_LT_TRANS THEN
+      EXISTS_TAC `finf (ieee_to_fformat fmt)` THEN
+      CONJ_TAC THENL [
+	REWRITE_TAC[finf] THEN
+	REWRITE_TAC[FFORMAT_RADIX_IPOW_LT_0];
+	ASM_ARITH_TAC]]);;
+
+(* -------------------------------------------------------------------------- *)
+(* Relative error theorems                                                    *)
+(* -------------------------------------------------------------------------- *)
+
+(* for r^emin <= |x| <= threshold (x is in the range of normalized fp         *)
+(* numbers), round to near relative error bounded by the machine epsilon.     *)
+(* This is basically the generalized float thm, but `lifted' to ieee.         *)
+let IEEE_ROUND_NEAR_REL_ERR =
+  prove(`!(fmt:ieee_format) (x:real). 
+	  ~(abs(x) <= (finf (ieee_to_fformat fmt))) /\
+	  abs(x) <= (ieee_threshold fmt) ==>
+	  (rerror x (ieee_round(fmt) To_near x)) <= ieee_eps(fmt)`,
+	REPEAT GEN_TAC THEN 
+        DISCH_THEN (LABEL_CONJUNCTS_TAC ["absxlow"; "absxhi"]) THEN
+	REWRITE_TAC[ieee_round] THEN
+	ASM_REWRITE_TAC[] THEN
+	REWRITE_TAC[ieee_eps] THEN
+	MATCH_MP_TAC FLOAT_RD_NEAR_REL_ERROR THEN
+	MATCH_MP_TAC (ARITH_RULE `&0 < abs(x) ==> ~(x = &0)`) THEN
+	MATCH_MP_TAC REAL_LT_TRANS THEN
+	EXISTS_TAC `finf (ieee_to_fformat fmt)` THEN
+	CONJ_TAC THENL [
+	  REWRITE_TAC[finf] THEN
+	  REWRITE_TAC[FFORMAT_RADIX_IPOW_LT_0];
+	  ASM_ARITH_TAC]);;
+
+(* for |x| <= r^emin (x is in the range of subnormal fp numbers), round to    *)
+(* near relative error bounded by 1 (and this is the tightest upper bound).   *)
+(* Basically the fixed thm, but `lifted' to ieee.                             *)
+let IEEE_ROUND_NEAR_REL_ERR =
+  prove(`!(fmt:ieee_format) (x:real). 
+	  (abs(x) <= (finf (ieee_to_fformat fmt))) /\ ~(x = &0) ==>
+	  (rerror x (ieee_round(fmt) To_near x)) <= &1`,
+	REPEAT GEN_TAC THEN 
+        DISCH_THEN (LABEL_CONJUNCTS_TAC ["absxlow"; "absxhi"]) THEN
+	REWRITE_TAC[ieee_round] THEN
+	ASM_REWRITE_TAC[] THEN
+	MATCH_MP_TAC FIXED_RD_NEAREST_REL_ERROR THEN
+	ASM_REWRITE_TAC[]);;
+
+(* -------------------------------------------------------------------------- *)
+(* Delta bounds                                                               *)
+(* -------------------------------------------------------------------------- *)
+

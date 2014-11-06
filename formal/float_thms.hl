@@ -152,6 +152,24 @@ let FLFORMAT_TO_FFORMAT =
         USE_THEN "valid" (fun valid ->
         REWRITE_TAC[REWRITE_RULE[fformat_typbij] valid]));;
 
+(* a saner version *)
+let FLFORMAT_TO_FFORMAT_2 =
+  prove(`!(fmt:flformat) (e:int).
+          (fr (to_fformat fmt e)) = (flr fmt) /\ 
+          (fp (to_fformat fmt e)) = (flp fmt) /\ 
+          (fe (to_fformat fmt e)) = e`,
+	REPEAT GEN_TAC THEN REWRITE_TAC[to_fformat] THEN
+
+	SUBGOAL_THEN `is_valid_fformat (flr fmt, flp fmt, (e:int))`
+	  (fun thm -> ASSUME_TAC (REWRITE_RULE[fformat_typbij] thm)) THENL [
+	    REWRITE_TAC[is_valid_fformat] THEN
+	    REWRITE_TAC[FLFORMAT_RADIX_LT_1] THEN
+	    REWRITE_TAC[FLFORMAT_RADIX_EVEN] THEN
+	    REWRITE_TAC[FLFORMAT_PREC_LT_0]; ALL_TAC] THEN
+
+	REWRITE_TAC[fr; fp; fe] THEN
+	ASM_REWRITE_TAC[]);;
+
 (* -------------------------------------------------------------------------- *)
 (* Useful ipow/exp properties, translated over to floating point              *)
 (* -------------------------------------------------------------------------- *)
@@ -5421,6 +5439,11 @@ let FLOAT_GREATEST_E_OF =
 	    REWRITE_TAC[FLFORMAT_RADIX_LT_1];
 	    ASM_ARITH_TAC]]);;
 
+
+
+
+
+
 let FLOAT_RD_LE_0 =
   prove(`!(fmt:flformat) (x:real) (m:roundmode).
 	  ~(x = &0) /\ &0 <= x ==> &0 <= (flround(fmt) m x)`,
@@ -5480,56 +5503,119 @@ let FLOAT_RD_LE_0_2 =
 	  ASM_ARITH_TAC]);;
 
 let FLOAT_RD_MONO =
-  prove(`!(fmt:flformat) (x:real) (y:real) (m:roundmode).
-	  ~(x = &0) /\ is_float(fmt) y /\ x <= y ==>
-	  (flround(fmt) m x) <= y`,
+  prove(`!(fmt:flformat) (x:real) (e:int) (m:roundmode).
+	  ~(x = &0) /\ &(flr fmt) ipow e <= abs(x) ==>
+	  &(flr fmt) ipow e <= abs(flround(fmt) m x)`,
 	REPEAT GEN_TAC THEN
-	DISCH_THEN (LABEL_CONJUNCTS_TAC ["xneq0"; "yfloat"; "xleqy"]) THEN
-	ASM_CASES_TAC `abs(y) < 
-	  &(greatest_m(fmt) x) * &(flr fmt) ipow (greatest_e(fmt) x)` THENL [
-	    ASM_CASES_TAC `&0 <= x` THENL [
+	DISCH_THEN (LABEL_CONJUNCTS_TAC ["xneq0"; "absxgeq"]) THEN
 
-	      (* contradiction when x is non-negative *)
-	      SUBGOAL_THEN `&(greatest_m fmt x) * 
-	                      &(flr fmt) ipow greatest_e fmt x <= x` 
-              ASSUME_TAC THENL [
-		GEN_REWRITE_TAC (RAND_CONV o ONCE_DEPTH_CONV)
-		  [MATCH_MP (ARITH_RULE `&0 <= x ==> x = abs(x)`)
-		     (ASSUME `&0 <= (x:real)`)] THEN
-		USE_THEN "xneq0" (fun xneq0 -> dump_gm_info xneq0 "x") THEN
-		ASM_REWRITE_TAC[]; ALL_TAC] THEN
+	SUBGOAL_THEN `&(flr fmt) ipow e <= 
+	     &(greatest_m(fmt) x) * &(flr fmt) ipow (greatest_e(fmt) x)`
+	  (LABEL_TAC "lb1") THENL [
+	    MATCH_MP_TAC REAL_LE_TRANS THEN
+	    EXISTS_TAC `&(flr fmt) ipow (greatest_e(fmt) x)` THEN
+	    CONJ_TAC THENL [
 
-	      SUBGOAL_THEN `&0 <= (y:real)` ASSUME_TAC THENL [
-		ASM_ARITH_TAC; ALL_TAC] THEN
+	      USE_THEN "xneq0" (fun xneq0 -> dump_ge_info xneq0 "x") THEN
+              ASM_REWRITE_TAC[] THEN MATCH_MP_TAC IPOW_MONOTONE_2 THEN
+	      CONJ_TAC THENL [
+		MATCH_MP_TAC (ARITH_RULE `&1 < x ==> &1 <= x`) THEN
+		REWRITE_TAC[REAL_OF_NUM_LT] THEN
+		REWRITE_TAC[FLFORMAT_RADIX_LT_1]; ALL_TAC] THEN
+              USE_THEN "xgebig2" (fun xgebig2 -> MATCH_MP_TAC xgebig2) THEN
+              ASM_REWRITE_TAC[];
 
-	      ASM_ARITH_TAC;
+	      USE_THEN "xneq0" (fun xneq0 -> dump_gm_info xneq0 "x") THEN
+	      ASM_REWRITE_TAC[] THEN
+	      GEN_REWRITE_TAC (RATOR_CONV o ONCE_DEPTH_CONV)
+               [ARITH_RULE `x = &1 * (x:real)`] THEN
+	      MATCH_MP_TAC REAL_LE_RMUL THEN
+	      REWRITE_TAC[REAL_OF_NUM_LE] THEN ASM_REWRITE_TAC[] THEN
+	      REWRITE_TAC[FLFORMAT_RADIX_IPOW_LE_0]]; ALL_TAC] THEN
 
-	      (* x negative ... *)
-	      REWRITE_TAC[flround] THEN ASM_REWRITE_TAC[] THEN LET_TAC THEN
+     REWRITE_TAC[flround] THEN LET_TAC THEN
+     COND_CASES_TAC THENL [
+       
+       SUBGOAL_THEN `&0 <= fround (to_fformat fmt e') m y`
+	 (LABEL_TAC "geq0_1") THENL [
+	   MATCH_MP_TAC FIXED_RD_LE_0 THEN
+	   CONJ_TAC THENL [
 
-              SUBGOAL_THEN `fround (to_fformat fmt e) m y' <= &0`
-		(LABEL_TAC "leq0") THENL [
-		  MATCH_MP_TAC FIXED_RD_LE_0_2 THEN
-		  CONJ_TAC THENL [
-		    USE_THEN "xneq0" (fun xneq0 -> dump_gr_info xneq0 "x") THEN
-		    REWRITE_TAC[GSYM(ASSUME `greatest_r(fmt) x = y'`)] THEN
-		    USE_THEN "xgreq" (fun xgreq -> REWRITE_TAC[xgreq]) THEN
-		    REWRITE_TAC[GSYM(ASSUME `greatest_e(fmt) x = e`)] THEN
-		    ASM_ARITH_TAC;
-		    
-		    REWRITE_TAC[GSYM(ASSUME `greatest_r(fmt) x = y'`)] THEN
-		    MATCH_MP_TAC FLOAT_GREATEST_R_LE_0_2 THEN
-		    ASM_REWRITE_TAC[]]; ALL_TAC] THEN
+	       MATCH_MP_TAC (ARITH_RULE `x < y ==> x <= (y:real)`) THEN
+	       USE_THEN "xneq0" (fun xneq0 -> dump_gr_info xneq0 "x") THEN
+	       REWRITE_TAC[GSYM (ASSUME `greatest_r(fmt) x = y`)] THEN
+	       REWRITE_TAC[GSYM (ASSUME `greatest_e(fmt) x = e'`)] THEN
+	       USE_THEN "xgreq" (fun xgreq -> REWRITE_TAC[xgreq]) THEN
+	       ASM_REWRITE_TAC[];
 
-	    GEN_REWRITE_TAC 
-		(RATOR_CONV o RAND_CONV o RAND_CONV o ONCE_DEPTH_CONV)
-		[ARITH_RULE `(x:real) = (-- (-- x))`] THEN
+	       REWRITE_TAC[GSYM (ASSUME `greatest_r(fmt) x = y`)] THEN
+	       MATCH_MP_TAC FLOAT_GREATEST_R_LE_0 THEN
+	       ASM_REWRITE_TAC[]]; ALL_TAC] THEN
+	   
 
-            REWRITE_TAC[ARITH_RULE `-- (x:real) + -- y = -- (x + y)`] THEN
-            REWRITE_TAC[ARITH_RULE `-- (x:real) <= y <=> -- y <= x`] THEN
-            
-            SUBGOAL_THEN `y <= &0` (LABEL_TAC "yleq0") THENL [
-	      ASM_ARITH_TAC
-		
-	      
-		
+       SUBGOAL_THEN `&0 <= &m' * &(flr fmt) ipow e' + 
+	               fround (to_fformat fmt e') m y`
+	 (LABEL_TAC "geq0") THENL [
+	   MATCH_MP_TAC REAL_LE_ADD THEN
+	   CONJ_TAC THENL [
+	     
+	     MATCH_MP_TAC REAL_LE_MUL THEN
+	     REWRITE_TAC[REAL_OF_NUM_LE] THEN
+	     CONJ_TAC THENL [ ARITH_TAC; ALL_TAC ] THEN
+	     REWRITE_TAC[FLFORMAT_RADIX_IPOW_LE_0];
+
+	     ASM_REWRITE_TAC[]]; ALL_TAC] THEN
+
+	USE_THEN "geq0" (fun geq0 -> REWRITE_TAC[MATCH_MP
+          (ARITH_RULE `&0 <= x ==> abs(x) = x`) geq0]) THEN
+
+        GEN_REWRITE_TAC (RATOR_CONV o ONCE_DEPTH_CONV)
+          [ARITH_RULE `x = x + &0`] THEN
+		       
+        MATCH_MP_TAC REAL_LE_ADD2 THEN
+        ASM_REWRITE_TAC[];
+
+
+       (* x < 0 ... *)
+       SUBGOAL_THEN `fround (to_fformat fmt e') m y <= &0`
+	 (LABEL_TAC "geq0_1") THENL [
+	   MATCH_MP_TAC FIXED_RD_LE_0_2 THEN
+	   CONJ_TAC THENL [
+
+	       MATCH_MP_TAC (ARITH_RULE `x < y ==> x <= (y:real)`) THEN
+	       USE_THEN "xneq0" (fun xneq0 -> dump_gr_info xneq0 "x") THEN
+	       REWRITE_TAC[GSYM (ASSUME `greatest_r(fmt) x = y`)] THEN
+	       REWRITE_TAC[GSYM (ASSUME `greatest_e(fmt) x = e'`)] THEN
+	       USE_THEN "xgreq" (fun xgreq -> REWRITE_TAC[xgreq]) THEN
+	       ASM_REWRITE_TAC[];
+
+	       REWRITE_TAC[GSYM (ASSUME `greatest_r(fmt) x = y`)] THEN
+	       MATCH_MP_TAC FLOAT_GREATEST_R_LE_0_2 THEN
+	       ASM_REWRITE_TAC[]]; ALL_TAC] THEN
+	   
+
+       SUBGOAL_THEN `--(&m' * &(flr fmt) ipow e') + 
+	               fround (to_fformat fmt e') m y <= &0`
+	 (LABEL_TAC "geq0") THENL [
+	   REWRITE_TAC[
+	     ARITH_RULE `--(x:real) + y <= &0 <=> &0 <= x + (--y)`] THEN
+	   MATCH_MP_TAC REAL_LE_ADD THEN
+	   CONJ_TAC THENL [
+	     
+	     MATCH_MP_TAC REAL_LE_MUL THEN
+	     REWRITE_TAC[REAL_OF_NUM_LE] THEN
+	     CONJ_TAC THENL [ ARITH_TAC; ALL_TAC ] THEN
+	     REWRITE_TAC[FLFORMAT_RADIX_IPOW_LE_0];
+
+	     ASM_ARITH_TAC]; ALL_TAC] THEN
+
+	USE_THEN "geq0" (fun geq0 -> REWRITE_TAC[MATCH_MP
+          (ARITH_RULE `x <= &0 ==> abs(x) = -- x`) geq0]) THEN
+	 
+	REWRITE_TAC[ARITH_RULE `-- ((-- (x:real)) + y) = x + (-- y)`] THEN
+
+        GEN_REWRITE_TAC (RATOR_CONV o ONCE_DEPTH_CONV)
+          [ARITH_RULE `x = x + &0`] THEN
+		       
+        MATCH_MP_TAC REAL_LE_ADD2 THEN
+        ASM_REWRITE_TAC[] THEN ASM_ARITH_TAC]);;

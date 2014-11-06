@@ -2375,4 +2375,4 @@ let FIXED_RD_NEAREST_REL_ERROR =
 (* Some lemmas for rounding                                                   *)
 (* -------------------------------------------------------------------------- *)
 
-let FIXED_RD_
+(* let FIXED_RD_ *)
