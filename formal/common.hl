@@ -516,6 +516,21 @@ let IPOW_MONOTONE_2 =
             ASM_REWRITE_TAC[] THEN REWRITE_TAC[NUM_OF_INT_OF_NUM] THEN
             MATCH_MP_TAC REAL_POW_MONO THEN ASM_ARITH_TAC]]);;	      
 
+let IPOW_MUL_INV_EQ_1 =
+  prove(`!(x:real) (i:int). &0 < x ==> x ipow i * x ipow (-- i) = &1`,
+	REPEAT GEN_TAC THEN DISCH_THEN (LABEL_TAC "xgt0") THEN
+	SUBGOAL_THEN `~(x = &0)` (LABEL_TAC "xneq0") THENL [
+	  ASM_ARITH_TAC; ALL_TAC] THEN
+	USE_THEN "xneq0" (fun xneq0 ->
+	  GEN_REWRITE_TAC (RATOR_CONV o RAND_CONV o 
+                            RATOR_CONV o ONCE_DEPTH_CONV)
+          [MATCH_MP IPOW_INV_NEG xneq0]) THEN
+	ONCE_REWRITE_TAC[ARITH_RULE `x * y = y * (x:real)`] THEN
+	MATCH_MP_TAC REAL_MUL_RINV THEN
+	MATCH_MP_TAC (ARITH_RULE `&0 < z ==> ~(z = &0)`) THEN
+	MATCH_MP_TAC IPOW_LT_0 THEN ASM_REWRITE_TAC[]);;
+	  
+
 (* -------------------------------------------------------------------------- *)
 (* rerror                                                                     *)
 (* -------------------------------------------------------------------------- *)
