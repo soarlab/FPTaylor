@@ -1,7 +1,9 @@
 from z3 import *
 
-def find_upper_bound(f, constraints, u):
+def find_upper_bound(f, constraints, u, timeout):
     s = Solver()
+    if timeout > 0:
+        s.set("timeout", timeout)
     while (1):
 #        print u
         s.reset()
@@ -18,8 +20,10 @@ def find_upper_bound(f, constraints, u):
             return u
 
   
-def maximize(f, constraints, lb, ub, tol):
+def maximize(f, constraints, lb, ub, tol, timeout):
     s = Solver()
+    if timeout > 0:
+        s.set("timeout", timeout)
 #    s.add(constraints)
     while (ub - lb > tol):
         m = (ub + lb) / 2.0
@@ -34,14 +38,16 @@ def maximize(f, constraints, lb, ub, tol):
 #        s.pop()
         if r == sat:
             lb = m
-        else:
+        elif r == unsat:
             ub = m
+        else:
+            return lb, ub
     return lb, ub
     
 
-def find_bounds(f, constraints, tol):
-    ub = find_upper_bound(f, constraints, 0)
-    lb = -find_upper_bound(-f, constraints, 0)
-    u1, u2 = maximize(f, constraints, lb, ub, tol)
-    l1, l2 = maximize(-f, constraints, -ub, -lb, tol)
+def find_bounds(f, constraints, tol, timeout):
+    ub = find_upper_bound(f, constraints, 0, 0)
+    lb = -find_upper_bound(-f, constraints, 0, 0)
+    u1, u2 = maximize(f, constraints, lb, ub, tol, timeout)
+    l1, l2 = maximize(-f, constraints, -ub, -lb, tol, timeout)
     return -l2, u2

@@ -35,6 +35,7 @@ let eval_float_expr vars =
 	  | Op_sin -> sin x
 	  | Op_cos -> cos x
 	  | Op_tan -> tan x
+	  | Op_atan -> atan x
 	  | Op_exp -> exp x
 	  | Op_log -> log x
 	  | Op_floor_power2 -> floor_power2 x
@@ -136,6 +137,7 @@ let eval_interval_expr vars =
 	  | Op_sin -> sin_I x
 	  | Op_cos -> cos_I x
 	  | Op_tan -> tan_I x
+	  | Op_atan -> atan_I x
 	  | Op_exp -> exp_I x
 	  | Op_log -> log_I x
 	  | Op_floor_power2 -> floor_power2_I x

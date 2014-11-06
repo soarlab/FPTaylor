@@ -58,7 +58,10 @@ let simplify_rounding =
 	begin
 	  let arg = simplify arg in
 	  let ty = get_type arg in
-	  if is_subtype ty rnd.fp_type then
+	  if rnd.fp_type.bits = 0 then
+	    (* No rounding *)
+	    arg
+	  else if is_subtype ty rnd.fp_type then
 	    (* Rounding is exact *)
 	    arg
 	  else
@@ -131,7 +134,10 @@ let check_expr vars =
       | Var v -> vars v
       | Rounding (rnd, e1) ->
 	let r1 = eval e1 in
-	rnd_I rnd r1
+	if rnd.fp_type.bits = 0 then
+	  r1
+	else
+	  rnd_I rnd r1
       | U_op (op, arg) ->
 	begin
 	  let x = eval arg in
@@ -151,6 +157,7 @@ let check_expr vars =
 	  | Op_sin -> sin_I x
 	  | Op_cos -> cos_I x
 	  | Op_tan -> tan_I x
+	  | Op_atan -> atan_I x
 	  | Op_exp -> exp_I x
 	  | Op_log -> 
 	    if x.low <= 0.0 then

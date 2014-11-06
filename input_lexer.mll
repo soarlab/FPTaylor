@@ -35,6 +35,7 @@ rule token = parse
   | '[' { LBRACKET }
   | ']' { RBRACKET }
   | ';' { SEMICOLON }
+  | ':' { COLON }
   | ',' { COMMA }
   | '+' { PLUS }
   | '-' { MINUS }
@@ -56,6 +57,7 @@ rule token = parse
   | "float64" { FLOAT(64) }
   | "float128" { FLOAT(128) }
   | "rnd" { RND }
+  | "no_rnd" { NO_RND }
   | "rnd16_ne" | "rnd16" { RND_PAR(16, "ne") }
   | "rnd16_0" { RND_PAR(16, "zero") }
   | "rnd16_down" { RND_PAR(16, "down") }

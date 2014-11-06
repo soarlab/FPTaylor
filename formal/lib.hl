@@ -1,3 +1,9 @@
+module Lib = struct
+
+(* --------------------------------------------- *)
+(* Definitions                                   *)
+(* --------------------------------------------- *)
+
 let delete_at = (GEN_ALL o define) 
   `delete_at i [] = [] /\ delete_at 0 (CONS h t) = t /\ 
   delete_at (SUC i) (CONS h t) = CONS h (delete_at i t)`;;
@@ -16,7 +22,35 @@ let unzip_def = define `!h1 h2 t. (unzip [] = [],[]) /\
   (unzip (CONS (h1, h2) t) = CONS h1 (FST (unzip t)), CONS h2 (SND (unzip t)))`;;
 
 
+(* --------------------------------------------- *)
+(* Theorems                                      *)
+(* --------------------------------------------- *)
+
+(* --------------------------------------------- *)
+(* Misc                                          *)
+(* --------------------------------------------- *)
+
 let pair_eq_thm = prove(`!p:A#B. p = FST p, SND p`, REWRITE_TAC[]);;
+
+let let_pair = prove
+  (`!Q p:A#B. (let a,b = p in Q a b) <=> Q (FST p) (SND p)`,
+   REPEAT GEN_TAC THEN EQ_TAC THENL [
+     LET_TAC THEN ASM_REWRITE_TAC[];
+     DISCH_THEN (LABEL_TAC "h") THEN LET_TAC THEN
+       REMOVE_THEN "h" MP_TAC THEN REWRITE_TAC[]
+   ]);;
+
+let let_triple = prove
+  (`!Q p:A#B#C. (let a,b,c = p in Q a b c) <=> Q (FST p) (FST (SND p)) (SND (SND p))`,
+   REPEAT GEN_TAC THEN EQ_TAC THENL [
+     LET_TAC THEN ASM_REWRITE_TAC[];
+     DISCH_THEN (LABEL_TAC "h") THEN LET_TAC THEN
+       REMOVE_THEN "h" MP_TAC THEN REWRITE_TAC[]
+   ]);;
+
+(* --------------------------------------------- *)
+(* delete_at properties                          *)
+(* --------------------------------------------- *)
 
 let delete_at_eq = prove
   (`!s:(A)list k. ~(k < LENGTH s) ==> delete_at k s = s`,
@@ -38,6 +72,10 @@ let length_unzip = prove
   LIST_INDUCT_TAC THEN REWRITE_TAC[LENGTH; unzip_def] THEN
     MP_TAC (ISPEC `h:A#B` pair_eq_thm) THEN DISCH_THEN (fun th -> ONCE_REWRITE_TAC[th]) THEN
     ASM_REWRITE_TAC[unzip_def; LENGTH]);;
+
+(* --------------------------------------------- *)
+(* zip/unzip properties                          *)
+(* --------------------------------------------- *)
 
 let unzip_map = prove
   (`!s:(A#B)list. FST (unzip s) = MAP FST s /\ SND (unzip s) = MAP SND s`,
@@ -66,6 +104,10 @@ let el_zip = prove
       ==> EL i (ZIP s t) = EL i s, EL i t`,
    REPEAT LIST_INDUCT_TAC THEN ASM_REWRITE_TAC[ZIP; LENGTH; EL; SUC_INJ] THEN TRY ARITH_TAC THEN
      INDUCT_TAC THEN ASM_SIMP_TAC[EL; HD; TL; LT_SUC]);;
+
+(* --------------------------------------------- *)
+(* table properties                              *)
+(* --------------------------------------------- *)
 
 let length_reverse = prove
   (`!(s:(A)list). LENGTH (REVERSE s) = LENGTH s`,
@@ -132,6 +174,10 @@ let el_table = prove
      ASM_SIMP_TAC[length_reverse; length_rev_table; el_reverse] THEN
      ASM_SIMP_TAC[el_rev_table; ARITH_RULE `i < n ==> n - i - 1 < n`] THEN
      AP_TERM_TAC THEN POP_ASSUM MP_TAC THEN ARITH_TAC);;
+
+(* --------------------------------------------- *)
+(* sum_list properties                           *)
+(* --------------------------------------------- *)
 
 let sum_list_nil = prove
   (`!f. sum_list [] f = &0`,
@@ -404,6 +450,10 @@ let sum_list_closed = prove
    GEN_TAC THEN GEN_TAC THEN
      LIST_INDUCT_TAC THEN ASM_SIMP_TAC[sum_list_nil; sum_list_cons; ALL]);;
 
+(* --------------------------------------------- *)
+(* MAP/MAP2/ALL2 properties                      *)
+(* --------------------------------------------- *)
+
 let MAP_MAP = prove
   (`!(f:A->B) (h:C->A) s. MAP f (MAP h s) = MAP (\x. f (h x)) s`,
    GEN_TAC THEN GEN_TAC THEN LIST_INDUCT_TAC THEN ASM_REWRITE_TAC[MAP]);;
@@ -461,7 +511,10 @@ let all2_el = prove
    ] THEN
      ASM_SIMP_TAC[all2_all_zip; GSYM ALL_EL; length_zip; el_zip]);;
      
-     
+(* --------------------------------------------- *)
+(* Extra properties                              *)
+(* --------------------------------------------- *)
+    
 let sum_list_le_gen = prove
   (`!(s:(A)list) (t:(B)list) f g. ALL2 (\a b. f a <= g b) s t
      ==> sum_list s f <= sum_list t g`,
@@ -473,3 +526,34 @@ let sum_list_le_gen = prove
 let all_delete_at_imp = prove
   (`!s:(A)list k P. ALL P s ==> ALL P (delete_at k s)`,
    LIST_INDUCT_TAC THEN INDUCT_TAC THEN ASM_SIMP_TAC[ALL; delete_at]);;
+
+
+(* --------------------------------------------- *)
+(* Conversions                                   *)
+(* --------------------------------------------- *)
+
+let rec EL_CONV tm =
+  let n_tm, list_tm = dest_binary "EL" tm in
+    try
+      let suc_th = num_CONV n_tm in
+      let conv = GEN_REWRITE_CONV LAND_CONV [suc_th] THENC REWRITE_CONV[EL; TL; HD] in
+	if dest_small_numeral n_tm = 1 then
+	  conv tm
+	else
+	  (conv THENC EL_CONV) tm
+    with Failure _ ->
+      REWRITE_CONV[EL; HD] tm;;
+
+let rec delete_at_conv tm =
+  let n_tm, list_tm = dest_binary "delete_at" tm in
+    try
+      let suc_th = num_CONV n_tm in
+      let conv = GEN_REWRITE_CONV LAND_CONV [suc_th] THENC REWRITE_CONV[delete_at] in
+	if dest_small_numeral n_tm = 1 then
+	  conv tm
+	else
+	  (conv THENC RAND_CONV delete_at_conv) tm
+    with Failure _ ->
+      REWRITE_CONV[delete_at] tm;;
+
+end;;

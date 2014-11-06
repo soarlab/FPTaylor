@@ -26,6 +26,7 @@ type op_type =
   | Op_sin
   | Op_cos
   | Op_tan
+  | Op_atan
   | Op_exp
   | Op_log
   | Op_fma
@@ -57,6 +58,7 @@ let mk_const c = Const c and
     mk_sin a = U_op (Op_sin, a) and
     mk_cos a = U_op (Op_cos, a) and
     mk_tan a = U_op (Op_tan, a) and
+    mk_atan a = U_op (Op_atan, a) and
     mk_exp a = U_op (Op_exp, a) and
     mk_log a = U_op (Op_log, a) and
     mk_add a b = Bin_op (Op_add, a, b) and
@@ -124,6 +126,7 @@ let op_name_in_env env op =
       | Op_sin -> "sin"
       | Op_cos -> "cos"
       | Op_tan -> "tan"
+      | Op_atan -> "atan"
       | Op_exp -> "exp"
       | Op_log -> "log"
       | Op_fma -> "fma"
@@ -155,7 +158,7 @@ let c_print_env = {
   env_print = (fun p _ e ->
     match e with
       | Const f -> 
-	let _ = p (string_of_float f.float_v) in
+	let _ = p ("(" ^ string_of_float f.float_v ^ ")") in
 	true
       | _ -> false);
 }
@@ -164,7 +167,7 @@ let z3py_print_env = {
   env_op_name = (fun op ->
     match op with
       | Op_nat_pow -> true, "**"
-      | Op_abs | Op_sin | Op_cos | Op_tan | Op_exp | Op_log
+      | Op_abs | Op_sin | Op_cos | Op_tan | Op_atan | Op_exp | Op_log
 	-> failwith ("z3py: " ^ op_name op ^ " is not supported")
       | _ -> false, "");
 
@@ -174,7 +177,7 @@ let z3py_print_env = {
   env_print = (fun p _ e ->
     match e with
       | Const f -> 
-	let _ = p (string_of_num f.rational_v) in
+	let _ = p ("(" ^ string_of_num f.rational_v ^ ")") in
 	true
       | _ -> false);
 }
@@ -199,7 +202,7 @@ let ocaml_float_print_env = {
     match e with
       | Var v -> let _ = p ("var_" ^ v) in true
       | Const f -> 
-	let _ = p (string_of_float f.float_v) in
+	let _ = p ("(" ^ string_of_float f.float_v ^ ")") in
 	true
       | _ -> false);
 }
@@ -217,6 +220,7 @@ let ocaml_interval_print_env = {
     | Op_sin -> true, "sin_I"
     | Op_cos -> true, "cos_I"
     | Op_tan -> true, "tan_I"
+    | Op_atan -> true, "atan_I"
     | Op_exp -> true, "exp_I"
     | Op_log -> true, "log_I"
     | Op_nat_pow -> true, "**$"
@@ -260,7 +264,7 @@ let print_expr_in_env env fmt =
     let b = env.env_print p print e in
     if b then () else
       match e with
-	| Const f -> p (string_of_num f.rational_v)
+	| Const f -> p ("(" ^ string_of_num f.rational_v ^ ")")
 	| Var v -> p v
 	| Rounding (rnd, arg) ->
 	  begin

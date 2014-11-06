@@ -1,3 +1,4 @@
+open Num
 open List
 open Lib
 open Expr
@@ -15,9 +16,10 @@ let gen_z3py_opt_code fmt =
   let tail tol =
     p "";
     p (Format.sprintf "fTol = %f" tol);
-    p "l, u = find_bounds(f, constraints, fTol)";
-    p "print l";
-    p "print u" in
+    p (Format.sprintf "l, u = find_bounds(f, var_constraints + constraints, fTol, %s)"
+	 (Config.get_option "z3-timeout" "1000"));
+    p "print '%.25f' % l";
+    p "print '%.25f' % u" in
 
   let num_to_z3 n =
     let s = Big_int.string_of_big_int in
@@ -26,28 +28,75 @@ let gen_z3py_opt_code fmt =
 (*    "\"" ^ ns ^ "/" ^ ds ^ "\"" in*)
     "Q(" ^ ns ^ "," ^ ds ^ ")" in 
 
-  let vars var_names var_bounds =
-    if var_names = [] then 
+  let print_constraint c =
+    match c with
+      | Le (e, Const c) ->
+	print_expr_in_env z3py_print_env fmt e;
+	p' " < ";
+	p' (num_to_z3 c.rational_v)
+      | _ -> failwith "z3opt: print_constraint(): unsupported constraint" in
+
+  let constraint_vars (name, c) =
+    match c with
+      | Le (e, Const c) -> vars_in_expr e
+      | _ -> failwith "z3opt: constraint_vars(): unsupported constraint" in
+
+  let constraints cs =
+    if cs = [] then
       p "constraints = []"
     else
+      let _ = p' "constraints = [" in
+      let _ = map (fun (name, c) -> print_constraint c; p' ", ") cs in
+      p "]" in
+
+  let vars var_names var_bounds =
+    if var_names = [] then 
+      p "var_constraints = []"
+    else
+      let eq_vars, neq_vars = partition
+	(fun (name, (low, high)) -> low =/ high)
+	(zip var_names var_bounds) in
+
+      let eqs = map
+	(fun (name, (low, high)) ->
+	  Format.sprintf "%s = %s" name (num_to_z3 low))
+	eq_vars in
+      let constraints = map
+	(fun (name, (low, high)) ->
+	  if low =/ high then
+	    Format.sprintf "%s >= %s, %s <= %s" name (num_to_z3 low) name (num_to_z3 high)
+	  else
+	    Format.sprintf "%s > %s, %s < %s" name (num_to_z3 low) name (num_to_z3 high))
+	neq_vars in
+      let names =  String.concat ", " var_names in
+      p (Format.sprintf "[%s] = Reals('%s')" names names);
+      p (String.concat "\n" eqs);
+      p (Format.sprintf "var_constraints = [%s]" (String.concat ", " constraints)) in
+	
+
+(*
       let low, high = unzip var_bounds in
-      let low_str = String.concat ", " (map2 (Format.sprintf "%s >= %s") 
+      let low_str = String.concat ", " (map2 (Format.sprintf "%s > %s") 
 					  var_names (map num_to_z3 low)) in
-      let high_str = String.concat ", " (map2 (Format.sprintf "%s <= %s") 
+      let high_str = String.concat ", " (map2 (Format.sprintf "%s < %s") 
 					   var_names (map num_to_z3 high)) in
       let names =  String.concat ", " var_names in
       p (Format.sprintf "[%s] = Reals('%s')" names names);
-      p (Format.sprintf "constraints = [%s, %s]" low_str high_str) in
+      p (Format.sprintf "var_constraints = [%s, %s]" low_str high_str) in
+*)
 
   let expr e = 
     p' "f = ";
     print_expr_in_env z3py_print_env fmt e in
 
   fun (tol, var_bound, e) ->
-    let var_names = vars_in_expr e in
+    let cs = Environment.get_active_constraints() in
+    let vars_cs = map constraint_vars cs in
+    let var_names = unions (vars_in_expr e :: vars_cs) in
     let var_bounds = map var_bound var_names in
     head();
     vars var_names var_bounds;
+    constraints cs;
     expr e;
     tail tol
 

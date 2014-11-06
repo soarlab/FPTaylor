@@ -11,8 +11,12 @@ type proof_var = {
 type proof_op =
   | Proof_var of string
   | Proof_const of num
+  | Proof_rnd_bin_var of int * string
+  | Proof_rnd_bin_const of int * num
   (* TODO: all rounding operations *)
   | Proof_rnd of int
+  | Proof_simpl_eq of int * int
+  | Proof_simpl_add of int * int
   | Proof_neg
   | Proof_add
   | Proof_sub
@@ -21,6 +25,9 @@ type proof_op =
   | Proof_sqrt
   | Proof_sin
   | Proof_cos
+
+type proof_opt_type =
+  | Proof_opt_approx
 
 type proof_args = {
   arg_indices : int list;
@@ -34,9 +41,17 @@ type proof_step = {
   proof_args : proof_args;
 }
 
+type proof_opt = {
+  opt_type : proof_opt_type;
+  opt_bounds : float list;
+  opt_indices : int list;
+  total_bound : float;
+}
+
 type proof = {
   mutable proof_vars : proof_var list;
   mutable proof_steps : proof_step list;
+  mutable proof_opts : proof_opt list;
 }
 
 let load_proof fname =

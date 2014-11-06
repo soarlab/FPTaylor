@@ -13,7 +13,7 @@ type raw_expr =
   | Raw_bin_op of string * raw_expr * raw_expr
   | Raw_gen_op of string * raw_expr list
 
-type raw_forumula =
+type raw_formula =
   | Raw_le of raw_expr * raw_expr
   | Raw_lt of raw_expr * raw_expr
   | Raw_eq of raw_expr * raw_expr
@@ -41,8 +41,9 @@ type env = {
   constants : (string, constant_def) Hashtbl.t;
   variables : (string, var_def) Hashtbl.t;
   definitions : (string, definition) Hashtbl.t;
-  mutable constraints : formula list;
+  mutable constraints : (string * formula) list;
   mutable expressions : (string * expr) list;
+  mutable active_constraints : (string * formula) list;
 }
 
 let env = {
@@ -51,6 +52,7 @@ let env = {
   definitions = Hashtbl.create 10;
   constraints = [];
   expressions = [];
+  active_constraints = [];
 }
 
 let reset () =
@@ -59,7 +61,8 @@ let reset () =
   clear env.variables;
   clear env.definitions;
   env.constraints <- [];
-  env.expressions <- []
+  env.expressions <- [];
+  env.active_constraints <- []
 
 let find_constant name =
   Hashtbl.find env.constants name
@@ -72,6 +75,15 @@ let find_definition name =
 
 let all_variables () =
   Hashtbl.fold (fun _ v s -> v :: s) env.variables []
+
+let all_constraints () =
+  env.constraints
+
+let set_active_constraints cs =
+  env.active_constraints <- cs 
+
+let get_active_constraints () =
+  env.active_constraints
 
 let variable_interval name =
   let v = find_variable name in {
@@ -114,6 +126,15 @@ let rec apply_raw_rounding rnd expr =
       let es = map (apply_raw_rounding rnd) args in
       Raw_rounding (rnd, Raw_gen_op (op, es))
 
+let apply_raw_rounding_to_formula rnd f =
+  match f with
+    | Raw_le (e1, e2) ->
+      Raw_le (apply_raw_rounding rnd e1, apply_raw_rounding rnd e2)
+    | Raw_lt (e1, e2) ->
+      Raw_lt (apply_raw_rounding rnd e1, apply_raw_rounding rnd e2)
+    | Raw_eq (e1, e2) ->
+      Raw_eq (apply_raw_rounding rnd e1, apply_raw_rounding rnd e2)
+
 (* Builds an expression from a raw expression *)
 let rec transform_raw_expr = function
   | Raw_rounding (rnd, arg) ->
@@ -130,6 +151,7 @@ let rec transform_raw_expr = function
 	| "sin" -> U_op (Op_sin, e1)
 	| "cos" -> U_op (Op_cos, e1)
 	| "tan" -> U_op (Op_tan, e1)
+	| "atan" -> U_op (Op_atan, e1)
 	| "exp" -> U_op (Op_exp, e1)
 	| "log" -> U_op (Op_log, e1)
 	| "floor_power2" -> U_op (Op_floor_power2, e1)
@@ -226,9 +248,9 @@ let add_definition name raw =
     expr
 
 (* Adds a constraint to the environment *)
-let add_constraint raw =
+let add_constraint name raw =
   let c = transform_raw_formula raw in
-  env.constraints <- c :: env.constraints
+  env.constraints <- env.constraints @ [name, c]
 
 (* Adds a named expression to the environment. Also creates the corresponding definition. *)
 let add_expression_with_name name raw =

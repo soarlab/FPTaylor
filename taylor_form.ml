@@ -10,6 +10,8 @@ open Expr
 
 (* Describes an error variable *)
 type error_info = {
+  (* Unique index for proofs *)
+  proof_index : int;
   (* Error variables with the same index are the same *)
   index : int;
   (* The upper bound of the error is 2^exp *)
@@ -22,6 +24,12 @@ type taylor_form = {
   v1 : (expr * error_info) list;
 }
 
+let dummy_tform = {
+  form_index = 0;
+  v0 = const_0;
+  v1 = [];
+}
+
 let reset_form_index, next_form_index =
   let index = ref 0 in
   let reset () = index := 0 in
@@ -31,10 +39,15 @@ let reset_form_index, next_form_index =
     i in
   reset, next
 
-let mk_err_var index exp = {
-  index = index;
-  exp = exp;
-}
+let mk_err_var, reset_error_index =
+  let err_index = ref 0 in
+  let mk index exp = {
+    proof_index = (let _ = incr err_index in !err_index);
+    index = index;
+    exp = exp;
+  } in
+  let reset () = err_index := 0 in
+  mk, reset
 
 let ( +^ ) = Fpu.fadd_high and
     ( *^ ) = Fpu.fmul_high
@@ -77,25 +90,34 @@ let abs_eval_v1 vars = map (fun (ex, err) -> abs_eval vars ex, err.exp)
 
 let fp_to_const f = mk_const (const_of_float f)
 
-let simplify_form vars =
-  let rec add_adjacent s =
+let simplify_form vars f =
+  let rec add_adjacent arg_index s =
     match s with
       | (ex1, err1) :: (ex2, err2) :: t when err1.index = -1 && err2.index = -1 ->
 	let f1, exp1 = abs_eval vars ex1, err1.exp and
 	    f2, exp2 = abs_eval vars ex2, err2.exp in
 	let f, exp = add2 (f1, exp1) (f2, exp2) in
-	add_adjacent ((fp_to_const f, mk_err_var (-1) exp) :: t)
+	let f = make_stronger f in
+	let i = next_form_index() in
+	let err = mk_err_var (-1) exp in
+	let _ = Proof.add_simpl_add_step i arg_index 
+	  err1.proof_index err2.proof_index err.proof_index f exp in
+	add_adjacent i ((fp_to_const f, err) :: t)
       | (e1, err1) :: (e2, err2) :: t ->
 	if err1.index = err2.index then
 	  (* we must have err1.exp = err2.exp here *)
 	  let _ = assert(err1.exp = err2.exp) in
-	  add_adjacent ((mk_add e1 e2, err1) :: t)
+	  let i = next_form_index() in
+	  let _ = Proof.add_simpl_eq_step i arg_index 
+	    err1.proof_index err2.proof_index in
+	  add_adjacent i ((mk_add e1 e2, err1) :: t)
 	else
-	  (e1, err1) :: add_adjacent ((e2, err2) :: t)
-      | _ -> s in
-  fun f ->
-    let v1 = sort (fun (_, err1) (_, err2) -> compare err1.index err2.index) f.v1 in
-    {f with v1 = add_adjacent v1}
+	  let index, s = add_adjacent arg_index ((e2, err2) :: t) in
+	  index, (e1, err1) :: s
+      | _ -> arg_index, s in
+  let v1 = sort (fun (_, err1) (_, err2) -> compare err1.index err2.index) f.v1 in
+  let i, v1_new = add_adjacent f.form_index v1 in
+  {f with form_index = i; v1 = v1_new}
 
 let find_index, expr_for_index, reset_index_counter, current_index =
   let counter = ref 0 in
@@ -127,22 +149,36 @@ let const_form e =
 (* constant with rounding *)
 let const_rnd_form rnd e =
   match e with
-    | Const c -> {
-      form_index = next_form_index();
-      v0 = e;
-      v1 =
-	begin
-	  if is_fp_exact (get_eps rnd.eps_exp) c then [] else
-	    let bound = (abs_I c.interval_v).high in
-	    let err = rnd.coefficient *^ floor_power2 bound in
-	    let err_expr = fp_to_const err in
-	    let _ = Log.warning (Format.sprintf "Inexact constant: %s; err = %s" 
-				   (print_expr_str e) 
-				   (print_expr_str err_expr)) in
-	    (* TODO: subnormal constants (a very rare case) *)
-	    [err_expr, mk_err_var (find_index (mk_rounding rnd e)) rnd.eps_exp]
-	end;
-    }
+    | Const c -> 
+      if is_fp_exact (get_eps rnd.eps_exp) c then 
+	const_form e
+      else
+	let form_index = next_form_index() in
+	let bound = (abs_I c.interval_v).high in
+	let p2 = floor_power2 bound in
+	let _, p2_exp = frexp p2 in
+	let m2' =
+	  (* TODO: do not add d for constants in the normal range *)
+	  if Config.proof_flag then
+	    p2 +^ (get_eps rnd.delta_exp /. get_eps rnd.eps_exp)
+	  else
+	    p2 in
+	(* Don't need to apply make_stronger since 
+	   everything can be proved with rational numbers *)
+	let m2 = rnd.coefficient *^ m2' in
+	let err_expr = fp_to_const m2 in
+	let err = mk_err_var (find_index (mk_rounding rnd e)) rnd.eps_exp in
+	let _ = Log.warning (Format.sprintf "Inexact constant: %s; err = %s" 
+			       (print_expr_str e) 
+			       (print_expr_str err_expr)) in
+	let _ = 
+	  Proof.add_rnd_bin_const_step form_index c.rational_v 
+	    rnd.fp_type.bits p2_exp m2 err.proof_index in
+	{
+	  form_index = form_index;
+	  v0 = e;
+	  v1 = [err_expr, err]
+	}
     | _ -> failwith ("const_rnd_form: not a constant: " ^ print_expr_str e)
 
 let get_var_uncertainty eps_exp var_name =
@@ -170,30 +206,51 @@ let var_form e =
 let var_rnd_form rnd e =
   match e with
     | Var v -> 
-      let v1_uncertainty = 
-	if Config.uncertainty then get_var_uncertainty rnd.eps_exp v else [] in
-      let v1_rnd =
-	let err_expr0 = 
-	  if Config.const_approx_real_vars then
-	    let bound = (abs_I (Environment.variable_interval v)).high in
-	    let err = floor_power2 bound in
-	    fp_to_const err
-	  else if Config.fp_power2_model then
-	    mk_floor_power2 e
-	  else
-	    e in
-	let err_expr = 
-	  if rnd.coefficient <> 1.0 then
-	    mk_mul (fp_to_const rnd.coefficient) err_expr0 
-	  else 
-	    err_expr0 in
+      if Config.proof_flag then
+	let form_index = next_form_index() in
+	let bound = (abs_I (Environment.variable_interval v)).high in
+	let p2 = floor_power2 bound in
+	let _, p2_exp = frexp p2 in
+	let m2' =
+	    p2 +^ (get_eps rnd.delta_exp /. get_eps rnd.eps_exp) in
+	(* Don't need to apply make_stronger since 
+	   everything can be proved with rational numbers *)
+	let m2 = rnd.coefficient *^ m2' in
+	let err_expr = fp_to_const m2 in
+	let err = mk_err_var (find_index (mk_rounding rnd e)) rnd.eps_exp in
+	let _ = 
+	  Proof.add_rnd_bin_var_step form_index v 
+	    rnd.fp_type.bits p2_exp m2 err.proof_index in
+	{
+	  form_index = form_index;
+	  v0 = e;
+	  v1 = [err_expr, err]
+	}
+      else
+	let v1_uncertainty = 
+	  if Config.uncertainty then get_var_uncertainty rnd.eps_exp v else [] in
+	let v1_rnd =
+	  let err_expr0 = 
+	    if Config.const_approx_real_vars then
+	      let bound = (abs_I (Environment.variable_interval v)).high in
+	      let err = floor_power2 bound in
+	      fp_to_const err
+	    else if Config.fp_power2_model then
+	      mk_floor_power2 e
+	    else
+	      e in
+	  let err_expr = 
+	    if rnd.coefficient <> 1.0 then
+	      mk_mul (fp_to_const rnd.coefficient) err_expr0 
+	    else 
+	      err_expr0 in
 	(* TODO: subnormal values of variables *)
-	[err_expr, mk_err_var (find_index (mk_rounding rnd e)) rnd.eps_exp] in
-      {
-	form_index = next_form_index();
-	v0 = e;
-	v1 = v1_uncertainty @ v1_rnd;
-      }
+	  [err_expr, mk_err_var (find_index (mk_rounding rnd e)) rnd.eps_exp] in
+	{
+	  form_index = next_form_index();
+	  v0 = e;
+	  v1 = v1_uncertainty @ v1_rnd;
+	}
     | _ -> failwith ("var_rnd_form: not a variable" ^ print_expr_str e)
 
 (* rounding *)
@@ -206,7 +263,7 @@ let rounded_form vars original_expr rnd f =
   else
     let i = find_index original_expr in
     let s1', exp1 = sum_high (abs_eval_v1 vars f.v1) in
-    let s1 = get_eps exp1 *^ s1' in
+    let s1 = make_stronger (get_eps exp1 *^ s1') in
     let r', m2' =
       if Config.fp_power2_model then
 	mk_floor_power2 (mk_add f.v0 (mk_sym_interval (fp_to_const s1))),
@@ -221,12 +278,15 @@ let rounded_form vars original_expr rnd f =
 	mk_mul (fp_to_const rnd.coefficient) r', rnd.coefficient *^ m2' in
     let form_index = next_form_index() in
     let m2 = make_stronger m2 in
-    let _ = Proof.add_rnd_step form_index rnd.fp_type.bits f.form_index m2 in
+    let r_err = mk_err_var i rnd.eps_exp and
+	m2_err = mk_err_var (-1) rnd.eps_exp in
+    let _ = Proof.add_rnd_step form_index rnd.fp_type.bits 
+      f.form_index s1 m2 r_err.proof_index m2_err.proof_index in
     {
       form_index = form_index;
       v0 = f.v0;
-      v1 = ((r, mk_err_var i rnd.eps_exp) :: f.v1) @ 
-	[fp_to_const m2, mk_err_var (-1) rnd.eps_exp];
+      v1 = ((r, r_err) :: f.v1) @ 
+	[fp_to_const m2, m2_err];
     }
 
 (* negation *)
@@ -265,11 +325,13 @@ let mul_form =
     let m2, m2_exp = sum2_high x1 y1 in
     let m2 = make_stronger m2 in
     let form_index = next_form_index() in
-    let _ = Proof.add_mul_step form_index f1.form_index f2.form_index m2 in
+    let m2_err = mk_err_var (-1) m2_exp in
+    let _ = Proof.add_mul_step form_index
+      f1.form_index f2.form_index m2 (float_of_int m2_exp) m2_err.proof_index in
     {
       form_index = form_index;
       v0 = mk_mul f1.v0 f2.v0;
-      v1 = mul1 f1.v0 f2.v1 @ mul1 f2.v0 f1.v1 @ [fp_to_const m2, mk_err_var (-1) m2_exp];
+      v1 = mul1 f1.v0 f2.v1 @ mul1 f2.v0 f1.v1 @ [fp_to_const m2, m2_err];
     }
 
 (* reciprocal *)
@@ -280,18 +342,27 @@ let inv_form vars f =
     let eps = get_eps x_exp in
     let xi = {low = -. eps; high = eps} in
     (xi *$. x) +$ s) x1 zero_I in
-  let d = pow_I_i (x0_int +$ s1) 3 in
-  let r_high = (abs_I (inv_I d)).high in
-  let m2', m2_exp = sum2_high x1 x1 in
-  let m2 = r_high *^ m2' in
+  let m1 = make_stronger (abs_I s1).high in
+  let d =
+    if Config.proof_flag then
+      pow_I_i (x0_int +$ {low = -.m1; high = m1}) 3
+    else
+      pow_I_i (x0_int +$ s1) 3 in
+  let b_high = (abs_I (inv_I d)).high in
+  let b_high = make_stronger b_high in
+  let m2, m2_exp = sum2_high x1 x1 in
   let m2 = make_stronger m2 in
+  let m3 = b_high *^ m2 in
+  let m3 = make_stronger m3 in
   let form_index = next_form_index() in
-  let _ = Proof.add_inv_step form_index f.form_index m2 in
+  let m3_err = mk_err_var (-1) m2_exp in
+  let _ = Proof.add_inv_step form_index f.form_index 
+    m1 m2 m2_exp b_high m3 m3_err.proof_index in
   {
     form_index = form_index;
     v0 = mk_div const_1 f.v0;
     v1 = map (fun (e, err) -> mk_neg (mk_div e (mk_mul f.v0 f.v0)), err) f.v1
-      @ [fp_to_const m2, mk_err_var (-1) m2_exp];
+      @ [fp_to_const m3, m3_err];
   }
 
 (* division *)
@@ -363,6 +434,48 @@ let cos_form vars f =
       @ [fp_to_const m2, mk_err_var (-1) m2_exp];
   }
 
+(* tangent *)
+let tan_form vars f =
+  let x0_int = Eval.eval_interval_expr vars f.v0 in
+  let x1 = abs_eval_v1 vars f.v1 in
+  let s1 = itlist (fun (x,x_exp) s -> 
+    let eps = get_eps x_exp in
+    let xi = {low = -. eps; high = eps} in
+    (xi *$. x) +$ s) x1 zero_I in
+  let xi = x0_int +$ s1 in
+  let d = tan_I xi /$ pow_I_i (cos_I xi) 2 in
+  let r_high = (abs_I d).high in
+  let m2', m2_exp = sum2_high x1 x1 in
+  let m2 = r_high *^ m2' in
+  let v1_0 = mk_mul (mk_cos f.v0) (mk_cos f.v0) in
+  {
+    form_index = next_form_index();
+    v0 = mk_tan f.v0;
+    v1 = map (fun (e, err) -> mk_div e v1_0, err) f.v1
+      @ [fp_to_const m2, mk_err_var (-1) m2_exp];
+  }
+
+(* arctangent *)
+let atan_form vars f =
+  let x0_int = Eval.eval_interval_expr vars f.v0 in
+  let x1 = abs_eval_v1 vars f.v1 in
+  let s1 = itlist (fun (x,x_exp) s -> 
+    let eps = get_eps x_exp in
+    let xi = {low = -. eps; high = eps} in
+    (xi *$. x) +$ s) x1 zero_I in
+  let xi = x0_int +$ s1 in
+  let d = ~-$ (xi /$ pow_I_i (pow_I_i xi 2 +$ one_I) 2) in
+  let r_high = (abs_I d).high in
+  let m2', m2_exp = sum2_high x1 x1 in
+  let m2 = r_high *^ m2' in
+  let v1_0 = mk_add (mk_mul f.v0 f.v0) const_1 in
+  {
+    form_index = next_form_index();
+    v0 = mk_atan f.v0;
+    v1 = map (fun (e, err) -> mk_div e v1_0, err) f.v1
+      @ [fp_to_const m2, mk_err_var (-1) m2_exp];
+  }
+
 (* exp *)
 let exp_form vars f =
   let x0_int = Eval.eval_interval_expr vars f.v0 in
@@ -410,9 +523,9 @@ let build_form vars =
       | Const _ -> const_form e
       | Var _ -> var_form e
       | Rounding (rnd, Const c) 
-	  when not Config.proof_flag -> const_rnd_form rnd (Const c)
+	  (* when not Config.proof_flag *) -> const_rnd_form rnd (Const c)
       | Rounding (rnd, Var v) 
-	  when not Config.proof_flag -> var_rnd_form rnd (Var v)
+	  (* when not Config.proof_flag *) -> var_rnd_form rnd (Var v)
       | Rounding (rnd, arg) -> 
 	let arg_form = build arg in
 	rounded_form vars e rnd arg_form
@@ -425,6 +538,8 @@ let build_form vars =
 	    | Op_sqrt -> sqrt_form vars arg_form
 	    | Op_sin -> sin_form vars arg_form
 	    | Op_cos -> cos_form vars arg_form
+	    | Op_tan -> tan_form vars arg_form
+	    | Op_atan -> atan_form vars arg_form
 	    | Op_exp -> exp_form vars arg_form
 	    | Op_log -> log_form vars arg_form
 	    | _ -> failwith 
@@ -452,6 +567,7 @@ let build_form vars =
 	end
   in
   fun e ->
+    let _ = reset_error_index() in
     let _ = reset_form_index() in
     let _ = reset_index_counter() in
     build e

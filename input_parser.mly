@@ -5,7 +5,7 @@
 %}
 
 %token EOF
-%token SEMICOLON COMMA
+%token COLON SEMICOLON COMMA
 %token LPAREN RPAREN LBRACKET RBRACKET
 %token PLUS MINUS MULT DIVIDE POW
 %token EQ LE GE LT GT IN PLUS_MINUS
@@ -18,7 +18,7 @@
 %token INT REAL 
 %token <int> FLOAT
 %token <int * string> RND_PAR
-%token RND
+%token RND NO_RND
 %token E_CONST
 
 %token ABS INV SQRT FMA
@@ -38,6 +38,9 @@
 
 %start expr
 %type <Environment.raw_expr> expr
+
+%type <Environment.raw_formula> raw_constr
+%type <Rounding.rnd_info> rnd
 
 %%
 
@@ -112,15 +115,16 @@ next_constraints: /* empty */ {}
 ;
 
 constr:
-  expr EQ expr { add_constraint (Raw_eq ($1, $3)) }
-  | expr LE expr { add_constraint (Raw_le ($1, $3)) }
-  | expr LT expr { add_constraint (Raw_lt ($1, $3)) }
-  | expr GE expr { add_constraint (Raw_le ($3, $1)) }
-  | expr GT expr { add_constraint (Raw_lt ($3, $1)) }
-  | expr IN LBRACKET expr COMMA expr RBRACKET { 
-    add_constraint (Raw_le ($1, $6));
-    add_constraint (Raw_le ($4, $1))
-  }
+  ID COLON raw_constr { add_constraint $1 $3 }
+  | ID rnd COLON raw_constr { add_constraint $1 (apply_raw_rounding_to_formula $2 $4) }
+;
+
+raw_constr:
+  expr EQ expr { Raw_eq ($1, $3) }
+  | expr LE expr { Raw_le ($1, $3) }
+  | expr LT expr { Raw_lt ($1, $3) }
+  | expr GE expr { Raw_le ($3, $1) }
+  | expr GT expr { Raw_lt ($3, $1) }
 ;
 
 expressions:
@@ -146,6 +150,7 @@ rnd:
   RND LPAREN NUMBER COMMA ID COMMA NUMBER COMMA pos_neg_number COMMA pos_neg_number RPAREN
   { create_explicit_rounding (int_of_string $3) ($5) 
       (float_of_string $7) (int_of_string $9) (int_of_string $11) }
+  | NO_RND { create_rounding 0 "ne" 1.0 }
   | RND LPAREN NUMBER COMMA ID COMMA NUMBER RPAREN
   { create_rounding (int_of_string $3) ($5) (float_of_string $7) }
   | RND LPAREN NUMBER COMMA ID RPAREN
@@ -186,7 +191,7 @@ expr:
   | TANH LPAREN expr RPAREN { raise TODO }
   | ACOS LPAREN expr RPAREN { raise TODO }
   | ASIN LPAREN expr RPAREN { raise TODO }
-  | ATAN LPAREN expr RPAREN { raise TODO }
+  | ATAN LPAREN expr RPAREN { Raw_u_op ("atan", $3) }
   | ACOSH LPAREN expr RPAREN { raise TODO }
   | ASINH LPAREN expr RPAREN { raise TODO }
   | ATANH LPAREN expr RPAREN { raise TODO }

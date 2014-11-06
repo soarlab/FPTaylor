@@ -1,0 +1,196 @@
+needs "build_tform2.hl";;
+
+open List;;
+open List_eval;;
+open Interval_arith;;
+open Arith_float;;
+open More_float;;
+open Lib;;
+open Tform;;
+open Build_tform;;
+open Bin_float;;
+open Eval_expr;;
+open Proof;;
+open Misc_functions;;
+open Misc_vars;;
+open Build_tform2;;
+
+let trans_bound bound_th bound_tm =
+  let vars, tm = strip_forall (concl bound_th) in
+  let ineq_th = UNDISCH_ALL (SPEC_ALL bound_th) in
+  let cond, ineq = dest_imp tm in
+  let bound0_tm = rand ineq in
+  let ineq2 = mk_binary "real_le" (bound0_tm, bound_tm) in
+  let ineq2_th = EQT_ELIM ((REWRITE_CONV[IPOW_NEG; IPOW_NUM] THENC bin_float_rat_conv) ineq2) in
+  let trans_th = MATCH_MP REAL_LE_TRANS (CONJ ineq_th ineq2_th) in
+  let r1 = DISCH cond trans_th in
+    itlist GEN vars r1;;
+
+
+let path = "../benchmarks/proofs/proofs";;
+
+let load name =
+  let fname = Filename.concat path name in
+    load_proof fname;;
+
+let t1 = load "t1.proof";;
+let t2 = load "t2.proof";;
+let t3 = load "t3.proof";;
+
+let p1 = load "r1.proof";;
+let p2 = load "r2.proof";;
+let p3 = load "r3.proof";;
+let p4 = load "r4.proof";;
+
+let p5 = load "i1.proof";;
+let p6 = load "i2.proof";;
+
+(************************)
+
+let pp = 10;;
+
+install_user_printer ("hidden", print_hidden);;
+delete_user_printer "hidden";;
+
+
+
+(**************)
+
+validate_proof pp t1;;
+validate_proof pp t2;;
+validate_proof pp t3;;
+
+validate_proof pp p1;;
+validate_proof pp p2;;
+validate_proof pp p3;;
+validate_proof pp p4;;
+validate_proof pp p5;;
+validate_proof pp p6;;
+
+let proof_sum = load "sum.proof";;
+let proof_nonlin1 = load "nonlin1.proof";;
+let proof_nonlin2 = load "nonlin2.proof";;
+
+validate_proof pp proof_sum;;
+validate_proof pp proof_nonlin1;;
+validate_proof pp proof_nonlin2;;
+
+let proof = load "carbon_gas.proof";;
+let form_th, bound_th = validate_proof 15 proof;;
+trans_bound bound_th `#1.240 * &10 ipow (-- &8)`;;
+
+let proof = load "verhulst.proof";;
+let form_th, bound_th = validate_proof pp proof;;
+trans_bound bound_th `#3.491 * &10 ipow (-- &16)`;;
+
+let proof = load "predatorPrey.proof";;
+let form_th, bound_th = validate_proof pp proof;;
+trans_bound bound_th `#1.865 * &10 ipow (-- &16)`;;
+
+let proof = load "rigidBody1.proof";;
+let form_th, bound_th = validate_proof pp proof;;
+trans_bound bound_th `#3.865 * &10 ipow (-- &13)`;;
+
+let proof = load "rigidBody2.proof";;
+let form_th, bound_th = validate_proof pp proof;;
+trans_bound bound_th `#5.233 * &10 ipow (-- &11)`;;
+
+let proof = load "doppler1.proof";;
+let form_th, bound_th = validate_proof pp proof;;
+trans_bound bound_th `#1.569 * &10 ipow (-- &13)`;;
+
+let proof = load "doppler2.proof";;
+let form_th, bound_th = validate_proof pp proof;;
+trans_bound bound_th `#2.870 * &10 ipow (-- &13)`;;
+
+let proof = load "doppler3.proof";;
+let form_th, bound_th = validate_proof pp proof;;
+trans_bound bound_th `#8.150 * &10 ipow (-- &14)`;;
+
+let proof = load "sine.proof";;
+let form_th, bound_th = validate_proof pp proof;;
+trans_bound bound_th `#6.701 * &10 ipow (-- &16)`;;
+
+let proof = load "sqroot.proof";;
+let form_th, bound_th = validate_proof pp proof;;
+trans_bound bound_th `#7.863 * &10 ipow (-- &16)`;;
+
+let proof = load "sineOrder3.proof";;
+let form_th, bound_th = validate_proof 15 proof;;
+trans_bound bound_th `#9.960 * &10 ipow (-- &16)`;;
+
+let proof = load "turbine1.proof";;
+let form_th, bound_th = validate_proof pp proof;;
+trans_bound bound_th `#2.493 * &10 ipow (-- &14)`;;
+
+let proof = load "turbine2.proof";;
+let form_th, bound_th = validate_proof pp proof;;
+trans_bound bound_th `#3.336 * &10 ipow (-- &14)`;;
+
+let proof = load "turbine3.proof";;
+let form_th, bound_th = validate_proof pp proof;;
+trans_bound bound_th `#1.793 * &10 ipow (-- &14)`;;
+
+let proof = load "jet.proof";;
+let form_th, bound_th = validate_proof pp proof;;
+trans_bound bound_th `#1.483 * &10 ipow (-- &11)`;;
+
+
+(*******************)
+
+trans_bound bound_th `&10 ipow (-- &1)`;;    
+;;
+REAL_LE_TRANS;;
+
+
+let pp = 10;;
+let proof = load "v1.proof";;
+
+let x_tm, dom_tm, dom_vars, var_names = build_domain pp proof.proof_vars;;
+let tf = snd (hd (build_tform pp proof));;
+let result = prove_bound pp proof tf;;
+CONV_RULE bin_float_rat_conv result;;
+
+let proof = p1;;
+
+let tms, ths = 
+  try
+    [], build_tform pp proof
+  with Error(msg, tms, ths) ->
+    let _ = print_endline msg in
+      tms, enumerate ths;;
+
+
+(*************)
+
+let approx_th = snd (hd ths);;
+let rnd_th = rnd32;;
+
+let [m2_tm; b_tm; i1; i2] = tms;;
+let i = dest_small_numeral i_tm and
+    j = dest_small_numeral j_tm;;
+		      
+let err_indices = [dest_small_numeral i1; dest_small_numeral i2];;
+let form1 = build_rnd_tform rnd_th m2_tm b_tm err_indices approx_th;;
+let form2 = build_rnd_tform_univ rnd_th m2_tm b_tm err_indices approx_th;;
+
+(************)
+
+let rnd_th = snd (nth ths 0);;
+let n_tm = nth tms 0 and
+    b_tm = nth tms 1;;
+
+let index = rev_assoc "x" var_names;;
+let err_indices = [1];;
+
+let th0 = build_rnd_bin_var_tform dom_tm index rnd_th n_tm b_tm err_indices;;
+
+let hs_forall, hs = partition is_forall (hyp th0);;
+let hs_rat, hs_other = partition (fun tm -> frees tm = []) hs;;
+let rat_ths = map prove_rat_hyp hs_rat;;
+
+let h_tm = hd hs_forall;;
+prove_forall_hyp pp var_names dom_vars [] h_tm;;
+
+
+let tm = h_tm;;
