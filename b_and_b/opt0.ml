@@ -36,6 +36,7 @@ let split_dom dom =
 
 
 let counter = ref 0
+(*let max_iter = 30000*)
 
 let rec opt0 f x_tol f_tol m bound doms acc =
   let _ = counter := !counter + 1 in
@@ -58,7 +59,9 @@ let rec opt0 f x_tol f_tol m bound doms acc =
 	    v2_mid = f d_mid in
 	let v2 = max (max v2_min.low v2_max.low) v2_mid.low in
 	let bound = max v2 bound in
-	if abs_float (v.high -. v2) <= f_tol || size_max_X dom.bounds <= x_tol then
+	if abs_float (v.high -. v2) <= f_tol || 
+	   size_max_X dom.bounds <= x_tol then
+(*	   !counter >= max_iter then*)
 	  opt0 f x_tol f_tol (max m v.high) bound rest acc
 	else
 	  let d1, d2 = split_dom dom in

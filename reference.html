@@ -28,7 +28,7 @@
 
 <h2>Input file format</h2>
 
-<p>Each <strong>FPTaylor</strong> input files consists of several sections: <em>Constants</em>, <em>Variables</em>, <em>Definitions</em>, <em>Expressions</em>. The section <em>Constants</em> defines constants. The section <em>Variables</em> defines variables. The section <em>Definitions</em> contains named expressions (definitions). The section <em>Expressions</em> contains expressions for analysis. The most important sections are <em>Variables</em> and <em>Expressions</em>. Sections must be defined in the order: <em>Constants</em>, <em>Variables</em>, <em>Definitions</em>, <em>Expressions</em>. Any section may be omitted. FPTaylor will not produce any result for an input file without the <em>Expressions</em> section.</p>
+<p>Each <strong>FPTaylor</strong> input files consists of several sections: <em>Constants</em>, <em>Variables</em>, <em>Definitions</em>, <em>Constraints</em>, and <em>Expressions</em>. The section <em>Constants</em> defines constants. The section <em>Variables</em> defines variables. The section <em>Definitions</em> contains named expressions (definitions). The section <em>Constraints</em> defines constraints which specify the input domain. The section <em>Expressions</em> contains expressions for analysis. The most important sections are <em>Variables</em> and <em>Expressions</em>. Sections must be defined in the order: <em>Constants</em>, <em>Variables</em>, <em>Definitions</em>, <em>Expressions</em>. Any section may be omitted. FPTaylor will not produce any result for an input file without the <em>Expressions</em> section.</p>
 
 <h3>Constants</h3>
 
@@ -140,6 +140,24 @@ r3 = rnd16_up(rnd32(x) + rnd16_up(y)),
 r4 = rnd64(x + y);
 </code></pre>
 
+<h3>Constraints</h3>
+
+<p>Each variable have lower and upper bounds. Additional constraints can be defined in the following section</p>
+
+<pre><code>Constraints
+  constr_name: formula,
+  ...
+  constr_name: formula;
+</code></pre>
+
+<p>Here <code>formula</code> is <code>expr &gt;= expr</code> or <code>expr &lt;= expr</code>. In the current version of FPTaylor, constraints are supported with the Z3 optimization backend only.</p>
+
+<p>Example:</p>
+
+<pre><code>Constraints
+  ineq1: a + b &gt;= c;
+</code></pre>
+
 <h3>Expressions</h3>
 
 <p>The section with expressions has the following syntax</p>
@@ -188,6 +206,8 @@ r4 = rnd64(x + y);
 <li><code>cos</code> cosine</li>
 <li><code>exp</code> exponent</li>
 <li><code>log</code> logarithm</li>
+<li><code>tan</code> tangent</li>
+<li><code>atan</code> arctangent</li>
 </ol>
 
 <p>Other transcendental functions will be added to FPTaylor soon. Transcendental functions may be not supported by some optimization backends of FPTaylor. The default optimization backend (interval branch and bound, <code>bb</code>) supports all operations.</p>
@@ -243,6 +263,16 @@ rnd128 = rnd(128, ne)
 rnd128_up = rnd(128, up)
 rnd128_down = rnd(128, down)
 rnd128_0 = rnd(128, zero)
+</code></pre>
+
+<p>The special operation <code>no_rnd</code> can be applied to any expression. It is equivalent to the identity operation. It may be useful in the following context:</p>
+
+<pre><code>r1 rnd32= x + no_rnd(n - 1);
+</code></pre>
+
+<p>This example is equivalent to</p>
+
+<pre><code>r1 = rnd32(rnd32(x) + n - 1);
 </code></pre>
 
 <h2>Options</h2>
@@ -318,6 +348,16 @@ rel-error = false
 <li><code>z3</code> is the optimization backend based on <a href="http://z3.codeplex.com">Z3 SMT solver</a>. Z3 must be installed and its Python binding must work. This optimization backend does not support transcendental functions, exact optimization problems, and the improved rounding model.</li>
 <li><code>nlopt</code> is the optimization backend based on the <a href="http://ab-initio.mit.edu/wiki/index.php/NLopt">NLOpt optimization library</a>. This optimization backend may yield unsound results but it is fast and is a good choice for getting solid preliminary results. This optimization backend does not support the improved rounding model (will be corrected in future releases of FPTaylor).</li>
 </ul>
+
+<h3><code>z3-timeout</code></h3>
+
+<p>Specifies timeout in milliseconds for Z3 optimization backend.</p>
+
+<h3><code>proof-record</code></h3>
+
+<p>Possible values: <code>true</code>, <code>false</code>.</p>
+
+<p>If true, then proof certificates are saved for all analyzed expressions. These proof certificates can be validated with a special procedure in the HOL Light proof assistant. All proof certificates are saved in the <code>proofs</code> directory (relative to the directory from which FPTaylor is invoked). In the current version of FPTaylor, proof certificates cannot be produced for exact optimization problems (<code>opt-exact = true</code>), for the improved rounding model (<code>fp-power2-model = true</code>), and for relative errors (<code>rel-error = true</code>).</p>
 
 <h2>Output</h2>
 

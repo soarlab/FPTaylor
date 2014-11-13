@@ -5,12 +5,17 @@ GAPPA_HOME=~/Work/Solvers/gappa-1.0.0/src
 FPTAYLOR=$(FPTAYLOR_HOME)/fptaylor
 FPTAYLOR_A=$(FPTAYLOR) -c FPTaylor/config-a.cfg
 FPTAYLOR_B=$(FPTAYLOR) -c FPTaylor/config-b.cfg
-FPTAYLOR_C=$(FPTAYLOR) -c FPTaylor/config-c.cfg
+FPTAYLOR_D=$(FPTAYLOR) -c FPTaylor/config-d.cfg
+FPTAYLOR_TRANS_A=$(FPTAYLOR) -c trans/config-trans-a.cfg
+FPTAYLOR_TRANS_B=$(FPTAYLOR) -c trans/config-trans-b.cfg
+
 ROSA=$(ROSA_HOME)/rosa --real --z3Timeout=1000
+
 GAPPA=$(GAPPA_HOME)/gappa
 
 
 taylor-a:
+	rm -rf log tmp
 	$(FPTAYLOR_A) FPTaylor/carbonGas.txt
 	$(FPTAYLOR_A) FPTaylor/verhulst.txt
 	$(FPTAYLOR_A) FPTaylor/predatorPrey.txt
@@ -23,32 +28,48 @@ taylor-a:
 	$(FPTAYLOR_A) FPTaylor/jet.txt
 	find log -name "*.log" -exec awk '/---/,0' '{}' \;
 
+taylor-d:
+	rm -rf log tmp
+	$(FPTAYLOR_D) FPTaylor/carbonGas.txt
+	$(FPTAYLOR_D) FPTaylor/verhulst.txt
+	$(FPTAYLOR_D) FPTaylor/predatorPrey.txt
+	$(FPTAYLOR_D) FPTaylor/rigidBody.txt
+	$(FPTAYLOR_D) FPTaylor/doppler1.txt
+	$(FPTAYLOR_D) FPTaylor/doppler2.txt
+	$(FPTAYLOR_D) FPTaylor/doppler3.txt
+	$(FPTAYLOR_D) FPTaylor/func.txt
+	$(FPTAYLOR_D) FPTaylor/turbine.txt
+	$(FPTAYLOR_D) FPTaylor/jet.txt
+	find log -name "*.log" -exec awk '/---/,0' '{}' \;
+
 taylor-b:
+	rm -rf log tmp
 	$(FPTAYLOR_B) FPTaylor/carbonGas.txt
 	$(FPTAYLOR_B) FPTaylor/verhulst.txt
 	$(FPTAYLOR_B) FPTaylor/predatorPrey.txt
 	$(FPTAYLOR_B) FPTaylor/rigidBody.txt
-	$(FPTAYLOR_B) FPTaylor/doppler1.txt
-	$(FPTAYLOR_B) FPTaylor/doppler2.txt
-	$(FPTAYLOR_B) FPTaylor/doppler3.txt
+# A simple branch and bound method cannot find exact maximum;
+# use approximations
+	$(FPTAYLOR_B) -c FPTaylor/approx.cfg FPTaylor/doppler1.txt
+	$(FPTAYLOR_B) -c FPTaylor/approx.cfg FPTaylor/doppler2.txt
+	$(FPTAYLOR_B) -c FPTaylor/approx.cfg FPTaylor/doppler3.txt
 	$(FPTAYLOR_B) FPTaylor/func.txt
 	$(FPTAYLOR_B) FPTaylor/turbine.txt
 	$(FPTAYLOR_B) FPTaylor/jet.txt
 	find log -name "*.log" -exec awk '/---/,0' '{}' \;
 
-taylor-c:
-	$(FPTAYLOR_C) FPTaylor/carbonGas.txt
-	$(FPTAYLOR_C) FPTaylor/verhulst.txt
-	$(FPTAYLOR_C) FPTaylor/predatorPrey.txt
-	$(FPTAYLOR_C) FPTaylor/rigidBody.txt
-# A simple branch and bound method cannot find exact maximum;
-# use approximations
-	$(FPTAYLOR_C) -c FPTaylor/approx.cfg FPTaylor/doppler1.txt
-	$(FPTAYLOR_C) -c FPTaylor/approx.cfg FPTaylor/doppler2.txt
-	$(FPTAYLOR_C) -c FPTaylor/approx.cfg FPTaylor/doppler3.txt
-	$(FPTAYLOR_C) FPTaylor/func.txt
-	$(FPTAYLOR_C) FPTaylor/turbine.txt
-	$(FPTAYLOR_C) FPTaylor/jet.txt
+taylor-trans-a:
+	rm -rf log tmp
+	$(FPTAYLOR_TRANS_A) trans/logexp.txt
+	$(FPTAYLOR_TRANS_A) trans/point_on_sphere.txt
+	$(FPTAYLOR_TRANS_A) trans/greatCircleAzimuth.txt
+	find log -name "*.log" -exec awk '/---/,0' '{}' \;
+
+taylor-trans-b:
+	rm -rf log tmp
+	$(FPTAYLOR_TRANS_B) trans/logexp.txt
+	$(FPTAYLOR_TRANS_B) trans/point_on_sphere.txt
+	$(FPTAYLOR_TRANS_B) trans/greatCircleAzimuth.txt
 	find log -name "*.log" -exec awk '/---/,0' '{}' \;
 
 show:

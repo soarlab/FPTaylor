@@ -67,12 +67,12 @@ let var_bound_rat name =
   v.lo_bound.rational_v, v.hi_bound.rational_v
 
 
-let opt tol e =
+let opt tolx tolf e =
   let min, max =
     match Config.opt with
-      | "z3" -> Opt_z3.min_max_expr tol var_bound_rat e
-      | "bb" -> Opt_basic_bb.min_max_expr tol tol var_bound_float e
-      | "nlopt" -> Opt_nlopt.min_max_expr tol var_bound_float e
+      | "z3" -> Opt_z3.min_max_expr tolf var_bound_rat e
+      | "bb" -> Opt_basic_bb.min_max_expr tolx tolf var_bound_float e
+      | "nlopt" -> Opt_nlopt.min_max_expr tolf var_bound_float e
       | s -> failwith ("Unsupported optimization engine: " ^ s) in
   min, max
 
@@ -115,8 +115,8 @@ let errors =
 	y = abs_float b in
     max x y 
   in
-  let compute_bound tol (e, err) =
-    let min, max = opt tol e in
+  let compute_bound tolf (e, err) =
+    let min, max = opt 0.01 tolf e in
     let bound = abs (min, max) in
     let _ = report (Format.sprintf "%d: exp = %d: %f, %f (%f)" err.index err.exp min max bound) in
     bound, err.exp 
@@ -159,7 +159,7 @@ let errors =
 	let abs_exprs = map (fun (e, err) -> mk_abs e, err.exp) v1 in
 	let full_expr', exp = sum_symbolic abs_exprs in
 	let full_expr = if Config.simplification then Maxima.simplify full_expr' else full_expr' in
-	let min, max = opt tol full_expr in
+	let min, max = opt 0.01 tol full_expr in
 	let _ = report (Format.sprintf "exact min, max (exp = %d): %f, %f" exp min max) in
 	let total = (get_eps exp *^ abs (min, max)) +^ total2 in
 	let _ = report (Format.sprintf "exact total: %e" total) in
@@ -199,7 +199,7 @@ let errors =
 	  let abs_exprs = map (fun (e, err) -> mk_abs e, err.exp) v1 in
 	  let full_expr', exp = sum_symbolic abs_exprs in
 	  let full_expr = if Config.simplification then Maxima.simplify full_expr' else full_expr' in
-	  let min, max = opt tol full_expr in
+	  let min, max = opt 0.01 tol full_expr in
 	  let _ = report (Format.sprintf "exact min-rel, max-rel (exp = %d): %f, %f" exp min max) in
 	  let total = (get_eps exp *^ abs (min, max)) +^ b2 in
 	  let _ = report (Format.sprintf "exact total-rel: %e" total) in
@@ -209,7 +209,7 @@ let errors =
   in
   fun pi form ->
     let tol = Config.opt_tol in
-    let f_min, f_max = opt tol form.v0 in
+    let f_min, f_max = opt 0.01 tol form.v0 in
     let _ = report (Format.sprintf "bounds: [%e, %e]" f_min f_max) in
     let pi = {pi with real_min = f_min; real_max = f_max} in
     let pi =

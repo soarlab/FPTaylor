@@ -24,7 +24,7 @@ If several configuration files are provided, options in the second configuration
 
 
 ## Input file format
-Each **FPTaylor** input files consists of several sections: *Constants*, *Variables*, *Definitions*, *Expressions*. The section *Constants* defines constants. The section *Variables* defines variables. The section *Definitions* contains named expressions (definitions). The section *Expressions* contains expressions for analysis. The most important sections are *Variables* and *Expressions*. Sections must be defined in the order: *Constants*, *Variables*, *Definitions*, *Expressions*. Any section may be omitted. FPTaylor will not produce any result for an input file without the *Expressions* section.
+Each **FPTaylor** input files consists of several sections: *Constants*, *Variables*, *Definitions*, *Constraints*, and *Expressions*. The section *Constants* defines constants. The section *Variables* defines variables. The section *Definitions* contains named expressions (definitions). The section *Constraints* defines constraints which specify the input domain. The section *Expressions* contains expressions for analysis. The most important sections are *Variables* and *Expressions*. Sections must be defined in the order: *Constants*, *Variables*, *Definitions*, *Expressions*. Any section may be omitted. FPTaylor will not produce any result for an input file without the *Expressions* section.
 
 ### Constants
 
@@ -126,6 +126,21 @@ It is equivalent to
     r3 = rnd16_up(rnd32(x) + rnd16_up(y)),
     r4 = rnd64(x + y);
 
+### Constraints
+
+Each variable have lower and upper bounds. Additional constraints can be defined in the following section
+
+    Constraints
+      constr_name: formula,
+      ...
+      constr_name: formula;
+
+Here `formula` is `expr >= expr` or `expr <= expr`. In the current version of FPTaylor, constraints are supported with the Z3 optimization backend only.
+
+Example:
+
+    Constraints
+      ineq1: a + b >= c;
 
 ### Expressions
 
@@ -171,6 +186,8 @@ All operations in **FPTaylor** are assumed to be over real numbers. Floating-poi
 2. `cos` cosine
 3. `exp` exponent
 4. `log` logarithm
+5. `tan` tangent
+6. `atan` arctangent
 
 Other transcendental functions will be added to FPTaylor soon. Transcendental functions may be not supported by some optimization backends of FPTaylor. The default optimization backend (interval branch and bound, `bb`) supports all operations.
 
@@ -222,6 +239,14 @@ There are several predefined names for most commonly used rounding operators:
     rnd128_up = rnd(128, up)
     rnd128_down = rnd(128, down)
     rnd128_0 = rnd(128, zero)
+
+The special operation `no_rnd` can be applied to any expression. It is equivalent to the identity operation. It may be useful in the following context:
+
+    r1 rnd32= x + no_rnd(n - 1);
+
+This example is equivalent to
+
+    r1 = rnd32(rnd32(x) + n - 1);
 
 
 ## Options
@@ -293,6 +318,15 @@ Specifies the optimization backend of FPTaylor.
 - `z3` is the optimization backend based on [Z3 SMT solver](http://z3.codeplex.com). Z3 must be installed and its Python binding must work. This optimization backend does not support transcendental functions, exact optimization problems, and the improved rounding model.
 - `nlopt` is the optimization backend based on the [NLOpt optimization library](http://ab-initio.mit.edu/wiki/index.php/NLopt). This optimization backend may yield unsound results but it is fast and is a good choice for getting solid preliminary results. This optimization backend does not support the improved rounding model (will be corrected in future releases of FPTaylor).
 
+### `z3-timeout`
+
+Specifies timeout in milliseconds for Z3 optimization backend.
+
+### `proof-record`
+
+Possible values: `true`, `false`.
+
+If true, then proof certificates are saved for all analyzed expressions. These proof certificates can be validated with a special procedure in the HOL Light proof assistant. All proof certificates are saved in the `proofs` directory (relative to the directory from which FPTaylor is invoked). In the current version of FPTaylor, proof certificates cannot be produced for exact optimization problems (`opt-exact = true`), for the improved rounding model (`fp-power2-model = true`), and for relative errors (`rel-error = true`).
 
 
 ## Output
