@@ -13,6 +13,16 @@ taylor:
 taylor2:
 	$(FPTAYLOR) -c config2.cfg micro.txt
 
+gappa:
+	$(GAPPA) gappa_sum3.g
+	$(GAPPA) gappa_nonlin1.g
+	$(GAPPA) gappa_nonlin2.g
+
+gappa-hints:
+	$(GAPPA) gappa_sum3_hints.g
+	$(GAPPA) gappa_nonlin1_hints.g
+	$(GAPPA) gappa_nonlin2_hints.g
+
 gappa_nonlin1:
 	$(GAPPA) gappa_nonlin1.g
 	$(GAPPA) gappa_nonlin1_hints.g
