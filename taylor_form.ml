@@ -377,19 +377,27 @@ let sqrt_form vars f =
     let eps = get_eps x_exp in
     let xi = {low = -. eps; high = eps} in
     (xi *$. x) +$ s) x1 zero_I in
-  let d = (x0_int +$ s1) **$. 1.5 in
-  let r_high = (abs_I (inv_I d)).high in
-  let m2', m2_exp = sum2_high x1 x1 in
-  let m2 = 0.125 *^ r_high *^ m2' in
-  let sqrt_v0 = mk_sqrt f.v0 in 
+  let m1 = make_stronger (abs_I s1).high in
+  let d =
+    if Config.proof_flag then
+      (x0_int +$ {low = -.m1; high = m1}) **$. 1.5
+    else
+      (x0_int +$ s1) **$. 1.5 in
+  let b_high = 0.125 *^ (abs_I (inv_I d)).high in
+  let b_high = make_stronger b_high in
+  let m2, m2_exp = sum2_high x1 x1 in
   let m2 = make_stronger m2 in
+  let m3 = b_high *^ m2 in
   let form_index = next_form_index() in
-  let _ = Proof.add_sqrt_step form_index f.form_index m2 in
+  let m3_err = mk_err_var (-1) m2_exp in
+  let _ = Proof.add_sqrt_step form_index f.form_index 
+    m1 m2 m2_exp b_high m3 m3_err.proof_index in
+  let sqrt_v0 = mk_sqrt f.v0 in 
   {
-    form_index = next_form_index();
+    form_index = form_index;
     v0 = sqrt_v0;
     v1 = map (fun (e, err) -> mk_div e (mk_mul const_2 sqrt_v0), err) f.v1
-      @ [fp_to_const m2, mk_err_var (-1) m2_exp];
+      @ [fp_to_const m3, m3_err];
   }
 
 (* sine *)
@@ -400,17 +408,28 @@ let sin_form vars f =
     let eps = get_eps x_exp in
     let xi = {low = -. eps; high = eps} in
     (xi *$. x) +$ s) x1 zero_I in
-  let d = sin_I (x0_int +$ s1) in
-  let r_high = (abs_I d).high in
-  let m2', m2_exp = sum2_high x1 x1 in
-  let m2 = 0.5 *^ r_high *^ m2' in
+  let m1 = make_stronger (abs_I s1).high in
+  let d = 
+    if Config.proof_flag then
+      sin_I (x0_int +$ {low = -.m1; high = m1})
+    else
+      sin_I (x0_int +$ s1) in
+  let b_high = 0.5 *^ (abs_I d).high in
+  let b_high = make_stronger b_high in
+  let m2, m2_exp = sum2_high x1 x1 in
+  let m2 = make_stronger m2 in
+  let m3 = b_high *^ m2 in
+  let form_index = next_form_index() in
+  let m3_err = mk_err_var (-1) m2_exp in
+  let _ = Proof.add_sin_step form_index f.form_index
+    m1 m2 m2_exp b_high m3 m3_err.proof_index in
   let sin_v0 = mk_sin f.v0 in
   let cos_v0 = mk_cos f.v0 in 
   {
-    form_index = next_form_index();
+    form_index = form_index;
     v0 = sin_v0;
     v1 = map (fun (e, err) -> mk_mul cos_v0 e, err) f.v1
-      @ [fp_to_const m2, mk_err_var (-1) m2_exp];
+      @ [fp_to_const m3, m3_err];
   }
 
 (* cosine *)
@@ -421,17 +440,28 @@ let cos_form vars f =
     let eps = get_eps x_exp in
     let xi = {low = -. eps; high = eps} in
     (xi *$. x) +$ s) x1 zero_I in
-  let d = cos_I (x0_int +$ s1) in
-  let r_high = (abs_I d).high in
-  let m2', m2_exp = sum2_high x1 x1 in
-  let m2 = 0.5 *^ r_high *^ m2' in
+  let m1 = make_stronger (abs_I s1).high in
+  let d = 
+    if Config.proof_flag then
+      cos_I (x0_int +$ {low = -.m1; high = m1})
+    else
+      cos_I (x0_int +$ s1) in
+  let b_high = 0.5 *^ (abs_I d).high in
+  let b_high = make_stronger b_high in
+  let m2, m2_exp = sum2_high x1 x1 in
+  let m2 = make_stronger m2 in
+  let m3 = b_high *^ m2 in
+  let form_index = next_form_index() in
+  let m3_err = mk_err_var (-1) m2_exp in
+  let _ = Proof.add_cos_step form_index f.form_index
+    m1 m2 m2_exp b_high m3 m3_err.proof_index in
   let sin_v0 = mk_sin f.v0 in
   let cos_v0 = mk_cos f.v0 in 
   {
-    form_index = next_form_index();
+    form_index = form_index;
     v0 = cos_v0;
     v1 = map (fun (e, err) -> mk_neg (mk_mul sin_v0 e), err) f.v1
-      @ [fp_to_const m2, mk_err_var (-1) m2_exp];
+      @ [fp_to_const m3, m3_err];
   }
 
 (* tangent *)
@@ -463,17 +493,29 @@ let atan_form vars f =
     let eps = get_eps x_exp in
     let xi = {low = -. eps; high = eps} in
     (xi *$. x) +$ s) x1 zero_I in
-  let xi = x0_int +$ s1 in
-  let d = ~-$ (xi /$ pow_I_i (pow_I_i xi 2 +$ one_I) 2) in
-  let r_high = (abs_I d).high in
-  let m2', m2_exp = sum2_high x1 x1 in
-  let m2 = r_high *^ m2' in
+  let m1 = make_stronger (abs_I s1).high in
+  let d =
+    let xi =
+      if Config.proof_flag then
+	x0_int +$ {low = -.m1; high = m1}
+      else
+	x0_int +$ s1 in
+    ~-$ (xi /$ pow_I_i (pow_I_i xi 2 +$ one_I) 2) in
+  let b_high = (abs_I d).high in
+  let b_high = make_stronger b_high in
+  let m2, m2_exp = sum2_high x1 x1 in
+  let m2 = make_stronger m2 in
+  let m3 = b_high *^ m2 in
+  let form_index = next_form_index() in
+  let m3_err = mk_err_var (-1) m2_exp in
+  let _ = Proof.add_atn_step form_index f.form_index
+    m1 m2 m2_exp b_high m3 m3_err.proof_index in
   let v1_0 = mk_add (mk_mul f.v0 f.v0) const_1 in
   {
-    form_index = next_form_index();
+    form_index = form_index;
     v0 = mk_atan f.v0;
     v1 = map (fun (e, err) -> mk_div e v1_0, err) f.v1
-      @ [fp_to_const m2, mk_err_var (-1) m2_exp];
+      @ [fp_to_const m3, m3_err];
   }
 
 (* exp *)
@@ -484,16 +526,27 @@ let exp_form vars f =
     let eps = get_eps x_exp in
     let xi = {low = -. eps; high = eps} in
     (xi *$. x) +$ s) x1 zero_I in
-  let d = exp_I (x0_int +$ s1) in
-  let r_high = (abs_I d).high in
-  let m2', m2_exp = sum2_high x1 x1 in
-  let m2 = 0.5 *^ r_high *^ m2' in
+  let m1 = make_stronger (abs_I s1).high in
+  let d =
+    if Config.proof_flag then
+      exp_I (x0_int +$ {low = -.m1; high = m1})
+    else
+      exp_I (x0_int +$ s1) in
+  let b_high = 0.5 *^ (abs_I d).high in
+  let b_high = make_stronger b_high in
+  let m2, m2_exp = sum2_high x1 x1 in
+  let m2 = make_stronger m2 in
+  let m3 = b_high *^ m2 in
+  let form_index = next_form_index() in
+  let m3_err = mk_err_var (-1) m2_exp in
+  let _ = Proof.add_exp_step form_index f.form_index
+    m1 m2 m2_exp b_high m3 m3_err.proof_index in
   let exp_v0 = mk_exp f.v0 in 
   {
-    form_index = next_form_index();
+    form_index = form_index;
     v0 = exp_v0;
     v1 = map (fun (e, err) -> mk_mul exp_v0 e, err) f.v1
-      @ [fp_to_const m2, mk_err_var (-1) m2_exp];
+      @ [fp_to_const m3, m3_err];
   }
 
 (* log *)
@@ -504,16 +557,27 @@ let log_form vars f =
     let eps = get_eps x_exp in
     let xi = {low = -. eps; high = eps} in
     (xi *$. x) +$ s) x1 zero_I in
-  let d = inv_I (pow_I_i (x0_int +$ s1) 2) in
-  let r_high = (abs_I d).high in
-  let m2', m2_exp = sum2_high x1 x1 in
-  let m2 = 0.5 *^ r_high *^ m2' in
+  let m1 = make_stronger (abs_I s1).high in
+  let d = 
+    if Config.proof_flag then
+      inv_I (pow_I_i (x0_int +$ {low = -.m1; high = m1}) 2)
+    else
+      inv_I (pow_I_i (x0_int +$ s1) 2) in
+  let b_high = 0.5 *^ (abs_I d).high in
+  let b_high = make_stronger b_high in
+  let m2, m2_exp = sum2_high x1 x1 in
+  let m2 = make_stronger m2 in
+  let m3 = b_high *^ m2 in
+  let form_index = next_form_index() in
+  let m3_err = mk_err_var (-1) m2_exp in
+  let _ = Proof.add_log_step form_index f.form_index
+    m1 m2 m2_exp b_high m3 m3_err.proof_index in
   let log_v0 = mk_log f.v0 in 
   {
-    form_index = next_form_index();
+    form_index = form_index;
     v0 = log_v0;
     v1 = map (fun (e, err) -> mk_div e f.v0, err) f.v1
-      @ [fp_to_const m2, mk_err_var (-1) m2_exp];
+      @ [fp_to_const m3, m3_err];
   }
 
 (* Builds a Taylor form *)

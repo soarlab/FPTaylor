@@ -25,6 +25,9 @@ type proof_op =
   | Proof_sqrt
   | Proof_sin
   | Proof_cos
+  | Proof_atn
+  | Proof_exp
+  | Proof_log
 
 type proof_opt_type =
   | Proof_opt_approx
@@ -168,19 +171,34 @@ let add_inv_step i arg m1 m2 e2 b m3 m3_index =
   let args = mk_proof_args [arg] [m3_index] [m1; m2; float_of_int e2; b; m3] in
   add_proof_step i op args
 
-let add_sqrt_step i arg bound =
+let add_sqrt_step i arg m1 m2 e2 b m3 m3_index =
   let op = Proof_sqrt in
-  let args = mk_proof_args [arg] [] [bound] in
+  let args = mk_proof_args [arg] [m3_index] [m1; m2; float_of_int e2; b; m3] in
   add_proof_step i op args
 
-let add_sin_step i arg bound =
+let add_sin_step i arg m1 m2 e2 b m3 m3_index =
   let op = Proof_sin in
-  let args = mk_proof_args [arg] [] [bound] in
+  let args = mk_proof_args [arg] [m3_index] [m1; m2; float_of_int e2; b; m3] in
   add_proof_step i op args
 
-let add_cos_step i arg bound =
+let add_cos_step i arg m1 m2 e2 b m3 m3_index =
   let op = Proof_cos in
-  let args = mk_proof_args [arg] [] [bound] in
+  let args = mk_proof_args [arg] [m3_index] [m1; m2; float_of_int e2; b; m3] in
+  add_proof_step i op args
+
+let add_atn_step i arg m1 m2 e2 b m3 m3_index =
+  let op = Proof_atn in
+  let args = mk_proof_args [arg] [m3_index] [m1; m2; float_of_int e2; b; m3] in
+  add_proof_step i op args
+
+let add_exp_step i arg m1 m2 e2 b m3 m3_index =
+  let op = Proof_exp in
+  let args = mk_proof_args [arg] [m3_index] [m1; m2; float_of_int e2; b; m3] in
+  add_proof_step i op args
+
+let add_log_step i arg m1 m2 e2 b m3 m3_index =
+  let op = Proof_log in
+  let args = mk_proof_args [arg] [m3_index] [m1; m2; float_of_int e2; b; m3] in
   add_proof_step i op args
 
 let add_opt_approx indices bounds total =

@@ -56,6 +56,18 @@ delete_user_printer "hidden";;
 
 (**************)
 
+let proof = load "i3.proof";;
+validate_proof pp proof;;
+
+let proof = load "i4.proof";;
+validate_proof pp proof;;
+
+let proof = load "i5.proof";;
+validate_proof pp proof;;
+
+let proof = load "i6.proof";;
+validate_proof pp proof;;
+
 validate_proof pp t1;;
 validate_proof pp t2;;
 validate_proof pp t3;;
@@ -185,6 +197,7 @@ let err_indices = [1];;
 
 let th0 = build_rnd_bin_var_tform dom_tm index rnd_th n_tm b_tm err_indices;;
 
+let th0 = approx_th;;
 let hs_forall, hs = partition is_forall (hyp th0);;
 let hs_rat, hs_other = partition (fun tm -> frees tm = []) hs;;
 let rat_ths = map prove_rat_hyp hs_rat;;
@@ -193,4 +206,3 @@ let h_tm = hd hs_forall;;
 prove_forall_hyp pp var_names dom_vars [] h_tm;;
 
 
-let tm = h_tm;;

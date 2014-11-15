@@ -276,9 +276,12 @@ let prove_le_expr pp dom_vars h_tm =
   try
     EQT_ELIM (bin_float_rat_conv h_tm)
   with Failure _ ->
-    let expr_tm = snd (dest_imp (snd (dest_forall h_tm))) in
+    let cond_tm, expr_tm = dest_imp (snd (dest_forall h_tm)) in
     let th0 = EQT_ELIM (eval_expr pp expr_tm dom_vars []) in
-    let in_hyp = find (is_binary "IN") (hyp th0) in
+    let in_hyp = 
+      try
+	find (is_binary "IN") (hyp th0)
+      with Not_found -> cond_tm in
     let x_tm = lhand in_hyp in
     let th1 = GEN x_tm (DISCH in_hyp th0) in
       if h_tm <> concl th1 then
@@ -535,6 +538,60 @@ let build_tform pp proof =
 			m3_tm = mk_bin_float (nth args.bounds 4) in
 		    let arg = nth arg_ths 0 in
 		      build_inv_tform m1_tm m2_tm e2_tm b_tm m3_tm err_indices arg
+		| Proof_sqrt ->
+		    let _ = report (sprintf "%d/%d: Sqrt" !step_counter total_steps) in
+		    let m1_tm = mk_bin_float (nth args.bounds 0) and
+			m2_tm = mk_bin_float (nth args.bounds 1) and
+			e2_tm = mk_ipow2 (Int (int_of_float (nth args.bounds 2))) and
+			b_tm = mk_bin_float (nth args.bounds 3) and
+			m3_tm = mk_bin_float (nth args.bounds 4) in
+		    let arg = nth arg_ths 0 in
+		      build_sqrt_tform m1_tm m2_tm e2_tm b_tm m3_tm err_indices arg
+		| Proof_sin ->
+		    let _ = report (sprintf "%d/%d: Sin" !step_counter total_steps) in
+		    let m1_tm = mk_bin_float (nth args.bounds 0) and
+			m2_tm = mk_bin_float (nth args.bounds 1) and
+			e2_tm = mk_ipow2 (Int (int_of_float (nth args.bounds 2))) and
+			b_tm = mk_bin_float (nth args.bounds 3) and
+			m3_tm = mk_bin_float (nth args.bounds 4) in
+		    let arg = nth arg_ths 0 in
+		      build_sin_tform m1_tm m2_tm e2_tm b_tm m3_tm err_indices arg
+		| Proof_cos ->
+		    let _ = report (sprintf "%d/%d: Cos" !step_counter total_steps) in
+		    let m1_tm = mk_bin_float (nth args.bounds 0) and
+			m2_tm = mk_bin_float (nth args.bounds 1) and
+			e2_tm = mk_ipow2 (Int (int_of_float (nth args.bounds 2))) and
+			b_tm = mk_bin_float (nth args.bounds 3) and
+			m3_tm = mk_bin_float (nth args.bounds 4) in
+		    let arg = nth arg_ths 0 in
+		      build_cos_tform m1_tm m2_tm e2_tm b_tm m3_tm err_indices arg
+		| Proof_exp ->
+		    let _ = report (sprintf "%d/%d: Exp" !step_counter total_steps) in
+		    let m1_tm = mk_bin_float (nth args.bounds 0) and
+			m2_tm = mk_bin_float (nth args.bounds 1) and
+			e2_tm = mk_ipow2 (Int (int_of_float (nth args.bounds 2))) and
+			b_tm = mk_bin_float (nth args.bounds 3) and
+			m3_tm = mk_bin_float (nth args.bounds 4) in
+		    let arg = nth arg_ths 0 in
+		      build_exp_tform m1_tm m2_tm e2_tm b_tm m3_tm err_indices arg
+		| Proof_log ->
+		    let _ = report (sprintf "%d/%d: Log" !step_counter total_steps) in
+		    let m1_tm = mk_bin_float (nth args.bounds 0) and
+			m2_tm = mk_bin_float (nth args.bounds 1) and
+			e2_tm = mk_ipow2 (Int (int_of_float (nth args.bounds 2))) and
+			b_tm = mk_bin_float (nth args.bounds 3) and
+			m3_tm = mk_bin_float (nth args.bounds 4) in
+		    let arg = nth arg_ths 0 in
+		      build_log_tform m1_tm m2_tm e2_tm b_tm m3_tm err_indices arg
+		| Proof_atn ->
+		    let _ = report (sprintf "%d/%d: Atn" !step_counter total_steps) in
+		    let m1_tm = mk_bin_float (nth args.bounds 0) and
+			m2_tm = mk_bin_float (nth args.bounds 1) and
+			e2_tm = mk_ipow2 (Int (int_of_float (nth args.bounds 2))) and
+			b_tm = mk_bin_float (nth args.bounds 3) and
+			m3_tm = mk_bin_float (nth args.bounds 4) in
+		    let arg = nth arg_ths 0 in
+		      build_atn_tform m1_tm m2_tm e2_tm b_tm m3_tm err_indices arg
 		| Proof_simpl_eq (i, j) ->
 		    let _ = report (sprintf "%d/%d: Simpl_eq" !step_counter total_steps) in
 		    let arg = nth arg_ths 0 in

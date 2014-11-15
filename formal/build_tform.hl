@@ -340,6 +340,110 @@ let build_inv_tform m1_tm m2_tm e2_tm b_tm m3_tm err_indices approx_th =
     hide_e1s false err_indices th4;;
 
 (* --------------------------------------------- *)
+(* Sqrt                                          *)
+(* --------------------------------------------- *)
+
+let build_sqrt_tform m1_tm m2_tm e2_tm b_tm m3_tm err_indices approx_th =
+  let dom_tm, h_tm, t_tm = dest_approx (concl approx_th) in
+  let th0 = ISPECL[dom_tm; h_tm; t_tm; m1_tm; m2_tm; e2_tm; b_tm; m3_tm] approx_sqrt in
+  let th1 = PURE_REWRITE_RULE[GSYM IMP_IMP] th0 in
+  let th2 = MP th1 approx_th in
+  let th3 = UNDISCH_ALL (REWRITE_RULE[f0_mk; list_mk] th2) in
+  let th4 = REWRITE_RULE[mul_f1; MAP; APPEND; f0_mk; list_mk] th3 in
+    hide_e1s false err_indices th4;;
+
+(* --------------------------------------------- *)
+(* Sin                                           *)
+(* --------------------------------------------- *)
+
+let build_sin_tform m1_tm m2_tm e2_tm b_tm m3_tm err_indices approx_th =
+  let dom_tm, h_tm, t_tm = dest_approx (concl approx_th) in
+  let th0 = ISPECL[dom_tm; h_tm; t_tm; m1_tm; m2_tm; e2_tm; b_tm; m3_tm] approx_sin in
+  let th1 = PURE_REWRITE_RULE[GSYM IMP_IMP] th0 in
+  let th2 = MP th1 approx_th in
+  let th3 = UNDISCH_ALL (REWRITE_RULE[f0_mk; list_mk] th2) in
+  let th4 = REWRITE_RULE[mul_f1; MAP; APPEND; f0_mk; list_mk] th3 in
+    hide_e1s false err_indices th4;;
+
+(* --------------------------------------------- *)
+(* Cos                                           *)
+(* --------------------------------------------- *)
+
+let build_cos_tform m1_tm m2_tm e2_tm b_tm m3_tm err_indices approx_th =
+  let dom_tm, h_tm, t_tm = dest_approx (concl approx_th) in
+  let th0 = ISPECL[dom_tm; h_tm; t_tm; m1_tm; m2_tm; e2_tm; b_tm; m3_tm] approx_cos in
+  let th1 = PURE_REWRITE_RULE[GSYM IMP_IMP] th0 in
+  let th2 = MP th1 approx_th in
+  let th3 = UNDISCH_ALL (REWRITE_RULE[f0_mk; list_mk] th2) in
+  let th4 = REWRITE_RULE[mul_f1; MAP; APPEND; f0_mk; list_mk] th3 in
+    hide_e1s false err_indices th4;;
+
+(* --------------------------------------------- *)
+(* Exp                                           *)
+(* --------------------------------------------- *)
+
+let build_exp_tform m1_tm m2_tm e2_tm b_tm m3_tm err_indices approx_th =
+  let dom_tm, h_tm, t_tm = dest_approx (concl approx_th) in
+  let th0 = ISPECL[dom_tm; h_tm; t_tm; m1_tm; m2_tm; e2_tm; b_tm; m3_tm] approx_exp in
+  let th1 = PURE_REWRITE_RULE[GSYM IMP_IMP] th0 in
+  let th2 = MP th1 approx_th in
+  let th3 = UNDISCH_ALL (REWRITE_RULE[f0_mk; list_mk] th2) in
+  let th4 = REWRITE_RULE[mul_f1; MAP; APPEND; f0_mk; list_mk] th3 in
+    hide_e1s false err_indices th4;;
+
+(* --------------------------------------------- *)
+(* Log                                           *)
+(* --------------------------------------------- *)
+
+let build_log_tform m1_tm m2_tm e2_tm b_tm m3_tm err_indices approx_th =
+  let dom_tm, h_tm, t_tm = dest_approx (concl approx_th) in
+  let th0 = ISPECL[dom_tm; h_tm; t_tm; m1_tm; m2_tm; e2_tm; b_tm; m3_tm] approx_log in
+  let th1 = PURE_REWRITE_RULE[GSYM IMP_IMP] th0 in
+  let th2 = MP th1 approx_th in
+  let th3 = UNDISCH_ALL (REWRITE_RULE[f0_mk; list_mk] th2) in
+  let th4 = REWRITE_RULE[mul_f1; MAP; APPEND; f0_mk; list_mk] th3 in
+    hide_e1s false err_indices th4;;
+
+(* --------------------------------------------- *)
+(* Atn                                           *)
+(* --------------------------------------------- *)
+
+let build_atn_tform m1_tm m2_tm e2_tm b_tm m3_tm err_indices approx_th =
+  let dom_tm, h_tm, t_tm = dest_approx (concl approx_th) in
+  let th0 = ISPECL[dom_tm; h_tm; t_tm; m1_tm; m2_tm; e2_tm; b_tm; m3_tm] approx_atn in
+  let th1 = PURE_REWRITE_RULE[GSYM IMP_IMP] th0 in
+  let th2 = MP th1 approx_th in
+  let th3 = UNDISCH_ALL (REWRITE_RULE[f0_mk; list_mk] th2) in
+  let th4 = REWRITE_RULE[mul_f1; MAP; APPEND; f0_mk; list_mk] th3 in
+    hide_e1s false err_indices th4;;
+
+(* --------------------------------------------- *)
+(* Acs                                           *)
+(* --------------------------------------------- *)
+
+let build_acs_tform m1_tm m2_tm e2_tm b_tm m3_tm err_indices approx_th =
+  let dom_tm, h_tm, t_tm = dest_approx (concl approx_th) in
+  let th0 = ISPECL[dom_tm; h_tm; t_tm; m1_tm; m2_tm; e2_tm; b_tm; m3_tm] approx_acs in
+  let th1 = PURE_REWRITE_RULE[GSYM IMP_IMP] th0 in
+  let th2 = MP th1 approx_th in
+  let th3 = UNDISCH_ALL (REWRITE_RULE[f0_mk; list_mk] th2) in
+  let th4 = REWRITE_RULE[mul_f1; MAP; APPEND; f0_mk; list_mk] th3 in
+    hide_e1s false err_indices th4;;
+
+(* --------------------------------------------- *)
+(* Asn                                           *)
+(* --------------------------------------------- *)
+
+let build_asn_tform m1_tm m2_tm e2_tm b_tm m3_tm err_indices approx_th =
+  let dom_tm, h_tm, t_tm = dest_approx (concl approx_th) in
+  let th0 = ISPECL[dom_tm; h_tm; t_tm; m1_tm; m2_tm; e2_tm; b_tm; m3_tm] approx_asn in
+  let th1 = PURE_REWRITE_RULE[GSYM IMP_IMP] th0 in
+  let th2 = MP th1 approx_th in
+  let th3 = UNDISCH_ALL (REWRITE_RULE[f0_mk; list_mk] th2) in
+  let th4 = REWRITE_RULE[mul_f1; MAP; APPEND; f0_mk; list_mk] th3 in
+    hide_e1s false err_indices th4;;
+
+(* --------------------------------------------- *)
 (* Simpl_add                                     *)
 (* --------------------------------------------- *)
 

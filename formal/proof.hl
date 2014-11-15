@@ -25,6 +25,9 @@ type proof_op =
   | Proof_sqrt
   | Proof_sin
   | Proof_cos
+  | Proof_atn
+  | Proof_exp
+  | Proof_log
 
 type proof_opt_type =
   | Proof_opt_approx
