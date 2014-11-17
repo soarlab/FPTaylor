@@ -71,7 +71,9 @@ let opt tolx tolf e =
   let min, max =
     match Config.opt with
       | "z3" -> Opt_z3.min_max_expr tolf var_bound_rat e
-      | "bb" -> Opt_basic_bb.min_max_expr tolx tolf var_bound_float e
+      | "bb" -> 
+	let max_iter = Config.get_int_option "bb-iter" 0 in
+	Opt_basic_bb.min_max_expr tolx tolf max_iter var_bound_float e
       | "nlopt" -> Opt_nlopt.min_max_expr tolf var_bound_float e
       | s -> failwith ("Unsupported optimization engine: " ^ s) in
   min, max

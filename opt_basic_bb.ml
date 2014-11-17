@@ -3,7 +3,7 @@ open List
 open Lib
 open Expr
 
-let gen_bb_opt_code tolx tolfx fmt =
+let gen_bb_opt_code tolx tolfx max_iter fmt =
   let nl = Format.pp_print_newline fmt in
   let p str = Format.pp_print_string fmt str; nl() in
 (*  let p' = Format.pp_print_string fmt in*)
@@ -31,10 +31,12 @@ let gen_bb_opt_code tolx tolfx fmt =
     p "";
     p "let _ =";
     p (Format.sprintf 
-	 "  let m, bound, c = Opt0.opt f_X start_interval %f %f in" tolx tolfx);
+	 "  let m, bound, c = Opt0.opt f_X start_interval %f %f (%d) in" 
+	 tolx tolfx max_iter);
     p "  let _ = Printf.printf \"max = %0.20e\\n\" m in";
     p (Format.sprintf 
-	 "  let m, bound, c = Opt0.opt (fun x -> ~-$ (f_X x)) start_interval %f %f in" tolx tolfx);
+	 "  let m, bound, c = Opt0.opt (fun x -> ~-$ (f_X x)) start_interval %f %f (%d) in" 
+	 tolx tolfx max_iter);
     p "  let _ = Printf.printf \"min = %0.20e\\n\" (-. m) in";
     p "  flush stdout"; in
 
@@ -84,7 +86,7 @@ let gen_bb_opt_code tolx tolfx fmt =
 
 let counter = ref 0
 
-let min_max_expr tolx tolfx var_bound e =
+let min_max_expr tolx tolfx max_iter var_bound e =
 (*  let _ = counter := !counter + 1 in *)
 
   let base = Config.base_dir in
@@ -112,7 +114,7 @@ let min_max_expr tolx tolfx var_bound e =
       interval_files_byte @ bb_files
     else
       interval_files_native @ bb_files in
-  let gen = gen_bb_opt_code tolx tolfx in
+  let gen = gen_bb_opt_code tolx tolfx max_iter in
   let _ = write_to_file ml_name gen (var_bound, e) in
   let srcs = map (fun s -> Filename.concat base s) files in
   let cmd = Format.sprintf "%s -I %s -I %s -o %s %s %s" 

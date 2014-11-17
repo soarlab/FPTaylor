@@ -35,39 +35,43 @@ let split_dom dom =
   d1, d2
 
 
-let counter = ref 0
-(*let max_iter = 30000*)
-
-let rec opt0 f x_tol f_tol m bound doms acc =
-  let _ = counter := !counter + 1 in
-  match doms with
-    | [] -> 
-      if acc = [] then
-	m, bound
-      else
-	opt0 f x_tol f_tol m bound acc []
-    | dom :: rest ->
-      let v = f dom.bounds in
-      if v.high <= bound then
-	opt0 f x_tol f_tol m bound rest acc
-      else
-	let d_min = Array.map (fun d -> mk_const_interval d.low) dom.bounds and
-	    d_max = Array.map (fun d -> mk_const_interval d.high) dom.bounds and
-	    d_mid = Array.map mk_const_interval dom.mid in
-	let v2_min = f d_min and
-	    v2_max = f d_max and
-	    v2_mid = f d_mid in
-	let v2 = max (max v2_min.low v2_max.low) v2_mid.low in
-	let bound = max v2 bound in
-	if abs_float (v.high -. v2) <= f_tol || 
-	   size_max_X dom.bounds <= x_tol then
-(*	   !counter >= max_iter then*)
-	  opt0 f x_tol f_tol (max m v.high) bound rest acc
+let opt0 f x_tol f_tol max_iter =
+  let counter = ref 0 in
+  let rec opt m bound doms acc =
+    match doms with
+      | [] -> 
+	if acc = [] then
+	  m, bound
 	else
-	  let d1, d2 = split_dom dom in
-	  opt0 f x_tol f_tol (max m bound) bound rest (d1 :: d2 :: acc)
+	  opt m bound acc []
+      | dom :: rest ->
+	let v = f dom.bounds in
+	if v.high <= bound then
+	  opt m bound rest acc
+	else
+	  let d_min = Array.map (fun d -> mk_const_interval d.low) dom.bounds and
+	      d_max = Array.map (fun d -> mk_const_interval d.high) dom.bounds and
+	      d_mid = Array.map mk_const_interval dom.mid in
+	  let v2_min = f d_min and
+	      v2_max = f d_max and
+	      v2_mid = f d_mid in
+	  let v2 = max (max v2_min.low v2_max.low) v2_mid.low in
+	  let bound = max v2 bound in
+	  if abs_float (v.high -. v2) <= f_tol || 
+	    size_max_X dom.bounds <= x_tol ||
+	    (max_iter >= 0 && !counter >= max_iter) then
+	    opt (max m v.high) bound rest acc
+	  else
+	    let _ = counter := !counter + 1 in
+	    let d1, d2 = split_dom dom in
+	    opt (max m bound) bound rest (d1 :: d2 :: acc)
+  in
+  fun m bound doms acc ->
+    let _ = counter := 0 in
+    let m, bound = opt m bound doms acc in
+    m, bound, !counter
 
-let opt f a x_tol f_tol =
-  let _ = counter := 0 in
-  let m, bound = opt0 f x_tol f_tol neg_infinity neg_infinity [mk_dom a] [] in
-  (m, bound, !counter)
+let opt f a x_tol f_tol max_iter =
+  let m, bound, counter = 
+    opt0 f x_tol f_tol max_iter neg_infinity neg_infinity [mk_dom a] [] in
+  (m, bound, counter)
