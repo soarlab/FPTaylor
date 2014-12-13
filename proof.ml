@@ -8,13 +8,18 @@ type proof_var = {
   high : num;
 }
 
+(* TODO: all rounding operations *)
+type rnd_proof_info = {
+  bits : int;
+  coefficient : float;
+}
+
 type proof_op =
   | Proof_var of string
   | Proof_const of num
-  | Proof_rnd_bin_var of int * string
-  | Proof_rnd_bin_const of int * num
-  (* TODO: all rounding operations *)
-  | Proof_rnd of int
+  | Proof_rnd_bin_var of rnd_proof_info * string
+  | Proof_rnd_bin_const of rnd_proof_info * num
+  | Proof_rnd of rnd_proof_info
   | Proof_simpl_eq of int * int
   | Proof_simpl_add of int * int
   | Proof_neg
@@ -76,6 +81,11 @@ let load_proof fname =
   let _ = close_in ic in
   p
 
+let mk_rnd_info bits c = {
+  bits = bits;
+  coefficient = c;
+}
+
 let mk_proof_args args errs bounds = {
   arg_indices = args;
   err_indices = errs;
@@ -121,18 +131,18 @@ let add_const_step i c =
   let args = mk_proof_args [] [] [] in
   add_proof_step i op args
 
-let add_rnd_bin_var_step i name bits p2_exp bound err_index =
-  let op = Proof_rnd_bin_var (bits, name) in
+let add_rnd_bin_var_step i name rnd p2_exp bound err_index =
+  let op = Proof_rnd_bin_var (rnd, name) in
   let args = mk_proof_args [] [err_index] [float_of_int p2_exp; bound] in
   add_proof_step i op args
 
-let add_rnd_bin_const_step i c bits p2_exp bound err_index =
-  let op = Proof_rnd_bin_const (bits, c) in
+let add_rnd_bin_const_step i c rnd p2_exp bound err_index =
+  let op = Proof_rnd_bin_const (rnd, c) in
   let args = mk_proof_args [] [err_index] [float_of_int p2_exp; bound] in
   add_proof_step i op args
 
-let add_rnd_step i bits arg s1_bound m2_bound r_index m2_index =
-  let op = Proof_rnd bits in
+let add_rnd_step i rnd arg s1_bound m2_bound r_index m2_index =
+  let op = Proof_rnd rnd in
   let args = mk_proof_args [arg] [r_index; m2_index] [s1_bound; m2_bound] in
   add_proof_step i op args
 

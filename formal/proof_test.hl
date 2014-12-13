@@ -8,6 +8,7 @@ open More_float;;
 open Lib;;
 open Tform;;
 open Build_tform;;
+open Ipow;;
 open Bin_float;;
 open Eval_expr;;
 open Proof;;
@@ -133,19 +134,48 @@ trans_bound bound_th `#9.960 * &10 ipow (-- &16)`;;
 
 let proof = load "turbine1.proof";;
 let form_th, bound_th = validate_proof pp proof;;
-trans_bound bound_th `#2.493 * &10 ipow (-- &14)`;;
+trans_bound bound_th `#2.494 * &10 ipow (-- &14)`;;
 
 let proof = load "turbine2.proof";;
 let form_th, bound_th = validate_proof pp proof;;
-trans_bound bound_th `#3.336 * &10 ipow (-- &14)`;;
+trans_bound bound_th `#3.337 * &10 ipow (-- &14)`;;
 
 let proof = load "turbine3.proof";;
 let form_th, bound_th = validate_proof pp proof;;
-trans_bound bound_th `#1.793 * &10 ipow (-- &14)`;;
+trans_bound bound_th `#1.794 * &10 ipow (-- &14)`;;
 
 let proof = load "jet.proof";;
 let form_th, bound_th = validate_proof pp proof;;
-trans_bound bound_th `#1.483 * &10 ipow (-- &11)`;;
+trans_bound bound_th `#1.484 * &10 ipow (-- &11)`;;
+
+(* -------------- *)
+(* Trans          *)
+(* -------------- *)
+
+let proof = load "logexp.proof";;
+let form_th, bound_th = validate_proof pp proof;;
+trans_bound bound_th `#1.710 * &10 ipow (-- &15)`;;
+
+let proof = load "sphere.proof";;
+let form_th, bound_th = validate_proof pp proof;;
+trans_bound bound_th `#1.288 * &10 ipow (-- &14)`;;
+
+let proof = load "azimuth.proof";;
+let approx_th = snd (hd (build_tform pp proof));;
+use_rat_verifier := false;;
+let tms =
+  try
+    let _ = prove_bound pp proof approx_th in
+      []
+  with Error (msg, tms, ths) -> tms;;
+
+type_of `lat1`;;
+
+let tm = hd tms;;
+let eq_th = bin_float_rat_conv tm;;
+rand (concl eq_th) = t_const;;
+let vars, ineq_tm = strip_forall (rand (concl eq_th));;
+let ineq_th, stat = M_verifier_main.verify_ineq M_verifier_main.default_params pp ineq_tm;;
 
 
 (*******************)
@@ -206,3 +236,32 @@ let h_tm = hd hs_forall;;
 prove_forall_hyp pp var_names dom_vars [] h_tm;;
 
 
+(*************)
+
+let h_tm = hd tms;;
+let approx_th = snd (nth ths 1);;
+
+h_tm;;
+approx_th;;
+REWRITE_RULE[] approx_th;;
+
+let bound = eval_tform1_bound pp approx_th dom_vars;;
+let in_hyp = find (is_binary "IN") (hyp bound);;
+let x_tm = lhand in_hyp;;
+let t = GEN x_tm (DISCH in_hyp bound);;
+let th2 = MATCH_MP lemma3 t;;
+let tm1, tm2 = dest_conj (rand (snd (dest_forall h_tm)));;
+let m1_tm = rand tm1 and
+    b_tm = rand tm2;;
+let r1 = fst (dest_imp (concl (SPECL[m1_tm; b_tm] th2)));;
+let r2 = EQT_ELIM ((DEPTH_CONV FLOAT_TO_NUM_CONV THENC bin_float_rat_conv) r1);;
+let th3 = MATCH_MP th2 r2;;
+
+h_tm;;
+let a, b = dest_conj h_tm;;
+concl th3;;
+
+if h_tm <> concl th3 then false else true;;
+      error "prove_bound3" [h_tm] [th3; approx_th]
+    else
+      th3;;

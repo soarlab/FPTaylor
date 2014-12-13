@@ -11,4 +11,4 @@ Definitions
   cosLon = rnd(64, ne, 1.5)(cos(f_lon));
 
 Expressions
-  xp rnd64= x + r * sinLat * cosLon;
+  sphere rnd64= x + r * sinLat * cosLon;

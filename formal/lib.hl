@@ -21,6 +21,17 @@ let sum_list = new_definition
 let unzip_def = define `!h1 h2 t. (unzip [] = [],[]) /\ 
   (unzip (CONS (h1, h2) t) = CONS h1 (FST (unzip t)), CONS h2 (SND (unzip t)))`;;
 
+(* --------------------------------------------- *)
+(* Auxiliary functions                           *)
+(* --------------------------------------------- *)
+
+let list_to_pair = function
+  | [a; b] -> (a, b)
+  | _ -> failwith "list_to_pair";;
+
+let list_to_triple = function
+  | [a; b; c] -> (a, b, c)
+  | _ -> failwith "list_to_triple";;
 
 (* --------------------------------------------- *)
 (* Theorems                                      *)
@@ -48,6 +59,16 @@ let let_triple = prove
        REMOVE_THEN "h" MP_TAC THEN REWRITE_TAC[]
    ]);;
 
+let abs_div_le_1 = prove
+  (`!a b. abs (a / b) <= &1 <=> (b = &0 \/ abs a <= abs b)`,
+   REPEAT GEN_TAC THEN ASM_CASES_TAC `b = &0` THENL [
+     ASM_REWRITE_TAC[real_div; REAL_INV_0; REAL_MUL_RZERO; REAL_ABS_0; REAL_LE_01];
+     ALL_TAC
+   ] THEN
+     REWRITE_TAC[REAL_ABS_DIV] THEN
+     ASM_SIMP_TAC[REAL_ARITH `~(b = &0) ==> &0 < abs b`; REAL_LE_LDIV_EQ] THEN
+     REWRITE_TAC[REAL_MUL_LID]);;
+       
 (* --------------------------------------------- *)
 (* delete_at properties                          *)
 (* --------------------------------------------- *)

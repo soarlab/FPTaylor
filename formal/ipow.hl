@@ -1,3 +1,5 @@
+module Ipow = struct
+
 prioritize_real();;
 
 unparse_as_infix("ipow");;
@@ -428,3 +430,5 @@ let IPOW_MONOTONE = prove
    REPEAT STRIP_TAC THEN MATCH_MP_TAC IPOW_EXP_MONO THEN
      EXISTS_TAC `&x:real` THEN ASM_REWRITE_TAC[REAL_OF_NUM_LT] THEN
      ASM_ARITH_TAC);;
+
+end;;

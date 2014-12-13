@@ -10,6 +10,7 @@ open Arith_nat;;
 open Arith_float;;
 open More_float;;
 open Float_pow;;
+open Ipow;;
 open Misc_functions;;
 open Misc_vars;;
 

@@ -10,10 +10,13 @@ open Arith_float;;
 open More_float;;
 open Float_pow;;
 open Eval_interval;;
+open Exp_eval;;
+open Log_eval;;
 open Atn_eval;;
 open Asn_acs_eval;;
 open Sin_eval;;
 open Cos_eval;;
+open Ipow;;
 open Bin_float;;
 open Misc_functions;;
 open Misc_vars;;
@@ -143,6 +146,10 @@ let eval_expr0 pp tm vars =
 		  float_interval_inv pp (eval arg1)
 	      | "sqrt" ->
 		  float_interval_sqrt pp (eval arg1)
+	      | "exp" ->
+		  float_interval_exp pp (eval arg1)
+	      | "log" ->
+		  float_interval_log pp (eval arg1)
 	      | "atn" ->
 		  float_interval_atn pp (eval arg1)
 	      | "acs" ->

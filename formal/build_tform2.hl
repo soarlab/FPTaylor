@@ -27,41 +27,41 @@ let use_rat_verifier = ref true;;
 (* --------------------------------------------- *)
 
 let rnd32_def = new_definition 
-  `rnd32 = @r. is_rnd_bin (ipow2 (-- &24), ipow2 (-- &126)) 
+  `rnd32(c) = @r. is_rnd_bin (c, ipow2 (-- &24), ipow2 (-- &126)) 
   (real_interval [--ipow2 (&127), ipow2 (&127)]) r`;;
 
 let rnd64_def = new_definition 
-  `rnd64 = @r. is_rnd_bin (ipow2 (-- &53), ipow2 (-- &1022)) 
+  `rnd64(c) = @r. is_rnd_bin (c, ipow2 (-- &53), ipow2 (-- &1022)) 
   (real_interval [--ipow2 (&1023), ipow2 (&1023)]) r`;;
 
 let id_rnd_bin = prove
-  (`!e2 d2 s2. &0 <= e2 /\ &0 <= d2 ==> is_rnd_bin (e2,d2) s2 I`,
+  (`!c e2 d2 s2. &0 <= e2 /\ &0 <= d2 ==> is_rnd_bin (c,e2,d2) s2 I`,
    REWRITE_TAC[is_rnd_bin; I_THM] THEN REPEAT STRIP_TAC THEN
      MAP_EVERY EXISTS_TAC [`&0`; `&0`] THEN ASM_ARITH_TAC);;
 
 let rnd32_bin = prove
-  (`is_rnd_bin (ipow2 (-- &24), ipow2 (-- &126)) 
-     (real_interval [--ipow2 (&127), ipow2 (&127)]) rnd32`,
-   REWRITE_TAC[rnd32_def] THEN CONV_TAC SELECT_CONV THEN
+  (`!c. is_rnd_bin (c, ipow2 (-- &24), ipow2 (-- &126)) 
+     (real_interval [--ipow2 (&127), ipow2 (&127)]) (rnd32 c)`,
+   GEN_TAC THEN REWRITE_TAC[rnd32_def] THEN CONV_TAC SELECT_CONV THEN
      EXISTS_TAC `I:real->real` THEN
      MATCH_MP_TAC id_rnd_bin THEN REWRITE_TAC[ipow2_pos_le]);;
 
 let rnd64_bin = prove
-  (`is_rnd_bin (ipow2 (-- &53), ipow2 (-- &1022)) 
-     (real_interval [--ipow2 (&1023), ipow2 (&1023)]) rnd64`, 
-   REWRITE_TAC[rnd64_def] THEN CONV_TAC SELECT_CONV THEN
+  (`!c. is_rnd_bin (c, ipow2 (-- &53), ipow2 (-- &1022)) 
+     (real_interval [--ipow2 (&1023), ipow2 (&1023)]) (rnd64 c)`,
+   GEN_TAC THEN REWRITE_TAC[rnd64_def] THEN CONV_TAC SELECT_CONV THEN
      EXISTS_TAC `I:real->real` THEN
      MATCH_MP_TAC id_rnd_bin THEN REWRITE_TAC[ipow2_pos_le]);;
 
 let rnd32 = prove
-  (`is_rnd (ipow2 (-- &24), ipow2 (-- &126)) 
-     (real_interval [--ipow2 (&127), ipow2 (&127)]) rnd32`,
-   MATCH_MP_TAC is_rnd_bin_is_rnd THEN ACCEPT_TAC rnd32_bin);;
+  (`!c. is_rnd (c, ipow2 (-- &24), ipow2 (-- &126)) 
+     (real_interval [--ipow2 (&127), ipow2 (&127)]) (rnd32 c)`,
+   GEN_TAC THEN MATCH_MP_TAC is_rnd_bin_is_rnd THEN REWRITE_TAC[rnd32_bin]);;
 
 let rnd64 = prove
-  (`is_rnd (ipow2 (-- &53), ipow2 (-- &1022)) 
-     (real_interval [--ipow2 (&1023), ipow2 (&1023)]) rnd64`, 
-   MATCH_MP_TAC is_rnd_bin_is_rnd THEN ACCEPT_TAC rnd64_bin);;
+  (`!c. is_rnd (c, ipow2 (-- &53), ipow2 (-- &1022)) 
+     (real_interval [--ipow2 (&1023), ipow2 (&1023)]) (rnd64 c)`,
+   GEN_TAC THEN MATCH_MP_TAC is_rnd_bin_is_rnd THEN REWRITE_TAC[rnd64_bin]);;
 
 (* --------------------------------------------- *)
 (* Misc                                          *)
@@ -450,10 +450,14 @@ let prove_rat_hyp tm =
   EQT_ELIM (conv tm);;
 
 let get_rnd_thm bin_flag rnd =
-  match rnd with
-    | 32 -> if bin_flag then rnd32_bin else rnd32
-    | 64 -> if bin_flag then rnd64_bin else rnd64
-    | _ -> failwith "get_rnd_thm: Unsupported rnd mode";;
+  let c_bin_tm = mk_bin_float rnd.coefficient in
+  let c_tm = rand (concl (bin_float_rat_conv c_bin_tm)) in
+  let th0 = 
+    match rnd.bits with
+      | 32 -> if bin_flag then rnd32_bin else rnd32
+      | 64 -> if bin_flag then rnd64_bin else rnd64
+      | _ -> failwith "get_rnd_thm: Unsupported rnd mode" in
+    SPEC c_tm th0;;
 
 (* --------------------------------------------- *)
 (* The main tform construction procedures        *)
@@ -483,7 +487,7 @@ let build_tform pp proof =
 		      build_var_tform dom_tm (rev_assoc name var_names)
 		| Proof_rnd_bin_var (rnd, name) ->
 		    let _ = report (sprintf "%d/%d: Var_rnd(%s, rnd = %d)" 
-				      !step_counter total_steps name rnd) in
+				      !step_counter total_steps name rnd.bits) in
 		    let n_tm = mk_intconst (Int (int_of_float (nth args.bounds 0))) and
 			b_tm = mk_bin_float (nth args.bounds 1) in
 		    let rnd_th = get_rnd_thm true rnd in
@@ -495,14 +499,14 @@ let build_tform pp proof =
 		      build_const_tform dom_tm (term_of_rat c)
 		| Proof_rnd_bin_const (rnd, c) ->
 		    let _ = report (sprintf "%d/%d: Const_rnd(%s, rnd = %d)"
-				      !step_counter total_steps (string_of_num c) rnd) in
+				      !step_counter total_steps (string_of_num c) rnd.bits) in
 		    let n_tm = mk_intconst (Int (int_of_float (nth args.bounds 0))) and
 			b_tm = mk_bin_float (nth args.bounds 1) in
 		    let rnd_th = get_rnd_thm true rnd in
 		      build_rnd_bin_const_tform dom_tm (term_of_rat c) rnd_th n_tm b_tm err_indices
 		| Proof_rnd rnd ->
-		    let _ = report (sprintf "%d/%d: Rnd(%d)" 
-				      !step_counter total_steps rnd) in
+		    let _ = report (sprintf "%d/%d: Rnd(%d, %f)" 
+				      !step_counter total_steps rnd.bits rnd.coefficient) in
 		    let m2_tm = mk_bin_float (nth args.bounds 0) and
 			b_tm = mk_bin_float (nth args.bounds 1) in
 		    let arg = nth arg_ths 0 in
@@ -539,6 +543,11 @@ let build_tform pp proof =
 		    let arg = nth arg_ths 0 in
 		      build_inv_tform m1_tm m2_tm e2_tm b_tm m3_tm err_indices arg
 		| Proof_sqrt ->
+(*
+		    let _ = error "Not implemented" 
+		    (map mk_bin_float args.bounds @ map mk_small_numeral err_indices)
+		      arg_ths in
+*)
 		    let _ = report (sprintf "%d/%d: Sqrt" !step_counter total_steps) in
 		    let m1_tm = mk_bin_float (nth args.bounds 0) and
 			m2_tm = mk_bin_float (nth args.bounds 1) and
@@ -602,9 +611,9 @@ let build_tform pp proof =
 			e_tm = mk_ipow2 (Int (int_of_float (nth args.bounds 1))) in
 		    let arg = nth arg_ths 0 in
 		      build_simpl_add_tform i j b_tm e_tm err_indices arg
-		| _ -> error "Not implemented" 
+(*		| _ -> error "Not implemented" 
 		    (map mk_bin_float args.bounds @ map mk_small_numeral err_indices)
-		      arg_ths
+		      arg_ths *)
 	    end in
 	  let hs_forall, hs = partition is_forall (hyp th0) in
 	  let hs_rat, hs_other = partition (fun tm -> frees tm = []) hs in

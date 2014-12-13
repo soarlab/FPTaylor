@@ -229,14 +229,14 @@ let dest_approx_mk tm =
 
 let dest_is_rnd tm =
   match tm with
-    | Comb (Comb (Comb (Const ("is_rnd", _), e2d2), dom_tm), rnd_tm) ->
-	dest_pair e2d2, dom_tm, rnd_tm
+    | Comb (Comb (Comb (Const ("is_rnd", _), ce2d2), dom_tm), rnd_tm) ->
+	dest_triple ce2d2, dom_tm, rnd_tm
     | _ -> error "dest_is_rnd" [tm] [];;
 
 let dest_is_rnd_bin tm =
   match tm with
-    | Comb (Comb (Comb (Const ("is_rnd_bin", _), e2d2), dom_tm), rnd_tm) ->
-	dest_pair e2d2, dom_tm, rnd_tm
+    | Comb (Comb (Comb (Const ("is_rnd_bin", _), ce2d2), dom_tm), rnd_tm) ->
+	dest_triple ce2d2, dom_tm, rnd_tm
     | _ -> error "dest_is_rnd_bin" [tm] [];;
 
 (* --------------------------------------------- *)
@@ -247,9 +247,9 @@ let build_const_tform dom_tm c_tm =
   ISPECL[dom_tm; c_tm] approx_const;;
 
 let build_rnd_bin_const_tform dom_tm c_tm rnd_th n_tm b_tm err_indices =
-  let (e2_tm, d2_tm), rnd_dom_tm, rnd_tm = dest_is_rnd_bin (concl rnd_th) in
+  let (a_tm, e2_tm, d2_tm), rnd_dom_tm, rnd_tm = dest_is_rnd_bin (concl rnd_th) in
   let th0 = PURE_REWRITE_RULE[GSYM IMP_IMP] approx_rnd_bin_const in
-  let th1 = ISPECL[dom_tm; c_tm; rnd_tm; e2_tm; d2_tm; 
+  let th1 = ISPECL[dom_tm; c_tm; rnd_tm; a_tm; e2_tm; d2_tm; 
 		   rnd_dom_tm; n_tm; b_tm] th0 in
   let th2 = MP th1 rnd_th in
   let th3 = UNDISCH_ALL th2 in
@@ -263,9 +263,9 @@ let build_var_tform dom_tm i =
   ISPECL[dom_tm; mk_small_numeral i] approx_var;;
 
 let build_rnd_bin_var_tform dom_tm i rnd_th n_tm b_tm err_indices =
-  let (e2_tm, d2_tm), rnd_dom_tm, rnd_tm = dest_is_rnd_bin (concl rnd_th) in
+  let (a_tm, e2_tm, d2_tm), rnd_dom_tm, rnd_tm = dest_is_rnd_bin (concl rnd_th) in
   let th0 = PURE_REWRITE_RULE[GSYM IMP_IMP] approx_rnd_bin_var in
-  let th1 = ISPECL[dom_tm; mk_small_numeral i; rnd_tm; e2_tm; d2_tm; 
+  let th1 = ISPECL[dom_tm; mk_small_numeral i; rnd_tm; a_tm; e2_tm; d2_tm; 
 		   rnd_dom_tm; n_tm; b_tm] th0 in
   let th2 = MP th1 rnd_th in
   let th3 = UNDISCH_ALL th2 in
@@ -590,9 +590,10 @@ let build_simpl_eq_tform i j approx_th =
 (* --------------------------------------------- *)
 
 let build_rnd_tform_univ rnd_th m2_tm b_tm err_indices approx_th =
-  let (e2_tm, d2_tm), rnd_dom_tm, rnd_tm = dest_is_rnd (concl rnd_th) in
+  let (c_tm, e2_tm, d2_tm), rnd_dom_tm, rnd_tm = dest_is_rnd (concl rnd_th) in
   let dom_tm, h_tm, t_tm = dest_approx (concl approx_th) in
-  let th0 = ISPECL[dom_tm; h_tm; t_tm; rnd_tm; e2_tm; d2_tm; rnd_dom_tm; m2_tm; b_tm] approx_rnd in
+  let th0 = ISPECL[dom_tm; h_tm; t_tm; rnd_tm; c_tm; e2_tm; d2_tm; 
+		   rnd_dom_tm; m2_tm; b_tm] approx_rnd in
   let th1 = PURE_REWRITE_RULE[GSYM IMP_IMP; let_pair] (CONV_RULE (DEPTH_CONV let_CONV) th0) in
   let th2 = MP (MP th1 approx_th) rnd_th in
   let th3 = UNDISCH_ALL th2 in
@@ -600,22 +601,22 @@ let build_rnd_tform_univ rnd_th m2_tm b_tm err_indices approx_th =
     hide_e1s false err_indices th4;;
 
 let tform_rnd = (PURE_REWRITE_RULE[GSYM IMP_IMP; let_pair] o CONV_RULE (DEPTH_CONV let_CONV) o prove)
-  (`!s h f0 t1 rnd e2 d2 s2 m2 b. 
-     approx s h (mk_tform (f0, t1):(N)tform) /\ is_rnd(e2,d2) s2 rnd /\
+  (`!s h f0 t1 rnd c e2 d2 s2 m2 b. 
+     approx s h (mk_tform (f0, t1):(N)tform) /\ is_rnd(c,e2,d2) s2 rnd /\
      (!x. x IN s ==> abs (tform_f1 (mk_tform (f0, t1)) x) <= m2) /\
      (!x:real^N y. x IN s /\ abs y <= m2 ==> f0 x + y IN s2) /\
-     ~(e2 = &0) /\
-     m2 + d2 / e2 <= b
-     ==> let e, d = select_rnd(e2,d2) s rnd h in
+     ~(e2 = &0) /\ &0 < c /\
+     c * (m2 + d2 / e2) <= b
+     ==> let e, d = select_rnd(c,e2,d2) s rnd h in
          let r = (\x. e x * sum_list t1 (\ (f1,e1,dd). f1 x * e1 x) + d x) in
 	   approx s (\x. rnd (h x))
 	     (mk_tform (f0,
-			CONS (f0, e, e2)
-			  (CONS ((\x. b), (\x. r x / b), e2) t1)))`,
+			CONS ((\x. c * f0 x), e, e2)
+			  (CONS ((\x. b), (\x. (c * r x) / b), e2) t1)))`,
    REPEAT STRIP_TAC THEN REPEAT LET_TAC THEN
      MP_TAC (SPECL[`s:real^N->bool`; `h:real^N->real`; 
 		   `mk_tform (f0, t1):(N)tform`; `rnd:real->real`; 
-		   `e2:real`; `d2:real`; `s2:real->bool`; 
+		   `c:real`; `e2:real`; `d2:real`; `s2:real->bool`; 
 		   `m2:real`; `b:real`] (CONV_RULE (DEPTH_CONV let_CONV) approx_rnd)) THEN
      ASM_REWRITE_TAC[list_mk; f0_mk; let_pair] THEN
      EXPAND_TAC "r" THEN SIMP_TAC[] THEN DISCH_THEN MATCH_MP_TAC THEN
@@ -626,13 +627,14 @@ let tform_rnd = (PURE_REWRITE_RULE[GSYM IMP_IMP; let_pair] o CONV_RULE (DEPTH_CO
      FIRST_X_ASSUM MATCH_MP_TAC THEN ASM_SIMP_TAC[]);;
 
 let build_rnd_tform rnd_th m2_tm b_tm err_indices approx_th =
-  let (e2_tm, d2_tm), rnd_dom_tm, rnd_tm = dest_is_rnd (concl rnd_th) in
+  let (c_tm, e2_tm, d2_tm), rnd_dom_tm, rnd_tm = dest_is_rnd (concl rnd_th) in
   let dom_tm, h_tm, t_tm = dest_approx (concl approx_th) in
   let f0_tm, t1_tm = dest_mk_tform t_tm in
-  let th0 = ISPECL[dom_tm; h_tm; f0_tm; t1_tm; rnd_tm; 
+  let th0 = ISPECL[dom_tm; h_tm; f0_tm; t1_tm; rnd_tm; c_tm;
 		   e2_tm; d2_tm; rnd_dom_tm; m2_tm; b_tm] tform_rnd in
   let th1 = rev_itlist (C MP) [approx_th; rnd_th] th0 in
-  let th2 = UNDISCH_ALL th1 in
+    (* REWRITE_RULE[] performs beta reductions *)
+  let th2 = UNDISCH_ALL (REWRITE_RULE[] th1) in
     hide_e1s false err_indices th2;;
 
 end;;

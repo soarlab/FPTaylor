@@ -8,13 +8,18 @@ type proof_var = {
   high : num;
 }
 
+(* TODO: all rounding operations *)
+type rnd_proof_info = {
+  bits : int;
+  coefficient : float;
+}
+
 type proof_op =
   | Proof_var of string
   | Proof_const of num
-  | Proof_rnd_bin_var of int * string
-  | Proof_rnd_bin_const of int * num
-  (* TODO: all rounding operations *)
-  | Proof_rnd of int
+  | Proof_rnd_bin_var of rnd_proof_info * string
+  | Proof_rnd_bin_const of rnd_proof_info * num
+  | Proof_rnd of rnd_proof_info
   | Proof_simpl_eq of int * int
   | Proof_simpl_add of int * int
   | Proof_neg

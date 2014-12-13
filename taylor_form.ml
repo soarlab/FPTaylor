@@ -49,6 +49,9 @@ let mk_err_var, reset_error_index =
   let reset () = err_index := 0 in
   mk, reset
 
+let mk_proof_rnd_info rnd =
+  Proof.mk_rnd_info rnd.fp_type.bits rnd.coefficient
+
 let ( +^ ) = Fpu.fadd_high and
     ( *^ ) = Fpu.fmul_high
 
@@ -173,7 +176,7 @@ let const_rnd_form rnd e =
 			       (print_expr_str err_expr)) in
 	let _ = 
 	  Proof.add_rnd_bin_const_step form_index c.rational_v 
-	    rnd.fp_type.bits p2_exp m2 err.proof_index in
+	    (mk_proof_rnd_info rnd) p2_exp m2 err.proof_index in
 	{
 	  form_index = form_index;
 	  v0 = e;
@@ -220,7 +223,7 @@ let var_rnd_form rnd e =
 	let err = mk_err_var (find_index (mk_rounding rnd e)) rnd.eps_exp in
 	let _ = 
 	  Proof.add_rnd_bin_var_step form_index v 
-	    rnd.fp_type.bits p2_exp m2 err.proof_index in
+	    (mk_proof_rnd_info rnd) p2_exp m2 err.proof_index in
 	{
 	  form_index = form_index;
 	  v0 = e;
@@ -280,7 +283,7 @@ let rounded_form vars original_expr rnd f =
     let m2 = make_stronger m2 in
     let r_err = mk_err_var i rnd.eps_exp and
 	m2_err = mk_err_var (-1) rnd.eps_exp in
-    let _ = Proof.add_rnd_step form_index rnd.fp_type.bits 
+    let _ = Proof.add_rnd_step form_index (mk_proof_rnd_info rnd)
       f.form_index s1 m2 r_err.proof_index m2_err.proof_index in
     {
       form_index = form_index;

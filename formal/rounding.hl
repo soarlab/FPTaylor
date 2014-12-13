@@ -1,6 +1,10 @@
+needs "lib.hl";;
 needs "ipow.hl";;
 
 module Rounding = struct
+
+open Lib;;
+open Ipow;;
 
 prioritize_real();;
 
@@ -12,16 +16,16 @@ let p2max = new_definition
   `p2max x = real_sgn x * sup {&2 ipow n | &2 ipow n < abs x}`;;
 
 let is_rnd_gen = new_definition
-  `is_rnd_gen(g, c, e2, d2) dom rnd <=>
+  `is_rnd_gen(r, c, e2, d2) dom rnd <=>
   (!x. x IN dom ==>
      ?e d. abs d <= d2 /\ abs e <= e2 /\
-           rnd(x) = x + c * (g(x) * e + d))`;;
+           rnd(x) = x + c * (r(x) * e + d))`;;
 
 let is_rnd_def = new_definition
-  `is_rnd(e2, d2) = is_rnd_gen(I, &1, e2, d2)`;;
+  `is_rnd(c, e2, d2) = is_rnd_gen(I, c, e2, d2)`;;
 
 let is_rnd_bin_def = new_definition
-  `is_rnd_bin(e2, d2) = is_rnd_gen(p2max, &1, e2, d2)`;;
+  `is_rnd_bin(c, e2, d2) = is_rnd_gen(p2max, c, e2, d2)`;;
 
 let select_rnd_gen = new_definition
   `select_rnd_gen(g, c, e2, d2) s rnd (f:A->real) =
@@ -30,10 +34,10 @@ let select_rnd_gen = new_definition
      rnd(f x) = f x + c * (g (f x) * FST p x + SND p x))`;;
 
 let select_rnd = new_definition
-  `select_rnd(e2, d2) = select_rnd_gen(I, &1, e2, d2)`;;
+  `select_rnd(c, e2, d2) = select_rnd_gen(I, c, e2, d2)`;;
 
 let select_rnd_bin = new_definition
-  `select_rnd_bin(e2, d2) = select_rnd_gen(p2max, &1, e2, d2)`;;
+  `select_rnd_bin(c, e2, d2) = select_rnd_gen(p2max, c, e2, d2)`;;
 
 (* --------------------------------------------- *)
 (* Theorems                                      *)
@@ -338,30 +342,19 @@ let p2max_x_bound = prove
 (* --------------------------------------------- *)
 
 let is_rnd = prove
-  (`!e2 d2 dom rnd. is_rnd(e2, d2) dom rnd <=>
+  (`!c e2 d2 dom rnd. is_rnd(c, e2, d2) dom rnd <=>
      (!x. x IN dom ==> 
-	?e d. abs d <= d2 /\ abs e <= e2 /\ rnd(x) = x * (&1 + e) + d)`,
-   REWRITE_TAC[is_rnd_def; is_rnd_gen; I_THM] THEN
-     REWRITE_TAC[REAL_ARITH `x + &1 * (x * e + d) = x * (&1 + e) + d`]);;
+	?e d. abs d <= d2 /\ abs e <= e2 /\ rnd(x) = x + c * (x * e + d))`,
+   REWRITE_TAC[is_rnd_def; is_rnd_gen; I_THM]);;
 
 let is_rnd_bin = prove
-  (`!e2 d2 dom rnd. is_rnd_bin(e2, d2) dom rnd <=>
+  (`!c e2 d2 dom rnd. is_rnd_bin(c, e2, d2) dom rnd <=>
      (!x. x IN dom ==> 
-	?e d. abs d <= d2 /\ abs e <= e2 /\ rnd(x) = x + p2max x * e + d)`,
-   REWRITE_TAC[is_rnd_bin_def; is_rnd_gen; REAL_MUL_LID]);;
+	?e d. abs d <= d2 /\ abs e <= e2 /\ rnd(x) = x + c * (p2max x * e + d))`,
+   REWRITE_TAC[is_rnd_bin_def; is_rnd_gen]);;
 
-let abs_div_le_1 = prove
-  (`!a b. abs (a / b) <= &1 <=> (b = &0 \/ abs a <= abs b)`,
-   REPEAT GEN_TAC THEN ASM_CASES_TAC `b = &0` THENL [
-     ASM_REWRITE_TAC[real_div; REAL_INV_0; REAL_MUL_RZERO; REAL_ABS_0; REAL_LE_01];
-     ALL_TAC
-   ] THEN
-     REWRITE_TAC[REAL_ABS_DIV] THEN
-     ASM_SIMP_TAC[REAL_ARITH `~(b = &0) ==> &0 < abs b`; REAL_LE_LDIV_EQ] THEN
-     REWRITE_TAC[REAL_MUL_LID]);;
-       
 let is_rnd_bin_is_rnd = prove
-  (`!e2 d2 dom rnd. is_rnd_bin(e2, d2) dom rnd ==> is_rnd(e2, d2) dom rnd`,
+  (`!c e2 d2 dom rnd. is_rnd_bin(c, e2, d2) dom rnd ==> is_rnd(c, e2, d2) dom rnd`,
    REWRITE_TAC[is_rnd_bin; is_rnd] THEN REPEAT STRIP_TAC THEN
      FIRST_X_ASSUM (MP_TAC o SPEC `x:real`) THEN ASM_REWRITE_TAC[] THEN STRIP_TAC THEN
      ASM_CASES_TAC `x = &0` THENL [
@@ -370,7 +363,7 @@ let is_rnd_bin_is_rnd = prove
        ALL_TAC
      ] THEN
      MAP_EVERY EXISTS_TAC [`(p2max x / x) * e`; `d:real`] THEN
-     ASM_REWRITE_TAC[REAL_ARITH `x * (&1 + (a / x) * e) = x + a * (x / x) * e`] THEN
+     ASM_REWRITE_TAC[REAL_ARITH `x * r / x * e = (x / x) * r * e`] THEN
      ASM_SIMP_TAC[REAL_DIV_REFL; REAL_MUL_LID; REAL_ADD_ASSOC] THEN
      MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `&1 * e2` THEN
      REWRITE_TAC[REAL_ABS_MUL; REAL_ARITH `&1 * e2 <= e2`] THEN
@@ -405,25 +398,25 @@ let is_rnd_gen_select = prove
      ASM_SIMP_TAC[]);;
 
 let is_rnd_bin_select = prove
-  (`!rnd (f:A->real) s s2 e2 d2. is_rnd_bin(e2, d2) s2 rnd /\
+  (`!rnd (f:A->real) s s2 c e2 d2. is_rnd_bin(c, e2, d2) s2 rnd /\
      (!x. x IN s ==> f x IN s2)
-     ==> let e, d = select_rnd_bin(e2,d2) s rnd f in
-       (!x. x IN s ==> rnd (f x) = f x + p2max (f x) * e x + d x /\
+     ==> let e, d = select_rnd_bin(c,e2,d2) s rnd f in
+       (!x. x IN s ==> rnd (f x) = f x + c * (p2max (f x) * e x + d x) /\
 	    abs (e x) <= e2 /\
 	    abs (d x) <= d2)`,
    REWRITE_TAC[is_rnd_bin_def; select_rnd_bin] THEN
      REPEAT GEN_TAC THEN DISCH_THEN (MP_TAC o MATCH_MP is_rnd_gen_select) THEN
-     REWRITE_TAC[REAL_MUL_LID]);;
+     REWRITE_TAC[]);;
 
 let is_rnd_select = prove
-  (`!rnd (f:A->real) s s2 e2 d2. is_rnd(e2, d2) s2 rnd /\
+  (`!rnd (f:A->real) s s2 c e2 d2. is_rnd(c, e2, d2) s2 rnd /\
      (!x. x IN s ==> f x IN s2)
-     ==> let e, d = select_rnd(e2,d2) s rnd f in
-       (!x. x IN s ==> rnd (f x) = f x * (&1 + e x) + d x /\
+     ==> let e, d = select_rnd(c,e2,d2) s rnd f in
+       (!x. x IN s ==> rnd (f x) = f x + c * (f x * e x + d x) /\
 	    abs (e x) <= e2 /\
 	    abs (d x) <= d2)`,
    REWRITE_TAC[is_rnd_def; select_rnd] THEN
      REPEAT GEN_TAC THEN DISCH_THEN (MP_TAC o MATCH_MP is_rnd_gen_select) THEN
-     REWRITE_TAC[REAL_MUL_LID; I_THM; REAL_ADD_LDISTRIB; REAL_MUL_RID; REAL_ADD_ASSOC]);;
+     REWRITE_TAC[I_THM]);;
 
 end;;

@@ -2,11 +2,14 @@ Variables
 	real x in [0.1, 10],
 	real y in [-5, 5];
 
+Definitions
+	t rnd32= x * y;
+
 Expressions
 	i1 = x / x,
 	i2 rnd32= 1 / x,
 	i3 = sqrt(rnd32(x)),
 	i4 rnd32= sqrt(x + y * y),
 	i5 = sin(rnd32(y)),
-	i6 rnd32= sin(x * y)
+	i6 rnd(32, ne, 1.5)= sin(t)
 ;
