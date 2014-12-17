@@ -18,12 +18,13 @@ SRC=	lib.ml\
 	maxima.ml\
 	config.mli\
 	config.ml\
-	rounding_simpl.ml\
-	taylor_form.ml\
-	opt.ml\
+	opt_utils.ml\
 	opt_basic_bb.ml\
 	opt_z3.ml\
 	opt_nlopt.ml\
+	opt.ml\
+	rounding_simpl.ml\
+	taylor_form.ml\
 	fptaylor.ml
 
 TEST_DIR=benchmarks/tests

@@ -2,6 +2,7 @@ open Interval
 open List
 open Lib
 open Expr
+open Opt_utils
 
 (* nlopt C/C++ code generator *)
 type nlopt_pars = {
@@ -112,7 +113,7 @@ let min_max_expr ftol var_bound expr =
     failwith str
   else
     let out = run_cmd exe_name in
-    let min = Opt.get_float out "min: " and
-	max = Opt.get_float out "max: " in
+    let min = get_float out "min: " and
+	max = get_float out "max: " in
     min, max
 

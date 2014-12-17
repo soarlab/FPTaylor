@@ -64,6 +64,16 @@ let make_stronger f =
   else
     f
 
+let estimate_expr vars e =
+  if Config.get_bool_option "intermediate-opt" false then
+    let _ = Log.report ("Estimating: " ^ print_expr_str e) in
+    let min, max = Opt.optimize 0.01 Config.opt_tol e in
+    let _ = Log.report 
+      (Printf.sprintf "Estimation result: [%f, %f]" min max) in
+    {low = min; high = max}
+  else
+    Eval.eval_interval_expr vars e
+
 let add2 (x1, e1) (x2, e2) =
   (* Swap if e1 > e2 *)
   let x1, e1, x2, e2 = if e1 <= e2 then x1, e1, x2, e2 else x2, e2, x1, e1 in
@@ -86,7 +96,8 @@ let sum2_high s1 s2 = itlist
   s1 (0.0, 0)
 
 let abs_eval vars ex = 
-  let v = Eval.eval_interval_expr vars ex in
+(*  let v = Eval.eval_interval_expr vars ex in *)
+  let v = estimate_expr vars ex in
   (abs_I v).high
 
 let abs_eval_v1 vars = map (fun (ex, err) -> abs_eval vars ex, err.exp)
@@ -258,6 +269,7 @@ let var_rnd_form rnd e =
 
 (* rounding *)
 let rounded_form vars original_expr rnd f =
+(*  let _ = Log.report "rnd" in *)
   if rnd.eps_exp = 0 then {
     form_index = next_form_index();
     v0 = f.v0;
@@ -303,6 +315,7 @@ let neg_form f =
 
 (* addition *)
 let add_form f1 f2 = 
+(*  let _ = Log.report "add" in *)
   let i = next_form_index() in
   let _ = Proof.add_add_step i f1.form_index f2.form_index in {
     form_index = i;
@@ -312,6 +325,7 @@ let add_form f1 f2 =
 
 (* subtraction *)
 let sub_form f1 f2 =
+(*  let _ = Log.report "sub" in *)
   let i = next_form_index() in
   let _ = Proof.add_sub_step i f1.form_index f2.form_index in {
     form_index = i;
@@ -339,7 +353,9 @@ let mul_form =
 
 (* reciprocal *)
 let inv_form vars f = 
-  let x0_int = Eval.eval_interval_expr vars f.v0 in
+(*  let _ = Log.report "inv" in *)
+(*  let x0_int = Eval.eval_interval_expr vars f.v0 in *)
+  let x0_int = estimate_expr vars f.v0 in
   let x1 = abs_eval_v1 vars f.v1 in
   let s1 = itlist (fun (x,x_exp) s -> 
     let eps = get_eps x_exp in
@@ -351,6 +367,10 @@ let inv_form vars f =
       pow_I_i (x0_int +$ {low = -.m1; high = m1}) 3
     else
       pow_I_i (x0_int +$ s1) 3 in
+  let _ = 
+    if (abs_I d).low <= 0.0 then
+      failwith "inv_form: division by zero"
+    else () in
   let b_high = (abs_I (inv_I d)).high in
   let b_high = make_stronger b_high in
   let m2, m2_exp = sum2_high x1 x1 in
@@ -374,7 +394,8 @@ let div_form vars f1 f2 =
 
 (* square root *)
 let sqrt_form vars f = 
-  let x0_int = Eval.eval_interval_expr vars f.v0 in
+(*  let x0_int = Eval.eval_interval_expr vars f.v0 in *)
+  let x0_int = estimate_expr vars f.v0 in
   let x1 = abs_eval_v1 vars f.v1 in
   let s1 = itlist (fun (x,x_exp) s -> 
     let eps = get_eps x_exp in
@@ -469,7 +490,8 @@ let cos_form vars f =
 
 (* tangent *)
 let tan_form vars f =
-  let x0_int = Eval.eval_interval_expr vars f.v0 in
+(*  let x0_int = Eval.eval_interval_expr vars f.v0 in *)
+  let x0_int = estimate_expr vars f.v0 in
   let x1 = abs_eval_v1 vars f.v1 in
   let s1 = itlist (fun (x,x_exp) s -> 
     let eps = get_eps x_exp in
@@ -554,7 +576,8 @@ let exp_form vars f =
 
 (* log *)
 let log_form vars f =
-  let x0_int = Eval.eval_interval_expr vars f.v0 in
+(*  let x0_int = Eval.eval_interval_expr vars f.v0 in *)
+  let x0_int = estimate_expr vars f.v0 in
   let x1 = abs_eval_v1 vars f.v1 in
   let s1 = itlist (fun (x,x_exp) s -> 
     let eps = get_eps x_exp in

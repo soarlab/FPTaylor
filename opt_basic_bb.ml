@@ -2,6 +2,7 @@ open Interval
 open List
 open Lib
 open Expr
+open Opt_utils
 
 let gen_bb_opt_code tolx tolfx max_iter fmt =
   let nl = Format.pp_print_newline fmt in
@@ -126,6 +127,6 @@ let min_max_expr tolx tolfx max_iter var_bound e =
     ml_name in
   let _ = run_cmd cmd in
   let out = run_cmd exe_name in
-  let min = Opt.get_float out "min = " and
-      max = Opt.get_float out "max = " in
+  let min = get_float out "min = " and
+      max = get_float out "max = " in
   min, max

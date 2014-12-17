@@ -177,7 +177,12 @@ let z3py_print_env = {
   env_print = (fun p _ e ->
     match e with
       | Const f -> 
-	let _ = p ("(" ^ string_of_num f.rational_v ^ ")") in
+	let s = Big_int.string_of_big_int in
+	let n = f.rational_v in
+	let ns = s (More_num.numerator n) and
+	    ds = s (More_num.denominator n) in
+(*	let _ = p ("(" ^ string_of_num f.rational_v ^ ")") in *)
+	let _ = p ("(Q(" ^ ns ^ "," ^ ds ^ "))") in
 	true
       | _ -> false);
 }

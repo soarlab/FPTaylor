@@ -100,6 +100,7 @@ let gen_z3py_opt_code fmt =
     expr e;
     tail tol
 
+let name_counter = ref 0;;
 
 let min_max_expr tol var_bound e =
   if vars_in_expr e = [] then
@@ -108,7 +109,9 @@ let min_max_expr tol var_bound e =
     (t.Interval.low, t.Interval.high)
   else
     let tmp = Lib.get_dir "tmp" in
-    let py_name = Filename.concat tmp "min_max.py" in
+    let _ = incr name_counter in
+    let py_name = Filename.concat tmp 
+      (Format.sprintf "min_max_%d.py" !name_counter) in
     let gen = gen_z3py_opt_code in
     let _ = write_to_file py_name gen (tol, var_bound, e) in
     let cmd = Format.sprintf "PYTHONPATH=\"%s\" python %s"

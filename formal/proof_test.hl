@@ -161,21 +161,8 @@ let form_th, bound_th = validate_proof pp proof;;
 trans_bound bound_th `#1.288 * &10 ipow (-- &14)`;;
 
 let proof = load "azimuth.proof";;
-let approx_th = snd (hd (build_tform pp proof));;
-use_rat_verifier := false;;
-let tms =
-  try
-    let _ = prove_bound pp proof approx_th in
-      []
-  with Error (msg, tms, ths) -> tms;;
-
-type_of `lat1`;;
-
-let tm = hd tms;;
-let eq_th = bin_float_rat_conv tm;;
-rand (concl eq_th) = t_const;;
-let vars, ineq_tm = strip_forall (rand (concl eq_th));;
-let ineq_th, stat = M_verifier_main.verify_ineq M_verifier_main.default_params pp ineq_tm;;
+let form_th, bound_th = validate_proof pp proof;;
+trans_bound result `#1.409 * &10 ipow (-- &14)`;;
 
 
 (*******************)
