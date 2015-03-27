@@ -1,0 +1,9 @@
+needs "tests/utils.hl";;
+
+(*
+let _, bound_th, time = validate 10 "hypot32.proof";;
+trans_bound bound_th `#1.886 * &10 ipow (-- &5)`;;
+*)
+
+let bound_th, time = 
+  validate_bound 10 "hypot32.proof" `#1.886 * &10 ipow (-- &5)`;;

@@ -1,0 +1,6 @@
+needs "tests/utils.hl";;
+
+(* let _, bound_th, time = validate 10 "exp1x.proof";; *)
+
+let bound_th, time = 
+  validate_bound 10 "exp1x.proof" `#6.932 * &10 ipow (-- &6)`;;

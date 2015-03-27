@@ -1,0 +1,9 @@
+needs "tests/utils.hl";;
+
+(*
+let _, bound_th, time = validate 10 "sphere.proof";;
+trans_bound bound_th `#1.288 * &10 ipow (-- &14)`;;
+*)
+
+let bound_th, time = 
+  validate_bound 10 "sphere.proof" `#1.288 * &10 ipow (-- &14)`;;

@@ -10,6 +10,14 @@ tests:
 	$(FPTAYLOR_A) p2.txt
 	$(FPTAYLOR_A) p3.txt
 
+tests2:
+	rm -rf log tmp
+	$(FPTAYLOR_A) point_on_sphere.txt
+	$(FPTAYLOR_A) hypot32.txt
+	$(FPTAYLOR_A) exp1x.txt
+	$(FPTAYLOR_A) sqrt_sub.txt
+	find log -name "*.log" -exec awk '/---/,0' '{}' \;
+
 taylor-a:
 	rm -rf log tmp
 	$(FPTAYLOR_A) carbonGas.txt

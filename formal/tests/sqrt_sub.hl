@@ -1,0 +1,4 @@
+needs "tests/utils.hl";;
+
+let bound_th, time = 
+  validate_bound 10 "sqrt_sub.proof" `#1.721 * &10 ipow (-- &14)`;;

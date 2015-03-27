@@ -1,0 +1,12 @@
+Variables
+  float32 x in [0.01,0.5];
+	
+Definitions
+  f rnd32= x,
+  e = rnd(32, ne, 1.125)(exp(f)),
+  r = rnd32((e - 1) / f)  
+;
+
+Expressions
+  exp1x = r
+;
