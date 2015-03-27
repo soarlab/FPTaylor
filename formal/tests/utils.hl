@@ -1,3 +1,19 @@
+open List;;
+open List_eval;;
+open Interval_arith;;
+open Arith_float;;
+open More_float;;
+open Lib;;
+open Tform;;
+open Build_tform;;
+open Ipow;;
+open Bin_float;;
+open Eval_expr;;
+open Proof;;
+open Misc_functions;;
+open Misc_vars;;
+open Build_tform2;;
+
 let trans_bound bound_th bound_tm =
   let vars, tm = strip_forall (concl bound_th) in
   let ineq_th = UNDISCH_ALL (SPEC_ALL bound_th) in
