@@ -262,6 +262,79 @@ let ocaml_interval_print_env = {
       | _ -> false);
 }
 
+let racket_interval_env_op_name = function
+  | Op_neg -> true, "i-"
+  | Op_add -> true, "i+"
+  | Op_sub -> true, "i-"
+  | Op_mul -> true, "i*"
+  | Op_div -> true, "i/"
+  | Op_abs -> true, "iabs"
+  | Op_inv -> true, "i/"
+  | Op_sqrt -> true, "isqrt"
+  | Op_sin -> true, "isin"
+  | Op_cos -> true, "icos"
+  | Op_tan -> true, "itan"
+  | Op_atan -> true, "iatan"
+  | Op_exp -> true, "iexp"
+  | Op_log -> true, "ilog"
+  | Op_nat_pow -> true, "iexpt"
+  | Op_floor_power2 -> true, "ifloor-pow2"
+  | Op_sym_interval -> true, "sym-interval"
+  | _ -> false, ""
+
+let racket_interval_print_env = {
+  env_op_name = racket_interval_env_op_name;
+
+  env_op_infix = (function
+    | _ -> false, false);
+
+  env_print = (fun p print e ->
+    let op_name op =
+      let flag, name = racket_interval_env_op_name op in
+      if (not flag) then
+	"unknown"
+      else
+	name in
+    let _ =
+      match e with
+	| Var name -> p (name ^ "-var")
+	| Const f -> 
+	  let s = Big_int.string_of_big_int in
+	  let n = f.rational_v in
+	  let ns = s (More_num.numerator n) and
+	      ds = s (More_num.denominator n) in
+	  p (Format.sprintf "(make-interval %s/%s)" ns ds)
+	| U_op (op, arg) ->
+	  begin
+	    p "("; 
+	    p (op_name op); 
+	    p " ";
+	    print arg;
+	    p ")"
+	  end
+	| Bin_op (op, arg1, arg2) ->
+	  begin
+	    p "(";
+	    p (op_name op);
+	    p " ";
+	    print arg1;
+	    p " ";
+	    print arg2;
+	    p ")"
+	  end
+	| Gen_op (op, args) ->
+	  begin
+	    p "(";
+	    p (op_name op);
+	    p " ";
+	    print_list print (fun () -> p " ") args;
+	    p ")"
+	  end
+	| Rounding _ ->
+	  failwith "Racket environment: rounding is not supported"
+    in true);
+}
+
 
 let print_expr_in_env env fmt =
   let p = Format.pp_print_string fmt in

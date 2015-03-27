@@ -18,6 +18,7 @@ SRC=	lib.ml\
 	maxima.ml\
 	config.mli\
 	config.ml\
+	out_racket.ml \
 	opt_utils.ml\
 	opt_basic_bb.ml\
 	opt_z3.ml\

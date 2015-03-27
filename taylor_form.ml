@@ -64,15 +64,27 @@ let make_stronger f =
   else
     f
 
-let estimate_expr vars e =
-  if Config.get_bool_option "intermediate-opt" false then
-    let _ = Log.report ("Estimating: " ^ print_expr_str e) in
-    let min, max = Opt.optimize 0.01 Config.opt_tol e in
-    let _ = Log.report 
-      (Printf.sprintf "Estimation result: [%f, %f]" min max) in
-    {low = min; high = max}
-  else
-    Eval.eval_interval_expr vars e
+let estimate_expr, reset_estimate_cache =
+  let cache = ref [] in
+  let reset () = (cache := []) in
+  let estimate vars e =
+    if Config.get_bool_option "intermediate-opt" false then
+      let _ = Log.report ("Estimating: " ^ print_expr_str e) in
+      let min, max = Opt.optimize 0.01 Config.opt_tol e in
+      let _ = Log.report 
+	(Printf.sprintf "Estimation result: [%f, %f]" min max) in
+      {low = min; high = max}
+    else
+      Eval.eval_interval_expr vars e in
+  let estimate_and_cache vars e =
+    try
+      assoc_eq eq_expr e !cache
+    with Failure _ ->
+      let interval = estimate vars e in
+      let _ = (cache := (e, interval) :: !cache) in
+      interval
+  in
+  estimate_and_cache, reset
 
 let add2 (x1, e1) (x2, e2) =
   (* Swap if e1 > e2 *)
@@ -657,6 +669,7 @@ let build_form vars =
 	end
   in
   fun e ->
+    let _ = reset_estimate_cache() in
     let _ = reset_error_index() in
     let _ = reset_form_index() in
     let _ = reset_index_counter() in

@@ -144,10 +144,14 @@ let errors =
 	let abs_exprs = map (fun (e, err) -> mk_abs e, err.exp) v1 in
 	let full_expr', exp = sum_symbolic abs_exprs in
 	let full_expr = if Config.simplification then Maxima.simplify full_expr' else full_expr' in
+
+	let _ = Out_racket.create_racket_file "abs_exact" 
+	  "fptaylor-abs" total2 exp full_expr in
+
 	let min, max = Opt.optimize 0.01 tol full_expr in
 	let _ = report (Format.sprintf "exact min, max (exp = %d): %f, %f" exp min max) in
 	let total = (get_eps exp *^ abs (min, max)) +^ total2 in
-	let _ = report (Format.sprintf "exact total: %e" total) in
+	let _ = report (Format.sprintf "exact total: %e\ntotal2: %e" total total2) in
 	Some total
       else None in
     err_approx, err_exact
@@ -184,10 +188,14 @@ let errors =
 	  let abs_exprs = map (fun (e, err) -> mk_abs e, err.exp) v1 in
 	  let full_expr', exp = sum_symbolic abs_exprs in
 	  let full_expr = if Config.simplification then Maxima.simplify full_expr' else full_expr' in
+
+	  let _ = Out_racket.create_racket_file "rel_exact" 
+	    "fptaylor-rel" b2 exp full_expr in
+
 	  let min, max = Opt.optimize 0.01 tol full_expr in
 	  let _ = report (Format.sprintf "exact min-rel, max-rel (exp = %d): %f, %f" exp min max) in
 	  let total = (get_eps exp *^ abs (min, max)) +^ b2 in
-	  let _ = report (Format.sprintf "exact total-rel: %e" total) in
+	  let _ = report (Format.sprintf "exact total-rel: %e\ntotal2: %e" total b2) in
 	  Some total
 	else None in
       err_approx, err_exact

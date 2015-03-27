@@ -6,8 +6,7 @@ Variables
 
 Definitions
   s rnd64= (a + b + c) / 2.0,
-  s2 rnd64= s - a,
-  p rnd64= s * (s - a) * (s - b) * (s - c)
+  p rnd64= (s * (s - a) * (s - b) * (s - c))
 ;
 
 Constraints
@@ -17,6 +16,5 @@ Constraints
 ;
 
 Expressions
-//  s2
-  p  
+  p
 ;

@@ -27,12 +27,18 @@ let trans_bound bound_th bound_tm =
   let r1 = DISCH cond trans_th in
     itlist GEN vars r1;;
 
-
 let path = "../benchmarks/proofs/proofs";;
 
 let load name =
   let fname = Filename.concat path name in
     load_proof fname;;
+
+let validate pp name =
+  let proof = load name in
+  let start = Unix.gettimeofday() in
+  let form_th, bound_th = validate_proof pp proof in
+  let stop = Unix.gettimeofday() in
+    form_th, bound_th, stop -. start;;
 
 let t1 = load "t1.proof";;
 let t2 = load "t2.proof";;
@@ -163,6 +169,12 @@ trans_bound bound_th `#1.288 * &10 ipow (-- &14)`;;
 let proof = load "azimuth.proof";;
 let form_th, bound_th = validate_proof pp proof;;
 trans_bound result `#1.409 * &10 ipow (-- &14)`;;
+
+(* 100: 9.001 *)
+validate pp "logexp.proof";;
+
+(* 100: 28.767 *)
+validate pp "sphere.proof";;
 
 
 (*******************)
