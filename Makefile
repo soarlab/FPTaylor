@@ -85,3 +85,6 @@ clean:
 	rm -f *~ *.o *.cmo *.cmi *.cmx *.pyc
 
 clean-all: clean-interval clean
+
+clean-tmp:
+	find . -type f -name '*~' -delete

@@ -1,0 +1,46 @@
+needs "build_tform2.hl";;
+
+open Proof;;
+open List;;
+open Ipow;;
+open Bin_float;;
+open Build_tform2;;
+
+let trans_bound bound_th bound_tm =
+  let vars, tm = strip_forall (concl bound_th) in
+  let ineq_th = UNDISCH_ALL (SPEC_ALL bound_th) in
+  let cond, ineq = dest_imp tm in
+  let bound0_tm = rand ineq in
+  let ineq2 = mk_binary "real_le" (bound0_tm, bound_tm) in
+  let ineq2_th = EQT_ELIM ((REWRITE_CONV[IPOW_NEG; IPOW_NUM] THENC bin_float_rat_conv) ineq2) in
+  let trans_th = MATCH_MP REAL_LE_TRANS (CONJ ineq_th ineq2_th) in
+  let r1 = DISCH cond trans_th in
+    itlist GEN vars r1;;
+
+let path = "../benchmarks/proofs/proofs";;
+
+let load name =
+  let fname = Filename.concat path name in
+    load_proof fname;;
+
+let validate pp name =
+  let proof = load name in
+  let start = Unix.gettimeofday() in
+  let form_th, bound_th = validate_proof pp proof in
+  let stop = Unix.gettimeofday() in
+    form_th, bound_th, stop -. start;;
+
+let pp = 12;;
+use_rat_verifier := false;;
+
+(*
+let proof = load "azimuth.proof";;
+let tf = snd (hd (build_tform pp proof));;
+let result = prove_bound pp proof tf;;
+*)
+
+let form_th, bound_th, time = validate pp "azimuth.proof";;
+let result_th = trans_bound bound_th `#1.409 * &10 ipow (-- &14)`;;
+
+time;;
+
