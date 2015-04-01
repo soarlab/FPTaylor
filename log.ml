@@ -1,3 +1,15 @@
+(* ========================================================================== *)
+(*      FPTaylor: A Tool for Rigorous Estimation of Round-off Errors          *)
+(*                                                                            *)
+(*      Author: Alexey Solovyev, University of Utah                           *)
+(*                                                                            *)
+(*      This file is distributed under the terms of the MIT licence           *)
+(* ========================================================================== *)
+
+(* -------------------------------------------------------------------------- *)
+(* Logging functions                                                          *)
+(* -------------------------------------------------------------------------- *)
+
 open Format
 
 let open_log, close_log, append_to_log, log_fmt =

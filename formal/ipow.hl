@@ -1,3 +1,16 @@
+(* ========================================================================== *)
+(*      Formal verification of FPTaylor certificates                          *)
+(*                                                                            *)
+(*      Author: Alexey Solovyev, University of Utah                           *)
+(*                                                                            *)
+(*      This file is distributed under the terms of the MIT licence           *)
+(* ========================================================================== *)
+
+(* -------------------------------------------------------------------------- *)
+(* Integer powers of real numbers                                             *)
+(* -------------------------------------------------------------------------- *)
+
+
 module Ipow = struct
 
 prioritize_real();;

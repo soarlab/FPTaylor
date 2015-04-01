@@ -1,3 +1,17 @@
+(* ========================================================================== *)
+(*      Formal verification of FPTaylor certificates                          *)
+(*                                                                            *)
+(*      Author: Alexey Solovyev, University of Utah                           *)
+(*                                                                            *)
+(*      This file is distributed under the terms of the MIT licence           *)
+(* ========================================================================== *)
+
+(* -------------------------------------------------------------------------- *)
+(* Interval evaluation of expression                                          *)
+(* Note: requires the nonlinear inequality verification tool                  *)
+(*       https://github.com/monadius/formal_ineqs                             *)
+(* -------------------------------------------------------------------------- *)
+
 needs "misc/misc_functions.hl";;
 needs "arith/eval_interval.hl";;
 needs "ipow.hl";;

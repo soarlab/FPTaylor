@@ -1,3 +1,15 @@
+(* ========================================================================== *)
+(*      Formal verification of FPTaylor certificates                          *)
+(*                                                                            *)
+(*      Author: Alexey Solovyev, University of Utah                           *)
+(*                                                                            *)
+(*      This file is distributed under the terms of the MIT licence           *)
+(* ========================================================================== *)
+
+(* -------------------------------------------------------------------------- *)
+(* Definitions and theorems for rounding operations                           *)
+(* -------------------------------------------------------------------------- *)
+
 needs "lib.hl";;
 needs "ipow.hl";;
 

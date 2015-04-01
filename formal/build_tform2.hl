@@ -1,3 +1,17 @@
+(* ========================================================================== *)
+(*      Formal verification of FPTaylor certificates                          *)
+(*                                                                            *)
+(*      Author: Alexey Solovyev, University of Utah                           *)
+(*                                                                            *)
+(*      This file is distributed under the terms of the MIT licence           *)
+(* ========================================================================== *)
+
+(* -------------------------------------------------------------------------- *)
+(* Construction of Taylor forms                                               *)
+(* Note: requires the nonlinear inequality verification tool                  *)
+(*       https://github.com/monadius/formal_ineqs                             *)
+(* -------------------------------------------------------------------------- *)
+
 needs "build_tform.hl";;
 needs "bin_float.hl";;
 needs "eval_expr.hl";;

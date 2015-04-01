@@ -1,3 +1,15 @@
+(* ========================================================================== *)
+(*      FPTaylor: A Tool for Rigorous Estimation of Round-off Errors          *)
+(*                                                                            *)
+(*      Author: Alexey Solovyev, University of Utah                           *)
+(*                                                                            *)
+(*      This file is distributed under the terms of the MIT licence           *)
+(* ========================================================================== *)
+
+(* -------------------------------------------------------------------------- *)
+(* Auxiliary parser functions                                                 *)
+(* -------------------------------------------------------------------------- *)
+
 let parse_raw_expr str =
   let lexbuf = Lexing.from_string str in
   Input_parser.expr Input_lexer.token lexbuf

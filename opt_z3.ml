@@ -1,3 +1,15 @@
+(* ========================================================================== *)
+(*      FPTaylor: A Tool for Rigorous Estimation of Round-off Errors          *)
+(*                                                                            *)
+(*      Author: Alexey Solovyev, University of Utah                           *)
+(*                                                                            *)
+(*      This file is distributed under the terms of the MIT licence           *)
+(* ========================================================================== *)
+
+(* -------------------------------------------------------------------------- *)
+(* Optimization with the Z3 SMT solver (see z3opt.py)                         *)
+(* -------------------------------------------------------------------------- *)
+
 open Num
 open List
 open Lib

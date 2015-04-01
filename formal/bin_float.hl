@@ -1,3 +1,17 @@
+(* ========================================================================== *)
+(*      Formal verification of FPTaylor certificates                          *)
+(*                                                                            *)
+(*      Author: Alexey Solovyev, University of Utah                           *)
+(*                                                                            *)
+(*      This file is distributed under the terms of the MIT licence           *)
+(* ========================================================================== *)
+
+(* -------------------------------------------------------------------------- *)
+(* Binary floating-point numbers                                              *)
+(* Note: requires the nonlinear inequality verification tool                  *)
+(*       https://github.com/monadius/formal_ineqs                             *)
+(* -------------------------------------------------------------------------- *)
+
 needs "ipow.hl";;
 needs "arith/arith_float.hl";;
 needs "arith/float_pow.hl";;

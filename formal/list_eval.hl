@@ -1,3 +1,17 @@
+(* ========================================================================== *)
+(*      Formal verification of FPTaylor certificates                          *)
+(*                                                                            *)
+(*      Author: Alexey Solovyev, University of Utah                           *)
+(*                                                                            *)
+(*      This file is distributed under the terms of the MIT licence           *)
+(* ========================================================================== *)
+
+(* -------------------------------------------------------------------------- *)
+(* Conversions for list operations                                            *)
+(* Note: requires the nonlinear inequality verification tool                  *)
+(*       https://github.com/monadius/formal_ineqs                             *)
+(* -------------------------------------------------------------------------- *)
+
 needs "lib.hl";;
 needs "list/list_conversions.hl";;
 needs "misc/misc_vars.hl";;

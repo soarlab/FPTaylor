@@ -1,3 +1,16 @@
+(* ========================================================================== *)
+(*      FPTaylor: A Tool for Rigorous Estimation of Round-off Errors          *)
+(*                                                                            *)
+(*      Author: Alexey Solovyev, University of Utah                           *)
+(*                                                                            *)
+(*      This file is distributed under the terms of the MIT licence           *)
+(* ========================================================================== *)
+
+(* -------------------------------------------------------------------------- *)
+(* Optimization with a simple branch and bound procedure                      *) 
+(* (see b_and_b/opt0.ml)                                                      *)
+(* -------------------------------------------------------------------------- *)
+
 open Interval
 open List
 open Lib

@@ -1,3 +1,18 @@
+(* ========================================================================== *)
+(*      Formal verification of FPTaylor certificates                          *)
+(*                                                                            *)
+(*      Author: Alexey Solovyev, University of Utah                           *)
+(*                                                                            *)
+(*      This file is distributed under the terms of the MIT licence           *)
+(* ========================================================================== *)
+
+(* -------------------------------------------------------------------------- *)
+(* Verification of nonlinear inequalities with simplifications for            *)
+(* rational functions                                                         *)
+(* Note: requires the nonlinear inequality verification tool                  *)
+(*       https://github.com/monadius/formal_ineqs                             *)
+(* -------------------------------------------------------------------------- *)
+
 needs "verifier/m_verifier_main.hl";;
 
 module Rat = struct

@@ -1,3 +1,15 @@
+(* ========================================================================== *)
+(*      FPTaylor: A Tool for Rigorous Estimation of Round-off Errors          *)
+(*                                                                            *)
+(*      Author: Alexey Solovyev, University of Utah                           *)
+(*                                                                            *)
+(*      This file is distributed under the terms of the MIT licence           *)
+(* ========================================================================== *)
+
+(* -------------------------------------------------------------------------- *)
+(* Data structures for loaded variables, definitions, and expressions         *)
+(* -------------------------------------------------------------------------- *)
+
 open List
 open Expr
 open Rounding

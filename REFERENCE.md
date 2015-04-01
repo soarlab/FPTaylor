@@ -6,11 +6,11 @@
 
 See *Input file format* for the description of the input file format. FPTaylor reads the input file and analyzes expressions defined in this file. All operations in input files are assumed to be over real numbers. FPTaylor models floating-point arithmetic with rounding operations. The basic analysis which FPTaylor performs is the following. Suppose the input file contains an expression `expr` containing some variables (for simplicity, assume that is depends on one variable `x`) and some rounding operations. FPTaylor constructs another expression `expr'` without rounding operations and estimates the maximum value of the difference 
 
-    `|expr - expr'|` 
+    |expr - expr'|
 
 over all possible values of `x` (this is the absolute round-off error of `expr`). FPTaylor also can estimate the value of 
 
-    `|(expr - expr') / expr|` 
+    |(expr - expr') / expr|
 
 (the relative round-off error of `expr`) if it finds that `expr` is never equal to 0 for all values of `x` and if the option for computing relative errors is turned on.
 

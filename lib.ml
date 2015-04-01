@@ -1,8 +1,16 @@
-(* FPTaylor                                                                   *)
-(* Alexey Solovyev, University of Utah                                        *)
+(* ========================================================================== *)
+(*      FPTaylor: A Tool for Rigorous Estimation of Round-off Errors          *)
+(*                                                                            *)
+(*      Author: Alexey Solovyev, University of Utah                           *)
+(*                                                                            *)
+(*      This file is distributed under the terms of the MIT licence           *)
+(* ========================================================================== *)
 
+(* -------------------------------------------------------------------------- *)
 (* Auxiliary functions                                                        *)
-(* Some code is from HOL Light lib.ml, the Flyspeck project, and nlcertify    *)
+(* Some code is from HOL Light (lib.ml), the Flyspeck project, and nlcertify  *)
+(* -------------------------------------------------------------------------- *)
+
 open List
 
 (* -------------------------------------------------------------------------- *)

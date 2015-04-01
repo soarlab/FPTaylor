@@ -1,5 +1,14 @@
-(* FPTaylor                                                                   *)
-(* Alexey Solovyev, University of Utah                                        *)
+(* ========================================================================== *)
+(*      FPTaylor: A Tool for Rigorous Estimation of Round-off Errors          *)
+(*                                                                            *)
+(*      Author: Alexey Solovyev, University of Utah                           *)
+(*                                                                            *)
+(*      This file is distributed under the terms of the MIT licence           *)
+(* ========================================================================== *)
+
+(* -------------------------------------------------------------------------- *)
+(* Symbolic expressions                                                       *)
+(* -------------------------------------------------------------------------- *)
 
 open Num
 open List
