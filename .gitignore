@@ -7,7 +7,16 @@
 *.cmx
 *.cmxs
 *.cmxa
+input_parser.ml
+input_lexer.ml
+input_parser.mli
+ref.html
+vm_instructions.html
+fptaylor
+ocamlfpu
 *~
+*.proof
+Fluctuat_*/
 log/
 tmp/
 test/
