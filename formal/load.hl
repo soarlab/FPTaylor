@@ -1,0 +1,19 @@
+(* The path to the nonlinear inequality verification tool            *)
+(* Change it to the location of formal_ineqs on your machine         *)
+let formal_ineqs_path = "/home/alexey/Work/Projects/HOL/formal_ineqs";;
+
+(* The path to the FPTaylor tool                                     *)
+(* Change it to the location of FPTaylor on your machine             *)
+let fptaylor_path = "/home/alexey/Work/Projects/OCaml/FPTaylor";;
+
+let fptaylor_formal_path = fptaylor_path ^ "/formal";;
+
+load_path := formal_ineqs_path :: fptaylor_formal_path :: !load_path;;
+
+needs "arith_options.hl";;
+
+Arith_options.base := 100;;
+Arith_options.min_exp := 300;;
+
+needs "verifier/m_verifier_main.hl";;
+needs "build_tform2.hl";;
