@@ -42,9 +42,9 @@ let form_th, bound_th, time = validate pp "sine.proof";;
 add_result "sine" (trans_bound bound_th `#6.702 * &10 ipow (-- &16)`) time;;
 
 let form_th, bound_th, time = validate pp "sqroot.proof";;
-add_result "sqroot" (trans_bound bound_th `#7.863 * &10 ipow (-- &16)`);;
+add_result "sqroot" (trans_bound bound_th `#7.863 * &10 ipow (-- &16)`) time;;
 
-let form_th, bound_th, time = validate_proof 15 "sineOrder3.proof";;
+let form_th, bound_th, time = validate 15 "sineOrder3.proof";;
 add_result "sineOrder3" (trans_bound bound_th `#9.960 * &10 ipow (-- &16)`) time;;
 
 let form_th, bound_th, time = validate pp "turbine1.proof";;

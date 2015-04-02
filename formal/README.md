@@ -107,5 +107,5 @@ These commands will verify some simple certificates.
     needs "tests/benchmarks_a.hl";;
 
 This command will verify all FPTaylor benchmarks with polynomial and
-rational functions. It requires quite a lot of time (5 hours) to
-complete this verification.
+rational functions. It requires about 1 hour to complete this
+verification.

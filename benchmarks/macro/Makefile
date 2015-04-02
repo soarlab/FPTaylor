@@ -1,6 +1,6 @@
 FPTAYLOR_HOME=../..
 ROSA_HOME=~/Work/Solvers/rosa
-GAPPA_HOME=~/Work/Solvers/gappa-1.0.0/src
+GAPPA_HOME=~/Work/Solvers/gappa-1.1.2/src
 
 FPTAYLOR=$(FPTAYLOR_HOME)/fptaylor
 FPTAYLOR_A=$(FPTAYLOR) -c FPTaylor/config-a.cfg
