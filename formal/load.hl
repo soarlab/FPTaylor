@@ -15,5 +15,6 @@ needs "arith_options.hl";;
 Arith_options.base := 100;;
 Arith_options.min_exp := 300;;
 
+needs "Multivariate/realanalysis.ml";;
 needs "verifier/m_verifier_main.hl";;
 needs "build_tform2.hl";;
