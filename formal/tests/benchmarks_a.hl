@@ -1,99 +1,62 @@
-needs "build_tform2.hl";;
-
-open List;;
-open Proof;;
-open Bin_float;;
-open Build_tform2;;
-
-let path = "../benchmarks/proofs/proofs";;
-
-let load name =
-  let fname = Filename.concat path name in
-    load_proof fname;;
-
-let trans_bound bound_th bound_tm =
-  let vars, tm = strip_forall (concl bound_th) in
-  let ineq_th = UNDISCH_ALL (SPEC_ALL bound_th) in
-  let cond, ineq = dest_imp tm in
-  let bound0_tm = rand ineq in
-  let ineq2 = mk_binary "real_le" (bound0_tm, bound_tm) in
-  let ineq2_th = EQT_ELIM ((REWRITE_CONV[IPOW_NEG; IPOW_NUM] THENC bin_float_rat_conv) ineq2) in
-  let trans_th = MATCH_MP REAL_LE_TRANS (CONJ ineq_th ineq2_th) in
-  let r1 = DISCH cond trans_th in
-    itlist GEN vars r1;;
+needs "tests/utils.hl";;
 
 let add_result, get_result, print_results =
   let results = ref [] in
-  let add name th = 
-    let _ = results := !results @ [name, th] in th in
+  let add name th time = 
+    let _ = results := !results @ [name, (th, time)] in th in
   let get name = assoc name !results in
-  let print1 (name, th) =
+  let print1 (name, (th, time)) =
     let tm = rand (rand (snd (strip_forall (concl th)))) in
-      report (sprintf "%s: %s" name (string_of_term tm)) in
+      report (sprintf "%s (time = %f): %s" name time (string_of_term tm)) in
   let print () =
     let _ = map print1 !results in () in
     add, get, print;;
 
 let pp = 10;;
 
-let proof = load "carbon_gas.proof";;
-let form_th, bound_th = validate_proof 15 proof;;
-add_result "carbon_gas" (trans_bound bound_th `#1.241 * &10 ipow (-- &8)`);;
+let form_th, bound_th, time = validate 15 "carbon_gas.proof";;
+add_result "carbon_gas" (trans_bound bound_th `#1.241 * &10 ipow (-- &8)`) time;;
 
-let proof = load "verhulst.proof";;
-let form_th, bound_th = validate_proof pp proof;;
-add_result "verhulst" (trans_bound bound_th `#3.491 * &10 ipow (-- &16)`);;
+let form_th, bound_th, time = validate pp "verhulst.proof";;
+add_result "verhulst" (trans_bound bound_th `#3.491 * &10 ipow (-- &16)`) time;;
 
-let proof = load "predatorPrey.proof";;
-let form_th, bound_th = validate_proof pp proof;;
-add_result "predatorPrey" (trans_bound bound_th `#1.865 * &10 ipow (-- &16)`);;
+let form_th, bound_th, time = validate pp "predatorPrey.proof";;
+add_result "predatorPrey" (trans_bound bound_th `#1.865 * &10 ipow (-- &16)`) time;;
 
-let proof = load "rigidBody1.proof";;
-let form_th, bound_th = validate_proof pp proof;;
-add_result "rigidBody1" (trans_bound bound_th `#3.865 * &10 ipow (-- &13)`);;
+let form_th, bound_th, time = validate pp "rigidBody1.proof";;
+add_result "rigidBody1" (trans_bound bound_th `#3.865 * &10 ipow (-- &13)`) time;;
 
-let proof = load "rigidBody2.proof";;
-let form_th, bound_th = validate_proof pp proof;;
-add_result "rigidBody2" (trans_bound bound_th `#5.233 * &10 ipow (-- &11)`);;
+let form_th, bound_th, time = validate pp "rigidBody2.proof";;
+add_result "rigidBody2" (trans_bound bound_th `#5.233 * &10 ipow (-- &11)`) time;;
 
-let proof = load "doppler1.proof";;
-let form_th, bound_th = validate_proof pp proof;;
-add_result "doppler1" (trans_bound bound_th `#1.569 * &10 ipow (-- &13)`);;
+let form_th, bound_th, time = validate pp "doppler1.proof";;
+add_result "doppler1" (trans_bound bound_th `#1.569 * &10 ipow (-- &13)`) time;;
 
-let proof = load "doppler2.proof";;
-let form_th, bound_th = validate_proof pp proof;;
-add_result "doppler2" (trans_bound bound_th `#2.870 * &10 ipow (-- &13)`);;
+let form_th, bound_th, time = validate pp "doppler2.proof";;
+add_result "doppler2" (trans_bound bound_th `#2.870 * &10 ipow (-- &13)`) time;;
 
-let proof = load "doppler3.proof";;
-let form_th, bound_th = validate_proof pp proof;;
-add_result "doppler3" (trans_bound bound_th `#8.151 * &10 ipow (-- &14)`);;
+let form_th, bound_th, time = validate pp "doppler3.proof";;
+add_result "doppler3" (trans_bound bound_th `#8.151 * &10 ipow (-- &14)`) time;;
 
-let proof = load "sine.proof";;
-let form_th, bound_th = validate_proof pp proof;;
-add_result "sine" (trans_bound bound_th `#6.702 * &10 ipow (-- &16)`);;
+let form_th, bound_th, time = validate pp "sine.proof";;
+add_result "sine" (trans_bound bound_th `#6.702 * &10 ipow (-- &16)`) time;;
 
-let proof = load "sqroot.proof";;
-let form_th, bound_th = validate_proof pp proof;;
+let form_th, bound_th, time = validate pp "sqroot.proof";;
 add_result "sqroot" (trans_bound bound_th `#7.863 * &10 ipow (-- &16)`);;
 
-let proof = load "sineOrder3.proof";;
-let form_th, bound_th = validate_proof 15 proof;;
-add_result "sineOrder3" (trans_bound bound_th `#9.960 * &10 ipow (-- &16)`);;
+let form_th, bound_th, time = validate_proof 15 "sineOrder3.proof";;
+add_result "sineOrder3" (trans_bound bound_th `#9.960 * &10 ipow (-- &16)`) time;;
 
-let proof = load "turbine1.proof";;
-let form_th, bound_th = validate_proof pp proof;;
-add_result "turbine1" (trans_bound bound_th `#2.494 * &10 ipow (-- &14)`);;
+let form_th, bound_th, time = validate pp "turbine1.proof";;
+add_result "turbine1" (trans_bound bound_th `#2.494 * &10 ipow (-- &14)`) time;;
 
-let proof = load "turbine2.proof";;
-let form_th, bound_th = validate_proof pp proof;;
-add_result "turbine2" (trans_bound bound_th `#3.337 * &10 ipow (-- &14)`);;
+let form_th, bound_th, time = validate pp "turbine2.proof";;
+add_result "turbine2" (trans_bound bound_th `#3.337 * &10 ipow (-- &14)`) time;;
 
-let proof = load "turbine3.proof";;
-let form_th, bound_th = validate_proof pp proof;;
-add_result "turbine3" (trans_bound bound_th `#1.794 * &10 ipow (-- &14)`);;
+let form_th, bound_th, time = validate pp "turbine3.proof";;
+add_result "turbine3" (trans_bound bound_th `#1.794 * &10 ipow (-- &14)`) time;;
 
-let proof = load "jet.proof";;
-let form_th, bound_th = validate_proof pp proof;;
-add_result "jet" (trans_bound bound_th `#1.484 * &10 ipow (-- &11)`);;
+let form_th, bound_th, time = validate pp "jet.proof";;
+add_result "jet" (trans_bound bound_th `#1.484 * &10 ipow (-- &11)`) time;;
 
 print_results();;

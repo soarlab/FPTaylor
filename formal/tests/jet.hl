@@ -1,19 +1,6 @@
-needs "build_tform2.hl";;
+needs "tests/utils.hl";;
 
-open Proof;;
-open List;;
-open Build_tform2;;
-
-let path = "../benchmarks/proofs/proofs";;
-
-let load name =
-  let fname = Filename.concat path name in
-    load_proof fname;;
-
-let pp = 12;;
-
-let proof = load "i6.proof";;
-let tf = snd (hd (build_tform pp proof));;
-let result = prove_bound pp proof tf;;
+let bound_th, time = 
+  validate_bound 10 "jet.proof" `#1.484 * &10 ipow (-- &11)`;;
 
 

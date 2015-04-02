@@ -1,17 +1,11 @@
-open List;;
-open List_eval;;
-open Interval_arith;;
-open Arith_float;;
-open More_float;;
-open Lib;;
-open Tform;;
-open Build_tform;;
+(* fptaylor_path is defined in ../load.hl *)
+
+let path = fptaylor_path ^ "/benchmarks/proofs/proofs";;
+
 open Ipow;;
-open Bin_float;;
-open Eval_expr;;
+open List;;
 open Proof;;
-open Misc_functions;;
-open Misc_vars;;
+open Bin_float;;
 open Build_tform2;;
 
 let trans_bound bound_th bound_tm =
@@ -24,8 +18,6 @@ let trans_bound bound_th bound_tm =
   let trans_th = MATCH_MP REAL_LE_TRANS (CONJ ineq_th ineq2_th) in
   let r1 = DISCH cond trans_th in
     itlist GEN vars r1;;
-
-let path = "../benchmarks/proofs/proofs";;
 
 let load name =
   let fname = Filename.concat path name in
