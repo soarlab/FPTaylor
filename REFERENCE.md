@@ -437,7 +437,7 @@ Specifies the optimization backend of FPTaylor.
   to use this optimization backend.
 
 - `z3` is the optimization backend based on [Z3 SMT
-  solver](http://z3.codeplex.com). Z3 must be installed and its Python
+  solver](https://github.com/Z3Prover/z3). Z3 must be installed and its Python
   binding must work. This optimization backend does not support
   transcendental functions, exact optimization problems, and the
   improved rounding model.

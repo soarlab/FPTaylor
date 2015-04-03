@@ -1,7 +1,7 @@
 FPTaylor Benchmarks
 -------------------
 
-All benchmarks are in the `macro` directory.
+All benchmarks are in the [macro](macro) directory.
 
 The commands
 
