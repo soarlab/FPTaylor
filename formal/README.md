@@ -42,7 +42,7 @@ In the command above, make sure that the path to the file `load.hl` is correct.
 
 6) It may take up to 2 hours before all required files are loaded
 (most time is required for loading HOL Light multivariate analysis
-theory files). When everything is loaded, go to the DMTCP coordinator terminal, and type
+theory files). When everything is loaded, go to the DMTCP coordinator terminal and type
 
     c
 
@@ -95,17 +95,23 @@ Restart HOL Light with the command
 
     dmtcp_restart dmtcp_fptaylor.dmtcp
 
-Try the following commands
+The following commands will verify some simple certificates:
 
     needs "tests/exp1x.hl";;
     needs "tests/hypot.hl";;
     needs "tests/sphere.hl";;
     needs "test/sqrt_sub.hl";;
 
-These commands will verify some simple certificates.
+The next command will verify all FPTaylor benchmarks with polynomial and
+rational functions:
 
     needs "tests/benchmarks_a.hl";;
 
-This command will verify all FPTaylor benchmarks with polynomial and
-rational functions. It requires about 1 hour to complete this
-verification.
+It requires about 1 hour to complete this verification.
+
+The command
+
+    needs "tests/benchmarks_trans_a.hl";;
+
+verifies FPTaylor transcendental benchmarks.  Verification of the
+benchmark `azimuth` takes about 5 hours.
