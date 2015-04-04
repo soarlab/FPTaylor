@@ -14,8 +14,7 @@ Requirements:
 
 - [OCaml](http://ocaml.org/) with a native compiler (do
   not forget `make opt` if you are building from source code). 
-  The easiest way to install OCaml on Ubuntu is
-    sudo apt-get install ocaml
+  The easiest way to install OCaml on Ubuntu is `sudo apt-get install ocaml`
 
 - [Z3](https://github.com/Z3Prover/z3) (optional)
 
