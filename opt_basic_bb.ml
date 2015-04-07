@@ -47,10 +47,12 @@ let gen_bb_opt_code tolx tolfx max_iter fmt =
     p (Format.sprintf 
 	 "  let m, bound, c = Opt0.opt f_X start_interval %f %f (%d) in" 
 	 tolx tolfx max_iter);
+    p "  let _ = Printf.printf \"iter_max = %d\\n\" c in";
     p "  let _ = Printf.printf \"max = %0.20e\\n\" m in";
     p (Format.sprintf 
 	 "  let m, bound, c = Opt0.opt (fun x -> ~-$ (f_X x)) start_interval %f %f (%d) in" 
 	 tolx tolfx max_iter);
+    p "  let _ = Printf.printf \"iter_min = %d\\n\" c in";
     p "  let _ = Printf.printf \"min = %0.20e\\n\" (-. m) in";
     p "  flush stdout"; in
 
@@ -140,6 +142,13 @@ let min_max_expr tolx tolfx max_iter var_bound e =
     ml_name in
   let _ = run_cmd cmd in
   let out = run_cmd exe_name in
-  let min = get_float out "min = " and
-      max = get_float out "max = " in
-  min, max
+  let fmin = get_float out "min = " and
+      fmax = get_float out "max = " in
+  let _ = 
+    if Config.debug then
+      let iter_max = truncate (get_float out "iter_max = ") and
+	  iter_min = truncate (get_float out "iter_min = ") in
+      Log.report (Format.sprintf "iterations(%d, %d): %d" 
+		    iter_max iter_min (max iter_max iter_min))
+    else () in
+  fmin, fmax

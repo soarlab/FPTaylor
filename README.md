@@ -40,7 +40,7 @@ places or to create a symbolic link to it. The environment variable
 can be created with the following commands (in bash):
 
     export FPTAYLOR_BASE=$(pwd)
-    echo "export FPTAYLOR_BASE=$(pwd)" >> ~/.profile
+    echo "export FPTAYLOR_BASE=$(pwd)" >> ~/.bashrc
 
 Benchmarks and Examples
 -----------------------

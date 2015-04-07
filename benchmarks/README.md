@@ -5,6 +5,7 @@ All benchmarks are in the [macro](macro) directory.
 
 The commands
 
+    cd macro
     make taylor-a
     make taylor-trans-a
 
@@ -13,6 +14,7 @@ optimization problem on all benchmarks.
 
 The commands
 
+    cd macro
     make taylor-b
     make taylor-trans-b
 

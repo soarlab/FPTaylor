@@ -109,6 +109,7 @@ let get_float_option name default =
   try stof (find name) with _ -> default
   
   (* General paramaters *)
+let debug = stob (findd "false" "debug")
 let proof_flag = stob (findd "false" "proof-record")
 let fail_on_exception = stob (findd "false" "fail-on-exception")
 let uncertainty = stob (findd "false" "uncertainty")
@@ -161,6 +162,7 @@ let print_options fmt =
   pb "opt-approx" opt_approx;
   pb "opt-exact" opt_exact;
   pf "opt-tol" opt_tol;
+  pi "opt-iterations" (get_int_option "bb-iter" (-1));
 (*  pi "fp" fp;*)
   pb "fp-power2-model" fp_power2_model;
 (*  ps "rounding" rounding;*)
