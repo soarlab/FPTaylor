@@ -60,7 +60,14 @@ let parse_config_file fname =
   List.iter (fun (k, v) -> Hashtbl.replace param_tbl k v) param_values;
   ()
 
-let base_dir = Filename.dirname Sys.executable_name
+let base_dir = 
+  let path =
+    try
+      Sys.getenv "FPTAYLOR_BASE"
+    with Not_found ->
+      Filename.dirname Sys.executable_name in
+  let _ = Log.report (Format.sprintf "Base path: %s" path) in
+  path
 
 let cfg_files, input_files = parse_args ()
 let _ = 

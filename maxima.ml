@@ -25,7 +25,7 @@ let maxima cmd =
     let fd = open_in tmp in
     let data = input_line fd in
     let _ = close_in fd; Sys.remove tmp in
-    data;;
+    data
 
 let test_maxima () =
   try 
@@ -34,11 +34,27 @@ let test_maxima () =
    
 let maxima_expr str =
   let out = maxima str in
-  Parser.parse_expr out;;
+  try
+    Parser.parse_expr out
+  with
+    | Failure msg ->
+      Log.error (Format.sprintf "Cannot parse Maxima output: %s" out);
+      failwith msg
+    | _ ->
+      Log.error (Format.sprintf "Cannot parse Maxima output: %s" out);
+      failwith "parsing error"
 
 let simplify e =
-  let str = "factor(" ^ print_expr_str e ^ ")" in
-  maxima_expr str
+  try
+    let str = "factor(" ^ print_expr_str e ^ ")" in
+    maxima_expr str
+  with 
+    | Failure msg -> 
+      Log.error (Format.sprintf "Simplification failed: %s" msg);
+      e
+    | _ -> 
+      Log.error (Format.sprintf "Simplification failed (unknown error)");
+      e
 
 let diff v e =
   let str = "diff(" ^ print_expr_str e ^ ", " ^ v ^ ")" in

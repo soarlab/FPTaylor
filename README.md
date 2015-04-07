@@ -10,6 +10,8 @@ Try out FPTaylor without installing it at
 Linux Setup
 -----------
 
+Steps below have been tested on Ubuntu 12.04 and Ubuntu 14.04.
+
 Requirements:
 
 - [OCaml](http://ocaml.org/) with a native compiler (do
@@ -29,6 +31,16 @@ Requirements:
 The following command will build FPTaylor and the interval computation library:
 
     make all
+
+The executable FPTaylor file is called `fptaylor`. It is recommended
+to create the environment variable `FPTAYLOR_BASE` which contains the
+path to the base FPTaylor directory.  If this environment variable is
+created, then it will be possible to copy `fptaylor` to different
+places or to create a symbolic link to it. The environment variable
+can be created with the following commands (in bash):
+
+    export FPTAYLOR_BASE=$(pwd)
+    echo "export FPTAYLOR_BASE=$(pwd)" >> ~/.profile
 
 Benchmarks and Examples
 -----------------------
