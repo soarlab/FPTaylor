@@ -7,6 +7,7 @@ SRC=	lib.ml\
 	log.ml\
 	more_num.ml\
 	rounding.ml\
+	binary_float.ml\
 	expr.ml\
 	eval.ml\
 	environment.ml\
