@@ -7,6 +7,15 @@ Demo
 Try out FPTaylor without installing it at
 [Aptlab](https://www.aptlab.net/p/FPTaylor/FPTaylorVM)
 
+Publications
+------------
+
+- A. Solovyev, C. Jacobsen, Z. Rakamaric, G. Gopalakrishnan,
+[*Rigorous Estimation of Floating-Point Round-off Errors with Symbolic Taylor Expansions*](http://soarlab.org/2015/04/fm2015-sjrg/). (FM 2015)
+
+- C. Jacobsen, A. Solovyev, G. Gopalakrishnan,
+[*A parametrized Floating-Point Formalization in HOL Light*](http://www.cs.utah.edu/fv/papers/nsv15-fp-hol-light.pdf). (NSV 2015)
+
 Linux Setup
 -----------
 
