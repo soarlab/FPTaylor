@@ -51,6 +51,20 @@ let select_rnd = new_definition
 let select_rnd_bin = new_definition
   `select_rnd_bin(c, e2, d2) = select_rnd_gen(p2max, c, e2, d2)`;;
 
+let sub2 = new_definition 
+  `!x y. sub2 x y = if (x / &2 <= y /\ y <= &2 * x) then &0 else x - y`;;
+
+let sub2_max = prove
+  (`!a b c d x y. a <= x /\ x <= b /\ c <= y /\ y <= d
+   ==> sub2 x y <= if (b / &2 <= c /\ c <= &2 * b) then &0 else b - c`,
+   REWRITE_TAC[sub2] THEN REAL_ARITH_TAC);;
+
+let sub2_min = prove
+  (`!a b c d x y. a <= x /\ x <= b /\ c <= y /\ y <= d
+     ==> (if (a / &2 <= d /\ d <= &2 * a) then &0 else a - d) <= sub2 x y`,
+   REWRITE_TAC[sub2] THEN REAL_ARITH_TAC);;
+
+
 (* --------------------------------------------- *)
 (* Theorems                                      *)
 (* --------------------------------------------- *)

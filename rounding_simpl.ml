@@ -90,8 +90,8 @@ let simplify_rounding =
 		if (is_subtype (get_type e1) rnd.fp_type && 
 		      is_subtype (get_type e2) rnd.fp_type &&
 		      not Config.proof_flag) then
-		(* Delta = 0 *)
-		  Rounding ({rnd with delta_exp = 0}, arg)
+		(* delta = 0 *)
+		  Rounding ({rnd with delta_exp = 0; special_flag = true;}, arg)
 		else
 		  Rounding (rnd, arg)
 	      (* Multiplication *)
@@ -104,8 +104,12 @@ let simplify_rounding =
 		  is_power_of_2_or_0 e2 && 
 		    is_subtype (get_type e1) rnd.fp_type &&
 		    not Config.proof_flag ->
-		(* Eps = 0 *)
+		(* eps = 0 *)
 		Rounding ({rnd with eps_exp = 0}, arg)
+	      (* Square root *)
+	      | U_op (Op_sqrt, e1) ->
+		(* delta = 0 *)
+		Rounding ({rnd with delta_exp = 0}, arg)
 	      | _ -> Rounding (rnd, arg)
 	end 
   in

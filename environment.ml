@@ -180,6 +180,7 @@ let rec transform_raw_expr = function
 	| "*" -> Bin_op (Op_mul, e1, e2)
 	| "/" -> Bin_op (Op_div, e1, e2)
 	| "^" -> Bin_op (Op_nat_pow, e1, e2)
+	| "sub2" -> Bin_op (Op_sub2, e1, e2)
 	| _ -> failwith ("transform_raw_expr: Unknown binary operation: " ^ str)
     end
   | Raw_gen_op (str, args) ->

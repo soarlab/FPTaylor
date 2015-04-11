@@ -104,7 +104,10 @@ let counter = ref 0
 
 let min_max_expr tolx tolfx max_iter var_bound e =
 (*  let _ = counter := !counter + 1 in *)
-
+  let _ = 
+    if Config.debug then
+      Log.report (Format.sprintf "bb_opt: tolx = %e, tolf = %e, iters = %d"
+		    tolx tolfx max_iter) in
   let base = Config.base_dir in
   let tmp = Lib.get_dir "tmp" in
   let ml_name = Filename.concat tmp "bb.ml" in

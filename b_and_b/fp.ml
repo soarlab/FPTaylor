@@ -31,3 +31,11 @@ let sym_interval_I x =
     low = -.f;
     high = f;
   }
+
+let sub2 (x, y) = 
+  if (0.5 *. x <= y && y <= 2.0 *. x) then 0.0 else x -. y
+
+let sub2_I (x, y) = {
+  low = sub2 (x.low, y.high);
+  high = sub2 (x.high, y.low);
+}

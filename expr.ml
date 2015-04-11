@@ -40,6 +40,7 @@ type op_type =
   | Op_log
   | Op_fma
   | Op_nat_pow
+  | Op_sub2
   | Op_floor_power2
   | Op_sym_interval
 
@@ -76,8 +77,11 @@ let mk_const c = Const c and
     mk_div a b = Bin_op (Op_div, a, b) and
     mk_nat_pow a b = Bin_op (Op_nat_pow, a, b) and
     mk_fma a b c = Gen_op (Op_fma, [a; b; c]) and
+    mk_sub2 a b = Bin_op (Op_sub2, a, b) and
     mk_floor_power2 a = U_op (Op_floor_power2, a) and
     mk_sym_interval a = U_op (Op_sym_interval, a)
+
+let mk_floor_sub2 a b = mk_floor_power2 (mk_sub2 a b)
 
 let rec eq_expr e1 e2 =
   match (e1, e2) with
@@ -140,6 +144,7 @@ let op_name_in_env env op =
       | Op_log -> "log"
       | Op_fma -> "fma"
       | Op_nat_pow -> "^" 
+      | Op_sub2 -> "sub2"
       | Op_floor_power2 -> "floor_power2"
       | Op_sym_interval -> "sym_interval"
 
@@ -177,6 +182,7 @@ let z3py_print_env = {
     match op with
       | Op_nat_pow -> true, "**"
       | Op_abs | Op_sin | Op_cos | Op_tan | Op_atan | Op_exp | Op_log
+      | Op_sub2 | Op_floor_power2 | Op_sym_interval
 	-> failwith ("z3py: " ^ op_name op ^ " is not supported")
       | _ -> false, "");
 
@@ -205,6 +211,7 @@ let ocaml_float_print_env = {
     | Op_div -> true, "/."
     | Op_abs -> true, "abs_float"
     | Op_nat_pow -> true, "**"
+    | Op_sub2 -> true, "sub2"
     | Op_floor_power2 -> true, "floor_power2"
     | Op_sym_interval -> true, "sym_interval_float"
     | _ -> false, "");
@@ -238,6 +245,7 @@ let ocaml_interval_print_env = {
     | Op_exp -> true, "exp_I"
     | Op_log -> true, "log_I"
     | Op_nat_pow -> true, "**$"
+    | Op_sub2 -> true, "sub2_I"
     | Op_floor_power2 -> true, "floor_power2_I"
     | Op_sym_interval -> true, "sym_interval_I"
     | _ -> false, "");
@@ -287,6 +295,7 @@ let racket_interval_env_op_name = function
   | Op_exp -> true, "iexp"
   | Op_log -> true, "ilog"
   | Op_nat_pow -> true, "iexpt"
+  | Op_sub2 -> true, "isub2"
   | Op_floor_power2 -> true, "ifloor-pow2"
   | Op_sym_interval -> true, "sym-interval"
   | _ -> false, ""

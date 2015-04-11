@@ -110,7 +110,7 @@ let errors =
     max x y 
   in
   let compute_bound tolf (e, err) =
-    let min, max = Opt.optimize 0.01 tolf e in
+    let min, max = Opt.optimize tolf e in
     let bound = abs (min, max) in
     let _ = report (Format.sprintf "%d: exp = %d: %f, %f (%f)" err.index err.exp min max bound) in
     bound, err.exp 
@@ -157,7 +157,7 @@ let errors =
 	let _ = Out_racket.create_racket_file "abs_exact" 
 	  "fptaylor-abs" total2 exp full_expr in
 
-	let min, max = Opt.optimize 0.01 tol full_expr in
+	let min, max = Opt.optimize tol full_expr in
 	let _ = report (Format.sprintf "exact min, max (exp = %d): %f, %f" exp min max) in
 	let total = (get_eps exp *^ abs (min, max)) +^ total2 in
 	let _ = report (Format.sprintf "exact total: %e\ntotal2: %e" total total2) in
@@ -201,7 +201,7 @@ let errors =
 	  let _ = Out_racket.create_racket_file "rel_exact" 
 	    "fptaylor-rel" b2 exp full_expr in
 
-	  let min, max = Opt.optimize 0.01 tol full_expr in
+	  let min, max = Opt.optimize tol full_expr in
 	  let _ = report (Format.sprintf "exact min-rel, max-rel (exp = %d): %f, %f" exp min max) in
 	  let total = (get_eps exp *^ abs (min, max)) +^ b2 in
 	  let _ = report (Format.sprintf "exact total-rel: %e\ntotal2: %e" total b2) in
@@ -211,7 +211,7 @@ let errors =
   in
   fun pi form ->
     let tol = Config.opt_tol in
-    let f_min, f_max = Opt.optimize 0.01 tol form.v0 in
+    let f_min, f_max = Opt.optimize tol form.v0 in
     let _ = report (Format.sprintf "bounds: [%e, %e]" f_min f_max) in
     let pi = {pi with real_min = f_min; real_max = f_max} in
     let pi =

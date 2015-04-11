@@ -27,6 +27,7 @@ type rnd_info = {
   coefficient : float;
   fp_type : value_type;
   rnd_type : rnd_type;
+  special_flag : bool;
 }
 
 let mk_value_type bits = { bits = bits }
@@ -75,6 +76,7 @@ let create_rounding bits rnd c =
     coefficient = if dir_flag then 2.0 *. c else c;
     fp_type = fp_type;
     rnd_type = rnd_type;
+    special_flag = false;
   }
 
 let create_explicit_rounding bits rnd c eps delta = {
@@ -84,6 +86,7 @@ let create_explicit_rounding bits rnd c eps delta = {
   coefficient = c;
   fp_type = { bits = bits };
   rnd_type = snd (string_to_rnd_type rnd);
+  special_flag = false;
 }
 
 let rounding_table = [
@@ -152,3 +155,6 @@ let floor_power2 =
       | FP_nan -> f
       | FP_normal | FP_subnormal -> 
 	if f < 0.0 then -.p2 (-.f) else p2 f
+
+let sub2 x y = 
+  if (0.5 *. x <= y && y <= 2.0 *. x) then 0.0 else x -. y

@@ -15,6 +15,7 @@ open Num
 open List
 open Lib
 open Rounding
+open Binary_float
 open Expr
 
 (* Describes an error variable *)
@@ -79,7 +80,7 @@ let estimate_expr, reset_estimate_cache =
   let estimate vars e =
     if Config.get_bool_option "intermediate-opt" false then
       let _ = Log.report ("Estimating: " ^ print_expr_str e) in
-      let min, max = Opt.optimize 0.01 Config.opt_tol e in
+      let min, max = Opt.optimize Config.opt_tol e in
       let _ = Log.report 
 	(Printf.sprintf "Estimation result: [%f, %f]" min max) in
       {low = min; high = max}
@@ -181,8 +182,37 @@ let const_form e =
       }
     | _ -> failwith ("const_form: not a constant" ^ print_expr_str e)
 
+(* Constant with rounding *)
+(* TODO: subnormal numbers are incorrectly handled by bin_float_of_num *)
+let precise_const_rnd_form rnd e =
+  match e with
+    | Const c ->
+      let x = bin_float_of_num (-rnd.eps_exp) rnd.rnd_type c.rational_v in
+      let rc = num_of_bin_float x in
+      let d = c.rational_v -/ rc in
+      (* exact fp number *)
+      if d =/ Int 0 then
+	const_form e
+      else
+	let form_index = next_form_index() in
+	let err_expr = mk_const (const_of_num (d // (Int 2 **/ Int rnd.eps_exp))) in
+	let err = mk_err_var (find_index (mk_rounding rnd e)) rnd.eps_exp in
+	let _ = Log.warning (Format.sprintf "Inexact constant: %s; err = %s"
+			       (print_expr_str e)
+			       (print_expr_str err_expr)) in
+	{
+	  form_index = form_index;
+	  v0 = e;
+	  v1 = [err_expr, err]
+	}
+    | _ -> failwith ("precise_const_rnd_form: not a constant: " ^ print_expr_str e)
+	
+
 (* constant with rounding *)
 let const_rnd_form rnd e =
+  if Config.get_bool_option "develop" false then
+    precise_const_rnd_form rnd e
+  else
   match e with
     | Const c -> 
       if is_fp_exact (get_eps rnd.eps_exp) c then 
@@ -353,6 +383,35 @@ let sub_form f1 f2 =
     v0 = mk_sub f1.v0 f2.v0;
     v1 = f1.v1 @ map (fun (e, err) -> mk_neg e, err) f2.v1;
   }
+
+(* rounded subtraction *)
+let rounded_sub_form vars original_expr rnd f1 f2 =
+  let _ = Log.report "rounded_sub_form" in
+  let i = find_index original_expr in
+  let s1', exp1 = sum_high (abs_eval_v1 vars f1.v1) in
+  let s2', exp2 = sum_high (abs_eval_v1 vars f2.v1) in
+  let s1 = make_stronger (get_eps exp1 *^ s1') in
+  let s2 = make_stronger (get_eps exp2 *^ s2') in
+  let r' = mk_floor_sub2 (mk_add f1.v0 (mk_sym_interval (fp_to_const s1)))
+                         (mk_add f2.v0 (mk_sym_interval (fp_to_const s2))) in
+  let r = 
+    if rnd.coefficient = 1.0 then
+      r'
+    else
+      mk_mul (fp_to_const rnd.coefficient) r' in
+  let form_index = next_form_index() in
+  let r_err = mk_err_var i rnd.eps_exp in
+  {
+    form_index = form_index;
+    v0 = mk_sub f1.v0 f2.v0;
+    v1 = (r, r_err) :: (f1.v1 @ map (fun (e, err) -> mk_neg e, err) f2.v1);
+  }
+  
+(* rounded addition *)
+let rounded_add_form vars original_expr rnd f1 f2 =
+  let _ = Log.report "rounded_add_form" in
+  rounded_sub_form vars original_expr rnd f1 (neg_form f2)
+
 
 (* multiplication *)
 let mul_form =
@@ -637,6 +696,12 @@ let build_form vars =
 	  (* when not Config.proof_flag *) -> const_rnd_form rnd (Const c)
       | Rounding (rnd, Var v) 
 	  (* when not Config.proof_flag *) -> var_rnd_form rnd (Var v)
+      | Rounding (rnd, Bin_op (Op_add, arg1, arg2)) 
+	  when rnd.special_flag && Config.fp_power2_model && Config.get_bool_option "develop" false ->
+	rounded_add_form vars e rnd (build arg1) (build arg2)
+      | Rounding (rnd, Bin_op (Op_sub, arg1, arg2))
+	  when rnd.special_flag && Config.fp_power2_model && Config.get_bool_option "develop" false ->
+	rounded_sub_form vars e rnd (build arg1) (build arg2)
       | Rounding (rnd, arg) -> 
 	let arg_form = build arg in
 	rounded_form vars e rnd arg_form
