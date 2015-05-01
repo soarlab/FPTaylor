@@ -196,7 +196,10 @@ let precise_const_rnd_form rnd e =
       else
 	let form_index = next_form_index() in
 	let err_expr = mk_const (const_of_num (d // (Int 2 **/ Int rnd.eps_exp))) in
-	let err = mk_err_var (find_index (mk_rounding rnd e)) rnd.eps_exp in
+(*	let err = mk_err_var (find_index (mk_rounding rnd e)) rnd.eps_exp in *)
+	(* Exact errors for constants can cancel each other: 
+	   use the same artificial constant (const_0) for indices *)
+	let err = mk_err_var (find_index (mk_rounding rnd const_0)) rnd.eps_exp in
 	let _ = Log.warning (Format.sprintf "Inexact constant: %s; err = %s"
 			       (print_expr_str e)
 			       (print_expr_str err_expr)) in

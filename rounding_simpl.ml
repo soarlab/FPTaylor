@@ -28,6 +28,15 @@ let is_power_of_2_or_0 e =
       n =/ Int 0 || More_num.is_power_of_two n
     | _ -> false
 
+let is_neg_power_of_2 e =
+  match e with
+    | Const c ->
+      let n = c.rational_v in
+      if n <>/ Int 0 then
+	More_num.is_power_of_two (Int 1 // n)
+      else
+	false
+    | _ -> false
 
 let rec get_type e =
   match e with
@@ -99,6 +108,10 @@ let simplify_rounding =
 		  (is_power_of_2_or_0 e1 && is_subtype (get_type e2) rnd.fp_type) 
 		  || (is_power_of_2_or_0 e2 && is_subtype (get_type e1) rnd.fp_type) ->
 		arg
+	      | Bin_op (Op_mul, e1, e2) when 
+		  (is_neg_power_of_2 e1 && is_subtype (get_type e2) rnd.fp_type) 
+		  || (is_neg_power_of_2 e2 && is_subtype (get_type e1) rnd.fp_type) ->
+		Rounding ({rnd with eps_exp = 0}, arg)
 	      (* Division *)
 	      | Bin_op (Op_div, e1, e2) when
 		  is_power_of_2_or_0 e2 && 
@@ -106,6 +119,9 @@ let simplify_rounding =
 		    not Config.proof_flag ->
 		(* eps = 0 *)
 		Rounding ({rnd with eps_exp = 0}, arg)
+	      | Bin_op (Op_div, e1, e2) when
+		  is_neg_power_of_2 e2 && is_subtype (get_type e1) rnd.fp_type ->
+		arg
 	      (* Square root *)
 	      | U_op (Op_sqrt, e1) ->
 		(* delta = 0 *)
