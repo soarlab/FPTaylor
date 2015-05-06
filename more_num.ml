@@ -22,37 +22,69 @@ let denominator = function
   | Ratio r -> Ratio.denominator_ratio r
   | _ -> Big_int.big_int_of_int 1
 
-let decode_num_str str =
-  let int_of_string str =
-    let s = if str.[0] = '+' then 
-	String.sub str 1 (String.length str - 1) 
-      else
-	str in
-    Pervasives.int_of_string s in
+type gen_float = {
+  base : int;
+  significand : num;
+  exponent : num;
+}
+
+let num_of_gen_float f =
+  (* Bound the exponent to avoid huge numbers *)
+  if f.exponent <=/ Int (-100000) || f.exponent >=/ Int 100000 then
+    failwith "num_of_gen_float: the exponent is out of bounds"
+  else
+    f.significand */ (Int f.base **/ f.exponent)
+
+let decode_num_str =
   let split_at str ch = 
+    let n = String.length str in
     let i = try String.index str ch with Not_found -> -1 in
-    if i < 0 || i >= String.length str then
+    if i < 0 || i >= n then
       str, ""
     else
       String.sub str 0 i,
-      String.sub str (i + 1) (String.length str - i - 1) in
-  let s_int, s2 = split_at str '.' in
-  let s_int, s_dec, s_exp =
-    if s2 = "" then
-      let s1, s2 = split_at s_int 'e' in
-      s1, "", s2
+      String.sub str (i + 1) (n - i - 1) 
+  in
+  let starts_with str prefix =
+    let len_str = String.length str and
+	len_p = String.length prefix in
+    if len_p > len_str then
+      false
     else
-      let s1, s2 = split_at s2 'e' in
-      s_int, s1, s2 in
-  let m_int = Big_int.big_int_of_string (s_int ^ s_dec) and
-      n_exp = if s_exp <> "" then int_of_string s_exp else 0 in
-  let exp = n_exp - String.length s_dec in
-  m_int, exp
+      String.sub str 0 len_p = prefix
+  in
+  let extract_exp str =
+    let s1, s2 = split_at str 'p' in
+    if s2 <> "" then
+      s1, 2, s2
+    else
+      let s1, s2 = split_at str 'e' in
+      if s2 <> "" then
+	s1, 10, s2
+      else
+	s1, 10, "0"
+  in
+  let compute_exp_shift hex base s_frac =
+    let n = String.length s_frac in
+    if n = 0 then 0 else
+      match (hex, base) with
+	| true, 2 -> n * 4
+	| false, 10 -> n
+	| _ -> failwith "Fractional part is not allowed for the given base"
+  in
+  fun str ->
+    let hex = starts_with str "0x" || starts_with str "-0x" in
+    let s_significand, base, s_exp = extract_exp str in
+    let s_int, s_frac = split_at s_significand '.' in
+    let exp_shift = compute_exp_shift hex base s_frac in
+    {
+      base = base;
+      significand = num_of_string (s_int ^ s_frac);
+      exponent = num_of_string s_exp -/ Int exp_shift;
+    }
 
 let num_of_float_string str =
-  let m, exp = decode_num_str str in
-  let t = power_num (Int 10) (Int exp) in
-  Big_int m */  t
+  num_of_gen_float (decode_num_str str)
 
 let interval_of_big_int =
   let max, (<), (>>), (&) = 

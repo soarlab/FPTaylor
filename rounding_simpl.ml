@@ -44,13 +44,11 @@ let rec get_type e =
     | Const c ->
       (* TODO: a universal procedure is required *)
       let rnd = string_to_rounding "rnd32" in
-      let t = bin_float_of_num (-rnd.eps_exp) rnd.rnd_type c.rational_v in
-      if num_of_bin_float t =/ c.rational_v then
+      if round_num rnd c.rational_v =/ c.rational_v then
 	rnd.fp_type
       else
 	let rnd = string_to_rounding "rnd64" in
-	let t = bin_float_of_num (-rnd.eps_exp) rnd.rnd_type c.rational_v in
-	if num_of_bin_float t =/ c.rational_v then
+	if round_num rnd c.rational_v =/ c.rational_v then
 	  rnd.fp_type
 	else
 	  real_type

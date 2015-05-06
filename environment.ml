@@ -19,7 +19,7 @@ open Interval
 
 type raw_expr =
   | Identifier of string
-  | Numeral of string
+  | Numeral of num
   | Raw_rounding of rnd_info * raw_expr
   | Raw_u_op of string * raw_expr
   | Raw_bin_op of string * raw_expr * raw_expr
@@ -190,11 +190,11 @@ let rec transform_raw_expr = function
 	| "fma" -> Gen_op (Op_fma, es)
 	| _ -> failwith ("transform_raw_expr: Unknown operation: " ^ str)
     end
-  | Numeral str ->
+  | Numeral n ->
     let c = {
-      rational_v = More_num.num_of_float_string str;
-      float_v = float_of_string str;
-      interval_v = More_num.interval_of_string str;
+      rational_v = n;
+      float_v = float_of_num n;
+      interval_v = More_num.interval_of_num n;
     } in
     Const c
   | Identifier name ->
@@ -245,7 +245,7 @@ let add_variable_with_uncertainty var_type name lo hi uncertainty =
     Hashtbl.add env.variables name v
 
 let add_variable var_type name lo hi =
-  add_variable_with_uncertainty var_type name lo hi (Numeral "0")
+  add_variable_with_uncertainty var_type name lo hi (Numeral (Int 0))
 
 (* Adds a definition to the environment *)
 let add_definition name raw =
@@ -280,7 +280,7 @@ let print_raw_expr fmt =
   let p = Format.pp_print_string fmt in
   let rec print = function
     | Identifier name -> p name
-    | Numeral n -> p n
+    | Numeral n -> p (string_of_num n)
     | Raw_rounding (rnd, e) ->
       p (rounding_to_string rnd); p "("; print e; p ")";
     | Raw_u_op (op, e) -> 

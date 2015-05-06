@@ -11,9 +11,14 @@
 }
 
 let digit = ['0'-'9']
+let hex_digit = ['0'-'9' 'a'-'f' 'A'-'F']
 let alpha = ['a'-'z' 'A'-'Z' '_']
 let id = alpha (alpha | digit)*
-let number = (digit+ ('.' digit*)?)('e'['-' '+']?digit+)?
+let numeral = (("0x" (hex_digit+ ('.' hex_digit*)?)) |
+               (digit+ ('.' digit*)?)) 
+              (['e' 'p'] ['-' '+']? digit+)?
+let double_numeral = numeral 'd'
+let single_numeral = numeral 'f'
 
 rule token = parse
   | "//" [^ '\n']*
@@ -29,7 +34,9 @@ rule token = parse
   | "constraints" { CONSTRAINTS }
   | "Expressions"
   | "expressions" { EXPRESSIONS }
-  | number as str { NUMBER str }
+  | single_numeral as str { SINGLE_NUMERAL (String.sub str 0 (String.length str - 1)) }
+  | double_numeral as str { DOUBLE_NUMERAL (String.sub str 0 (String.length str - 1)) }
+  | numeral as str { NUMBER str }
   | '(' { LPAREN }
   | ')' { RPAREN }
   | '[' { LBRACKET }

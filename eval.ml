@@ -13,6 +13,7 @@
 open Interval
 open Num
 open Rounding
+open Binary_float
 open Expr
 open List
 
@@ -96,8 +97,7 @@ let eval_num_expr vars =
   let rec eval = function
     | Const c -> c.rational_v
     | Var v -> vars v
-    | Rounding _ as expr -> failwith ("eval_num_expr: Rounding is not supported: " ^
-					 print_expr_str expr)
+    | Rounding (rnd, arg) -> round_num rnd (eval arg)
     | U_op (op, arg) ->
       begin
 	let x = eval arg in
@@ -196,8 +196,12 @@ let eval_interval_const_expr =
   eval_interval_expr (fun v -> failwith ("eval_interval_const_expr: Var " ^ v))
 
 
-let eval_const_expr e = {
-  rational_v = eval_num_const_expr e;
-  float_v = eval_float_const_expr e;
-  interval_v = eval_interval_const_expr e;
-}
+let eval_const_expr e = 
+  let _ = Log.report ("eval_const_expr: " ^ print_expr_str e) in
+  let n = eval_num_const_expr e in
+  let _ = Log.report ("result: " ^ string_of_num n) in
+  {
+    rational_v = n;
+    float_v = float_of_num n;
+    interval_v = More_num.interval_of_num n;
+  }
