@@ -16,6 +16,7 @@ open Num
 open Rounding
 open Expr
 open Interval
+open Binary_float
 module Env = Environment
 
 exception Exceptional_operation of expr * string
@@ -40,7 +41,19 @@ let is_neg_power_of_2 e =
 
 let rec get_type e =
   match e with
-    | Const _ -> real_type
+    | Const c ->
+      (* TODO: a universal procedure is required *)
+      let rnd = string_to_rounding "rnd32" in
+      let t = bin_float_of_num (-rnd.eps_exp) rnd.rnd_type c.rational_v in
+      if num_of_bin_float t =/ c.rational_v then
+	rnd.fp_type
+      else
+	let rnd = string_to_rounding "rnd64" in
+	let t = bin_float_of_num (-rnd.eps_exp) rnd.rnd_type c.rational_v in
+	if num_of_bin_float t =/ c.rational_v then
+	  rnd.fp_type
+	else
+	  real_type
     | Var name -> Env.get_var_type name
     | U_op (op, arg) ->
       begin
