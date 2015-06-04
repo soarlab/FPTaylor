@@ -1,9 +1,13 @@
 from z3 import *
 
+def z3_abs(x):
+    return If(x >= 0, x, -x)
+
 def find_upper_bound(f, constraints, u, timeout):
     s = Solver()
     if timeout > 0:
-        s.set("soft_timeout", timeout)
+#        s.set("soft_timeout", timeout)
+        s.set("solver2_timeout", timeout)
     while (1):
 #        print u
         s.reset()
@@ -23,7 +27,8 @@ def find_upper_bound(f, constraints, u, timeout):
 def maximize(f, constraints, lb, ub, tol, timeout):
     s = Solver()
     if timeout > 0:
-        s.set("soft_timeout", timeout)
+#        s.set("soft_timeout", timeout)
+        s.set("solver2_timeout", timeout)
 #    s.add(constraints)
     while (ub - lb > tol):
         m = (ub + lb) / 2.0
