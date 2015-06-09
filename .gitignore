@@ -17,6 +17,7 @@ ocamlfpu
 *~
 *.proof
 Fluctuat_*/
+gelpia/
 log/
 tmp/
 test/

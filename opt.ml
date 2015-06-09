@@ -23,11 +23,21 @@ let var_bound_rat name =
 let optimize tolf e =
   let min, max =
     match Config.opt with
-      | "z3" -> Opt_z3.min_max_expr tolf var_bound_rat e
+      | "z3" -> 
+	Opt_z3.min_max_expr tolf var_bound_rat e
       | "bb" -> 
 	let tolx = Config.get_float_option "bb-tolx" 0.01 in
 	let max_iter = Config.get_int_option "bb-iter" (-1) in
 	Opt_basic_bb.min_max_expr tolx tolf max_iter var_bound_float e
-      | "nlopt" -> Opt_nlopt.min_max_expr tolf var_bound_float e
+      | "nlopt" -> 
+	Opt_nlopt.min_max_expr tolf var_bound_float e
+      | "gelpia" -> 
+	let tolx = Config.get_float_option "gelpia-tolx" 0.01 in
+	neg_infinity, Opt_gelpia.abs_max_expr tolx tolf var_bound_float e
       | s -> failwith ("Unsupported optimization engine: " ^ s) in
   min, max
+
+let optimize_abs tolf e =
+  let min_f, max_f = optimize tolf e in
+  max (abs_float min_f) (abs_float max_f)
+

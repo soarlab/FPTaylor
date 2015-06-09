@@ -22,6 +22,7 @@ SRC=	lib.ml\
 	out_racket.ml \
 	opt_utils.ml\
 	opt_basic_bb.ml\
+	opt_gelpia.ml\
 	opt_z3.ml\
 	opt_nlopt.ml\
 	opt.ml\

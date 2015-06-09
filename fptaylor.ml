@@ -104,15 +104,9 @@ let sum_symbolic s = itlist add2_symbolic s (const_0, 0)
 
 
 let errors =
-  let abs (a, b) =
-    let x = abs_float a and
-	y = abs_float b in
-    max x y 
-  in
   let compute_bound tolf (e, err) =
-    let min, max = Opt.optimize tolf e in
-    let bound = abs (min, max) in
-    let _ = report (Format.sprintf "%d: exp = %d: %f, %f (%f)" err.index err.exp min max bound) in
+    let bound = Opt.optimize_abs tolf e in
+    let _ = report (Format.sprintf "%d: exp = %d: %f" err.index err.exp bound) in
     bound, err.exp 
   in
   let rec split es =
@@ -157,9 +151,9 @@ let errors =
 	let _ = Out_racket.create_racket_file "abs_exact" 
 	  "fptaylor-abs" total2 exp full_expr in
 
-	let min, max = Opt.optimize tol full_expr in
-	let _ = report (Format.sprintf "exact min, max (exp = %d): %f, %f" exp min max) in
-	let total = (get_eps exp *^ abs (min, max)) +^ total2 in
+	let bound = Opt.optimize_abs tol full_expr in
+	let _ = report (Format.sprintf "exact bound (exp = %d): %f" exp bound) in
+	let total = (get_eps exp *^ bound) +^ total2 in
 	let _ = report (Format.sprintf "exact total: %e\ntotal2: %e" total total2) in
 	Some total
       else None in
@@ -201,9 +195,9 @@ let errors =
 	  let _ = Out_racket.create_racket_file "rel_exact" 
 	    "fptaylor-rel" b2 exp full_expr in
 
-	  let min, max = Opt.optimize tol full_expr in
-	  let _ = report (Format.sprintf "exact min-rel, max-rel (exp = %d): %f, %f" exp min max) in
-	  let total = (get_eps exp *^ abs (min, max)) +^ b2 in
+	  let bound = Opt.optimize_abs tol full_expr in
+	  let _ = report (Format.sprintf "exact bound-rel (exp = %d): %f" exp bound) in
+	  let total = (get_eps exp *^ bound) +^ b2 in
 	  let _ = report (Format.sprintf "exact total-rel: %e\ntotal2: %e" total b2) in
 	  Some total
 	else None in

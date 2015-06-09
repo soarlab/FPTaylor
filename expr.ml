@@ -177,12 +177,29 @@ let c_print_env = {
       | _ -> false);
 }
 
+let gelpia_print_env = {
+  env_op_name = (function
+    | Op_nat_pow -> true, "pow"
+    | _ -> false, "");
+
+  env_op_infix = (function
+    | Op_nat_pow -> true, false
+    | _ -> false, false);
+
+  env_print = (fun p _ e ->
+    match e with
+      | Const f -> 
+	let _ = p ("(" ^ string_of_float f.float_v ^ ")") in
+	true
+      | _ -> false);
+}
+
 let z3py_print_env = {
   env_op_name = (fun op ->
     match op with
       | Op_nat_pow -> true, "**"
       | Op_abs -> true, "z3_abs"
-      | Op_abs | Op_sin | Op_cos | Op_tan | Op_atan | Op_exp | Op_log
+      | Op_sin | Op_cos | Op_tan | Op_atan | Op_exp | Op_log
       | Op_sub2 | Op_floor_power2 | Op_sym_interval
 	-> failwith ("z3py: " ^ op_name op ^ " is not supported")
       | _ -> false, "");
