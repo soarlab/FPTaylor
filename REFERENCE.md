@@ -427,7 +427,7 @@ support exact optimization problems.
 
 ### `opt`
 
-Possible values: `bb`, `z3`, and `nlopt`.
+Possible values: `bb`, `z3`, `gelpia`, and `nlopt`
 
 Specifies the optimization backend of FPTaylor.
 
@@ -441,6 +441,12 @@ Specifies the optimization backend of FPTaylor.
   binding must work. This optimization backend does not support
   transcendental functions, exact optimization problems, and the
   improved rounding model.
+
+- `gelpia` is the optimization backend based on [Gelpia](https://github.com/keram88/gelpia).
+  Gelpia must be installed and the environment variable `GELPIA_PATH`
+  should point to the Gelpia base directory. Alternatively, Gelpia can be copied
+  directly to the FPTaylor base directory. This optimization backend is experimental
+  and may not support the improved rounding model and other FPTaylor features.
 
 - `nlopt` is the optimization backend based on the [NLOpt optimization
   library](http://ab-initio.mit.edu/wiki/index.php/NLopt). This

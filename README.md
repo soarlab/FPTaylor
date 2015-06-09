@@ -36,6 +36,8 @@ Requirements:
 
 - [Z3](https://github.com/Z3Prover/z3) (optional)
 
+- [Gelpia](https://github.com/keram88/gelpia) (optional)
+
 
 The following command will build FPTaylor and the interval computation library:
 
