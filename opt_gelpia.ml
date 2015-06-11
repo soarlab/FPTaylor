@@ -30,8 +30,8 @@ let gen_gelpia_code fmt =
   let p' str = Format.pp_print_string fmt str in
 
   let parameters pars =
-    p (Format.sprintf "--input-epsilon %f" pars.input_epsilon);
-    p (Format.sprintf "--output-epsilon %f" pars.output_epsilon);
+    p (Format.sprintf "--input-epsilon %e" pars.input_epsilon);
+    p (Format.sprintf "--output-epsilon %e" pars.output_epsilon);
     p (Format.sprintf "--threads %d" pars.threads);
     p (Format.sprintf "--solver %s" pars.solver) in
 

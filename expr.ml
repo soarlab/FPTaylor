@@ -186,11 +186,26 @@ let gelpia_print_env = {
     | Op_nat_pow -> true, false
     | _ -> false, false);
 
-  env_print = (fun p _ e ->
+  env_print = (fun p print e ->
     match e with
       | Const f -> 
-	let _ = p ("(" ^ string_of_float f.float_v ^ ")") in
+	let _ = p (Format.sprintf "interval(%.20e, %.20e)" 
+		     f.interval_v.low f.interval_v.high) in
 	true
+      | Bin_op (Op_nat_pow, arg1, arg2) ->
+	begin
+	  match arg2 with
+	    | Const f -> 
+	      let n = f.rational_v in
+	      if is_integer_num n && n >/ Int 0 then
+		let _ =
+		  p "pow("; print arg1; p ", ";
+		  p (string_of_num n); p ")" in
+		true
+	      else
+		failwith "Op_nat_pow: non-integer exponent"
+	    | _ -> failwith "Op_nat_pow: non-constant exponent"
+	end
       | _ -> false);
 }
 
