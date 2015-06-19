@@ -20,8 +20,7 @@ libinterval.a: chcw.o
 	ranlib $@
 
 ocamlfpu: interval.cma libinterval.a
-	ocamlmktop -o ocamlfpu chcw.o fpu.cmo interval.cma libinterval.a
-
+	ocamlmktop -o ocamlfpu chcw.o fpu.cmo interval.cma libinterval.a nums.cma unix.cma str.cma
 
 .SUFFIXES: .ml .mli .cmo .cmi .cmx
 

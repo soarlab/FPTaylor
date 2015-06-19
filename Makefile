@@ -15,6 +15,7 @@ SRC=	lib.ml\
 	input_parser.ml\
 	input_lexer.ml\
 	parser.ml\
+	proof_base.ml\
 	proof.ml\
 	maxima.ml\
 	config.mli\
@@ -30,6 +31,10 @@ SRC=	lib.ml\
 	taylor_form.ml\
 	fptaylor.ml
 
+PROOF_SRC= lib.ml\
+	   proof_base.ml\
+	   proof_to_text.ml
+
 TEST_DIR=benchmarks/tests
 TESTS=	test01_sum3.txt\
 	test02_sum8.txt\
@@ -42,6 +47,8 @@ OBJ_BYTE = $(OBJ_BYTE0:.mli=.cmi)
 
 OBJ_NATIVE = $(OBJ_BYTE:.cmo=.cmx)
 
+OBJ_PROOF_SRC = $(PROOF_SRC:.ml=.cmo)
+
 TEST = $(addprefix $(TEST_DIR)/,$(TESTS))
 
 all: compile-interval compile-byte
@@ -49,6 +56,9 @@ all: compile-interval compile-byte
 		unix.cma str.cma nums.cma \
 		$(INTERVAL_DIR)/chcw.o interval.cma \
 		$(SRC:.ml=.cmo)
+
+proof-tool: $(OBJ_PROOF_SRC)
+	$(ML) -o proof_to_text unix.cma str.cma nums.cma $(OBJ_PROOF_SRC)
 
 tests:
 	./fptaylor $(TEST)

@@ -647,26 +647,25 @@ let build_tform pp proof =
   in
     replay [] steps;;
 
-let prove_bound =
-  let get_bounds_tm bounds indices approx_th =
-    let _, _, t_tm = dest_approx (concl approx_th) in
-    let _, f1_tm = dest_mk_tform t_tm in
-    let indices0 = map extract_index (dest_list f1_tm) in
-    let indices1 = map (fun i -> index i indices0) indices in
-    let bnds = sort (fun (i1, _) (i2, _) -> compare i1 i2) (zip indices1 bounds) in
-      (* Check that all bounds are present *)
-    let _ = map2 (fun (i1, _) i2 -> 
-		    if i1 <> i2 then error "get_bounds_tm" bounds [approx_th])
-      bnds (0--(length bounds - 1)) in
-      mk_list (map snd bnds, real_ty)
-  in
-    fun pp proof approx_th ->
-      let x_tm, dom_tm, dom_vars, var_names = build_domain pp proof.proof_vars in
-      let opt = hd proof.proof_opts in
-      let bounds = map mk_bin_float opt.opt_bounds in
-      let total_tm = mk_bin_float opt.total_bound in
-      let bounds_tm = get_bounds_tm bounds opt.opt_indices approx_th in
-	prove_opt_approx pp var_names bounds_tm total_tm approx_th;;
+let get_bounds_tm bounds indices approx_th =
+  let _, _, t_tm = dest_approx (concl approx_th) in
+  let _, f1_tm = dest_mk_tform t_tm in
+  let indices0 = map extract_index (dest_list f1_tm) in
+  let indices1 = map (fun i -> index i indices0) indices in
+  let bnds = sort (fun (i1, _) (i2, _) -> compare i1 i2) (zip indices1 bounds) in
+    (* Check that all bounds are present *)
+  let _ = map2 (fun (i1, _) i2 -> 
+		  if i1 <> i2 then error "get_bounds_tm" bounds [approx_th])
+    bnds (0--(length bounds - 1)) in
+    mk_list (map snd bnds, real_ty);;
+
+let prove_bound pp proof approx_th =
+  let x_tm, dom_tm, dom_vars, var_names = build_domain pp proof.proof_vars in
+  let opt = hd proof.proof_opts in
+  let bounds = map mk_bin_float opt.opt_bounds in
+  let total_tm = mk_bin_float opt.total_bound in
+  let bounds_tm = get_bounds_tm bounds opt.opt_indices approx_th in
+    prove_opt_approx pp var_names bounds_tm total_tm approx_th;;
 
 let validate_proof pp proof =
   let ths = build_tform pp proof in
