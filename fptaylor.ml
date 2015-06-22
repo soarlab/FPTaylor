@@ -148,8 +148,10 @@ let errors =
 	let full_expr', exp = sum_symbolic abs_exprs in
 	let full_expr = if Config.simplification then Maxima.simplify full_expr' else full_expr' in
 
-	let _ = Out_racket.create_racket_file "abs_exact" 
-	  "fptaylor-abs" total2 exp full_expr in
+	let _ = 
+	  Out_racket.create_racket_file "abs_exact" 
+	    "fptaylor-abs" total2 exp full_expr;
+	  Out_test.create_test_file "test_abs_exact.txt" full_expr in
 
 	let bound = Opt.optimize_abs tol full_expr in
 	let _ = report (Format.sprintf "exact bound (exp = %d): %f" exp bound) in
@@ -192,8 +194,10 @@ let errors =
 	  let full_expr', exp = sum_symbolic abs_exprs in
 	  let full_expr = if Config.simplification then Maxima.simplify full_expr' else full_expr' in
 
-	  let _ = Out_racket.create_racket_file "rel_exact" 
-	    "fptaylor-rel" b2 exp full_expr in
+	  let _ = 
+	    Out_racket.create_racket_file "rel_exact" 
+	      "fptaylor-rel" b2 exp full_expr;
+	    Out_test.create_test_file "test_rel_exact.txt" full_expr in
 
 	  let bound = Opt.optimize_abs tol full_expr in
 	  let _ = report (Format.sprintf "exact bound-rel (exp = %d): %f" exp bound) in
