@@ -43,7 +43,14 @@ let opt0 f x_tol f_tol max_iter =
 	if acc = [] then
 	  m, bound
 	else
-	  opt m bound acc []
+	  (* Gives "Stack overflow" error for macro2/delta.txt *)
+(*	  let doms0 = List.sort (fun (v1, _) (v2, _) -> compare v2 v1) acc in
+	  let doms1 = List.map snd doms0 in
+*)
+	  let doms0 = Array.of_list acc in
+	  let _ = Array.sort (fun (v1, _) (v2, _) -> compare v2 v1) doms0 in
+	  let doms1 = Array.to_list (Array.map snd doms0) in
+	  opt m bound doms1 []
       | dom :: rest ->
 	let v = f dom.bounds in
 	if v.high <= bound then
@@ -57,14 +64,14 @@ let opt0 f x_tol f_tol max_iter =
 	      v2_mid = f d_mid in
 	  let v2 = max (max v2_min.low v2_max.low) v2_mid.low in
 	  let bound = max v2 bound in
-	  if abs_float (v.high -. v2) <= f_tol || 
+	  if abs_float (v.high -. v2) <= f_tol *. abs_float v2 +. f_tol || 
 	    size_max_X dom.bounds <= x_tol ||
 	    (max_iter >= 0 && !counter >= max_iter) then
 	    opt (max m v.high) bound rest acc
 	  else
 	    let _ = counter := !counter + 1 in
 	    let d1, d2 = split_dom dom in
-	    opt (max m bound) bound rest (d1 :: d2 :: acc)
+	    opt (max m bound) bound rest ((v2, d1) :: (v2, d2) :: acc)
   in
   fun m bound doms acc ->
     let _ = counter := 0 in
