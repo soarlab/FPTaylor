@@ -490,7 +490,7 @@ end. This summary contains the following information
   optimization problem if `abs-error = true` and `opt-approx = true`.
 
 - The relative round-off error obtained with the exact optimization
-  problem if `rel-error = true` and `opt-approx = true`.
+  problem if `rel-error = true` and `opt-exact = true`.
 
 - The relative round-off error obtained with the approximate
   optimization problem if `rel-error = true` and `opt-approx = true`.

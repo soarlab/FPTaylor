@@ -1,0 +1,12 @@
+Variables
+  x1 in [0, 2],
+  x2 in [0, 3];
+
+Definitions
+  r rnd64= x1 + x2;
+
+Constraints
+  ineq1: x1 + x2 <= 2;
+
+Expressions
+  floudas = r;
