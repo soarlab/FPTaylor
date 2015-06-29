@@ -1,0 +1,10 @@
+Variables
+  real a in [0, 100],
+  real b in [0, 100];
+
+Constraints
+  i1: b <= a;
+
+
+Expressions
+  res rnd64= b / 0.5;

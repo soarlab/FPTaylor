@@ -1,0 +1,7 @@
+Variables
+  y in [0, 1];
+	
+Expressions
+  sqroot rnd32= 1.0 + 0.5*y - 0.125*y*y + 0.0625*y*y*y - 0.0390625*y*y*y*y,
+;
+  

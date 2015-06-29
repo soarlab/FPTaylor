@@ -1,0 +1,17 @@
+Variables
+  real a in [3.0, 3.0],
+  real b in [3.5, 3.5],
+  real c in [-2.0, 2.0]
+;
+
+Definitions
+  discr rnd64= b * b - a * c * 4.0;
+;
+
+Constraints
+  discr > 0.1
+;
+
+Expressions
+  s rnd64= sqrt(discr)
+;

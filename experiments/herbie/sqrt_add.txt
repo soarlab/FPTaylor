@@ -1,0 +1,11 @@
+Variables
+  float32 x in [1.0,1000.0];
+	
+Definitions
+  r rnd32= 1 / (sqrt(x + 1) + sqrt(x))
+;
+
+Expressions
+  sqrt_add = r
+;
+

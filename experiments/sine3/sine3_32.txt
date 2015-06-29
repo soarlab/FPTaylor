@@ -1,0 +1,16 @@
+Variables
+  float32 z in [0.5, 3];
+
+Definitions
+  r1 rnd32= 0.954929658551372 * z,
+  r2 rnd32= 0.12900613773279798*(z*z*z),
+  r3 rnd32= r1 - r2
+;
+	
+Expressions
+//  e1 = r1
+//  e2 = r2
+  e3 = r3
+//  test = r1 - r2
+;
+  

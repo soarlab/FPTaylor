@@ -16,6 +16,8 @@ fptaylor
 ocamlfpu
 *~
 *.proof
+*.log
+generated/
 Fluctuat_*/
 gelpia/
 log/

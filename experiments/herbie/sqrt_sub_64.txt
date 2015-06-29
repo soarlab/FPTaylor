@@ -1,0 +1,14 @@
+Variables
+  float64 x in [1e7,1e8];
+	
+Definitions
+  r1 rnd64= sqrt(x + 1),
+  r2 rnd64= sqrt(x),
+  r rnd64= r1 - r2
+//  r = r1 - r2
+;
+
+Expressions
+  sqrt_sub = r
+;
+

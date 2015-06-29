@@ -1,0 +1,11 @@
+Variables
+  float32 x in [1.0,1000.0];
+	
+Definitions
+  r rnd32= x + 1.1
+;
+
+Expressions
+  add11 = r
+;
+

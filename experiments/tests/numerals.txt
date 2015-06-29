@@ -1,0 +1,16 @@
+Constants
+  c1 = 1.1,
+  c2 = -1.1f,
+  c3 = 1.1d + 10d,
+  c4 = -0x1.p-10d,
+  c5 = 1e-1,
+  c6 = -1e-1f;
+
+Expressions
+  e1 rnd64= c1,
+  e2 rnd64= c2,
+  e3 rnd64= c3,
+  e4 rnd64= c4,
+  e5 rnd64= c5,
+  e6 rnd64= c6
+;

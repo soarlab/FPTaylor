@@ -1,0 +1,11 @@
+Variables
+  float32 h in [0, 1];
+
+Definitions
+  w rnd32= 1 - h,
+  r rnd32= (1 - w) - h
+;
+
+Expressions
+  sub_sub = r
+;

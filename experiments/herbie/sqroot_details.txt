@@ -1,0 +1,13 @@
+Variables
+  float32 y in [0, 1];
+
+Definitions
+  t1 rnd32= 0.5 * y,
+  t2 rnd32= 0.125 * y * y;
+	
+Expressions
+  r1 = t1
+//  r2 = t2,
+//  r rnd32= t1 - t2
+;
+  

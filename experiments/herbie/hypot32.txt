@@ -1,0 +1,11 @@
+Variables
+  float32 x1 in [1, 100],
+  float32 x2 in [1, 100];
+	
+Definitions
+  r rnd32= sqrt(x1 * x1 + x2 * x2)
+;
+  
+Expressions
+  hypot32 = r
+;

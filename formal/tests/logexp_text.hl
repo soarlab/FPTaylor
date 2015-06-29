@@ -1,0 +1,37 @@
+(* Set the correct (absolute) path to the FPTaylor/formal directory or
+   copy this file into that directory *)
+(* load_path := "~/FPTaylor/formal" :: !load_path;; *)
+
+needs "proof_rules.hl";;
+
+open Proof;;
+open Build_tform2;;
+open Proof_rules;;
+
+let prec = 10;;
+let x_tm, dom_tm, dom_vars, var_names = build_domain prec [
+  {name = "x"; low = Num.num_of_string "-8"; high = Num.num_of_string "8"};
+];;
+let dom = prec, dom_tm, dom_vars, var_names;;
+
+(* Taylor form theorems *)
+let tform_0 = rule_const dom "1";;
+let tform_1 = rule_var dom (rev_assoc "x" var_names);;
+let tform_2 = rule_exp dom 0.00000000000000000000e+00 0.00000000000000000000e+00 (0) 1.49047899352086437830e+03 0.00000000000000000000e+00 [1] tform_1;;
+let tform_3 = rule_rnd dom {bits = 64; coefficient = 1.50000000000000000000e+00}
+  0.00000000000000000000e+00 3.00625254001345961201e-292 [2; 3] tform_2;;
+let tform_4 = rule_add dom tform_0 tform_3;;
+let tform_5 = rule_rnd dom {bits = 64; coefficient = 1.00000000000000000000e+00}
+  4.96429228898098121204e-13 4.96429228898098323152e-13 [4; 5] tform_4;;
+let tform_6 = rule_log dom 8.27493070465959216037e-13 6.16763268713842979940e-09 (-53) 4.99664706100215516571e-01 3.08174837395310608406e-09 [6] tform_5;;
+let tform_7 = rule_rnd dom {bits = 64; coefficient = 1.50000000000000000000e+00}
+  8.27215570557160679309e-13 1.24082335583574152384e-12 [7; 8] tform_6;;
+let tform_8 = rule_simpl_add dom 1 3 3.00524439283195190389e-292 (-53) [9] tform_7;;
+let tform_9 = rule_simpl_add dom 9 5 4.96262751291420302477e-13 (-53) [10] tform_8;;
+let tform_10 = rule_simpl_add dom 10 6 3.08224463670439817342e-09 (-53) [11] tform_9;;
+let tform_11 = rule_simpl_add dom 11 8 3.08348546006023457794e-09 (-53) [12] tform_10;;
+
+(* Verification of inequalities *)
+let result = verify_bounds prec
+  [1.92520885567797939153e+00; 1.47425325008508689706e+00; 1.20005031095593466262e+01; 3.08348546006023499153e-09]
+  1.70973959639008091441e-15 [2; 4; 7; 12] var_names tform_11;;
