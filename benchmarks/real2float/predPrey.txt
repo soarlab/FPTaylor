@@ -1,0 +1,5 @@
+Variables
+  real x in [0.1, 0.3];
+
+Expressions
+  predPrey rnd64= 4 * x * x / (1 + ((x / 1.11) * (x / 1.11)));
