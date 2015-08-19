@@ -79,6 +79,7 @@ logexp			1.98e-15		1.30
 sphere			8.08e-15		219.65
 hartman3		1.22e-14		1342.88
 hartman6 (no simpl)	4.95e-15		13743.10
+hartman6 (ns, 10^5)	8.22e-15		320.70
 
 
 config-dev
@@ -106,6 +107,7 @@ logexp			1.98e-15		1.34
 sphere			8.08e-15		221.71
 hartman3		1.13e-14		1389.06
 hartman6 (no simpl)	3.78e-15		13590.71
+hartman6 (ns, 10^5)	7.17e-15		329.95
 
 
 config-z3
