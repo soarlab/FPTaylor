@@ -2,10 +2,10 @@ FPTAYLOR_HOME=../..
 
 FPTAYLOR=$(FPTAYLOR_HOME)/fptaylor
 FPTAYLOR_A=$(FPTAYLOR) -c config-a.cfg
-FPTAYLOR_A_NO_SIMPL=$(FPTAYLOR) -c config-a.cfg -c no-simpl.cfg
+FPTAYLOR_A_NO_SIMPL=$(FPTAYLOR) -c config-a.cfg -c no-simpl.cfg -c iters.cfg
 FPTAYLOR_B=$(FPTAYLOR) -c config-b.cfg
 FPTAYLOR_C=$(FPTAYLOR) -c config-c.cfg
-FPTAYLOR_C_NO_SIMPL=$(FPTAYLOR) -c config-c.cfg -c no-simpl.cfg
+FPTAYLOR_C_NO_SIMPL=$(FPTAYLOR) -c config-c.cfg -c no-simpl.cfg -c iters.cfg
 FPTAYLOR_DEV=$(FPTAYLOR) -c config-dev.cfg
 FPTAYLOR_Z3=$(FPTAYLOR) -c config-z3.cfg
 
