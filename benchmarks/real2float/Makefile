@@ -57,8 +57,7 @@ taylor-a-fp-no-simpl:
 	$(FPTAYLOR_A_NO_SIMPL) logexp_fp.txt
 	$(FPTAYLOR_A_NO_SIMPL) sphere_fp.txt
 	$(FPTAYLOR_A_NO_SIMPL) hartman3_fp.txt
-# Very slow
-#	$(FPTAYLOR_A_NO_SIMPL) -c no-simpl.cfg hartman6_fp.txt
+	$(FPTAYLOR_A_NO_SIMPL) -c iters.cfg hartman6_fp.txt
 	find log -name "*.log" -exec awk '/---/,0' '{}' \;
 
 
@@ -140,8 +139,33 @@ taylor-c-no-simpl:
 #	$(FPTAYLOR_C) -c no-simpl.cfg hartman6.txt
 	find log -name "*.log" -exec awk '/---/,0' '{}' \;
 
+taylor-c-fp-no-simpl:
+	rm -rf log tmp
+	$(FPTAYLOR_C_NO_SIMPL) doppler1_fp.txt
+	$(FPTAYLOR_C_NO_SIMPL) doppler2_fp.txt
+	$(FPTAYLOR_C_NO_SIMPL) doppler3_fp.txt
+	$(FPTAYLOR_C_NO_SIMPL) rigidbody1_fp.txt
+	$(FPTAYLOR_C_NO_SIMPL) rigidbody2_fp.txt
+	$(FPTAYLOR_C_NO_SIMPL) verhulst_fp.txt
+	$(FPTAYLOR_C_NO_SIMPL) carbonGas_fp.txt
+	$(FPTAYLOR_C_NO_SIMPL) predPrey_fp.txt
+	$(FPTAYLOR_C_NO_SIMPL) kepler0_fp.txt
+	$(FPTAYLOR_C_NO_SIMPL) kepler1_fp.txt
+	$(FPTAYLOR_C_NO_SIMPL) kepler2_fp.txt
+	$(FPTAYLOR_C_NO_SIMPL) sineTaylor_fp.txt
+	$(FPTAYLOR_C_NO_SIMPL) sineOrder3_fp.txt
+	$(FPTAYLOR_C_NO_SIMPL) sqroot_fp.txt
+	$(FPTAYLOR_C_NO_SIMPL) floudas1_fp.txt
+	$(FPTAYLOR_C_NO_SIMPL) floudas2_fp.txt
+	$(FPTAYLOR_C_NO_SIMPL) floudas3_fp.txt
+	$(FPTAYLOR_C_NO_SIMPL) logexp_fp.txt
+	$(FPTAYLOR_C_NO_SIMPL) sphere_fp.txt
+	$(FPTAYLOR_C_NO_SIMPL) hartman3_fp.txt
+	$(FPTAYLOR_C_NO_SIMPL) -c iters.cfg hartman6_fp.txt
+	find log -name "*.log" -exec awk '/---/,0' '{}' \;
 
-taylor-fp-b:
+
+taylor-b-fp:
 	rm -rf log tmp
 	$(FPTAYLOR_B) rigidbody2_fp.txt
 	$(FPTAYLOR_B) predPrey_fp.txt
