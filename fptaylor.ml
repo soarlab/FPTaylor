@@ -34,8 +34,8 @@ type problem_info = {
 
 let default_problem_info = {
   name = "NONE";
-  real_min = 0.0;
-  real_max = 0.0;
+  real_min = neg_infinity;
+  real_max = infinity;
   abs_error_approx = None;
   abs_error_exact = None;
   rel_error_approx = None;
@@ -209,7 +209,11 @@ let errors =
   in
   fun pi form ->
     let tol = Config.opt_tol in
-    let f_min, f_max = Opt.optimize tol form.v0 in
+    let f_min, f_max = 
+      if Config.rel_error || (Config.get_bool_option "find-bounds" true) then
+	Opt.optimize tol form.v0
+      else
+	neg_infinity, infinity in
     let _ = report (Format.sprintf "bounds: [%e, %e]" f_min f_max) in
     let pi = {pi with real_min = f_min; real_max = f_max} in
     let pi =
