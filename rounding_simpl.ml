@@ -122,7 +122,12 @@ let simplify_rounding =
 	      | Bin_op (Op_mul, e1, e2) when 
 		  (is_neg_power_of_2 e1 && is_subtype (get_type e2) rnd.fp_type) 
 		  || (is_neg_power_of_2 e2 && is_subtype (get_type e1) rnd.fp_type) ->
-		Rounding ({rnd with eps_exp = 0}, arg)
+		if Config.proof_flag then
+		  (* FIXME: this is not the correct step but the formalization
+		     does not define the required rounding operation *)
+		  arg
+		else
+		  Rounding ({rnd with eps_exp = 0}, arg)
 	      (* Division *)
 	      | Bin_op (Op_div, e1, e2) when
 		  is_power_of_2_or_0 e2 && 

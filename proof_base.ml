@@ -46,6 +46,7 @@ type proof_op =
 
 type proof_opt_type =
   | Proof_opt_approx
+  | Proof_opt_exact
 
 type proof_args = {
   arg_indices : int list;

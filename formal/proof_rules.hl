@@ -142,10 +142,13 @@ let rule_simpl_add dom i j b e err_indices arg =
   let th0 = build_simpl_add_tform i j b_tm e_tm err_indices arg in
     prove_hyps dom [arg] th0;;
 
-let verify_bounds pp bounds total indices var_names approx_th =
+let verify_bounds_approx pp bounds total indices var_names approx_th =
   let bounds_tm0 = map mk_bin_float bounds in
   let total_tm = mk_bin_float total in
   let bounds_tm = get_bounds_tm bounds_tm0 indices approx_th in
     prove_opt_approx pp var_names bounds_tm total_tm approx_th;;
+
+let verify_bounds_exact pp bounds total indices var_names approx_th =
+  failwith "verify_bounds_exact: not implemented";;
 
 end;;

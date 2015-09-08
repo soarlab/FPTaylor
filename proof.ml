@@ -149,3 +149,7 @@ let add_log_step i arg m1 m2 e2 b m3 m3_index =
 let add_opt_approx indices bounds total =
   let opt = Proof_opt_approx in
   add_proof_opt (mk_proof_opt opt indices bounds total)
+
+let add_opt_exact bound e total =
+  let opt = Proof_opt_exact in
+  add_proof_opt (mk_proof_opt opt [] [bound; e] total)

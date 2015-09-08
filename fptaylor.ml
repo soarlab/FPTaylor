@@ -154,8 +154,16 @@ let errors =
 	  Out_test.create_test_file "test_abs_exact.txt" full_expr in
 
 	let bound = Opt.optimize_abs tol full_expr in
+	let total = 
+	  if Config.proof_flag then
+	    let e = get_eps exp in
+	    let bound = make_stronger (bound +^ Fpu.fdiv_high total2 e) in
+	    let total = e *^ bound in
+	    let _ = Proof.add_opt_exact bound e total in
+	    total
+	  else
+	    (get_eps exp *^ bound) +^ total2 in
 	let _ = report (Format.sprintf "exact bound (exp = %d): %f" exp bound) in
-	let total = (get_eps exp *^ bound) +^ total2 in
 	let _ = report (Format.sprintf "exact total: %e\ntotal2: %e" total total2) in
 	Some total
       else None in

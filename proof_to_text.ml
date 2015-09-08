@@ -156,12 +156,16 @@ let proof_to_text fmt =
       tform_proof rest
   in
   let bound_proof i opt =
+    let rule_name = 
+      match opt.opt_type with
+	| Proof_opt_approx -> "verify_bounds_approx"
+	| Proof_opt_exact -> "verify_bounds_exact" in
     let bs = String.concat "; " (map string_of_float opt.opt_bounds) in
     let total = string_of_float opt.total_bound in
     let indices = String.concat "; " (map string_of_int opt.opt_indices) in
     p "let result = ";
-    p (Format.sprintf "verify_bounds prec\n  [%s]\n  %s [%s] var_names tform_%d" 
-	 bs total indices i);
+    p (Format.sprintf "%s prec\n  [%s]\n  %s [%s] var_names tform_%d" 
+	 rule_name bs total indices i);
     p' ";;"
   in
   fun (pp, proof) ->
