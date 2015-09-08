@@ -159,7 +159,7 @@ let errors =
 	    let e = get_eps exp in
 	    let bound = make_stronger (bound +^ Fpu.fdiv_high total2 e) in
 	    let total = e *^ bound in
-	    let _ = Proof.add_opt_exact bound e total in
+	    let _ = Proof.add_opt_exact bound exp total in
 	    total
 	  else
 	    (get_eps exp *^ bound) +^ total2 in

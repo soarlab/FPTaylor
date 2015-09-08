@@ -150,6 +150,6 @@ let add_opt_approx indices bounds total =
   let opt = Proof_opt_approx in
   add_proof_opt (mk_proof_opt opt indices bounds total)
 
-let add_opt_exact bound e total =
+let add_opt_exact bound e_exp total =
   let opt = Proof_opt_exact in
-  add_proof_opt (mk_proof_opt opt [] [bound; e] total)
+  add_proof_opt (mk_proof_opt opt [] [bound; float_of_int e_exp] total)

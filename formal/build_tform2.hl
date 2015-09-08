@@ -114,6 +114,29 @@ let tform_f1_bound = prove
      FIRST_X_ASSUM (MP_TAC o SPEC `x:real^N`) THEN ASM_REWRITE_TAC[GSYM ALL_EL] THEN
      STRIP_TAC THEN FIRST_X_ASSUM (MP_TAC o SPEC `i:num`) THEN ASM_REWRITE_TAC[]);;
 
+let opt_exact_th = prove
+  (`!s h t e bound total. approx s h t /\ &0 < e /\
+     (!x. x IN s ==> sum_list (tform_list t) (\(f1,e1,e2). abs (f1 x) * (e2 / e)) <= bound)
+  /\ bound * e <= total
+  ==> !x:real^N. x IN s ==> abs (h x - tform_f0 t x) <= total`,
+  REPEAT GEN_TAC THEN STRIP_TAC THEN
+    MATCH_MP_TAC approx_bound THEN EXISTS_TAC `s:real^N->bool` THEN
+    ASM_REWRITE_TAC[SUBSET_REFL] THEN REPEAT STRIP_TAC THEN
+    MATCH_MP_TAC REAL_LE_TRANS THEN EXISTS_TAC `bound * e:real` THEN
+    ASM_SIMP_TAC[GSYM REAL_LE_LDIV_EQ] THEN
+    REWRITE_TAC[real_div; GSYM sum_list_rmul] THEN
+    SUBGOAL_THEN `!y. sum_list (tform_list (t:(N)tform)) 
+         (\x. (\ (f1,e1,e2). abs (f1 y) * e2) x * inv e) = 
+         sum_list (tform_list t) (\ (f1,e1,e2). abs (f1 y) * e2 / e)` ASSUME_TAC THENL [
+      GEN_TAC THEN REPEAT (FIRST [AP_TERM_TAC; AP_THM_TAC]) THEN
+        POP_ASSUM (K ALL_TAC) THEN
+        REWRITE_TAC[FUN_EQ_THM] THEN GEN_TAC THEN
+        STRIP_ASSUME_TAC (SPEC `x:(real^N->real)#(real^N->real)#real` triple_exists) THEN
+        ASM_REWRITE_TAC[real_div; REAL_MUL_ASSOC];
+      ALL_TAC
+    ] THEN
+    ASM_SIMP_TAC[]);;
+
 let opt_approx_th = prove
   (`!s h t bounds total. approx s h t /\
      (!x. x IN s ==> ALL2 (\ (f1,e1,e2) b. abs (f1 x) <= b) (tform_list t) bounds) /\
@@ -281,6 +304,31 @@ let prove_opt_approx pp var_names bounds_tm total_tm approx_th =
       CONV_RULE (LAND_CONV bin_float_rat_conv THENC REWRITE_CONV[]) th6
   with Failure _ ->
     error "prove_opt_approx" [bounds_tm; total_tm] [approx_th];;
+
+let prove_opt_exact pp var_names bound_tm e_tm total_tm approx_th =
+  try
+    let th0 = REWRITE_RULE[GSYM IMP_IMP] opt_exact_th in
+    let th1 = SPECL[e_tm; bound_tm; total_tm] (MATCH_MP th0 approx_th) in
+    let th2 = REWRITE_RULE[f0_mk; list_mk; sum_list_cons; 
+			   sum_list_nil; REAL_ADD_RID] th1 in
+    let e_ineq = EQT_ELIM (bin_float_rat_conv (lhand (concl th2))) in
+    let th3 = MP th2 e_ineq in
+    let th4 = CONV_RULE (LAND_CONV bin_float_rat_conv 
+			   THENC REWRITE_CONV[REAL_MUL_RID]) th3 in
+    let n = length var_names in
+    let th5 = PURE_ONCE_REWRITE_RULE[gen_vec_eq var_names] th4 in
+    let comp_th = end_itlist CONJ (Array.to_list M_taylor.comp_thms_array.(n)) in
+    let th6 = PURE_REWRITE_RULE[IN_INTERVAL; M_taylor.dimindex_array.(n);
+				M_taylor.gen_in_interval n; comp_th] th5 in
+    let th7 = REWRITE_RULE[forall_imp_conj; FORALL_AND_THM] th6 in
+    let bound_cond = lhand (concl th7) in
+    let _ = report "Verifying the exact bound" in
+    let bound_th = prove_bound_cond pp bound_cond in
+    let th8 = MP th7 bound_th in
+      CONV_RULE (LAND_CONV bin_float_rat_conv THENC REWRITE_CONV[]) th8
+  with Failure _ ->
+    error "prove_opt_exact" [bound_tm; e_tm; total_tm] [approx_th];;
+
 
 (* --------------------------------------------- *)
 (* Evaluation of tform assumptions               *)
@@ -662,10 +710,18 @@ let get_bounds_tm bounds indices approx_th =
 let prove_bound pp proof approx_th =
   let x_tm, dom_tm, dom_vars, var_names = build_domain pp proof.proof_vars in
   let opt = hd proof.proof_opts in
-  let bounds = map mk_bin_float opt.opt_bounds in
-  let total_tm = mk_bin_float opt.total_bound in
-  let bounds_tm = get_bounds_tm bounds opt.opt_indices approx_th in
-    prove_opt_approx pp var_names bounds_tm total_tm approx_th;;
+    match opt.opt_type with
+      | Proof_opt_approx ->
+	  let bounds = map mk_bin_float opt.opt_bounds in
+	  let total_tm = mk_bin_float opt.total_bound in
+	  let bounds_tm = get_bounds_tm bounds opt.opt_indices approx_th in
+	    prove_opt_approx pp var_names bounds_tm total_tm approx_th
+      | Proof_opt_exact ->
+	  let bound, e_exp = list_to_pair opt.opt_bounds in
+	  let bound_tm = mk_bin_float bound in
+	  let e_tm = mk_ipow2 (Int (int_of_float e_exp)) in
+	  let total_tm = mk_bin_float opt.total_bound in
+	    prove_opt_exact pp var_names bound_tm e_tm total_tm approx_th;;
 
 let validate_proof pp proof =
   let ths = build_tform pp proof in
@@ -678,3 +734,4 @@ let validate_proof pp proof =
     approx_th, bound_th;;
 
 end;;
+

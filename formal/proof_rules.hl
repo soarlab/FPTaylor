@@ -149,6 +149,11 @@ let verify_bounds_approx pp bounds total indices var_names approx_th =
     prove_opt_approx pp var_names bounds_tm total_tm approx_th;;
 
 let verify_bounds_exact pp bounds total indices var_names approx_th =
-  failwith "verify_bounds_exact: not implemented";;
+  let bound, e_exp = Lib.list_to_pair bounds in
+  let bound_tm = mk_bin_float bound in
+  let e_tm = mk_ipow2 (Int (int_of_float e_exp)) in
+  let total_tm = mk_bin_float total in
+    prove_opt_exact pp var_names bound_tm e_tm total_tm approx_th;;
+
 
 end;;
