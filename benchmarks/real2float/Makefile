@@ -3,9 +3,11 @@ FPTAYLOR_HOME=../..
 FPTAYLOR=$(FPTAYLOR_HOME)/fptaylor
 FPTAYLOR_A=$(FPTAYLOR) -c config-a.cfg
 FPTAYLOR_A_NO_SIMPL=$(FPTAYLOR) -c config-a.cfg -c no-simpl.cfg -c iters.cfg
+FPTAYLOR_A_PROOF=$(FPTAYLOR) -c config-a.cfg -c no-simpl.cfg -c iters.cfg -c proof.cfg
 FPTAYLOR_B=$(FPTAYLOR) -c config-b.cfg
 FPTAYLOR_C=$(FPTAYLOR) -c config-c.cfg
 FPTAYLOR_C_NO_SIMPL=$(FPTAYLOR) -c config-c.cfg -c no-simpl.cfg -c iters.cfg
+FPTAYLOR_C_PROOF=$(FPTAYLOR) -c config-c.cfg -c no-simpl.cfg -c iters.cfg -c proof.cfg
 FPTAYLOR_DEV=$(FPTAYLOR) -c config-dev.cfg
 FPTAYLOR_Z3=$(FPTAYLOR) -c config-z3.cfg
 
@@ -57,7 +59,53 @@ taylor-a-fp-no-simpl:
 	$(FPTAYLOR_A_NO_SIMPL) logexp_fp.txt
 	$(FPTAYLOR_A_NO_SIMPL) sphere_fp.txt
 	$(FPTAYLOR_A_NO_SIMPL) hartman3_fp.txt
-	$(FPTAYLOR_A_NO_SIMPL) -c iters.cfg hartman6_fp.txt
+	$(FPTAYLOR_A_NO_SIMPL) hartman6_fp.txt
+	find log -name "*.log" -exec awk '/---/,0' '{}' \;
+
+taylor-a-fp-proof:
+	rm -rf log tmp
+	$(FPTAYLOR_A_PROOF) doppler1_fp.txt
+	$(FPTAYLOR_A_PROOF) doppler2_fp.txt
+	$(FPTAYLOR_A_PROOF) doppler3_fp.txt
+	$(FPTAYLOR_A_PROOF) rigidbody1_fp.txt
+	$(FPTAYLOR_A_PROOF) rigidbody2_fp.txt
+	$(FPTAYLOR_A_PROOF) verhulst_fp.txt
+	$(FPTAYLOR_A_PROOF) carbonGas_fp.txt
+	$(FPTAYLOR_A_PROOF) predPrey_fp.txt
+	$(FPTAYLOR_A_PROOF) kepler0_fp.txt
+	$(FPTAYLOR_A_PROOF) kepler1_fp.txt
+	$(FPTAYLOR_A_PROOF) kepler2_fp.txt
+	$(FPTAYLOR_A_PROOF) sineTaylor_fp.txt
+	$(FPTAYLOR_A_PROOF) sineOrder3_fp.txt
+	$(FPTAYLOR_A_PROOF) sqroot_fp.txt
+	$(FPTAYLOR_A_PROOF) floudas1_fp.txt
+	$(FPTAYLOR_A_PROOF) floudas2_fp.txt
+	$(FPTAYLOR_A_PROOF) floudas3_fp.txt
+	$(FPTAYLOR_A_PROOF) logexp_fp.txt
+	$(FPTAYLOR_A_PROOF) sphere_fp.txt
+	$(FPTAYLOR_A_PROOF) hartman3_fp.txt
+	$(FPTAYLOR_A_PROOF) hartman6_fp.txt
+	mv proofs/doppler1.proof hol/doppler1_a.proof
+	mv proofs/doppler2.proof hol/doppler2_a.proof
+	mv proofs/doppler3.proof hol/doppler3_a.proof
+	mv proofs/rigid1.proof hol/rigidBody1_a.proof
+	mv proofs/rigid2.proof hol/rigidBody2_a.proof
+	mv proofs/verhulst.proof hol/verhulst_a.proof
+	mv proofs/carbonGas.proof hol/carbonGas_a.proof
+	mv proofs/predPrey.proof hol/predPrey_a.proof
+	mv proofs/kepler0.proof hol/kepler0_a.proof
+	mv proofs/kepler1.proof hol/kepler1_a.proof
+	mv proofs/kepler2.proof hol/kepler2_a.proof
+	mv proofs/sineTaylor.proof hol/sineTaylor_a.proof
+	mv proofs/sineOrder3.proof hol/sineOrder3_a.proof
+	mv proofs/sqroot.proof hol/sqroot_a.proof
+	mv proofs/floudas1.proof hol/floudas1_a.proof
+	mv proofs/floudas2.proof hol/floudas2_a.proof
+	mv proofs/floudas3.proof hol/floudas3_a.proof
+	mv proofs/logexp.proof hol/logexp_a.proof
+	mv proofs/sphere.proof hol/sphere_a.proof
+	mv proofs/hartman3.proof hol/hartman3_a.proof
+	mv proofs/hartman6.proof hol/hartman6_a.proof
 	find log -name "*.log" -exec awk '/---/,0' '{}' \;
 
 
@@ -161,7 +209,53 @@ taylor-c-fp-no-simpl:
 	$(FPTAYLOR_C_NO_SIMPL) logexp_fp.txt
 	$(FPTAYLOR_C_NO_SIMPL) sphere_fp.txt
 	$(FPTAYLOR_C_NO_SIMPL) hartman3_fp.txt
-	$(FPTAYLOR_C_NO_SIMPL) -c iters.cfg hartman6_fp.txt
+	$(FPTAYLOR_C_NO_SIMPL) hartman6_fp.txt
+	find log -name "*.log" -exec awk '/---/,0' '{}' \;
+
+taylor-c-fp-proof:
+	rm -rf log tmp
+	$(FPTAYLOR_C_PROOF) doppler1_fp.txt
+	$(FPTAYLOR_C_PROOF) doppler2_fp.txt
+	$(FPTAYLOR_C_PROOF) doppler3_fp.txt
+	$(FPTAYLOR_C_PROOF) rigidbody1_fp.txt
+	$(FPTAYLOR_C_PROOF) rigidbody2_fp.txt
+	$(FPTAYLOR_C_PROOF) verhulst_fp.txt
+	$(FPTAYLOR_C_PROOF) carbonGas_fp.txt
+	$(FPTAYLOR_C_PROOF) predPrey_fp.txt
+	$(FPTAYLOR_C_PROOF) kepler0_fp.txt
+	$(FPTAYLOR_C_PROOF) kepler1_fp.txt
+	$(FPTAYLOR_C_PROOF) kepler2_fp.txt
+	$(FPTAYLOR_C_PROOF) sineTaylor_fp.txt
+	$(FPTAYLOR_C_PROOF) sineOrder3_fp.txt
+	$(FPTAYLOR_C_PROOF) sqroot_fp.txt
+	$(FPTAYLOR_C_PROOF) floudas1_fp.txt
+	$(FPTAYLOR_C_PROOF) floudas2_fp.txt
+	$(FPTAYLOR_C_PROOF) floudas3_fp.txt
+	$(FPTAYLOR_C_PROOF) logexp_fp.txt
+	$(FPTAYLOR_C_PROOF) sphere_fp.txt
+	$(FPTAYLOR_C_PROOF) hartman3_fp.txt
+	$(FPTAYLOR_C_PROOF) hartman6_fp.txt
+	mv proofs/doppler1.proof hol/doppler1_c.proof
+	mv proofs/doppler2.proof hol/doppler2_c.proof
+	mv proofs/doppler3.proof hol/doppler3_c.proof
+	mv proofs/rigid1.proof hol/rigidBody1_c.proof
+	mv proofs/rigid2.proof hol/rigidBody2_c.proof
+	mv proofs/verhulst.proof hol/verhulst_c.proof
+	mv proofs/carbonGas.proof hol/carbonGas_c.proof
+	mv proofs/predPrey.proof hol/predPrey_c.proof
+	mv proofs/kepler0.proof hol/kepler0_c.proof
+	mv proofs/kepler1.proof hol/kepler1_c.proof
+	mv proofs/kepler2.proof hol/kepler2_c.proof
+	mv proofs/sineTaylor.proof hol/sineTaylor_c.proof
+	mv proofs/sineOrder3.proof hol/sineOrder3_c.proof
+	mv proofs/sqroot.proof hol/sqroot_c.proof
+	mv proofs/floudas1.proof hol/floudas1_c.proof
+	mv proofs/floudas2.proof hol/floudas2_c.proof
+	mv proofs/floudas3.proof hol/floudas3_c.proof
+	mv proofs/logexp.proof hol/logexp_c.proof
+	mv proofs/sphere.proof hol/sphere_c.proof
+	mv proofs/hartman3.proof hol/hartman3_c.proof
+	mv proofs/hartman6.proof hol/hartman6_c.proof
 	find log -name "*.log" -exec awk '/---/,0' '{}' \;
 
 

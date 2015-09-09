@@ -468,9 +468,8 @@ expressions. These proof certificates can be validated with a special
 procedure in the HOL Light proof assistant. All proof certificates are
 saved in the `proofs` directory (relative to the directory from which
 FPTaylor is invoked). In the current version of FPTaylor, proof
-certificates cannot be produced for exact optimization problems
-(`opt-exact = true`), for the improved rounding model
-(`fp-power2-model = true`), and for relative errors (`rel-error =
+certificates cannot be produced for the improved rounding model
+(`fp-power2-model = true`) and for relative errors (`rel-error =
 true`).
 
 

@@ -156,7 +156,8 @@ let errors =
 	let bound = Opt.optimize_abs tol full_expr in
 	let total = 
 	  if Config.proof_flag then
-	    let e = get_eps exp in
+	    let e' = get_eps exp in
+	    let e = if e' = 0.0 then 1.0 else e' in
 	    let bound = make_stronger (bound +^ Fpu.fdiv_high total2 e) in
 	    let total = e *^ bound in
 	    let _ = Proof.add_opt_exact bound exp total in

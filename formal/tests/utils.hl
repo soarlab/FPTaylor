@@ -1,6 +1,6 @@
 (* fptaylor_path is defined in ../load.hl *)
 
-let path = fptaylor_path ^ "/benchmarks/proofs/proofs";;
+let path = ref (fptaylor_path ^ "/benchmarks/proofs/proofs");;
 
 open Ipow;;
 open List;;
@@ -20,7 +20,7 @@ let trans_bound bound_th bound_tm =
     itlist GEN vars r1;;
 
 let load name =
-  let fname = Filename.concat path name in
+  let fname = Filename.concat !path name in
     load_proof fname;;
 
 let validate pp name =
