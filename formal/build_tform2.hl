@@ -254,7 +254,7 @@ let prove_bound_cond pp tm =
 	  let ineq_th, stat = M_verifier_main.verify_ineq M_verifier_main.default_params pp ineq_tm in
 	  let ineq_th1 = SPEC_ALL ineq_th in
 	  let imp_tm = mk_imp (concl ineq_th1, ineq_tm) in
-	  let ineq_th2 = MP (REAL_ARITH imp_tm) ineq_th1 in
+	  let ineq_th2 = MP (TAUT imp_tm) ineq_th1 in
 	    ONCE_REWRITE_RULE[GSYM eq_th] (itlist GEN vars ineq_th2)
   with _ -> error "prove_bound_cond" [tm] [];;
 
@@ -323,7 +323,10 @@ let prove_opt_exact pp var_names bound_tm e_tm total_tm approx_th =
     let th7 = REWRITE_RULE[forall_imp_conj; FORALL_AND_THM] th6 in
     let bound_cond = lhand (concl th7) in
     let _ = report "Verifying the exact bound" in
+    let rat_flag = !use_rat_verifier in
+    let _ = use_rat_verifier := false  in
     let bound_th = prove_bound_cond pp bound_cond in
+    let _ = use_rat_verifier := rat_flag in
     let th8 = MP th7 bound_th in
       CONV_RULE (LAND_CONV bin_float_rat_conv THENC REWRITE_CONV[]) th8
   with Failure _ ->
