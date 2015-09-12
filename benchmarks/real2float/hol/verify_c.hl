@@ -74,11 +74,22 @@ add_result "logexp_c" (trans_bound bound_th `#1.619 * &10 ipow (-- &15)`) time;;
 let form_th, bound_th, time = validate pp "sphere_c.proof";;
 add_result "sphere_c" (trans_bound bound_th `#7.772 * &10 ipow (-- &15)`) time;;
 
+(*
+(* 19498.9 *)
 let form_th, bound_th, time = validate pp "hartman3_c.proof";;
 add_result "hartman3_c" (trans_bound bound_th `#3.076 * &10 ipow (-- &15)`) time;;
 
+(* 5409.2 *)
 let form_th, bound_th, time = validate pp "hartman6_c.proof";;
 add_result "hartman6_c" (trans_bound bound_th `#8.025 * &10 ipow (-- &15)`) time;;
+*)
+
+(* approximate bounds *)
+let form_th, bound_th, time = validate_gen pp "hartman3_c.proof" 1.496e-13;;
+add_result "hartman3_c (approx)" (trans_bound bound_th `#1.497 * &10 ipow (-- &13)`) time;;
+
+let form_th, bound_th, time = validate_gen pp "hartman6_c.proof" 1.947e-13;;
+add_result "hartman6_c (approx)" (trans_bound bound_th `#1.948 * &10 ipow (-- &13)`) time;;
 
 
 print_results();;

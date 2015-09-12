@@ -736,5 +736,25 @@ let validate_proof pp proof =
       prove_bound pp proof approx_th in
     approx_th, bound_th;;
 
+let validate_proof_gen pp proof total_bound =
+  let ths = build_tform pp proof in
+  let approx_th = snd (hd ths) in
+  let bound_th =
+    if proof.proof_opts = [] then
+      TRUTH
+    else
+      let opt = hd proof.proof_opts in
+	match opt.opt_type with
+	  | Proof_opt_approx ->
+	      prove_bound pp proof approx_th
+	  | Proof_opt_exact ->
+	      let x_tm, dom_tm, dom_vars, var_names = build_domain pp proof.proof_vars in
+	      let _, e_exp = list_to_pair opt.opt_bounds in
+	      let bound = ldexp total_bound (-int_of_float e_exp) in
+	      let bound_tm = mk_bin_float bound in
+	      let e_tm = mk_ipow2 (Int (int_of_float e_exp)) in
+	      let total_tm = mk_bin_float total_bound in
+		prove_opt_exact pp var_names bound_tm e_tm total_tm approx_th in	          approx_th, bound_th;;
+
 end;;
 

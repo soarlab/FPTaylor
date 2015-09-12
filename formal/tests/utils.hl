@@ -30,6 +30,14 @@ let validate pp name =
   let stop = Unix.gettimeofday() in
     form_th, bound_th, stop -. start;;
 
+let validate_gen pp name total_bound =
+  let proof = load name in
+  let start = Unix.gettimeofday() in
+  let form_th, bound_th = validate_proof_gen pp proof total_bound in
+  let stop = Unix.gettimeofday() in
+    form_th, bound_th, stop -. start;;
+
+
 let validate_bound pp name bound_tm =
   let _, bound_th, time = validate pp name in
     trans_bound bound_th bound_tm, time;;

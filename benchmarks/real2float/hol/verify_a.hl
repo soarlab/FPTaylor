@@ -74,11 +74,14 @@ add_result "logexp_a" (trans_bound bound_th `#1.615 * &10 ipow (-- &15)`) time;;
 let form_th, bound_th, time = validate pp "sphere_a.proof";;
 add_result "sphere_a" (trans_bound bound_th `#7.772 * &10 ipow (-- &15)`) time;;
 
+(*
+(* 10267.6 *)
 let form_th, bound_th, time = validate pp "hartman3_a.proof";;
 add_result "hartman3_a" (trans_bound bound_th `#7.653 * &10 ipow (-- &15)`) time;;
 
+(* 188820.1 *)
 let form_th, bound_th, time = validate pp "hartman6_a.proof";;
 add_result "hartman6_a" (trans_bound bound_th `#1.698 * &10 ipow (-- &14)`) time;;
-
+*)
 
 print_results();;
