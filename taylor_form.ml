@@ -40,6 +40,12 @@ let dummy_tform = {
   v1 = [];
 }
 
+let info v str =
+  if v <= Config.verbosity then
+    Log.report str
+  else
+    ()
+
 let reset_form_index, next_form_index =
   let index = ref 0 in
   let reset () = index := 0 in
@@ -172,6 +178,7 @@ let find_index, expr_for_index, reset_index_counter, current_index =
 
 (* constant *)
 let const_form e = 
+  let _ = info 2 "const_form" in
   match e with
     | Const c -> 
       let i = next_form_index() in
@@ -185,6 +192,7 @@ let const_form e =
 (* Constant with rounding *)
 (* TODO: subnormal numbers are incorrectly handled by bin_float_of_num *)
 let precise_const_rnd_form rnd e =
+  let _ = info 2 "precise_const_rnd_form" in
   match e with
     | Const c ->
       let x = bin_float_of_num (-rnd.eps_exp) rnd.rnd_type c.rational_v in
@@ -213,6 +221,7 @@ let precise_const_rnd_form rnd e =
 
 (* constant with rounding *)
 let const_rnd_form rnd e =
+  let _ = info 2 "const_rnd_form" in
   if Config.get_bool_option "develop" false then
     precise_const_rnd_form rnd e
   else
@@ -259,6 +268,7 @@ let get_var_uncertainty eps_exp var_name =
 
 (* variable *)
 let var_form e =
+  let _ = info 2 "var_form" in
   match e with
     | Var v -> 
       let i = next_form_index() in
@@ -272,6 +282,7 @@ let var_form e =
 
 (* variable with rounding *)
 let var_rnd_form rnd e =
+  let _ = info 2 "var_rnd_form" in
   match e with
     | Var v -> 
       if Config.proof_flag then
@@ -323,7 +334,7 @@ let var_rnd_form rnd e =
 
 (* rounding *)
 let rounded_form vars original_expr rnd f =
-(*  let _ = Log.report "rnd" in *)
+  let _ = info 2 "rounded_form" in
   if rnd.eps_exp = 0 then {
     form_index = next_form_index();
     v0 = f.v0;
@@ -360,6 +371,7 @@ let rounded_form vars original_expr rnd f =
 
 (* negation *)
 let neg_form f = 
+  let _ = info 2 "neg_form" in
   let i = next_form_index() in
   let _ = Proof.add_neg_step i f.form_index in {
     form_index = i;
@@ -369,7 +381,7 @@ let neg_form f =
 
 (* addition *)
 let add_form f1 f2 = 
-(*  let _ = Log.report "add" in *)
+  let _ = info 2 "add_form" in
   let i = next_form_index() in
   let _ = Proof.add_add_step i f1.form_index f2.form_index in {
     form_index = i;
@@ -379,7 +391,7 @@ let add_form f1 f2 =
 
 (* subtraction *)
 let sub_form f1 f2 =
-(*  let _ = Log.report "sub" in *)
+  let _ = info 2 "sub_form" in
   let i = next_form_index() in
   let _ = Proof.add_sub_step i f1.form_index f2.form_index in {
     form_index = i;
@@ -389,7 +401,7 @@ let sub_form f1 f2 =
 
 (* rounded subtraction *)
 let rounded_sub_form vars original_expr rnd f1 f2 =
-  let _ = Log.report "rounded_sub_form" in
+  let _ = info 2 "rounded_sub_form" in
   let i = find_index original_expr in
   let s1', exp1 = sum_high (abs_eval_v1 vars f1.v1) in
   let s2', exp2 = sum_high (abs_eval_v1 vars f2.v1) in
@@ -412,12 +424,13 @@ let rounded_sub_form vars original_expr rnd f1 f2 =
   
 (* rounded addition *)
 let rounded_add_form vars original_expr rnd f1 f2 =
-  let _ = Log.report "rounded_add_form" in
+  let _ = info 2 "rounded_add_form" in
   rounded_sub_form vars original_expr rnd f1 (neg_form f2)
 
 
 (* multiplication *)
 let mul_form =
+  let _ = info 2 "mul_form" in
   let mul1 x = map (fun (e, err) -> mk_mul x e, err) in
   fun vars f1 f2 -> 
     let x1 = abs_eval_v1 vars f1.v1 and
@@ -436,7 +449,7 @@ let mul_form =
 
 (* reciprocal *)
 let inv_form vars f = 
-(*  let _ = Log.report "inv" in *)
+  let _ = info 2 "inv_form" in
 (*  let x0_int = Eval.eval_interval_expr vars f.v0 in *)
   let x0_int = estimate_expr vars f.v0 in
   let x1 = abs_eval_v1 vars f.v1 in
@@ -452,7 +465,11 @@ let inv_form vars f =
       pow_I_i (x0_int +$ s1) 3 in
   let _ = 
     if (abs_I d).low <= 0.0 then
-      failwith "inv_form: division by zero"
+      let msg = "inv_form: division by zero" in
+      if Config.fail_on_exception then
+	failwith msg
+      else
+	Log.warning msg
     else () in
   let b_high = (abs_I (inv_I d)).high in
   let b_high = make_stronger b_high in
@@ -473,10 +490,12 @@ let inv_form vars f =
 
 (* division *)
 let div_form vars f1 f2 =  
+  let _ = info 2 "div_form" in
   mul_form vars f1 (inv_form vars f2);;
 
 (* square root *)
 let sqrt_form vars f = 
+  let _ = info 2 "sqrt_form" in
 (*  let x0_int = Eval.eval_interval_expr vars f.v0 in *)
   let x0_int = estimate_expr vars f.v0 in
   let x1 = abs_eval_v1 vars f.v1 in
@@ -509,6 +528,7 @@ let sqrt_form vars f =
 
 (* sine *)
 let sin_form vars f =
+  let _ = info 2 "sin_form" in
   let x0_int = Eval.eval_interval_expr vars f.v0 in
   let x1 = abs_eval_v1 vars f.v1 in
   let s1 = itlist (fun (x,x_exp) s -> 
@@ -541,6 +561,7 @@ let sin_form vars f =
 
 (* cosine *)
 let cos_form vars f =
+  let _ = info 2 "cos_form" in
   let x0_int = Eval.eval_interval_expr vars f.v0 in
   let x1 = abs_eval_v1 vars f.v1 in
   let s1 = itlist (fun (x,x_exp) s -> 
@@ -573,6 +594,7 @@ let cos_form vars f =
 
 (* tangent *)
 let tan_form vars f =
+  let _ = info 2 "tan_form" in
 (*  let x0_int = Eval.eval_interval_expr vars f.v0 in *)
   let x0_int = estimate_expr vars f.v0 in
   let x1 = abs_eval_v1 vars f.v1 in
@@ -595,6 +617,7 @@ let tan_form vars f =
 
 (* arctangent *)
 let atan_form vars f =
+  let _ = info 2 "atan_form" in
   let x0_int = Eval.eval_interval_expr vars f.v0 in
   let x1 = abs_eval_v1 vars f.v1 in
   let s1 = itlist (fun (x,x_exp) s -> 
@@ -628,6 +651,7 @@ let atan_form vars f =
 
 (* exp *)
 let exp_form vars f =
+  let _ = info 2 "exp_form" in
   let x0_int = Eval.eval_interval_expr vars f.v0 in
   let x1 = abs_eval_v1 vars f.v1 in
   let s1 = itlist (fun (x,x_exp) s -> 
@@ -659,6 +683,7 @@ let exp_form vars f =
 
 (* log *)
 let log_form vars f =
+  let _ = info 2 "log_form" in
 (*  let x0_int = Eval.eval_interval_expr vars f.v0 in *)
   let x0_int = estimate_expr vars f.v0 in
   let x1 = abs_eval_v1 vars f.v1 in

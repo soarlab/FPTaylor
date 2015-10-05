@@ -266,8 +266,11 @@ let compute_form pi e =
       let e = Rounding_simpl.simplify_rounding e in
       let _ = report ("\nSimplified rounding: " ^ print_expr_str e) in
       let vars = var_bound_float in
+      let _ = Log.report "Building Taylor forms..." in
       let form' = build_form vars e in
+      let _ = Log.report "Simplifying Taylor forms..." in
       let form = simplify_form vars form' in
+      let _ = Log.report "success" in
       let form = 
 	if Config.simplification then {
 	  form_index = form.form_index;
@@ -336,6 +339,11 @@ let main () =
     exit 1
   else
     let _ = Config.print_options Format.std_formatter in
+    let _ = 
+      if Config.simplification && not (Maxima.test_maxima()) then
+ 	Log.error "A computer algebra system Maxima is not installed.";
+        Log.error "Simplifications are disabled.";
+        Log.error "Go to http://maxima.sourceforge.net/ to install Maxima." in
     let _ = map process_input Config.input_files in
     exit 0
 

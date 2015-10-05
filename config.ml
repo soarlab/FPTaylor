@@ -114,17 +114,9 @@ let proof_flag = stob (findd "false" "proof-record")
 let fail_on_exception = stob (findd "false" "fail-on-exception")
 let uncertainty = stob (findd "false" "uncertainty")
 let subnormal = stob (findd "true" "subnormal")
-let simplification = 
-  let v = stob (findd "false" "simplification") in
-  if v && not (Maxima.test_maxima()) then
-    let _ = 
-      Log.error "A computer algebra system Maxima is not installed.";
-      Log.error "Simplifications are disabled.";
-      Log.error "Go to http://maxima.sourceforge.net/ to install Maxima." in
-    false
-  else
-    v
+let simplification = stob (findd "false" "simplification")
 
+let verbosity = stoi (findd "1" "verbosity")
 let rel_error = stob (findd "false" "rel-error")
 let abs_error = stob (findd "true" "abs-error")
 (*let fp = stoi (findd "64" "fp")*)
@@ -151,6 +143,7 @@ let print_options fmt =
   let pb name b = pp (Format.sprintf "%s = %B" name b) in
   let pi name i = pp (Format.sprintf "%s = %d" name i) in
   let pf name f = pp (Format.sprintf "%s = %f" name f) in
+  pi "verbosity" verbosity;
   pb "proof-record" proof_flag;
   pb "fail-on-exception" fail_on_exception;
   pb "uncertainty" uncertainty;

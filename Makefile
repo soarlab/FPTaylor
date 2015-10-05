@@ -5,6 +5,8 @@ INCLUDE=$(INTERVAL_DIR)
 
 SRC=	lib.ml\
 	log.ml\
+	config.mli\
+	config.ml\
 	more_num.ml\
 	rounding.ml\
 	binary_float.ml\
@@ -18,8 +20,6 @@ SRC=	lib.ml\
 	proof_base.ml\
 	proof.ml\
 	maxima.ml\
-	config.mli\
-	config.ml\
 	opt_utils.ml\
 	opt_basic_bb.ml\
 	opt_gelpia.ml\

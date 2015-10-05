@@ -126,10 +126,26 @@ let num_of_float =
       let f' = ldexp (f -. float_of_int d) 10 in
       Int d +/ (to_num f' // base) in
   fun f ->
-    let m, e = frexp f in
-    let m, sign = if m < 0.0 then -.m, true else m, false in
-    let n = to_num m */ (Int 2 **/ Int e) in
-    if sign then minus_num n else n
+    match classify_float f with
+      | FP_normal | FP_subnormal | FP_zero -> 
+	let m, e = frexp f in
+	let m, sign = if m < 0.0 then -.m, true else m, false in
+	let n = to_num m */ (Int 2 **/ Int e) in
+	if sign then minus_num n else n
+      | FP_infinite ->
+	let msg = "num_of_float: infinity" in
+	if Config.fail_on_exception then
+	  failwith msg
+	else
+	  let _ = Log.warning msg in
+	  Int 0
+      | FP_nan ->
+	let msg = "num_of_float: nan" in
+	if Config.fail_on_exception then
+	  failwith msg
+	else
+	  let _ = Log.warning msg in
+	  Int 0
 
 let is_exact str =
   let f = float_of_string str in
