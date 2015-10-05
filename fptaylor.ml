@@ -66,6 +66,7 @@ let get_problem_error pi =
       e2 = get_val pi.abs_error_exact in
   min e1 e2
 
+let simplification_flag = ref Config.simplification
 
 let exprs () = env.expressions
 
@@ -146,7 +147,7 @@ let errors =
 	let _ = report "\nSolving the exact optimization problem" in
 	let abs_exprs = map (fun (e, err) -> mk_abs e, err.exp) v1 in
 	let full_expr', exp = sum_symbolic abs_exprs in
-	let full_expr = if Config.simplification then Maxima.simplify full_expr' else full_expr' in
+	let full_expr = if !simplification_flag then Maxima.simplify full_expr' else full_expr' in
 
 	let _ = 
 	  Out_racket.create_racket_file "abs_exact" 
@@ -180,7 +181,7 @@ let errors =
       let v1, v2 = split f.v1 in
       let v1 = map (fun (e, err) -> mk_div e f.v0, err) v1 in
       let v1 = 
-	if Config.simplification then map (fun (e, err) -> Maxima.simplify e, err) v1 else v1 in
+	if !simplification_flag then map (fun (e, err) -> Maxima.simplify e, err) v1 else v1 in
       let bounds2 = map (compute_bound tol) v2 in
       let total2', exp2 = sum_high bounds2 in
       let total2 = get_eps exp2 *^ total2' in
@@ -201,7 +202,7 @@ let errors =
 	  let _ = report "\nSolving the exact optimization problem" in
 	  let abs_exprs = map (fun (e, err) -> mk_abs e, err.exp) v1 in
 	  let full_expr', exp = sum_symbolic abs_exprs in
-	  let full_expr = if Config.simplification then Maxima.simplify full_expr' else full_expr' in
+	  let full_expr = if !simplification_flag then Maxima.simplify full_expr' else full_expr' in
 
 	  let _ = 
 	    Out_racket.create_racket_file "rel_exact" 
@@ -272,7 +273,7 @@ let compute_form pi e =
       let form = simplify_form vars form' in
       let _ = Log.report "success" in
       let form = 
-	if Config.simplification then {
+	if !simplification_flag then {
 	  form_index = form.form_index;
 	  v0 = Maxima.simplify form.v0;
 	  v1 = map (fun (e, err) -> (if err.index < 0 then e else Maxima.simplify e), err) form.v1;
@@ -341,9 +342,13 @@ let main () =
     let _ = Config.print_options Format.std_formatter in
     let _ = 
       if Config.simplification && not (Maxima.test_maxima()) then
- 	Log.error "A computer algebra system Maxima is not installed.";
-        Log.error "Simplifications are disabled.";
-        Log.error "Go to http://maxima.sourceforge.net/ to install Maxima." in
+	begin
+ 	  Log.error "A computer algebra system Maxima is not installed.";
+          Log.error "Simplifications are disabled.";
+          Log.error "Go to http://maxima.sourceforge.net/ to install Maxima.";
+          simplification_flag := false 
+	end
+    in
     let _ = map process_input Config.input_files in
     exit 0
 
