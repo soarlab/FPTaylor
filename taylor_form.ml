@@ -165,8 +165,9 @@ let find_index, expr_for_index, reset_index_counter, current_index =
   let counter = ref 0 in
   let exprs = ref [] in
   let find_index expr =
+    let unique_flag = Config.get_bool_option "unique-indices" false in
     let i = assocd_eq eq_expr (-1) expr !exprs in
-    if i > 0 then i else
+    if i > 0 && (not unique_flag) then i else
       let _ = counter := !counter + 1 in
       let _ = exprs := (expr, !counter) :: !exprs in
       !counter 
