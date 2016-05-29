@@ -1,0 +1,11 @@
+Variables
+  real x in [-10, 10],
+  real y in [-2, 2];
+
+Expressions
+  e_add32 rnd32= x + y,
+  e_add64 rnd64= x + y,
+  e_sub_add32 rnd32= x - (x + y);
+
+  
+  
