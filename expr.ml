@@ -235,6 +235,30 @@ let z3py_print_env = {
       | _ -> false);
 }
 
+let py_print_env = {
+  env_op_name = (fun op ->
+    match op with
+      | Op_nat_pow -> true, "pow"
+      | _ -> false, "");
+
+  env_op_infix = (function
+  | Op_nat_pow -> true, false
+  | _ -> false, false);
+
+  env_print = (fun p _ e ->
+    match e with
+      | Const f -> 
+	let s = Big_int.string_of_big_int in
+	let n = f.rational_v in
+	let ns = s (More_num.numerator n) and
+	    ds = s (More_num.denominator n) in
+(*	let _ = p ("(" ^ string_of_num f.rational_v ^ ")") in *)
+	let _ = p ("(Fraction(" ^ ns ^ "," ^ ds ^ "))") in
+	true
+      | _ -> false);
+}
+
+
 let ocaml_float_print_env = {
   env_op_name = (function
     | Op_neg -> true, "-."

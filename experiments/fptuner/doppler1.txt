@@ -1,0 +1,15 @@
+Variables
+  u in [-100, 100] +/- 1e-7,
+  v in [20, 20000] +/- 1e-9,
+  T in [-30, 50] +/- 1e-6;
+	
+Definitions
+  t1 rnd32= 331.4 + 0.6 * T,
+  r rnd32= (-t1 * v) / ((t1 + u) * (t1 + u))
+;
+  
+
+Expressions
+  doppler1 = r
+;
+

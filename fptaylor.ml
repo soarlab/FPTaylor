@@ -242,6 +242,61 @@ let errors =
     let _ = report "" in
     pi
 
+(* fptuner *)
+let fptuner_errors pi form =
+  (* Splits error terms into regular, type-casting, and second-order *)
+  let rec split es =
+    match es with
+    | [] -> [], [], []
+    | (ex, err) :: t ->
+      let es_reg, es_cast, es_second = split t in
+      if err.index < 0 then
+	es_reg, es_cast, (ex, err) :: es_second
+      else if err.cast_flag then
+	es_reg, (ex, err) :: es_cast, es_second
+      else
+	(ex, err) :: es_reg, es_cast, es_second
+  in
+  let print (ex, err) =
+    let str = Format.sprintf "exp = %d; index = %d; (regular, context) = (%d, %d): %s"
+      err.exp err.index err.regular_index err.context_index (print_expr_str ex) in
+    report str in
+  let print_py fmt (ex, err) =
+    let expr_str = print_expr_str_in_env py_print_env ex in
+    let str = Format.sprintf "(%d, %d, %d, %d, %s)\n"   
+      err.exp err.index err.regular_index err.context_index expr_str in
+    Format.pp_print_string fmt str in
+  let eval_v2 v2 =
+    let bounds2 = map (fun (ex, err) -> (Eval.eval_interval_const_expr ex).high, err.exp) v2 in
+    let total2, exp2 = sum_high bounds2 in
+    get_eps exp2 *^ total2 in
+  let v_reg, v_cast, v2 = split form.v1 in
+  let bound2 = eval_v2 v2 in
+  let _ = report "\nFPTuner results:" in
+  let _ = report "Regular" in
+  let _ = map print v_reg in
+  let _ = report "\nType-cast" in
+  let _ = map print v_cast in
+  let _ = report "\nSecond-order" in
+  let _ = map print v2 in
+  let _ = report (Format.sprintf "total2: %e" bound2) in 
+  let _ = report "" in
+  (* Create a Python file and save error terms *)
+  let tmp = Lib.get_dir "tmp" in
+  let out_name = Filename.concat tmp (pi.name ^ ".py") in
+  let oc = open_out out_name in
+  let fmt = Format.make_formatter (output oc) (fun () -> flush oc) in
+  let p str = Format.pp_print_string fmt str in
+  let _ = p "# (exp, index, regular_index, context_index, expr)\n" in
+  let _ = p "# Regular terms\n" in
+  let _ = map (print_py fmt) v_reg in
+  let _ = p "# Type-cast terms\n" in
+  let _ = map (print_py fmt) v_cast in
+  let _ = p "# Second-order terms\n" in
+  let _ = map (print_py fmt) v2 in
+  let _ = close_out oc in
+  pi
+
 let safety_check e =
   try
     Rounding_simpl.check_expr var_bound_float e
@@ -282,7 +337,12 @@ let compute_form pi e =
 	  form in
       let _ = print_form form in
       let _ = report "" in
-      let pi = errors pi form in
+      let pi =
+	(* fptuner *)
+	if Config.get_bool_option "fptuner" false then
+	  fptuner_errors pi form
+	else
+	  errors pi form in
       pi, form
     with Failure msg -> let _ = error msg in pi, dummy_tform
   in

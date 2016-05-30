@@ -109,7 +109,9 @@ let simplify_rounding =
 	      | Bin_op (Op_add, e1, e2) | Bin_op (Op_sub, e1, e2) ->
 		if (is_subtype (get_type e1) rnd.fp_type && 
 		      is_subtype (get_type e2) rnd.fp_type &&
-		      not Config.proof_flag) then
+		      not Config.proof_flag &&
+		      (* fptuner *)
+		      not (Config.get_bool_option "fptuner" false)) then
 		(* delta = 0 *)
 		  Rounding ({rnd with delta_exp = 0; special_flag = true;}, arg)
 		else

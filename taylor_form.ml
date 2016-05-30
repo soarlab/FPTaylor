@@ -26,6 +26,15 @@ type error_info = {
   index : int;
   (* The upper bound of the error is 2^exp *)
   exp : int;
+
+  (* a special flag for type-cast rounding *)
+  cast_flag : bool;
+  (* a special flag which is true for regular rounding *)
+  regular_flag : bool;
+  (* context index of type-cast rounding *)
+  context_index : int;
+  (* corresponding regular index of type-cast rounding *)
+  regular_index : int;
 }
 
 type taylor_form = {
@@ -61,6 +70,11 @@ let mk_err_var, reset_error_index =
     proof_index = (let _ = incr err_index in !err_index);
     index = index;
     exp = exp;
+    (* The next variables are set by fptuner_rounded_form *)
+    cast_flag = false;
+    regular_flag = false;
+    context_index = -1;
+    regular_index = -1;
   } in
   let reset () = err_index := 0 in
   mk, reset
@@ -164,8 +178,21 @@ let simplify_form vars f =
 let find_index, expr_for_index, reset_index_counter, current_index =
   let counter = ref 0 in
   let exprs = ref [] in
+  (* fptuner *)
+  let fptuner_unique_flag expr = 
+    if Config.get_bool_option "fptuner" false then
+      if Config.get_bool_option "fptuner-shared-vars" false then
+	match expr with
+	| Rounding (rnd, Var _) -> false
+	| _ -> true
+      else
+	true
+    else
+      false in
   let find_index expr =
-    let unique_flag = Config.get_bool_option "unique-indices" false in
+    (* fptuner *)
+    let unique_flag = (Config.get_bool_option "unique-indices" false 
+		       || fptuner_unique_flag expr) in
     let i = assocd_eq eq_expr (-1) expr !exprs in
     if i > 0 && (not unique_flag) then i else
       let _ = counter := !counter + 1 in
@@ -370,6 +397,63 @@ let rounded_form vars original_expr rnd f =
 	[fp_to_const m2, m2_err];
     }
 
+(* Returns the index of the new error term.
+   Only first-order error terms are considered (index >= 0)
+   such that regular_flag = false and cast_flag = false. *)
+let fptuner_get_new_rnd_index v1 =
+  let f indices (ex, err) =
+    if err.index >= 0 && not err.cast_flag && not err.regular_flag then
+      err.index :: indices
+    else
+      indices in
+  (* Find all good indices *)
+  let indices = List.fold_left f [] v1 in
+  (* Make sure that there one and only one good index *)
+  let n = List.length indices in
+  (* It is possible that n = 0 if the rounding operation is performed with eps = 0
+     (one example is rnd(0.5 * x)) *)
+  let _ = if n <> 1 then Log.error (Format.sprintf "length indices <> 1: %d" n) in
+  if n < 1 then -1 else List.hd indices
+
+let fptuner_rounded_form vars original_expr rnd f =
+  let _ = info 2 "fptuner_rounded_form" in
+  let f1' = 
+    match original_expr with
+    | Rounding (rnd, Const c) ->
+      const_rnd_form rnd (Const c)
+    | Rounding (rnd, Var v) ->
+      var_rnd_form rnd (Var v)
+    | _ ->
+      rounded_form vars original_expr rnd f in
+  (* Find the index of new error term and assign it to all
+     existing type-cast error terms without context.
+     Also mark all new rounding operations as regular. *)
+  let index = fptuner_get_new_rnd_index f1'.v1 in
+  let f1 = {f1' with v1 = map 
+      (fun (ex, err) ->
+	if err.cast_flag then
+	  if err.context_index < 0 then
+	    (ex, {err with context_index = index})
+	  else
+	    (ex, err)
+	else if not err.cast_flag && not err.regular_flag then
+	  (ex, {err with regular_flag = true})
+	else
+	  (ex, err)) 
+      f1'.v1} in
+  (* Round the result one more time (type-cast rounding) *)
+  let f2' = rounded_form vars (Rounding (rnd, original_expr)) rnd f1 in
+  (* Mark all new rounding operations as type-casting and
+     assign them corresponding regular indices *)
+  let f2 = {f2' with v1 = map
+      (fun (ex, err) ->
+	if not err.cast_flag && not err.regular_flag then
+	  (ex, {err with cast_flag = true; regular_index = index})
+	else
+	  (ex, err))
+      f2'.v1} in 
+  f2
+
 (* negation *)
 let neg_form f = 
   let _ = info 2 "neg_form" in
@@ -431,9 +515,9 @@ let rounded_add_form vars original_expr rnd f1 f2 =
 
 (* multiplication *)
 let mul_form =
-  let _ = info 2 "mul_form" in
   let mul1 x = map (fun (e, err) -> mk_mul x e, err) in
   fun vars f1 f2 -> 
+    let _ = info 2 "mul_form" in
     let x1 = abs_eval_v1 vars f1.v1 and
 	y1 = abs_eval_v1 vars f2.v1 in
     let m2, m2_exp = sum2_high x1 y1 in
@@ -721,6 +805,10 @@ let build_form vars =
     match e with
       | Const _ -> const_form e
       | Var _ -> var_form e
+	(* All rounding operation are treated specially when fptuner = true *)
+      | Rounding (rnd, arg) when Config.get_bool_option "fptuner" false ->
+	let arg_form = build arg in
+	fptuner_rounded_form vars e rnd arg_form
       | Rounding (rnd, Const c) 
 	  (* when not Config.proof_flag *) -> const_rnd_form rnd (Const c)
       | Rounding (rnd, Var v) 
