@@ -1,0 +1,8 @@
+Variables
+  real x in [-10, 10];
+
+Expressions
+  e1 rnd32= x,
+  e2 rnd64= x;
+  
+  
