@@ -18,10 +18,10 @@ open Opt_utils
 
 (* GELPIA parameters *)
 type gelpia_pars = {
-  input_epsilon : float;
+  input_epsilon  : float;
   output_epsilon : float;
-  solver : string;
-  threads : int;
+  timeout        : int;
+  max_iters      : int;
 }
 
 let gen_gelpia_code fmt =
@@ -30,13 +30,14 @@ let gen_gelpia_code fmt =
   let p' str = Format.pp_print_string fmt str in
 
   let parameters pars =
-    p (Format.sprintf "--input-epsilon %e" pars.input_epsilon);
-    p (Format.sprintf "--output-epsilon %e" pars.output_epsilon);
-    p (Format.sprintf "--threads %d" pars.threads);
-    p (Format.sprintf "--solver %s" pars.solver) in
+    p (Format.sprintf "-ie %e" pars.input_epsilon);
+    p (Format.sprintf "-oe %e" pars.output_epsilon);
+    p (Format.sprintf "-t %d" pars.timeout);
+    (*  p (Format.sprintf "-M %d" pars.max_iters); *)
+  (*    p (Format.sprintf "--solver %s" pars.solver) *) in
 
   let func expr = 
-    p' "--function \"";
+    p' "-f \"";
     print_expr_in_env gelpia_print_env fmt expr;
     p "\"" in
 
@@ -44,7 +45,7 @@ let gen_gelpia_code fmt =
     let dict = List.map2 (fun name b ->
       Format.sprintf "'%s' : (%.20e, %.20e)" name b.low b.high) 
       names bounds in
-    p ("--input \"{" ^ String.concat ", " dict ^ "}\"") in
+    p ("-i \"{" ^ String.concat ", " dict ^ "}\"") in
 
   fun (pars, var_bound, expr) ->
     let var_names = vars_in_expr expr in
@@ -72,10 +73,10 @@ let get_gelpia_cmd () =
 
 let abs_max_expr tol_x tol_f var_bound expr =
   let pars = {
-    input_epsilon = tol_x;
+    input_epsilon  = tol_x;
     output_epsilon = tol_f;
-    solver = Config.get_option "gelpia-solver" "map_parallel";
-    threads = Config.get_int_option "gelpia-threads" 2;
+    timeout        = 30;
+    max_iters      = 50000;
   } in
   let tmp = Lib.get_dir "tmp" in
   let gelpia_name = 
@@ -85,11 +86,12 @@ let abs_max_expr tol_x tol_f var_bound expr =
   let gen = gen_gelpia_code in
   let abs_expr = mk_abs expr in
   let _ = write_to_file gelpia_name gen (pars, var_bound, abs_expr) in
-  let cmd = Format.sprintf "%s @%s" (get_gelpia_cmd()) gelpia_name in
+  let cmd = Format.sprintf "%s -T -t 5 -z %@%s" (get_gelpia_cmd()) gelpia_name in
   let out = run_cmd cmd in
   try
-    let max = get_float out "Maximum: " in
-    max
+    let min = get_float out "Minimum: " and
+        max = get_float out "Maximum: " in
+    min, max
   with _ ->
     let msg = "GELPIA error: " ^ String.concat "\n" (cmd :: out) in
     failwith msg

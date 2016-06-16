@@ -33,7 +33,7 @@ let optimize tolf e =
 	Opt_nlopt.min_max_expr tolf var_bound_float e
       | "gelpia" -> 
 	let tolx = Config.get_float_option "gelpia-tolx" 0.01 in
-	0.0, Opt_gelpia.abs_max_expr tolx tolf var_bound_float e
+	Opt_gelpia.abs_max_expr tolx tolf var_bound_float e
       | s -> failwith ("Unsupported optimization engine: " ^ s) in
   min, max
 
