@@ -98,14 +98,17 @@ let estimate_expr, reset_estimate_cache =
   let cache = ref [] in
   let reset () = (cache := []) in
   let estimate vars e =
-    if Config.get_bool_option "intermediate-opt" false then
+    let r0 = Eval.eval_interval_expr vars e in
+    let int_opt_flag = Config.get_bool_option "intermediate-opt" false in
+    if int_opt_flag && size_I r0 > Config.opt_tol then 
       let _ = Log.report ("Estimating: " ^ print_expr_str e) in
       let min, max = Opt.optimize Config.opt_tol e in
       let _ = Log.report 
 	(Printf.sprintf "Estimation result: [%f, %f]" min max) in
       {low = min; high = max}
     else
-      Eval.eval_interval_expr vars e in
+      r0
+  in
   let estimate_and_cache vars e =
     try
       assoc_eq eq_expr e !cache
