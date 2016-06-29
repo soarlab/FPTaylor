@@ -4,8 +4,8 @@ Variables
   z in [-2, 2];
 	
 Expressions
-  sine rnd32= x - (x*x*x)/6.0 + (x*x*x*x*x)/120.0 - (x*x*x*x*x*x*x)/5040.0,
-  sqroot rnd32= 1.0 + 0.5*y - 0.125*y*y + 0.0625*y*y*y - 0.0390625*y*y*y*y,
-  sineOrder3 rnd32= 0.954929658551372 * z -  0.12900613773279798*(z*z*z)
+  sine rnd64= x - (x*x*x)/6.0 + (x*x*x*x*x)/120.0 - (x*x*x*x*x*x*x)/5040.0,
+  sqroot rnd64= 1.0 + 0.5*y - 0.125*y*y + 0.0625*y*y*y - 0.0390625*y*y*y*y,
+  sineOrder3 rnd64= 0.954929658551372 * z -  0.12900613773279798*(z*z*z)
 ;
   

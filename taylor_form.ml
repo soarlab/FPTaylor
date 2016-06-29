@@ -183,21 +183,20 @@ let find_index, expr_for_index, reset_index_counter, current_index =
   let exprs = ref [] in
   (* fptuner *)
   let fptuner_unique_flag expr = 
-    if Config.get_bool_option "fptuner" false then
-      if Config.get_bool_option "fptuner-shared-vars" false then
-	match expr with
-	| Rounding (rnd, Var _) -> false
-	| _ -> true
-      else
-	true
+    if Config.get_bool_option "fptuner-shared-vars" false then
+      match expr with
+      | Rounding (rnd, Var _) -> false
+      | _ -> true
     else
-      false in
+      Config.get_bool_option "fptuner" false
+  in
   let find_index expr =
     (* fptuner *)
     let unique_flag = (Config.get_bool_option "unique-indices" false 
 		       || fptuner_unique_flag expr) in
     let i = assocd_eq eq_expr (-1) expr !exprs in
-    if i > 0 && (not unique_flag) then i else
+    if i > 0 && (not unique_flag) then i
+    else
       let _ = counter := !counter + 1 in
       let _ = exprs := (expr, !counter) :: !exprs in
       !counter 
