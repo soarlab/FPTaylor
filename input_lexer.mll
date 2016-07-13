@@ -69,10 +69,16 @@
       "acos", ACOS;
       "asin", ASIN;
       "atan", ATAN;
+      "atan2", ATAN2;
+      "arccos", ACOS;
+      "arcsin", ASIN;
+      "arctan", ATAN;
       "acosh", ACOSH;
       "asinh", ASINH;
       "atanh", ATANH;
-      "atan2", ATAN2;
+      "arsinh", ASINH;
+      "arcosh", ACOSH;
+      "artanh", ATANH;
       "sub2", SUB2;
       "floor_power2", FLOOR_POWER2;
       "sym_interval", SYM_INTERVAL;

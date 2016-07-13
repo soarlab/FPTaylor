@@ -206,6 +206,16 @@ let check_expr vars =
 	  | Op_sin -> sin_I x
 	  | Op_cos -> cos_I x
 	  | Op_tan -> tan_I x
+	  | Op_asin ->
+	    if x.low < -1.0 || x.high > 1.0 then
+	      raise (Exceptional_operation (e, "Arcsine of an invalid argument"))
+	    else
+	      asin_I x
+	  | Op_acos ->
+	    if x.low < -1.0 || x.high > 1.0 then
+	      raise (Exceptional_operation (e, "Arccosine of an invalid argument"))
+	    else
+	      acos_I x
 	  | Op_atan -> atan_I x
 	  | Op_exp -> exp_I x
 	  | Op_log -> 
@@ -213,6 +223,9 @@ let check_expr vars =
 	      raise (Exceptional_operation (e, "Log of non-positive number"))
 	    else
 	      log_I x
+	  | Op_sinh -> sinh_I x
+	  | Op_cosh -> cosh_I x
+	  | Op_tanh -> tanh_I x
 	  | Op_floor_power2 -> Eval.floor_power2_I x
 	  | Op_sym_interval -> Eval.sym_interval_I x
 	  | _ -> failwith ("check_expr: Unsupported unary operation: " 

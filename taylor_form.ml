@@ -451,7 +451,6 @@ let mul_form =
 (* reciprocal *)
 let inv_form vars f = 
   let _ = info 2 "inv_form" in
-(*  let x0_int = Eval.eval_interval_expr vars f.v0 in *)
   let x0_int = estimate_expr vars f.v0 in
   let x1 = abs_eval_v1 vars f.v1 in
   let s1 = itlist (fun (x,x_exp) s -> 
@@ -497,7 +496,6 @@ let div_form vars f1 f2 =
 (* square root *)
 let sqrt_form vars f = 
   let _ = info 2 "sqrt_form" in
-(*  let x0_int = Eval.eval_interval_expr vars f.v0 in *)
   let x0_int = estimate_expr vars f.v0 in
   let x1 = abs_eval_v1 vars f.v1 in
   let s1 = itlist (fun (x,x_exp) s -> 
@@ -530,7 +528,7 @@ let sqrt_form vars f =
 (* sine *)
 let sin_form vars f =
   let _ = info 2 "sin_form" in
-  let x0_int = Eval.eval_interval_expr vars f.v0 in
+  let x0_int = estimate_expr vars f.v0 in
   let x1 = abs_eval_v1 vars f.v1 in
   let s1 = itlist (fun (x,x_exp) s -> 
     let eps = get_eps x_exp in
@@ -563,7 +561,7 @@ let sin_form vars f =
 (* cosine *)
 let cos_form vars f =
   let _ = info 2 "cos_form" in
-  let x0_int = Eval.eval_interval_expr vars f.v0 in
+  let x0_int = estimate_expr vars f.v0 in
   let x1 = abs_eval_v1 vars f.v1 in
   let s1 = itlist (fun (x,x_exp) s -> 
     let eps = get_eps x_exp in
@@ -594,9 +592,9 @@ let cos_form vars f =
   }
 
 (* tangent *)
+(* TODO: proof support *)
 let tan_form vars f =
   let _ = info 2 "tan_form" in
-(*  let x0_int = Eval.eval_interval_expr vars f.v0 in *)
   let x0_int = estimate_expr vars f.v0 in
   let x1 = abs_eval_v1 vars f.v1 in
   let s1 = itlist (fun (x,x_exp) s -> 
@@ -616,10 +614,80 @@ let tan_form vars f =
       @ [fp_to_const m2, mk_err_var (-1) m2_exp];
   }
 
+(* arcsine *)
+(* TODO: proof support *)
+let asin_form vars f =
+  let _ = info 2 "asin_form" in
+  let x0_int = estimate_expr vars f.v0 in
+  let x1 = abs_eval_v1 vars f.v1 in
+  let s1 = itlist (fun (x,x_exp) s -> 
+    let eps = get_eps x_exp in
+    let xi = {low = -. eps; high = eps} in
+    (xi *$. x) +$ s) x1 zero_I in
+  let m1 = make_stronger (abs_I s1).high in
+  let d =
+    let xi =
+      if Config.proof_flag then
+	x0_int +$ {low = -.m1; high = m1}
+      else
+	x0_int +$ s1 in
+    xi /$ sqrt_I (pow_I_i (one_I -$ pow_I_i xi 2) 3) in 
+  let b_high = 0.5 *^ (abs_I d).high in
+  let b_high = make_stronger b_high in
+  let m2, m2_exp = sum2_high x1 x1 in
+  let m2 = make_stronger m2 in
+  let m3 = b_high *^ m2 in
+  let form_index = next_form_index() in
+  let m3_err = mk_err_var (-1) m2_exp in
+(*  let _ = Proof.add_atn_step form_index f.form_index
+    m1 m2 m2_exp b_high m3 m3_err.proof_index in *)
+  let v1_0 = mk_sqrt (mk_sub const_1 (mk_mul f.v0 f.v0)) in
+  {
+    form_index = form_index;
+    v0 = mk_asin f.v0;
+    v1 = map (fun (e, err) -> mk_div e v1_0, err) f.v1
+      @ [fp_to_const m3, m3_err];
+  }
+
+(* arccosine *)
+(* TODO: proof support *)
+let acos_form vars f =
+  let _ = info 2 "acos_form" in
+  let x0_int = estimate_expr vars f.v0 in
+  let x1 = abs_eval_v1 vars f.v1 in
+  let s1 = itlist (fun (x,x_exp) s -> 
+    let eps = get_eps x_exp in
+    let xi = {low = -. eps; high = eps} in
+    (xi *$. x) +$ s) x1 zero_I in
+  let m1 = make_stronger (abs_I s1).high in
+  let d =
+    let xi =
+      if Config.proof_flag then
+	x0_int +$ {low = -.m1; high = m1}
+      else
+	x0_int +$ s1 in
+    ~-$ (xi /$ sqrt_I (pow_I_i (one_I -$ pow_I_i xi 2) 3)) in 
+  let b_high = 0.5 *^ (abs_I d).high in
+  let b_high = make_stronger b_high in
+  let m2, m2_exp = sum2_high x1 x1 in
+  let m2 = make_stronger m2 in
+  let m3 = b_high *^ m2 in
+  let form_index = next_form_index() in
+  let m3_err = mk_err_var (-1) m2_exp in
+(*  let _ = Proof.add_atn_step form_index f.form_index
+    m1 m2 m2_exp b_high m3 m3_err.proof_index in *)
+  let v1_0 = mk_sqrt (mk_sub const_1 (mk_mul f.v0 f.v0)) in
+  {
+    form_index = form_index;
+    v0 = mk_acos f.v0;
+    v1 = map (fun (e, err) -> mk_neg (mk_div e v1_0), err) f.v1
+      @ [fp_to_const m3, m3_err];
+  }
+
 (* arctangent *)
 let atan_form vars f =
   let _ = info 2 "atan_form" in
-  let x0_int = Eval.eval_interval_expr vars f.v0 in
+  let x0_int = estimate_expr vars f.v0 in
   let x1 = abs_eval_v1 vars f.v1 in
   let s1 = itlist (fun (x,x_exp) s -> 
     let eps = get_eps x_exp in
@@ -653,7 +721,7 @@ let atan_form vars f =
 (* exp *)
 let exp_form vars f =
   let _ = info 2 "exp_form" in
-  let x0_int = Eval.eval_interval_expr vars f.v0 in
+  let x0_int = estimate_expr vars f.v0 in
   let x1 = abs_eval_v1 vars f.v1 in
   let s1 = itlist (fun (x,x_exp) s -> 
     let eps = get_eps x_exp in
@@ -685,7 +753,6 @@ let exp_form vars f =
 (* log *)
 let log_form vars f =
   let _ = info 2 "log_form" in
-(*  let x0_int = Eval.eval_interval_expr vars f.v0 in *)
   let x0_int = estimate_expr vars f.v0 in
   let x1 = abs_eval_v1 vars f.v1 in
   let s1 = itlist (fun (x,x_exp) s -> 
@@ -712,6 +779,111 @@ let log_form vars f =
     form_index = form_index;
     v0 = log_v0;
     v1 = map (fun (e, err) -> mk_div e f.v0, err) f.v1
+      @ [fp_to_const m3, m3_err];
+  }
+
+(* sinh *)
+(* TODO: proof support *)
+let sinh_form vars f =
+  let _ = info 2 "sinh_form" in
+  let x0_int = estimate_expr vars f.v0 in
+  let x1 = abs_eval_v1 vars f.v1 in
+  let s1 = itlist (fun (x,x_exp) s -> 
+    let eps = get_eps x_exp in
+    let xi = {low = -. eps; high = eps} in
+    (xi *$. x) +$ s) x1 zero_I in
+  let m1 = make_stronger (abs_I s1).high in
+  let d =
+    let xi =
+      if Config.proof_flag then
+	x0_int +$ {low = -.m1; high = m1}
+      else
+	x0_int +$ s1 in
+    sinh_I xi in
+  let b_high = 0.5 *^ (abs_I d).high in
+  let b_high = make_stronger b_high in
+  let m2, m2_exp = sum2_high x1 x1 in
+  let m2 = make_stronger m2 in
+  let m3 = b_high *^ m2 in
+  let form_index = next_form_index() in
+  let m3_err = mk_err_var (-1) m2_exp in
+(*  let _ = Proof.add_atn_step form_index f.form_index
+    m1 m2 m2_exp b_high m3 m3_err.proof_index in *)
+  let v1_0 = mk_cosh f.v0 in
+  {
+    form_index = form_index;
+    v0 = mk_sinh f.v0;
+    v1 = map (fun (e, err) -> mk_mul v1_0 e, err) f.v1
+      @ [fp_to_const m3, m3_err];
+  }
+
+(* cosh *)
+(* TODO: proof support *)
+let cosh_form vars f =
+  let _ = info 2 "cosh_form" in
+  let x0_int = estimate_expr vars f.v0 in
+  let x1 = abs_eval_v1 vars f.v1 in
+  let s1 = itlist (fun (x,x_exp) s -> 
+    let eps = get_eps x_exp in
+    let xi = {low = -. eps; high = eps} in
+    (xi *$. x) +$ s) x1 zero_I in
+  let m1 = make_stronger (abs_I s1).high in
+  let d =
+    let xi =
+      if Config.proof_flag then
+	x0_int +$ {low = -.m1; high = m1}
+      else
+	x0_int +$ s1 in
+    cosh_I xi in
+  let b_high = 0.5 *^ (abs_I d).high in
+  let b_high = make_stronger b_high in
+  let m2, m2_exp = sum2_high x1 x1 in
+  let m2 = make_stronger m2 in
+  let m3 = b_high *^ m2 in
+  let form_index = next_form_index() in
+  let m3_err = mk_err_var (-1) m2_exp in
+(*  let _ = Proof.add_atn_step form_index f.form_index
+    m1 m2 m2_exp b_high m3 m3_err.proof_index in *)
+  let v1_0 = mk_sinh f.v0 in
+  {
+    form_index = form_index;
+    v0 = mk_cosh f.v0;
+    v1 = map (fun (e, err) -> mk_mul v1_0 e, err) f.v1
+      @ [fp_to_const m3, m3_err];
+  }
+
+(* tanh *)
+(* TODO: proof support *)
+let tanh_form vars f =
+  let _ = info 2 "tanh_form" in
+  let x0_int = estimate_expr vars f.v0 in
+  let x1 = abs_eval_v1 vars f.v1 in
+  let s1 = itlist (fun (x,x_exp) s -> 
+    let eps = get_eps x_exp in
+    let xi = {low = -. eps; high = eps} in
+    (xi *$. x) +$ s) x1 zero_I in
+  let m1 = make_stronger (abs_I s1).high in
+  let d =
+    let xi =
+      if Config.proof_flag then
+	x0_int +$ {low = -.m1; high = m1}
+      else
+	x0_int +$ s1 in
+    ~-$ (tanh_I xi /$ pow_I_i (cosh_I xi) 2) in
+  let b_high = (abs_I d).high in
+  let b_high = make_stronger b_high in
+  let m2, m2_exp = sum2_high x1 x1 in
+  let m2 = make_stronger m2 in
+  let m3 = b_high *^ m2 in
+  let form_index = next_form_index() in
+  let m3_err = mk_err_var (-1) m2_exp in
+(*  let _ = Proof.add_atn_step form_index f.form_index
+    m1 m2 m2_exp b_high m3 m3_err.proof_index in *)
+  let v1_0 = mk_mul (mk_cosh f.v0) (mk_cosh f.v0) in
+  {
+    form_index = form_index;
+    v0 = mk_tanh f.v0;
+    v1 = map (fun (e, err) -> mk_div e v1_0, err) f.v1
       @ [fp_to_const m3, m3_err];
   }
 
@@ -744,9 +916,14 @@ let build_form vars =
 	    | Op_sin -> sin_form vars arg_form
 	    | Op_cos -> cos_form vars arg_form
 	    | Op_tan -> tan_form vars arg_form
+	    | Op_asin -> asin_form vars arg_form
+	    | Op_acos -> acos_form vars arg_form
 	    | Op_atan -> atan_form vars arg_form
 	    | Op_exp -> exp_form vars arg_form
 	    | Op_log -> log_form vars arg_form
+	    | Op_sinh -> sinh_form vars arg_form
+	    | Op_cosh -> cosh_form vars arg_form
+	    | Op_tanh -> tanh_form vars arg_form
 	    | _ -> failwith 
 	      ("build_form: unsupported unary operation " ^ op_name op)
 	end

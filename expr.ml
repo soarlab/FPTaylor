@@ -35,9 +35,17 @@ type op_type =
   | Op_sin
   | Op_cos
   | Op_tan
+  | Op_asin
+  | Op_acos
   | Op_atan
   | Op_exp
   | Op_log
+  | Op_sinh
+  | Op_cosh
+  | Op_tanh
+  | Op_asinh
+  | Op_acosh
+  | Op_atanh
   | Op_fma
   | Op_nat_pow
   | Op_sub2
@@ -68,9 +76,17 @@ let mk_const c = Const c and
     mk_sin a = U_op (Op_sin, a) and
     mk_cos a = U_op (Op_cos, a) and
     mk_tan a = U_op (Op_tan, a) and
+    mk_asin a = U_op (Op_asin, a) and
+    mk_acos a = U_op (Op_acos, a) and
     mk_atan a = U_op (Op_atan, a) and
     mk_exp a = U_op (Op_exp, a) and
     mk_log a = U_op (Op_log, a) and
+    mk_sinh a = U_op (Op_sinh, a) and
+    mk_cosh a = U_op (Op_cosh, a) and
+    mk_tanh a = U_op (Op_tanh, a) and
+    mk_asinh a = U_op (Op_asinh, a) and
+    mk_acosh a = U_op (Op_acosh, a) and
+    mk_atanh a = U_op (Op_atanh, a) and
     mk_add a b = Bin_op (Op_add, a, b) and
     mk_sub a b = Bin_op (Op_sub, a, b) and
     mk_mul a b = Bin_op (Op_mul, a, b) and
@@ -139,9 +155,17 @@ let op_name_in_env env op =
       | Op_sin -> "sin"
       | Op_cos -> "cos"
       | Op_tan -> "tan"
+      | Op_asin -> "asin"
+      | Op_acos -> "acos"
       | Op_atan -> "atan"
       | Op_exp -> "exp"
       | Op_log -> "log"
+      | Op_sinh -> "sinh"
+      | Op_cosh -> "cosh"
+      | Op_tanh -> "tanh"
+      | Op_asinh -> "asinh"
+      | Op_acosh -> "acosh"
+      | Op_atanh -> "atanh"
       | Op_fma -> "fma"
       | Op_nat_pow -> "^" 
       | Op_sub2 -> "sub2"
@@ -214,7 +238,9 @@ let z3py_print_env = {
     match op with
       | Op_nat_pow -> true, "**"
       | Op_abs -> true, "z3_abs"
-      | Op_sin | Op_cos | Op_tan | Op_atan | Op_exp | Op_log
+      | Op_sin | Op_cos | Op_tan | Op_asin | Op_acos | Op_atan 
+      | Op_exp | Op_log 
+      | Op_sinh | Op_cosh | Op_tanh | Op_asinh | Op_acosh | Op_atanh
       | Op_sub2 | Op_floor_power2 | Op_sym_interval
 	-> failwith ("z3py: " ^ op_name op ^ " is not supported")
       | _ -> false, "");
@@ -274,9 +300,17 @@ let ocaml_interval_print_env = {
     | Op_sin -> true, "sin_I"
     | Op_cos -> true, "cos_I"
     | Op_tan -> true, "tan_I"
+    | Op_asin -> true, "asin_I"
+    | Op_acos -> true, "acos_I"
     | Op_atan -> true, "atan_I"
     | Op_exp -> true, "exp_I"
     | Op_log -> true, "log_I"
+    | Op_sinh -> true, "sinh_I"
+    | Op_cosh -> true, "cosh_I"
+    | Op_tanh -> true, "tanh_I"
+    | Op_asinh -> true, "asinh_I"
+    | Op_acosh -> true, "acosh_I"
+    | Op_atanh -> true, "atanh_I"
     | Op_nat_pow -> true, "**$"
     | Op_sub2 -> true, "sub2_I"
     | Op_floor_power2 -> true, "floor_power2_I"
@@ -324,9 +358,17 @@ let racket_interval_env_op_name = function
   | Op_sin -> true, "isin"
   | Op_cos -> true, "icos"
   | Op_tan -> true, "itan"
+  | Op_asin -> true, "iasin"
+  | Op_acos -> true, "iacos"
   | Op_atan -> true, "iatan"
   | Op_exp -> true, "iexp"
   | Op_log -> true, "ilog"
+  | Op_sinh -> true, "isinh"
+  | Op_cosh -> true, "icosh"
+  | Op_tanh -> true, "itanh"
+  | Op_asinh -> true, "iasinh"
+  | Op_acosh -> true, "iacosh"
+  | Op_atanh -> true, "iatanh"
   | Op_nat_pow -> true, "iexpt"
   | Op_sub2 -> true, "isub2"
   | Op_floor_power2 -> true, "ifloor-pow2"

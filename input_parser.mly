@@ -189,15 +189,15 @@ expr:
   | TAN LPAREN expr RPAREN { Raw_u_op ("tan", $3) }
   | MIN LPAREN expr COMMA expr RPAREN { raise TODO }
   | MAX LPAREN expr COMMA expr RPAREN { raise TODO }
-  | COSH LPAREN expr RPAREN { raise TODO }
-  | SINH LPAREN expr RPAREN { raise TODO }
-  | TANH LPAREN expr RPAREN { raise TODO }
-  | ACOS LPAREN expr RPAREN { raise TODO }
-  | ASIN LPAREN expr RPAREN { raise TODO }
+  | COSH LPAREN expr RPAREN { Raw_u_op ("cosh", $3) }
+  | SINH LPAREN expr RPAREN { Raw_u_op ("sinh", $3) }
+  | TANH LPAREN expr RPAREN { Raw_u_op ("tanh", $3) }
+  | ACOS LPAREN expr RPAREN { Raw_u_op ("acos", $3) }
+  | ASIN LPAREN expr RPAREN { Raw_u_op ("asin", $3) }
   | ATAN LPAREN expr RPAREN { Raw_u_op ("atan", $3) }
-  | ACOSH LPAREN expr RPAREN { raise TODO }
-  | ASINH LPAREN expr RPAREN { raise TODO }
-  | ATANH LPAREN expr RPAREN { raise TODO }
+  | ACOSH LPAREN expr RPAREN { Raw_u_op ("acosh", $3) }
+  | ASINH LPAREN expr RPAREN { Raw_u_op ("asinh", $3) }
+  | ATANH LPAREN expr RPAREN { Raw_u_op ("atanh", $3) }
   | ATAN2 LPAREN expr COMMA expr RPAREN { raise TODO }
   | SUB2 LPAREN expr COMMA expr RPAREN { Raw_bin_op ("sub2", $3, $5) }
   | FLOOR_POWER2 LPAREN expr RPAREN { Raw_u_op ("floor_power2", $3) }
