@@ -4,6 +4,7 @@ INTERVAL_DIR = INTERVAL
 INCLUDE=$(INTERVAL_DIR)
 
 SRC=	lib.ml\
+	func.ml\
 	log.ml\
 	config.mli\
 	config.ml\

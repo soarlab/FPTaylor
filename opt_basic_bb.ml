@@ -24,7 +24,7 @@ let gen_bb_opt_code tolx tolfx max_iter fmt =
 
   let head () = 
     p "open Interval";
-    p "open Fp";
+    p "open Func";
     p "" in
 
   let tail_b_and_b () =
@@ -123,21 +123,24 @@ let min_max_expr tolx tolfx max_iter var_bound e =
     "chcw.o";
     "interval.cma";
   ] in
+  let lib_files = [
+    "func.ml";
+  ] in
   let bb_files = map (Filename.concat "b_and_b") [
     "opt0.ml";
-    "fp.ml";
   ] in
   let ocamlc = Config.get_option "bb-ocamlc" "ocamlopt" in
   let files = 
     if ocamlc = "ocamlc" then
-      interval_files_byte @ bb_files
+      interval_files_byte @ lib_files @ bb_files
     else
-      interval_files_native @ bb_files in
+      interval_files_native @ lib_files @ bb_files in
   let gen = gen_bb_opt_code tolx tolfx max_iter in
   let _ = write_to_file ml_name gen (var_bound, e) in
   let srcs = map (fun s -> Filename.concat base s) files in
-  let cmd = Format.sprintf "%s -I %s -I %s -o %s %s %s" 
+  let cmd = Format.sprintf "%s -I %s -I %s -I %s -o %s %s %s" 
     ocamlc
+    base
     (Filename.concat base "INTERVAL")
     (Filename.concat base "b_and_b")
     exe_name

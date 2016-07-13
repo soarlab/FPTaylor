@@ -233,7 +233,7 @@ let const_rnd_form rnd e =
       else
 	let form_index = next_form_index() in
 	let bound = (abs_I c.interval_v).high in
-	let p2 = floor_power2 bound in
+	let p2 = Func.floor_power2 bound in
 	let _, p2_exp = frexp p2 in
 	let m2' =
 	  (* TODO: do not add d for constants in the normal range *)
@@ -289,7 +289,7 @@ let var_rnd_form rnd e =
       if Config.proof_flag then
 	let form_index = next_form_index() in
 	let bound = (abs_I (Environment.variable_interval v)).high in
-	let p2 = floor_power2 bound in
+	let p2 = Func.floor_power2 bound in
 	let _, p2_exp = frexp p2 in
 	let m2' =
 	    p2 +^ (get_eps rnd.delta_exp /. get_eps rnd.eps_exp) in
@@ -313,7 +313,7 @@ let var_rnd_form rnd e =
 	  let err_expr0 = 
 	    if Config.const_approx_real_vars then
 	      let bound = (abs_I (Environment.variable_interval v)).high in
-	      let err = floor_power2 bound in
+	      let err = Func.floor_power2 bound in
 	      fp_to_const err
 	    else if Config.fp_power2_model then
 	      mk_floor_power2 e

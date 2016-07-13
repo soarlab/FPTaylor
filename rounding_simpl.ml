@@ -226,8 +226,8 @@ let check_expr vars =
 	  | Op_sinh -> sinh_I x
 	  | Op_cosh -> cosh_I x
 	  | Op_tanh -> tanh_I x
-	  | Op_floor_power2 -> Eval.floor_power2_I x
-	  | Op_sym_interval -> Eval.sym_interval_I x
+	  | Op_floor_power2 -> Func.floor_power2_I x
+	  | Op_sym_interval -> Func.sym_interval_I x
 	  | _ -> failwith ("check_expr: Unsupported unary operation: " 
 			   ^ op_name op)
 	end

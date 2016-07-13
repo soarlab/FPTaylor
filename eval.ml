@@ -12,26 +12,9 @@
 
 open Interval
 open Num
-open Rounding
 open Binary_float
 open Expr
 open List
-
-let floor_power2_I x = {
-  low = floor_power2 x.low;
-  high = floor_power2 x.high
-}
-
-let sym_interval_I x = 
-  let f = (abs_I x).high in {
-    low = -.f;
-    high = f;
-  }
-
-let sub2_I x y = {
-  low = sub2 x.low y.high;
-  high = sub2 x.high y.low;
-}
 
 (* Computes a floating-point value of an expression *)
 (* vars : string -> float is a function which associates 
@@ -61,7 +44,7 @@ let eval_float_expr vars =
 	  | Op_sinh -> sinh x
 	  | Op_cosh -> cosh x
 	  | Op_tanh -> tanh x
-	  | Op_floor_power2 -> floor_power2 x
+	  | Op_floor_power2 -> Func.floor_power2 x
 	  | Op_sym_interval -> 0.0
 	  | _ -> failwith ("eval_float_expr: Unsupported unary operation: " 
 			   ^ op_name op)
@@ -76,7 +59,7 @@ let eval_float_expr vars =
 	  | Op_mul -> x1 *. x2
 	  | Op_div -> x1 /. x2
 	  | Op_nat_pow -> x1 ** x2
-	  | Op_sub2 -> sub2 x1 x2
+	  | Op_sub2 -> Func.sub2 (x1, x2)
 	  | _ -> failwith ("eval_float_expr: Unsupported binary operation: " 
 			   ^ op_name op)
       end
@@ -168,8 +151,8 @@ let eval_interval_expr vars =
 	  | Op_sinh -> sinh_I x
 	  | Op_cosh -> cosh_I x
 	  | Op_tanh -> tanh_I x
-	  | Op_floor_power2 -> floor_power2_I x
-	  | Op_sym_interval -> sym_interval_I x
+	  | Op_floor_power2 -> Func.floor_power2_I x
+	  | Op_sym_interval -> Func.sym_interval_I x
 	  | _ -> failwith ("eval_interval_expr: Unsupported unary operation: " 
 			   ^ op_name op)
       end
@@ -187,7 +170,7 @@ let eval_interval_expr vars =
 	      x1 *$ eval arg2
 	  | Op_div -> x1 /$ eval arg2
 	  | Op_nat_pow -> x1 **$. (eval_float_const_expr arg2)
-	  | Op_sub2 -> sub2_I x1 (eval arg2)
+	  | Op_sub2 -> Func.sub2_I (x1, eval arg2)
 	  | _ -> failwith ("eval_interval_expr: Unsupported binary operation: " 
 			   ^ op_name op)
       end
