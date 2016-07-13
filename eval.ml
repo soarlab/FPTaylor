@@ -44,6 +44,9 @@ let eval_float_expr vars =
 	  | Op_sinh -> sinh x
 	  | Op_cosh -> cosh x
 	  | Op_tanh -> tanh x
+	  | Op_asinh -> Func.asinh x
+	  | Op_acosh -> Func.acosh x
+	  | Op_atanh -> Func.atanh x
 	  | Op_floor_power2 -> Func.floor_power2 x
 	  | Op_sym_interval -> 0.0
 	  | _ -> failwith ("eval_float_expr: Unsupported unary operation: " 
@@ -151,6 +154,9 @@ let eval_interval_expr vars =
 	  | Op_sinh -> sinh_I x
 	  | Op_cosh -> cosh_I x
 	  | Op_tanh -> tanh_I x
+	  | Op_asinh -> Func.asinh_I x
+	  | Op_acosh -> Func.acosh_I x
+	  | Op_atanh -> Func.atanh_I x
 	  | Op_floor_power2 -> Func.floor_power2_I x
 	  | Op_sym_interval -> Func.sym_interval_I x
 	  | _ -> failwith ("eval_interval_expr: Unsupported unary operation: " 

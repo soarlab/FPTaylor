@@ -887,6 +887,112 @@ let tanh_form vars f =
       @ [fp_to_const m3, m3_err];
   }
 
+
+(* arsinh *)
+(* TODO: proof support *)
+let asinh_form vars f =
+  let _ = info 2 "asinh_form" in
+  let x0_int = estimate_expr vars f.v0 in
+  let x1 = abs_eval_v1 vars f.v1 in
+  let s1 = itlist (fun (x,x_exp) s -> 
+    let eps = get_eps x_exp in
+    let xi = {low = -. eps; high = eps} in
+    (xi *$. x) +$ s) x1 zero_I in
+  let m1 = make_stronger (abs_I s1).high in
+  let d =
+    let xi =
+      if Config.proof_flag then
+	x0_int +$ {low = -.m1; high = m1}
+      else
+	x0_int +$ s1 in
+    ~-$ (xi /$ sqrt_I (pow_I_i (one_I +$ pow_I_i xi 2) 3)) in 
+  let b_high = 0.5 *^ (abs_I d).high in
+  let b_high = make_stronger b_high in
+  let m2, m2_exp = sum2_high x1 x1 in
+  let m2 = make_stronger m2 in
+  let m3 = b_high *^ m2 in
+  let form_index = next_form_index() in
+  let m3_err = mk_err_var (-1) m2_exp in
+(*  let _ = Proof.add_atn_step form_index f.form_index
+    m1 m2 m2_exp b_high m3 m3_err.proof_index in *)
+  let v1_0 = mk_sqrt (mk_add const_1 (mk_mul f.v0 f.v0)) in
+  {
+    form_index = form_index;
+    v0 = mk_asinh f.v0;
+    v1 = map (fun (e, err) -> mk_div e v1_0, err) f.v1
+      @ [fp_to_const m3, m3_err];
+  }
+
+(* arcosh *)
+(* TODO: proof support *)
+let acosh_form vars f =
+  let _ = info 2 "acosh_form" in
+  let x0_int = estimate_expr vars f.v0 in
+  let x1 = abs_eval_v1 vars f.v1 in
+  let s1 = itlist (fun (x,x_exp) s -> 
+    let eps = get_eps x_exp in
+    let xi = {low = -. eps; high = eps} in
+    (xi *$. x) +$ s) x1 zero_I in
+  let m1 = make_stronger (abs_I s1).high in
+  let d =
+    let xi =
+      if Config.proof_flag then
+	x0_int +$ {low = -.m1; high = m1}
+      else
+	x0_int +$ s1 in
+    ~-$ (xi /$ sqrt_I (pow_I_i (pow_I_i xi 2 -$ one_I) 3)) in 
+  let b_high = 0.5 *^ (abs_I d).high in
+  let b_high = make_stronger b_high in
+  let m2, m2_exp = sum2_high x1 x1 in
+  let m2 = make_stronger m2 in
+  let m3 = b_high *^ m2 in
+  let form_index = next_form_index() in
+  let m3_err = mk_err_var (-1) m2_exp in
+(*  let _ = Proof.add_atn_step form_index f.form_index
+    m1 m2 m2_exp b_high m3 m3_err.proof_index in *)
+  let v1_0 = mk_sqrt (mk_sub (mk_mul f.v0 f.v0) const_1) in
+  {
+    form_index = form_index;
+    v0 = mk_acosh f.v0;
+    v1 = map (fun (e, err) -> mk_div e v1_0, err) f.v1
+      @ [fp_to_const m3, m3_err];
+  }
+
+(* artanh *)
+(* TODO: proof support *)
+let atanh_form vars f =
+  let _ = info 2 "atanh_form" in
+  let x0_int = estimate_expr vars f.v0 in
+  let x1 = abs_eval_v1 vars f.v1 in
+  let s1 = itlist (fun (x,x_exp) s -> 
+    let eps = get_eps x_exp in
+    let xi = {low = -. eps; high = eps} in
+    (xi *$. x) +$ s) x1 zero_I in
+  let m1 = make_stronger (abs_I s1).high in
+  let d =
+    let xi =
+      if Config.proof_flag then
+	x0_int +$ {low = -.m1; high = m1}
+      else
+	x0_int +$ s1 in
+    xi /$ pow_I_i (one_I -$ pow_I_i xi 2) 2 in
+  let b_high = (abs_I d).high in
+  let b_high = make_stronger b_high in
+  let m2, m2_exp = sum2_high x1 x1 in
+  let m2 = make_stronger m2 in
+  let m3 = b_high *^ m2 in
+  let form_index = next_form_index() in
+  let m3_err = mk_err_var (-1) m2_exp in
+(* let _ = Proof.add_atn_step form_index f.form_index
+    m1 m2 m2_exp b_high m3 m3_err.proof_index in *)
+  let v1_0 = mk_sub const_1 (mk_mul f.v0 f.v0) in
+  {
+    form_index = form_index;
+    v0 = mk_atanh f.v0;
+    v1 = map (fun (e, err) -> mk_div e v1_0, err) f.v1
+      @ [fp_to_const m3, m3_err];
+  }
+
 (* Builds a Taylor form *)
 let build_form vars =
   let rec build e = 
@@ -924,6 +1030,9 @@ let build_form vars =
 	    | Op_sinh -> sinh_form vars arg_form
 	    | Op_cosh -> cosh_form vars arg_form
 	    | Op_tanh -> tanh_form vars arg_form
+	    | Op_asinh -> asinh_form vars arg_form
+	    | Op_acosh -> acosh_form vars arg_form
+	    | Op_atanh -> atanh_form vars arg_form
 	    | _ -> failwith 
 	      ("build_form: unsupported unary operation " ^ op_name op)
 	end

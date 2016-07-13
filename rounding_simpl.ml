@@ -226,6 +226,17 @@ let check_expr vars =
 	  | Op_sinh -> sinh_I x
 	  | Op_cosh -> cosh_I x
 	  | Op_tanh -> tanh_I x
+	  | Op_asinh -> Func.asinh_I x
+	  | Op_acosh ->
+	    if x.low < 1.0 then
+	      raise (Exceptional_operation (e, "arcosh of x < 1.0"))
+	    else
+	      Func.acosh_I x
+	  | Op_atanh ->
+	    if x.low <= -1.0 || x.high >= 1.0 then
+	      raise (Exceptional_operation (e, "artanh of an argument outside of (-1, 1)"))
+	    else
+	      Func.atanh_I x
 	  | Op_floor_power2 -> Func.floor_power2_I x
 	  | Op_sym_interval -> Func.sym_interval_I x
 	  | _ -> failwith ("check_expr: Unsupported unary operation: " 

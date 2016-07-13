@@ -1,5 +1,48 @@
 open Interval
 
+let asinh x = log (x +. sqrt (x *. x +. 1.0))
+
+let acosh x = log (x +. sqrt (x *. x -. 1.0))
+
+let atanh x = 0.5 *. log ((1.0 +. x) /. (1.0 -. x))
+
+let asinh_I x = {
+  low = 
+    (let sqrt = Fpu.fsqrt_low (Fpu.fadd_low (Fpu.fmul_low x.low x.low) 1.0) in
+     Fpu.flog_low (Fpu.fadd_low x.low sqrt));
+  high =
+    (let sqrt = Fpu.fsqrt_high (Fpu.fadd_high (Fpu.fmul_high x.high x.high) 1.0) in
+     Fpu.flog_high (Fpu.fadd_high x.high sqrt));
+}
+
+let acosh_I x = 
+  if x.high < 1.0 then failwith "acosh_I"
+  else {
+    low =
+      (if x.low <= 1.0 then 0.0
+       else
+	  let sqrt = Fpu.fsqrt_low (Fpu.fsub_low (Fpu.fmul_low x.low x.low) 1.0) in
+	  Fpu.flog_low (Fpu.fadd_low x.low sqrt));
+    high = 
+      (let sqrt = Fpu.fsqrt_high (Fpu.fsub_high (Fpu.fmul_high x.high x.high) 1.0) in
+       Fpu.flog_high (Fpu.fadd_high x.high sqrt));
+  }
+
+let atanh_I x =
+  if x.high < -1.0 || x.low > 1.0 then failwith "atanh_I"
+  else {
+    low = 
+      (if x.low <= -1.0 then neg_infinity
+       else
+	  let t = Fpu.fdiv_low (Fpu.fadd_low 1.0 x.low) (Fpu.fsub_high 1.0 x.low) in
+	  Fpu.fmul_low 0.5 (Fpu.flog_low t));
+    high =
+      (if x.high >= 1.0 then infinity
+       else
+	  let t = Fpu.fdiv_high (Fpu.fadd_high 1.0 x.high) (Fpu.fsub_low 1.0 x.high) in
+	  Fpu.fmul_high 0.5 (Fpu.flog_high t));
+  }	
+
 (* For a given positive floating-point number f,
    returns the largest floating-point number 2^n such that
    2^n < f.
