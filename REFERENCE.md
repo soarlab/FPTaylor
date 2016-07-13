@@ -261,10 +261,17 @@ with the appropriately selected rounding operator.
 3. `exp` exponent
 4. `log` logarithm
 5. `tan` tangent
-6. `atan` arctangent
+6. `asin` (or `arcsin`) arcsine
+7. `acos` (or `arccos`) arccosine
+8. `atan` (or `arctan`) arctangent
+9. `sinh` hyperbolic sine
+10. `cosh` hyperbolic cosine
+11. `tanh` hyperbolic tangent
+12. `asinh` (or `arsinh`) inverse hyperbolic sine
+13. `acosh` (or `arcosh`) inverse hyperbolic cosine
+14. `atanh` (or `artanh`) inverse hyperbolic tangent
 
-Other transcendental functions will be added to FPTaylor
-soon. Transcendental functions may be not supported by some
+Transcendental functions may be not supported by some
 optimization backends of FPTaylor. The default optimization backend
 (interval branch and bound, `bb`) supports all operations.
 
