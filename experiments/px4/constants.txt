@@ -1,0 +1,41 @@
+Constants
+  _accel_range_scale = 9.80665f / 4096,
+  _accel_scale_x_offset = 0,
+  _accel_scale_x_scale = 1,
+  sample_freq = 1000,
+  _cutoff_freq = 30,
+  M_PI_F = 3.14159f,
+
+  cs_computed = 0x1.6a09f6p-1,
+  b0_computed = 0x1.00408ep-7,
+  b1_computed = 0x1.00408ep-6,
+  b2_computed = 0x1.00408ep-7,
+  a1_computed = -0x1.bc16fep+0,
+  a2_computed = 0x1.883204p-1;
+
+Variables
+  float32 xraw_f in [-32768, 32767];
+
+Definitions
+  // ** Constants **
+  _b0 = b0_computed,
+  _b1 = b1_computed,
+  _b2 = b2_computed,
+  _a1 = a1_computed,
+  _a2 = a2_computed,
+  // ** Constants **
+
+  x_in_new rnd32= ((xraw_f * _accel_range_scale) - _accel_scale_x_offset) * _accel_scale_x_scale,
+  _delay_element_1 rnd32= 0,
+  _delay_element_2 rnd32= 0,
+
+  // do the filtering
+  delay_element_0 rnd32= x_in_new - _delay_element_1 * _a1 - _delay_element_2 * _a2,
+  output_1 rnd32= delay_element_0 * _b0 + _delay_element_1 * _b1 + _delay_element_2 * _b2,
+
+  _delay_element_2_1 rnd32= _delay_element_1,
+  _delay_element_1_1 rnd32= delay_element_0
+;   
+
+Expressions
+  output rnd32= output_1;
