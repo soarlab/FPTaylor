@@ -66,7 +66,7 @@ let get_problem_error pi =
       e2 = get_val pi.abs_error_exact in
   min e1 e2
 
-let simplification_flag = ref Config.simplification
+let simplification_flag = ref (Config.get_bool_option "simplification")
 
 let exprs () = env.expressions
 
@@ -127,7 +127,7 @@ let errors =
     let total2', exp2 = sum_high bounds2 in
     let total2 = get_eps exp2 *^ total2' in
     let err_approx =
-      if Config.opt_approx then
+      if Config.get_bool_option "opt-approx" then
 	let _ = report "\nSolving the approximate optimization problem" in
 	let _ = report "\nAbsolute errors:" in
 	let bounds1' = map (compute_bound tol) v1 in
@@ -143,7 +143,7 @@ let errors =
 	Some total
       else None in
     let err_exact =
-      if Config.opt_exact then
+      if Config.get_bool_option "opt-exact" then
 	let _ = report "\nSolving the exact optimization problem" in
 	let abs_exprs = map (fun (e, err) -> mk_abs e, err.exp) v1 in
 	let full_expr', exp = sum_symbolic abs_exprs in
@@ -187,7 +187,7 @@ let errors =
       let total2 = get_eps exp2 *^ total2' in
       let b2 = (total2 /.$ abs_I f_int).high in
       let err_approx =
-	if Config.opt_approx then
+	if Config.get_bool_option "opt-approx" then
 	  let _ = report "\nSolving the approximate optimization probelm" in
 	  let _ = report "\nRelative errors:" in
 	  let bounds1 = map (compute_bound tol) v1 in
@@ -198,7 +198,7 @@ let errors =
 	  Some total
 	else None in
       let err_exact =
-	if Config.opt_exact then
+	if Config.get_bool_option "opt-exact" then
 	  let _ = report "\nSolving the exact optimization problem" in
 	  let abs_exprs = map (fun (e, err) -> mk_abs e, err.exp) v1 in
 	  let full_expr', exp = sum_symbolic abs_exprs in
@@ -220,18 +220,18 @@ let errors =
   fun pi form ->
     let tol = Config.opt_tol in
     let f_min, f_max = 
-      if Config.rel_error || (Config.get_bool_option "find-bounds") then
+      if Config.get_bool_option "rel-error" || (Config.get_bool_option "find-bounds") then
 	Opt.optimize tol form.v0
       else
 	neg_infinity, infinity in
     let _ = report (Format.sprintf "bounds: [%e, %e]" f_min f_max) in
     let pi = {pi with real_min = f_min; real_max = f_max} in
     let pi =
-      if Config.opt_approx || Config.opt_exact then
+      if Config.get_bool_option "opt-approx" || Config.get_bool_option "opt-exact" then
 	let abs_approx, abs_exact = 
-	  if Config.abs_error then abs_error tol form else None, None in
+	  if Config.get_bool_option "abs-error" then abs_error tol form else None, None in
 	let rel_approx, rel_exact = 
-	  if Config.rel_error then rel_error tol form (f_min, f_max) else None, None in
+	  if Config.get_bool_option "rel-error" then rel_error tol form (f_min, f_max) else None, None in
 	{pi with 
 	  abs_error_approx = abs_approx;
 	  abs_error_exact = abs_exact;
@@ -341,7 +341,7 @@ let main () =
   else
     let _ = Config.print_options Format.std_formatter in
     let _ = 
-      if Config.simplification && not (Maxima.test_maxima()) then
+      if Config.get_bool_option "simplification" && not (Maxima.test_maxima()) then
 	begin
  	  Log.error "A computer algebra system Maxima is not installed.";
           Log.error "Simplifications are disabled.";

@@ -22,7 +22,7 @@ let var_bound_rat name =
 
 let optimize tolf e =
   let min, max =
-    match Config.opt with
+    match Config.get_string_option "opt" with
       | "z3" -> 
 	Opt_z3.min_max_expr tolf var_bound_rat e
       | "bb" -> 

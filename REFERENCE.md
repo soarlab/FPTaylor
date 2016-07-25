@@ -267,9 +267,9 @@ with the appropriately selected rounding operator.
 9. `sinh` hyperbolic sine
 10. `cosh` hyperbolic cosine
 11. `tanh` hyperbolic tangent
-12. `asinh` (or `arsinh`) inverse hyperbolic sine
-13. `acosh` (or `arcosh`) inverse hyperbolic cosine
-14. `atanh` (or `artanh`) inverse hyperbolic tangent
+12. `asinh` (or `arsinh`, `arcsinh`, `argsinh`) inverse hyperbolic sine
+13. `acosh` (or `arcosh`, `arccosh`, `argcosh`) inverse hyperbolic cosine
+14. `atanh` (or `artanh`, `arctanh`, `argtanh`) inverse hyperbolic tangent
 
 Transcendental functions may be not supported by some
 optimization backends of FPTaylor. The default optimization backend

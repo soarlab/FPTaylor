@@ -15,7 +15,23 @@
 open Lib
 open List
 
-let param_tbl = Hashtbl.create 100 
+let param_table = Hashtbl.create 100 
+
+let find_option ?default p = 
+  try Hashtbl.find param_table p
+  with Not_found ->
+    (match default with
+     | Some d -> d
+     | None -> failwith ("Unknown option: " ^ p))
+    
+let add_option name value =
+  Hashtbl.replace param_table name value
+
+let print_options fmt =
+  let print name value =
+    Format.pp_print_string fmt (name ^ " = " ^ value);
+    Format.pp_print_newline fmt () in
+  Hashtbl.iter print param_table 
 
 let parse_args () =
   let cfg_files = ref [] in
@@ -33,31 +49,30 @@ let parse_args () =
   let _ = parse (tl (Array.to_list Sys.argv)) in
   rev !cfg_files, rev !input_files
 
-let is_comment s = String.contains s '*'
-let is_spaces s = 
-  let w = Str.global_substitute (Str.regexp "[ \t]+") (fun _ -> "") s in
-  w = ""
+let is_comment =
+  let comment = Str.regexp "^[ \t]*[\\*#].*" in
+  fun str -> Str.string_match comment str 0 
+
+let is_spaces str =
+  String.trim str = ""
      
 let parse_config_file fname =
-  let _ = Log.report ("Config: " ^ fname) in
-  let split w = 
-    let w = Str.global_substitute (Str.regexp "[ \t]+") (fun _ -> "") w in
-    let w = Str.global_substitute (Str.regexp "~") (fun _ -> " ") w in
-    let l = Str.split (Str.regexp "=") w in 
-    match l with 
-      | param :: v1 :: vs -> 
-	let value = String.concat "=" (v1 :: vs) in
-	param, value 
+  let split_regexp = Str.regexp "=" in
+  let parse (c, line) = 
+    let strs = Str.bounded_split split_regexp line 2 in 
+    match strs with 
+      | [param; value] -> String.trim param, String.trim value
       | _ -> 
-	Log.error ("Parameter error: " ^ w);
-	failwith "Error while parsing configuration file"
+	 Log.error (Format.sprintf "[File %s, line %d] Parameter parsing error: %s" fname c line);
+	 failwith ("Error while parsing a configuration file: " ^ fname)
   in
-  let param_values = load_file fname in
-  let param_values = filter 
-    (fun s -> (not (is_spaces s)) && (not (is_comment s))) 
-    param_values in
-  let param_values = map split param_values in
-  List.iter (fun (k, v) -> Hashtbl.replace param_tbl k v) param_values;
+  let _ = Log.report ("Config: " ^ fname) in
+  let lines = Lib.enumerate 1 (load_file fname) in
+  let lines = filter 
+    (fun (_, s) -> not (is_spaces s) && not (is_comment s)) 
+    lines in
+  let param_values = map parse lines in
+  List.iter (fun (k, v) -> add_option k v) param_values;
   ()
 
 let base_dir = 
@@ -71,21 +86,14 @@ let base_dir =
 
 let cfg_files, input_files = parse_args ()
 let _ = 
+  let fname = Filename.concat base_dir "default.cfg" in
   try
-    parse_config_file (Filename.concat base_dir "default.cfg")
+    parse_config_file fname
   with _ ->
-    Log.error "Cannot open default.cfg"
+    Log.error ("Cannot open default.cfg: " ^ fname)
 
 let _ = map parse_config_file cfg_files
   
-let find p = 
-  try Hashtbl.find param_tbl p
-  with Not_found -> failwith ("Unknown option: " ^ p)
-    
-let findd d p =
-  try Hashtbl.find param_tbl p
-  with Not_found -> d
-    
 let stob ?(name = "??") str = 
   try bool_of_string str
   with _ ->
@@ -101,67 +109,25 @@ let stof ?(name = "??") str =
   with _ ->
     failwith (Format.sprintf "Cannot convert a string into a floating-point value: %s (parameter = %s)" str name)
 
-let get_string_option name = find name
+let get_string_option name = find_option name
 
-let get_bool_option name = stob ~name (find name)
+let get_bool_option name = stob ~name (find_option name)
 
-let get_int_option name = stoi ~name (find name)
+let get_int_option name = stoi ~name (find_option name)
 
-let get_float_option name = stof ~name (find name)
+let get_float_option name = stof ~name (find_option name)
   
   (* General paramaters *)
-let debug = stob (findd "false" "debug")
-let proof_flag = stob (findd "false" "proof-record")
-let fail_on_exception = stob (findd "false" "fail-on-exception")
-let uncertainty = stob (findd "false" "uncertainty")
-let subnormal = stob (findd "true" "subnormal")
-let simplification = stob (findd "false" "simplification")
+let debug = get_bool_option "debug"
+let proof_flag = get_bool_option "proof-record"
+let fail_on_exception = get_bool_option "fail-on-exception"
+let verbosity = get_int_option "verbosity"
 
-let verbosity = stoi (findd "1" "verbosity")
-let rel_error = stob (findd "false" "rel-error")
-let abs_error = stob (findd "true" "abs-error")
-(*let fp = stoi (findd "64" "fp")*)
-let fp_power2_model = stob (findd "false" "fp-power2-model")
-(*let rounding = findd "nearest" "rounding"*)
-(*let real_vars = stob (findd "false" "real-vars")*)
-let const_approx_real_vars = stob (findd "true" "const-approx-real-vars")
-  
   (* Optimization parameters *)
-let opt = findd "bb" "opt"
-let opt_approx = stob (findd "true" "opt-approx")
-let opt_exact = stob (findd "false" "opt-exact")
 let opt_tol = 
-  let v = stof (findd "0.01" "opt-tol") in
+  let v = get_float_option "opt-tol" in
   if v < 1e-10 then
     let _ = Log.warning ("Bad opt-tol value: " ^ string_of_float v) in
     0.01
   else
     v
-  
-let print_options fmt =
-  let pp str = Format.pp_print_string fmt str; Format.pp_print_newline fmt () in
-  let ps name s = pp (Format.sprintf "%s = %s" name s) in
-  let pb name b = pp (Format.sprintf "%s = %B" name b) in
-  let pi name i = pp (Format.sprintf "%s = %d" name i) in
-  let pf name f = pp (Format.sprintf "%s = %f" name f) in
-  pi "verbosity" verbosity;
-  pb "proof-record" proof_flag;
-  pb "fail-on-exception" fail_on_exception;
-  pb "uncertainty" uncertainty;
-  pb "subnormal" subnormal;
-  pb "simplification" simplification;
-  pb "abs-error" abs_error;
-  pb "rel-error" rel_error;
-  ps "opt" opt;
-  pb "opt-approx" opt_approx;
-  pb "opt-exact" opt_exact;
-  pf "opt-tol" opt_tol;
-  pi "opt-iterations" (get_int_option "bb-iter");
-(*  pi "fp" fp;*)
-  pb "fp-power2-model" fp_power2_model;
-(*  ps "rounding" rounding;*)
-(*  pb "real-vars" real_vars;*)
-  pb "const-approx-real-vars" const_approx_real_vars;
-    
-    
-

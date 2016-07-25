@@ -100,6 +100,14 @@ let rec unzip = function
 
 let rec (--) = fun m n -> if m > n then [] else m::((m + 1) -- n);;
 
+let enumerate =
+  let rec enum acc i = function
+    | v :: vs -> enum ((i, v) :: acc) (succ i) vs
+    | [] -> List.rev acc
+  in
+  fun start list ->
+  enum [] start list
+ 
 (* -------------------------------------------------------------------------- *)
 (* String operations                                                          *)
 (* -------------------------------------------------------------------------- *)
@@ -118,6 +126,13 @@ let print_list fp sep =
     | [s] -> fp s
     | s1 :: s2 :: rest -> fp s1; sep(); print (s2 :: rest) in
   print
+
+let starts_with prefix str =
+  let n = String.length prefix in
+  if n > String.length str then
+    false
+  else
+    String.sub str 0 n = prefix
 
 (* -------------------------------------------------------------------------- *)
 (* IO operations.                                                             *)

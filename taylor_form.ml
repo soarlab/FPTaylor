@@ -277,7 +277,7 @@ let var_form e =
 	form_index = i;
 	v0 = e;
       (* FIXME: what is the right value of eps_exp here? *)
-	v1 = if Config.uncertainty then get_var_uncertainty (-53) v else [];
+	v1 = if Config.get_bool_option "uncertainty" then get_var_uncertainty (-53) v else [];
       }
     | _ -> failwith ("var_form: not a variable" ^ print_expr_str e)
 
@@ -308,14 +308,14 @@ let var_rnd_form rnd e =
 	}
       else
 	let v1_uncertainty = 
-	  if Config.uncertainty then get_var_uncertainty rnd.eps_exp v else [] in
+	  if Config.get_bool_option "uncertainty" then get_var_uncertainty rnd.eps_exp v else [] in
 	let v1_rnd =
 	  let err_expr0 = 
-	    if Config.const_approx_real_vars then
+	    if Config.get_bool_option "const-approx-real-vars" then
 	      let bound = (abs_I (Environment.variable_interval v)).high in
 	      let err = Func.floor_power2 bound in
 	      fp_to_const err
-	    else if Config.fp_power2_model then
+	    else if Config.get_bool_option "fp-power2-model" then
 	      mk_floor_power2 e
 	    else
 	      e in
@@ -346,7 +346,7 @@ let rounded_form vars original_expr rnd f =
     let s1', exp1 = sum_high (abs_eval_v1 vars f.v1) in
     let s1 = make_stronger (get_eps exp1 *^ s1') in
     let r', m2' =
-      if Config.fp_power2_model then
+      if Config.get_bool_option "fp-power2-model" then
 	mk_floor_power2 (mk_add f.v0 (mk_sym_interval (fp_to_const s1))),
 	get_eps rnd.delta_exp /. get_eps rnd.eps_exp
       else
@@ -1004,10 +1004,14 @@ let build_form vars =
       | Rounding (rnd, Var v) 
 	  (* when not Config.proof_flag *) -> var_rnd_form rnd (Var v)
       | Rounding (rnd, Bin_op (Op_add, arg1, arg2)) 
-	  when rnd.special_flag && Config.fp_power2_model && Config.get_bool_option "develop" ->
+	  when rnd.special_flag 
+	       && Config.get_bool_option "fp-power2-model" 
+	       && Config.get_bool_option "develop" ->
 	rounded_add_form vars e rnd (build arg1) (build arg2)
       | Rounding (rnd, Bin_op (Op_sub, arg1, arg2))
-	  when rnd.special_flag && Config.fp_power2_model && Config.get_bool_option "develop" ->
+	  when rnd.special_flag 
+	       && Config.get_bool_option "fp-power2-model" 
+	       && Config.get_bool_option "develop" ->
 	rounded_sub_form vars e rnd (build arg1) (build arg2)
       | Rounding (rnd, arg) -> 
 	let arg_form = build arg in
