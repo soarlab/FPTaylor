@@ -220,7 +220,7 @@ let errors =
   fun pi form ->
     let tol = Config.opt_tol in
     let f_min, f_max = 
-      if Config.rel_error || (Config.get_bool_option "find-bounds" true) then
+      if Config.rel_error || (Config.get_bool_option "find-bounds") then
 	Opt.optimize tol form.v0
       else
 	neg_infinity, infinity in

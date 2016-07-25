@@ -84,7 +84,7 @@ let estimate_expr, reset_estimate_cache =
   let cache = ref [] in
   let reset () = (cache := []) in
   let estimate vars e =
-    if Config.get_bool_option "intermediate-opt" false then
+    if Config.get_bool_option "intermediate-opt" then
       let _ = Log.report ("Estimating: " ^ print_expr_str e) in
       let min, max = Opt.optimize Config.opt_tol e in
       let _ = Log.report 
@@ -165,7 +165,7 @@ let find_index, expr_for_index, reset_index_counter, current_index =
   let counter = ref 0 in
   let exprs = ref [] in
   let find_index expr =
-    let unique_flag = Config.get_bool_option "unique-indices" false in
+    let unique_flag = Config.get_bool_option "unique-indices" in
     let i = assocd_eq eq_expr (-1) expr !exprs in
     if i > 0 && (not unique_flag) then i else
       let _ = counter := !counter + 1 in
@@ -223,7 +223,7 @@ let precise_const_rnd_form rnd e =
 (* constant with rounding *)
 let const_rnd_form rnd e =
   let _ = info 2 "const_rnd_form" in
-  if Config.get_bool_option "develop" false then
+  if Config.get_bool_option "develop" then
     precise_const_rnd_form rnd e
   else
   match e with
@@ -1004,10 +1004,10 @@ let build_form vars =
       | Rounding (rnd, Var v) 
 	  (* when not Config.proof_flag *) -> var_rnd_form rnd (Var v)
       | Rounding (rnd, Bin_op (Op_add, arg1, arg2)) 
-	  when rnd.special_flag && Config.fp_power2_model && Config.get_bool_option "develop" false ->
+	  when rnd.special_flag && Config.fp_power2_model && Config.get_bool_option "develop" ->
 	rounded_add_form vars e rnd (build arg1) (build arg2)
       | Rounding (rnd, Bin_op (Op_sub, arg1, arg2))
-	  when rnd.special_flag && Config.fp_power2_model && Config.get_bool_option "develop" false ->
+	  when rnd.special_flag && Config.fp_power2_model && Config.get_bool_option "develop" ->
 	rounded_sub_form vars e rnd (build arg1) (build arg2)
       | Rounding (rnd, arg) -> 
 	let arg_form = build arg in

@@ -28,8 +28,8 @@ let gen_z3py_opt_code fmt =
   let tail tol =
     p "";
     p (Format.sprintf "fTol = %f" tol);
-    p (Format.sprintf "l, u = find_bounds(f, var_constraints + constraints, fTol, %s)"
-	 (Config.get_option "z3-timeout" "1000"));
+    p (Format.sprintf "l, u = find_bounds(f, var_constraints + constraints, fTol, %d)"
+	 (Config.get_int_option "z3-timeout"));
     p "print '%.25f' % l";
     p "print '%.25f' % u" in
 

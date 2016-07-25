@@ -26,15 +26,15 @@ let optimize tolf e =
       | "z3" -> 
 	Opt_z3.min_max_expr tolf var_bound_rat e
       | "bb" -> 
-	let tolx = Config.get_float_option "bb-tolx" 0.01 in
-	let max_iter = Config.get_int_option "bb-iter" (-1) in
+	let tolx = Config.get_float_option "bb-tolx" in
+	let max_iter = Config.get_int_option "bb-iter" in
 	Opt_basic_bb.min_max_expr tolx tolf max_iter var_bound_float e
       | "nlopt" -> 
 	Opt_nlopt.min_max_expr tolf var_bound_float e
       | "gelpia" -> 
-	let tolx = Config.get_float_option "gelpia-tolx" 0.01 in
+	let tolx = Config.get_float_option "gelpia-tolx" in
 	Opt_gelpia.abs_max_expr tolx tolf var_bound_float e
-      | s -> failwith ("Unsupported optimization engine: " ^ s) in
+      | s -> failwith ("Unsupported optimization backend: " ^ s) in
   min, max
 
 let optimize_abs tolf e =

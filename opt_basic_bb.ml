@@ -27,20 +27,6 @@ let gen_bb_opt_code tolx tolfx max_iter fmt =
     p "open Func";
     p "" in
 
-  let tail_b_and_b () =
-    p "";
-    p "let _ =";
-    p (Format.sprintf 
-	 "  let int, fint, p, pv = B_and_b.branch_and_bound f_x f_X start_interval %f %f in"
-	 tolx tolfx);
-    p "  let _ = print_I fint; print_newline ();";
-    p "          Printf.printf \"max = %0.20e\\n\" fint.high in";
-    p (Format.sprintf
-	 "  let int, fint, p, pv = B_and_b.branch_and_bound (fun x -> -. (f_x x)) (fun x -> ~-$ (f_X x)) start_interval %f %f in" tolx tolfx);
-    p "  let _ = print_I fint; print_newline ();";
-    p "          Printf.printf \"min = %0.20e\\n\" (-. fint.high) in";
-    p "  flush stdout"; in
-
   let tail_opt0 () =
     p "";
     p "let _ =";
@@ -95,11 +81,10 @@ let gen_bb_opt_code tolx tolfx max_iter fmt =
     head();
     start_interval var_bounds;
     expr var_names e;
-    if Config.get_option "bb-alg" "opt0" = "opt0" then
-      tail_opt0()
-    else
-      tail_b_and_b()
-
+    match Config.get_string_option "bb-alg" with 
+    | "opt0" -> tail_opt0()
+    | alg -> failwith (Format.sprintf "Undefined bb algorithm: %s" alg)
+ 
 let counter = ref 0
 
 let min_max_expr tolx tolfx max_iter var_bound e =
@@ -129,7 +114,7 @@ let min_max_expr tolx tolfx max_iter var_bound e =
   let bb_files = map (Filename.concat "b_and_b") [
     "opt0.ml";
   ] in
-  let ocamlc = Config.get_option "bb-ocamlc" "ocamlopt" in
+  let ocamlc = Config.get_string_option "bb-ocamlc" in
   let files = 
     if ocamlc = "ocamlc" then
       interval_files_byte @ lib_files @ bb_files

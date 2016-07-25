@@ -1,10 +1,11 @@
 val base_dir : string
-(* arguments: option name -> default value *)
-val get_option : string -> string -> string
-val get_bool_option : string -> bool -> bool
-val get_int_option : string -> int -> int
-val get_float_option : string -> float -> float
 val input_files : string list
+
+val get_string_option : string -> string
+val get_bool_option : string -> bool
+val get_int_option : string -> int
+val get_float_option : string -> float
+
 val debug : bool
 val fail_on_exception : bool
 val uncertainty : bool
@@ -20,5 +21,6 @@ val opt_exact : bool
 val opt_tol : float
 val proof_flag : bool
 val verbosity : int
+
 val print_options : Format.formatter -> unit
 

@@ -80,33 +80,34 @@ let _ = map parse_config_file cfg_files
   
 let find p = 
   try Hashtbl.find param_tbl p
-  with Not_found -> failwith ("Not found in parameters table: " ^ p)
+  with Not_found -> failwith ("Unknown option: " ^ p)
     
 let findd d p =
   try Hashtbl.find param_tbl p
   with Not_found -> d
     
-let stob s = 
-  try 
-    bool_of_string s 
-  with Invalid_argument mess -> Log.report (s ^ ": "); invalid_arg mess
+let stob ?(name = "??") str = 
+  try bool_of_string str
+  with _ ->
+    failwith (Format.sprintf "Cannot convert a string into a boolean value: %s (parameter = %s)" str name)
     
-let stoi s = 
-  try int_of_string s
-  with Failure _ -> failwith ("Cannot convert a string into a number: " ^ s)
+let stoi ?(name = "??") str = 
+  try int_of_string str
+  with _ -> 
+    failwith (Format.sprintf "Cannot convert a string into an integer value: %s (parameter = %s)" str name)
   
-let stof = float_of_string
+let stof ?(name = "??") str = 
+  try float_of_string str
+  with _ ->
+    failwith (Format.sprintf "Cannot convert a string into a floating-point value: %s (parameter = %s)" str name)
 
-let get_option name default = findd default name
+let get_string_option name = find name
 
-let get_bool_option name default = 
-  try stob (find name) with _ -> default
+let get_bool_option name = stob ~name (find name)
 
-let get_int_option name default =
-  try stoi (find name) with _ -> default
+let get_int_option name = stoi ~name (find name)
 
-let get_float_option name default =
-  try stof (find name) with _ -> default
+let get_float_option name = stof ~name (find name)
   
   (* General paramaters *)
 let debug = stob (findd "false" "debug")
@@ -155,7 +156,7 @@ let print_options fmt =
   pb "opt-approx" opt_approx;
   pb "opt-exact" opt_exact;
   pf "opt-tol" opt_tol;
-  pi "opt-iterations" (get_int_option "bb-iter" (-1));
+  pi "opt-iterations" (get_int_option "bb-iter");
 (*  pi "fp" fp;*)
   pb "fp-power2-model" fp_power2_model;
 (*  ps "rounding" rounding;*)

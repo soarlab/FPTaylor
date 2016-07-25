@@ -116,8 +116,8 @@ let min_max_expr ftol var_bound expr =
   let exe_name = Filename.concat tmp "nlopt-f" in
   let gen = gen_nlopt_code {nlopt_default with nl_ftol_abs = ftol} in
   let _ = write_to_file c_name gen (var_bound, expr) in
-  let cc = Config.get_option "nlopt-cc" "gcc -std=c99 -O3" in
-  let cc_lib = Config.get_option "nlopt-lib" "-lnlopt -lm" in
+  let cc = Config.get_string_option "nlopt-cc" in
+  let cc_lib = Config.get_string_option "nlopt-lib" in
   let cmd = Format.sprintf "%s -o %s %s %s" cc exe_name c_name cc_lib in
   let out = run_cmd cmd in
   if out <> [] then
