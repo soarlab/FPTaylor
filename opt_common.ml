@@ -20,6 +20,20 @@ type opt_pars = {
   timeout : int;
 }
 
+type opt_result = {
+  result : float;
+  lower_bound : float;
+  iters : int;
+  time : float;
+}
+
+let empty_result = {
+  result = 0.0;
+  lower_bound = 0.0;
+  iters = 0;
+  time = 0.0;
+}
+
 let get_tol name default =
   let tol = Config.get_float_option name in
   if tol < 0.0 then

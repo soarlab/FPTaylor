@@ -35,11 +35,13 @@ let gen_bb_opt_code (pars : Opt_common.opt_pars) fmt =
 	 pars.x_abs_tol pars.f_rel_tol pars.f_abs_tol pars.max_iters);
     p "  let () = Printf.printf \"iter_max = %d\\n\" c in";
     p "  let () = Printf.printf \"max = %0.20e\\n\" upper_bound in";
+    p "  let () = Printf.printf \"lower_max = %0.20e\\n\" lower_bound in";
     p (Format.sprintf 
 	 "  let upper_bound, lower_bound, c = Opt0.opt (fun x -> ~-$ (f_X x)) start_interval (%e) (%e) (%e) (%d) in" 
 	 pars.x_abs_tol pars.f_rel_tol pars.f_abs_tol pars.max_iters);
     p "  let () = Printf.printf \"iter_min = %d\\n\" c in";
     p "  let () = Printf.printf \"min = %0.20e\\n\" (-. upper_bound) in";
+    p "  let () = Printf.printf \"lower_min = %0.20e\\n\" (-. lower_bound) in";
     p "  flush stdout"; in
 
   let start_interval var_bounds =
@@ -138,8 +140,17 @@ let min_max_expr (pars : Opt_common.opt_pars) var_bound e =
   let _ = 
     if Config.debug then
       let iter_max = truncate (Opt_common.get_float out "iter_max = ") and
-	  iter_min = truncate (Opt_common.get_float out "iter_min = ") in
+	  iter_min = truncate (Opt_common.get_float out "iter_min = ") and
+	  lower_max = Opt_common.get_float out "lower_max = " and
+	  lower_min = Opt_common.get_float out "lower_min = " in
+      let opt, subopt =
+	if abs_float fmin > abs_float fmax then
+	  abs_float fmin, abs_float (fmin -. lower_min)
+	else
+	  abs_float fmax, abs_float (fmax -. lower_max) in
       Log.report (Format.sprintf "iterations(%d, %d): %d" 
-		    iter_max iter_min (max iter_max iter_min))
+		    iter_max iter_min (max iter_max iter_min));
+      Log.report (Format.sprintf "lower_max = %e, lower_min = %e, subopt = %e (%e)"
+				 lower_max lower_min subopt (subopt /. opt *. 100.0))
     else () in
   fmin, fmax
