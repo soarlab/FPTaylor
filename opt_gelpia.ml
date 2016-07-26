@@ -14,15 +14,17 @@ open Interval
 open List
 open Lib
 open Expr
-open Opt_utils
+open Opt_common
 
 (* GELPIA parameters *)
+(*
 type gelpia_pars = {
   input_epsilon  : float;
   output_epsilon : float;
   timeout        : int;
   max_iters      : int;
 }
+ *)
 
 let gen_gelpia_code fmt =
   let nl = Format.pp_print_newline fmt in
@@ -30,9 +32,10 @@ let gen_gelpia_code fmt =
   let p' str = Format.pp_print_string fmt str in
 
   let parameters pars =
-    p (Format.sprintf "-ie %e" pars.input_epsilon);
-    p (Format.sprintf "-oe %e" pars.output_epsilon);
-    p (Format.sprintf "-t %d" pars.timeout);
+    let timeout = max (pars.timeout / 1000) 1 in
+    p (Format.sprintf "-ie %e" pars.x_abs_tol);
+    p (Format.sprintf "-oe %e" pars.f_abs_tol);
+    p (Format.sprintf "-t %d" timeout);
     (*  p (Format.sprintf "-M %d" pars.max_iters); *)
   (*    p (Format.sprintf "--solver %s" pars.solver) *) in
 
@@ -71,13 +74,15 @@ let get_gelpia_cmd () =
     failwith (cmd ^ " not found.\n" ^
 	      "Set the GELPIA_PATH variable or copy GELPIA to the FPTaylor root directory.")
 
-let abs_max_expr tol_x tol_f var_bound expr =
+let abs_max_expr (pars : Opt_common.opt_pars) var_bound expr =
+(*
   let pars = {
     input_epsilon  = tol_x;
     output_epsilon = tol_f;
     timeout        = 30;
     max_iters      = 50000;
   } in
+ *)
   let tmp = Lib.get_dir "tmp" in
   let gelpia_name = 
     let _ = incr name_counter in

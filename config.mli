@@ -8,7 +8,6 @@ val get_float_option : string -> float
 
 val debug : bool
 val fail_on_exception : bool
-val opt_tol : float
 val proof_flag : bool
 val verbosity : int
 

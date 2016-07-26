@@ -7,8 +7,36 @@
 (* ========================================================================== *)
 
 (* -------------------------------------------------------------------------- *)
-(* Auxiliary optimization functions                                           *)
+(* Common optimization functions and types                                    *)
 (* -------------------------------------------------------------------------- *)
+
+(* Optimization parameters (not all parameters are supported by individual backends) *)
+type opt_pars = {
+  f_rel_tol : float;
+  f_abs_tol : float;
+  x_rel_tol : float;
+  x_abs_tol : float;
+  max_iters : int;
+  timeout : int;
+}
+
+let get_tol name default =
+  let tol = Config.get_float_option name in
+  if tol < 0.0 then
+    let _ = Log.warning (Format.sprintf "Bad tolerance value: %s = %e. Using default value: %e"
+					name tol default) in
+    default
+  else
+    tol
+
+let default_opt_pars = {
+  f_rel_tol = get_tol "opt-f-rel-tol" 0.01;
+  f_abs_tol = get_tol "opt-f-abs-tol" 0.01;
+  x_rel_tol = get_tol "opt-x-rel-tol" 0.0;
+  x_abs_tol = get_tol "opt-x-abs-tol" 0.01;
+  max_iters = Config.get_int_option "opt-max-iters";
+  timeout = Config.get_int_option "opt-timeout";
+}
 
 let get_float strs name =
   let pat = name in
@@ -22,4 +50,4 @@ let get_float strs name =
 	float_of_string (Str.string_after str n)
       else
 	find t in
-  find strs;;
+  find strs

@@ -105,8 +105,8 @@ let sum_symbolic s = itlist add2_symbolic s (const_0, 0)
 
 
 let errors =
-  let compute_bound tolf (e, err) =
-    let bound = Opt.optimize_abs tolf e in
+  let compute_bound (e, err) =
+    let bound = Opt.optimize_abs Opt_common.default_opt_pars e in
     let _ = report (Format.sprintf "%d: exp = %d: %f" err.index err.exp bound) in
     bound, err.exp 
   in
@@ -120,9 +120,9 @@ let errors =
 	else
 	  (e, err) :: es1, es2
   in
-  let abs_error tol f =
+  let abs_error f =
     let v1, v2 = split f.v1 in
-    let bounds2' = map (compute_bound tol) v2 in
+    let bounds2' = map compute_bound v2 in
     let bounds2 = map (fun (e, exp) -> make_stronger e, exp) bounds2' in
     let total2', exp2 = sum_high bounds2 in
     let total2 = get_eps exp2 *^ total2' in
@@ -130,7 +130,7 @@ let errors =
       if Config.get_bool_option "opt-approx" then
 	let _ = report "\nSolving the approximate optimization problem" in
 	let _ = report "\nAbsolute errors:" in
-	let bounds1' = map (compute_bound tol) v1 in
+	let bounds1' = map compute_bound v1 in
 	let bounds1 = map (fun (e, exp) -> make_stronger e, exp) bounds1' in
 	let total1', exp1 = sum_high bounds1 in
 	let total1 = get_eps exp1 *^ total1' in
@@ -154,7 +154,7 @@ let errors =
 	    "fptaylor-abs" total2 exp full_expr;
 	  Out_test.create_test_file "test_abs_exact.txt" full_expr in
 
-	let bound = Opt.optimize_abs tol full_expr in
+	let bound = Opt.optimize_abs Opt_common.default_opt_pars full_expr in
 	let total = 
 	  if Config.proof_flag then
 	    let e' = get_eps exp in
@@ -171,7 +171,7 @@ let errors =
       else None in
     err_approx, err_exact
   in
-  let rel_error tol f (f_min, f_max) =
+  let rel_error f (f_min, f_max) =
     let f_int = {low = f_min; high = f_max} in
     let rel_tol = 0.0001 in
     if (abs_I f_int).low < rel_tol then
@@ -182,7 +182,7 @@ let errors =
       let v1 = map (fun (e, err) -> mk_div e f.v0, err) v1 in
       let v1 = 
 	if !simplification_flag then map (fun (e, err) -> Maxima.simplify e, err) v1 else v1 in
-      let bounds2 = map (compute_bound tol) v2 in
+      let bounds2 = map compute_bound v2 in
       let total2', exp2 = sum_high bounds2 in
       let total2 = get_eps exp2 *^ total2' in
       let b2 = (total2 /.$ abs_I f_int).high in
@@ -190,7 +190,7 @@ let errors =
 	if Config.get_bool_option "opt-approx" then
 	  let _ = report "\nSolving the approximate optimization probelm" in
 	  let _ = report "\nRelative errors:" in
-	  let bounds1 = map (compute_bound tol) v1 in
+	  let bounds1 = map compute_bound v1 in
 	  let total1', exp1 = sum_high bounds1 in
 	  let total1 = get_eps exp1 *^ total1' in
 	  let total = total1 +^ b2 in
@@ -209,7 +209,7 @@ let errors =
 	      "fptaylor-rel" b2 exp full_expr;
 	    Out_test.create_test_file "test_rel_exact.txt" full_expr in
 
-	  let bound = Opt.optimize_abs tol full_expr in
+	  let bound = Opt.optimize_abs Opt_common.default_opt_pars full_expr in
 	  let _ = report (Format.sprintf "exact bound-rel (exp = %d): %f" exp bound) in
 	  let total = (get_eps exp *^ bound) +^ b2 in
 	  let _ = report (Format.sprintf "exact total-rel: %e\ntotal2: %e" total b2) in
@@ -218,10 +218,9 @@ let errors =
       err_approx, err_exact
   in
   fun pi form ->
-    let tol = Config.opt_tol in
     let f_min, f_max = 
       if Config.get_bool_option "rel-error" || (Config.get_bool_option "find-bounds") then
-	Opt.optimize tol form.v0
+	Opt.optimize Opt_common.default_opt_pars form.v0
       else
 	neg_infinity, infinity in
     let _ = report (Format.sprintf "bounds: [%e, %e]" f_min f_max) in
@@ -229,9 +228,9 @@ let errors =
     let pi =
       if Config.get_bool_option "opt-approx" || Config.get_bool_option "opt-exact" then
 	let abs_approx, abs_exact = 
-	  if Config.get_bool_option "abs-error" then abs_error tol form else None, None in
+	  if Config.get_bool_option "abs-error" then abs_error form else None, None in
 	let rel_approx, rel_exact = 
-	  if Config.get_bool_option "rel-error" then rel_error tol form (f_min, f_max) else None, None in
+	  if Config.get_bool_option "rel-error" then rel_error form (f_min, f_max) else None, None in
 	{pi with 
 	  abs_error_approx = abs_approx;
 	  abs_error_exact = abs_exact;

@@ -122,12 +122,3 @@ let debug = get_bool_option "debug"
 let proof_flag = get_bool_option "proof-record"
 let fail_on_exception = get_bool_option "fail-on-exception"
 let verbosity = get_int_option "verbosity"
-
-  (* Optimization parameters *)
-let opt_tol = 
-  let v = get_float_option "opt-tol" in
-  if v < 1e-10 then
-    let _ = Log.warning ("Bad opt-tol value: " ^ string_of_float v) in
-    0.01
-  else
-    v

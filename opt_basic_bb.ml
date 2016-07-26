@@ -15,9 +15,9 @@ open Interval
 open List
 open Lib
 open Expr
-open Opt_utils
+open Opt_common
 
-let gen_bb_opt_code tolx tolfx max_iter fmt =
+let gen_bb_opt_code (pars : Opt_common.opt_pars) fmt =
   let nl = Format.pp_print_newline fmt in
   let p str = Format.pp_print_string fmt str; nl() in
 (*  let p' = Format.pp_print_string fmt in*)
@@ -31,15 +31,15 @@ let gen_bb_opt_code tolx tolfx max_iter fmt =
     p "";
     p "let _ =";
     p (Format.sprintf 
-	 "  let m, bound, c = Opt0.opt f_X start_interval %f %f (%d) in" 
-	 tolx tolfx max_iter);
-    p "  let _ = Printf.printf \"iter_max = %d\\n\" c in";
-    p "  let _ = Printf.printf \"max = %0.20e\\n\" m in";
+	 "  let upper_bound, lower_bound, c = Opt0.opt f_X start_interval (%e) (%e) (%e) (%d) in" 
+	 pars.x_abs_tol pars.f_rel_tol pars.f_abs_tol pars.max_iters);
+    p "  let () = Printf.printf \"iter_max = %d\\n\" c in";
+    p "  let () = Printf.printf \"max = %0.20e\\n\" upper_bound in";
     p (Format.sprintf 
-	 "  let m, bound, c = Opt0.opt (fun x -> ~-$ (f_X x)) start_interval %f %f (%d) in" 
-	 tolx tolfx max_iter);
-    p "  let _ = Printf.printf \"iter_min = %d\\n\" c in";
-    p "  let _ = Printf.printf \"min = %0.20e\\n\" (-. m) in";
+	 "  let upper_bound, lower_bound, c = Opt0.opt (fun x -> ~-$ (f_X x)) start_interval (%e) (%e) (%e) (%d) in" 
+	 pars.x_abs_tol pars.f_rel_tol pars.f_abs_tol pars.max_iters);
+    p "  let () = Printf.printf \"iter_min = %d\\n\" c in";
+    p "  let () = Printf.printf \"min = %0.20e\\n\" (-. upper_bound) in";
     p "  flush stdout"; in
 
   let start_interval var_bounds =
@@ -83,16 +83,16 @@ let gen_bb_opt_code tolx tolfx max_iter fmt =
     expr var_names e;
     match Config.get_string_option "bb-alg" with 
     | "opt0" -> tail_opt0()
-    | alg -> failwith (Format.sprintf "Undefined bb algorithm: %s" alg)
+    | alg -> failwith (Format.sprintf "Unknown bb algorithm: %s" alg)
  
 let counter = ref 0
 
-let min_max_expr tolx tolfx max_iter var_bound e =
+let min_max_expr (pars : Opt_common.opt_pars) var_bound e =
 (*  let _ = counter := !counter + 1 in *)
   let _ = 
     if Config.debug then
-      Log.report (Format.sprintf "bb_opt: tolx = %e, tolf = %e, iters = %d"
-		    tolx tolfx max_iter) in
+      Log.report (Format.sprintf "bb_opt: x_abs_tol = %e, f_rel_tol = %e, f_abs_tol = %e, iters = %d"
+		    pars.x_abs_tol pars.f_rel_tol pars.f_abs_tol pars.max_iters) in
   let base = Config.base_dir in
   let tmp = Lib.get_dir "tmp" in
   let ml_name = Filename.concat tmp "bb.ml" in
@@ -120,7 +120,7 @@ let min_max_expr tolx tolfx max_iter var_bound e =
       interval_files_byte @ lib_files @ bb_files
     else
       interval_files_native @ lib_files @ bb_files in
-  let gen = gen_bb_opt_code tolx tolfx max_iter in
+  let gen = gen_bb_opt_code pars in
   let _ = write_to_file ml_name gen (var_bound, e) in
   let srcs = map (fun s -> Filename.concat base s) files in
   let cmd = Format.sprintf "%s -I %s -I %s -I %s -o %s %s %s" 
@@ -133,12 +133,12 @@ let min_max_expr tolx tolfx max_iter var_bound e =
     ml_name in
   let _ = run_cmd cmd in
   let out = run_cmd exe_name in
-  let fmin = get_float out "min = " and
-      fmax = get_float out "max = " in
+  let fmin = Opt_common.get_float out "min = " and
+      fmax = Opt_common.get_float out "max = " in
   let _ = 
     if Config.debug then
-      let iter_max = truncate (get_float out "iter_max = ") and
-	  iter_min = truncate (get_float out "iter_min = ") in
+      let iter_max = truncate (Opt_common.get_float out "iter_max = ") and
+	  iter_min = truncate (Opt_common.get_float out "iter_min = ") in
       Log.report (Format.sprintf "iterations(%d, %d): %d" 
 		    iter_max iter_min (max iter_max iter_min))
     else () in

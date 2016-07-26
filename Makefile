@@ -21,7 +21,7 @@ SRC=	lib.ml\
 	proof_base.ml\
 	proof.ml\
 	maxima.ml\
-	opt_utils.ml\
+	opt_common.ml\
 	opt_basic_bb.ml\
 	opt_gelpia.ml\
 	opt_z3.ml\
