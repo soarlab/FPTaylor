@@ -351,4 +351,4 @@ let main () =
     let _ = map process_input Config.input_files in
     exit 0
 
-let _ = main ()
+let () = main ()

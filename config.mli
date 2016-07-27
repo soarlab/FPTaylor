@@ -12,4 +12,4 @@ val proof_flag : bool
 val verbosity : int
 
 val print_options : Format.formatter -> unit
-
+val print_short_names : Format.formatter -> unit

@@ -17,37 +17,36 @@ open List
 
 let param_table = Hashtbl.create 100 
 
+let short_names = Hashtbl.create 100
+
 let find_option ?default p = 
   try Hashtbl.find param_table p
   with Not_found ->
     (match default with
      | Some d -> d
      | None -> failwith ("Unknown option: " ^ p))
-    
-let add_option name value =
-  Hashtbl.replace param_table name value
+
+let add_option ?(init = false) ?(short = "") name value =
+  if short <> "" then Hashtbl.replace short_names short name;
+  if init then
+    Hashtbl.replace param_table name value
+  else
+    try
+      let _ = Hashtbl.find param_table name in
+      Hashtbl.replace param_table name value
+    with Not_found ->
+	 failwith (Format.sprintf "Unknown option: %s = %s (see available options in default.cfg)" name value)
 
 let print_options fmt =
   let print name value =
     Format.pp_print_string fmt (name ^ " = " ^ value);
     Format.pp_print_newline fmt () in
-  Hashtbl.iter print param_table 
+  Hashtbl.iter print param_table
 
-let parse_args () =
-  let cfg_files = ref [] in
-  let input_files = ref [] in
-  let rec parse args =
-    match args with
-      | [] -> ()
-      | "-c" :: cfg :: rest -> 
-	cfg_files := cfg :: !cfg_files;
-	parse rest
-      | name :: rest -> 
-	input_files := name :: !input_files;
-	parse rest
-  in
-  let _ = parse (tl (Array.to_list Sys.argv)) in
-  rev !cfg_files, rev !input_files
+let print_short_names fmt =
+  let print short name =
+    Format.fprintf fmt "%s (short: %s)\n" name short in
+  Hashtbl.iter print short_names
 
 let is_comment =
   let comment = Str.regexp "^[ \t]*[\\*#].*" in
@@ -55,26 +54,90 @@ let is_comment =
 
 let is_spaces str =
   String.trim str = ""
-     
-let parse_config_file fname =
+
+let parse_config_file ?(init = false) fname =
   let split_regexp = Str.regexp "=" in
-  let parse (c, line) = 
+  let short_regexp = Str.regexp "^\\[short:[ \t]*\\([a-zA-Z][a-zA-Z0-9]*\\)\\]$" in
+  let parse_short_name str =
+    if Str.string_match short_regexp str 0 then
+      Str.matched_group 1 str
+    else
+      ""
+  in
+  let parse_option c short_name line =
     let strs = Str.bounded_split split_regexp line 2 in 
     match strs with 
-      | [param; value] -> String.trim param, String.trim value
-      | _ -> 
-	 Log.error (Format.sprintf "[File %s, line %d] Parameter parsing error: %s" fname c line);
-	 failwith ("Error while parsing a configuration file: " ^ fname)
+    | [param; value] -> 
+       add_option ~init ~short:short_name (String.trim param) (String.trim value)
+    | _ -> 
+       Log.error (Format.sprintf "[File %s, line %d] Parameter parsing error: %s" 
+				 fname c line);
+       failwith ("Error while parsing a configuration file: " ^ fname)
+  in
+  let rec parse_lines c short_name lines =
+    match lines with
+    | line :: rest ->
+       let line = String.trim line in
+       if line = "" || is_comment line then
+	 parse_lines (c + 1) short_name rest
+       else if Lib.starts_with "[" line then
+	 let short = parse_short_name line in
+	 if short <> "" then
+	   parse_lines (c + 1) short rest
+	 else
+	   let () = parse_option c short_name line in
+	   parse_lines (c + 1) "" rest
+       else
+	 let () = parse_option c short_name line in
+	 parse_lines (c + 1) "" rest
+    | [] -> ()
   in
   let _ = Log.report ("Config: " ^ fname) in
-  let lines = Lib.enumerate 1 (load_file fname) in
-  let lines = filter 
-    (fun (_, s) -> not (is_spaces s) && not (is_comment s)) 
-    lines in
-  let param_values = map parse lines in
-  List.iter (fun (k, v) -> add_option k v) param_values;
-  ()
+  let lines = load_file fname in
+  parse_lines 1 "" lines
 
+let parse_args () =
+  let input_files = ref [] in
+  let get_opt_name opt =
+    let k = String.length opt in
+    if Lib.starts_with "--" opt then
+      String.sub opt 2 (k - 2)
+    else if Lib.starts_with "-" opt then
+      let short = String.sub opt 1 (k - 1) in
+      Hashtbl.find short_names short 
+    else
+      raise Not_found
+  in
+  let rec parse args =
+    match args with
+    | [] -> ()
+    | name :: rest ->
+       if Lib.starts_with "-" name then
+	 let value, rest =
+	   (match rest with
+	    | value :: rs -> value, rs
+	    | [] -> failwith (Format.sprintf "Option without value: %s" name)) in
+	 let () =
+	   if name = "-c" then
+	     parse_config_file value
+	   else
+	     begin
+	       try
+		 let opt_name = get_opt_name name in
+		 add_option opt_name value
+	       with Not_found ->
+		 failwith (Format.sprintf "Unknown command line option: %s (value: %s)" name value)
+	     end
+	 in
+	 parse rest
+       else
+	 let () = input_files := name :: !input_files in
+	 parse rest
+  in
+  let () = parse (tl (Array.to_list Sys.argv)) in
+  rev !input_files
+
+(* Set the base directory *)
 let base_dir = 
   let path =
     try
@@ -84,15 +147,16 @@ let base_dir =
   let _ = Log.report (Format.sprintf "Base path: %s" path) in
   path
 
-let cfg_files, input_files = parse_args ()
-let _ = 
+(* Load the main configuration file *)
+let () = 
   let fname = Filename.concat base_dir "default.cfg" in
   try
-    parse_config_file fname
+    parse_config_file fname ~init:true
   with _ ->
     Log.error ("Cannot open default.cfg: " ^ fname)
 
-let _ = map parse_config_file cfg_files
+(* Parse options and load other configuration files *)
+let input_files = parse_args ()
   
 let stob ?(name = "??") str = 
   try bool_of_string str
@@ -122,3 +186,4 @@ let debug = get_bool_option "debug"
 let proof_flag = get_bool_option "proof-record"
 let fail_on_exception = get_bool_option "fail-on-exception"
 let verbosity = get_int_option "verbosity"
+
