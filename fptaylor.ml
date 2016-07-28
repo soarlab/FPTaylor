@@ -66,8 +66,6 @@ let get_problem_error pi =
       e2 = get_val pi.abs_error_exact in
   min e1 e2
 
-let simplification_flag = ref (Config.get_bool_option "simplification")
-
 let exprs () = env.expressions
 
 let var_bound_float name = variable_interval name
@@ -147,7 +145,10 @@ let errors =
 	let _ = report "\nSolving the exact optimization problem" in
 	let abs_exprs = map (fun (e, err) -> mk_abs e, err.exp) v1 in
 	let full_expr', exp = sum_symbolic abs_exprs in
-	let full_expr = if !simplification_flag then Maxima.simplify full_expr' else full_expr' in
+	let full_expr = if Config.get_bool_option "simplification" then
+                          Maxima.simplify full_expr'
+                        else
+                          full_expr' in
 
 	let _ = 
 	  Out_racket.create_racket_file "abs_exact" 
@@ -181,7 +182,10 @@ let errors =
       let v1, v2 = split f.v1 in
       let v1 = map (fun (e, err) -> mk_div e f.v0, err) v1 in
       let v1 = 
-	if !simplification_flag then map (fun (e, err) -> Maxima.simplify e, err) v1 else v1 in
+	if Config.get_bool_option "simplificaiton" then
+          map (fun (e, err) -> Maxima.simplify e, err) v1
+        else
+          v1 in
       let bounds2 = map compute_bound v2 in
       let total2', exp2 = sum_high bounds2 in
       let total2 = get_eps exp2 *^ total2' in
@@ -202,7 +206,10 @@ let errors =
 	  let _ = report "\nSolving the exact optimization problem" in
 	  let abs_exprs = map (fun (e, err) -> mk_abs e, err.exp) v1 in
 	  let full_expr', exp = sum_symbolic abs_exprs in
-	  let full_expr = if !simplification_flag then Maxima.simplify full_expr' else full_expr' in
+	  let full_expr = if Config.get_bool_option "simplificaiton" then
+                            Maxima.simplify full_expr'
+                          else
+                            full_expr' in
 
 	  let _ = 
 	    Out_racket.create_racket_file "rel_exact" 
@@ -272,7 +279,7 @@ let compute_form pi e =
       let form = simplify_form vars form' in
       let _ = Log.report "success" in
       let form = 
-	if !simplification_flag then {
+	if Config.get_bool_option "simplification" then {
 	  form_index = form.form_index;
 	  v0 = Maxima.simplify form.v0;
 	  v1 = map (fun (e, err) -> (if err.index < 0 then e else Maxima.simplify e), err) form.v1;
@@ -329,25 +336,45 @@ let process_input fname =
   let _ = close_log () in
   report ""
 
-
+let validate_options () =
+  let validate_simplification () =
+    if Config.get_bool_option "simplification" && not (Maxima.test_maxima()) then
+      begin
+        Log.warning "A computer algebra system Maxima is not installed. \
+                     Simplifications are disabled. \
+                     Go to http://maxima.sourceforge.net/ to install Maxima.";
+        Config.add_option "simplification" "false"
+      end
+  in
+  let validate_proof_record () =
+    if Config.get_bool_option "proof-record" then
+      if Config.get_bool_option "fp-power2-model" then
+        begin
+          Log.warning "Proof certificates (proof-record = true) are not implemented for \
+                       the improved rounding model (fp-power2-model = true).";
+        end
+      else if Config.get_bool_option "develop" then
+        begin
+          Log.warning "Proof certificates (proof-record = true) are not implemented for \
+                       some features of the development mode (develop = true).";
+        end
+  in
+  begin
+    validate_simplification ();
+    validate_proof_record ();
+  end
+         
 let main () =
   let p = print_string in
   if Config.input_files = [] then
     let _ = p ("Usage: "
 	       ^ Sys.argv.(0) 
-	       ^ " [-c config1] [-c config2 ...] input_file1 [input_file2 ...]\n") in
+	       ^ " [--opt-name opt-value ...] [-c config1 ...] input_file1 [input_file2 ...]\n\n"
+               ^ "See default.cfg for a list of available options.\n") in
     exit 1
   else
-    let _ = Config.print_options Format.std_formatter in
-    let _ = 
-      if Config.get_bool_option "simplification" && not (Maxima.test_maxima()) then
-	begin
- 	  Log.error "A computer algebra system Maxima is not installed.";
-          Log.error "Simplifications are disabled.";
-          Log.error "Go to http://maxima.sourceforge.net/ to install Maxima.";
-          simplification_flag := false 
-	end
-    in
+    let () = validate_options () in
+    let () = Config.print_options Format.std_formatter in
     let _ = map process_input Config.input_files in
     exit 0
 
