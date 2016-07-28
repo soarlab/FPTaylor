@@ -127,7 +127,7 @@ let print_list fp sep =
     | s1 :: s2 :: rest -> fp s1; sep(); print (s2 :: rest) in
   print
 
-let starts_with prefix str =
+let starts_with str ~prefix =
   let n = String.length prefix in
   if n > String.length str then
     false

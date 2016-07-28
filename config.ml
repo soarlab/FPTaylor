@@ -80,7 +80,7 @@ let parse_config_file ?(init = false) fname =
        let line = String.trim line in
        if line = "" || is_comment line then
 	 parse_lines (c + 1) short_name rest
-       else if Lib.starts_with "[" line then
+       else if Lib.starts_with line ~prefix:"[" then
 	 let short = parse_short_name line in
 	 if short <> "" then
 	   parse_lines (c + 1) short rest
@@ -100,9 +100,9 @@ let parse_args () =
   let input_files = ref [] in
   let get_opt_name opt =
     let k = String.length opt in
-    if Lib.starts_with "--" opt then
+    if Lib.starts_with opt ~prefix:"--" then
       String.sub opt 2 (k - 2)
-    else if Lib.starts_with "-" opt then
+    else if Lib.starts_with opt ~prefix:"-" then
       let short = String.sub opt 1 (k - 1) in
       Hashtbl.find short_names short 
     else
@@ -112,7 +112,7 @@ let parse_args () =
     match args with
     | [] -> ()
     | name :: rest ->
-       if Lib.starts_with "-" name then
+       if Lib.starts_with name ~prefix:"-" then
 	 let value, rest =
 	   (match rest with
 	    | value :: rs -> value, rs
