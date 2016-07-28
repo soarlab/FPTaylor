@@ -24,12 +24,17 @@ let open_log, close_log, append_to_log, log_fmt =
 	fmt := None
   in
   let open_log fname =
-    let _ = Lib.get_dir "log" in
-    let log_name = Filename.concat "log" (Filename.basename fname ^ ".log") in
-    let _ = close_log() in
-    let c = open_out log_name in
-    out := Some c;
-    fmt := Some (formatter_of_out_channel c)
+    let () = close_log() in
+    try
+      let base_log_dir = Lib.get_dir "log" in
+      let log_name = Filename.concat base_log_dir (Filename.basename fname ^ ".log") in
+      let c = open_out log_name in
+      out := Some c;
+      fmt := Some (formatter_of_out_channel c)
+    with Failure _ ->
+      let fmt = err_formatter in
+      pp_print_string fmt "**ERROR**: Cannot open a log file. \
+                           Make sure that there is no file named 'log' in the current directory.\n"
   in
   let append_to_log str =
     match !fmt with
@@ -59,7 +64,7 @@ let report str =
     ()
 
 let warning str =
-  let str = "WARNING: " ^ str in
+  let str = "**WARNING**: " ^ str in
   let _ = append_to_log str in
   if !warning_flag then
     let fmt = err_formatter in
@@ -72,7 +77,7 @@ let issue_warning p str =
   if p then warning str else ()
 
 let error str =
-  let str = "ERROR: " ^ str in
+  let str = "**ERROR**: " ^ str in
   let _ = append_to_log str in
   let fmt = err_formatter in
   pp_print_string fmt str;

@@ -314,8 +314,8 @@ let approximate_constraint pi c =
 
 
 let process_input fname =
-  let _ = report ("Loading: " ^ fname) in
-  let _ = open_log (Filename.concat "log" fname) in
+  let () = report ("Loading: " ^ fname) in
+  let () = open_log fname in
   let _ =
     match log_fmt() with
       | Some fmt -> Config.print_options fmt

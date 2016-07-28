@@ -164,8 +164,9 @@ let write_to_file fname f a =
 
 (* Creates a directory if it doesn't exist and returns its name *)
 let get_dir dir_name =
-  let _ = 
-    if Sys.file_exists dir_name then ()
+  let () = 
+    if Sys.file_exists dir_name then
+      if Sys.is_directory dir_name then () else failwith ("get_dir: " ^ dir_name)
     else Unix.mkdir dir_name 0o777 in
   dir_name
 
