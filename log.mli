@@ -1,4 +1,4 @@
-val open_log : string -> unit
+val open_log : ?base_dir:string -> string -> unit
 val close_log : unit -> unit
 val append_to_log : string -> unit
 val log_fmt : unit -> Format.formatter option

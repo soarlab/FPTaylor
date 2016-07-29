@@ -23,18 +23,20 @@ let open_log, close_log, append_to_log, log_fmt =
 	out := None;
 	fmt := None
   in
-  let open_log fname =
+  let open_log ?(base_dir = "log") fname =
     let () = close_log() in
     try
-      let base_log_dir = Lib.get_dir "log" in
-      let log_name = Filename.concat base_log_dir (Filename.basename fname ^ ".log") in
+      let base_log_dir = Lib.get_dir base_dir in
+      let log_name = Filename.concat base_log_dir fname in
       let c = open_out log_name in
       out := Some c;
       fmt := Some (formatter_of_out_channel c)
     with Failure _ ->
       let fmt = err_formatter in
-      pp_print_string fmt "**ERROR**: Cannot open a log file. \
-                           Make sure that there is no file named 'log' in the current directory.\n"
+      let msg = Format.sprintf "**ERROR**: Cannot open a log file (%s). \
+                                Make sure that there is no file named '%s' in the current directory.\n"
+                               (Filename.concat base_dir fname) base_dir in
+      pp_print_string fmt msg
   in
   let append_to_log str =
     match !fmt with

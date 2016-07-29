@@ -162,12 +162,23 @@ let write_to_file fname f a =
   let _ = close_out oc in
   r
 
+(* Creates all missing directories in a given path *)
+let make_path ?(perm = 0o777) path =
+  let rec make path =
+    if Sys.file_exists path then
+      if Sys.is_directory path then ()
+      else failwith ("make_path: " ^ path)
+    else
+      begin
+        make (Filename.dirname path);
+        Unix.mkdir path perm
+      end
+  in
+  make path
+
 (* Creates a directory if it doesn't exist and returns its name *)
 let get_dir dir_name =
-  let () = 
-    if Sys.file_exists dir_name then
-      if Sys.is_directory dir_name then () else failwith ("get_dir: " ^ dir_name)
-    else Unix.mkdir dir_name 0o777 in
+  let () = make_path dir_name in 
   dir_name
 
 (* From hol_light/printer.ml *)
@@ -179,5 +190,3 @@ let print_to_string printer =
   fun i -> ignore(printer fmt i);
     ignore(Format.pp_print_flush fmt ());
     let s = !sbuff in sbuff := ""; s
-
-

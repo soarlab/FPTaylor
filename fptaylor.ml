@@ -315,7 +315,22 @@ let approximate_constraint pi c =
 
 let process_input fname =
   let () = report ("Loading: " ^ fname) in
-  let () = open_log fname in
+  let date_str =
+    let time = Unix.localtime (Unix.time ()) in
+    Format.sprintf "%d-%02d-%02d-%02d%02d%02d"
+                   (time.Unix.tm_year + 1900) (time.Unix.tm_mon + 1) time.Unix.tm_mday
+                   time.Unix.tm_hour time.Unix.tm_min time.Unix.tm_sec in
+  let () =
+    let log_dir = Config.get_string_option "log-base-dir" in
+    let log_name =
+      let base_name = Filename.basename fname in
+      let name =
+        match Config.get_string_option "log-append-date" with
+        | "start" -> date_str ^ "_" ^ base_name
+        | "end" -> base_name ^ "_" ^ date_str
+        | _ -> base_name in
+      name ^ ".log" in
+    open_log ~base_dir:log_dir log_name in
   let _ =
     match log_fmt() with
       | Some fmt -> Config.print_options fmt
