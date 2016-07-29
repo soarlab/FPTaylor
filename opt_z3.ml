@@ -121,7 +121,7 @@ let min_max_expr (pars : Opt_common.opt_pars) var_bound e =
     let t = More_num.interval_of_num n in
     (t.Interval.low, t.Interval.high)
   else
-    let tmp = Lib.get_dir "tmp" in
+    let tmp = Lib.get_tmp_dir () in
     let _ = incr name_counter in
     let py_name = Filename.concat tmp 
       (Format.sprintf "min_max_%d.py" !name_counter) in

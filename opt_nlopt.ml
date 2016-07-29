@@ -118,7 +118,7 @@ let gen_nlopt_code (pars : nlopt_pars) fmt =
 
     
 let min_max_expr (pars : Opt_common.opt_pars) var_bound expr =
-  let tmp = Lib.get_dir "tmp" in
+  let tmp = Lib.get_tmp_dir () in
   let c_name = Filename.concat tmp "nlopt-f.c" in
   let exe_name = Filename.concat tmp "nlopt-f" in
   let gen = gen_nlopt_code {opt = pars; nl_alg = 0} in

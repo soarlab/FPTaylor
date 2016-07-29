@@ -40,7 +40,7 @@ let gen_test_code fmt =
     goal expr
 
 let create_test_file fname expr =
-  let tmp = Lib.get_dir "tmp" in
+  let tmp = Lib.get_tmp_dir () in
   let out_name = Filename.concat tmp fname in
   let _ = Lib.write_to_file out_name gen_test_code (Opt.var_bound_float, expr) in
   ()

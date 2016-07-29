@@ -331,6 +331,13 @@ let process_input fname =
         | _ -> base_name in
       name ^ ".log" in
     open_log ~base_dir:log_dir log_name in
+  let () =
+    let tmp_base_dir = Config.get_string_option "tmp-base-dir" in
+    let tmp_dir = if Config.get_bool_option "tmp-date" then
+                    Filename.concat tmp_base_dir date_str
+                  else
+                    tmp_base_dir in
+    Lib.set_tmp_dir tmp_dir in
   let _ =
     match log_fmt() with
       | Some fmt -> Config.print_options fmt

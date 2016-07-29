@@ -29,7 +29,7 @@ let gen_racket_function fmt (name, total2, exp, e) =
   p' ")"
 
 let create_racket_file fname name total2 exp expr =
-  let tmp = Lib.get_dir "tmp" in
+  let tmp = Lib.get_tmp_dir () in
   let out_name = Filename.concat tmp (fname ^ ".rkt") in
   let _ = write_to_file out_name gen_racket_function (name, total2, exp, expr) in
   ()

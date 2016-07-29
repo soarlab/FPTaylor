@@ -96,7 +96,7 @@ let min_max_expr (pars : Opt_common.opt_pars) var_bound e =
       Log.report (Format.sprintf "bb_opt: x_abs_tol = %e, f_rel_tol = %e, f_abs_tol = %e, iters = %d"
 		    pars.x_abs_tol pars.f_rel_tol pars.f_abs_tol pars.max_iters) in
   let base = Config.base_dir in
-  let tmp = Lib.get_dir "tmp" in
+  let tmp = Lib.get_tmp_dir () in
   let ml_name = Filename.concat tmp "bb.ml" in
 
 (*  let ml_name = Format.sprintf "%s/bb_%d.ml" tmp !counter in *)

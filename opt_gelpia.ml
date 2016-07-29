@@ -83,7 +83,7 @@ let abs_max_expr (pars : Opt_common.opt_pars) var_bound expr =
     max_iters      = 50000;
   } in
  *)
-  let tmp = Lib.get_dir "tmp" in
+  let tmp = Lib.get_tmp_dir () in
   let gelpia_name = 
     let _ = incr name_counter in
     Filename.concat tmp 
