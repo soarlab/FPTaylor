@@ -3,7 +3,8 @@ OPT_ML = ocamlopt
 INTERVAL_DIR = INTERVAL
 INCLUDE=$(INTERVAL_DIR)
 
-SRC=	lib.ml\
+SRC=	lib.mli\
+	lib.ml\
 	func.ml\
 	log.mli\
 	log.ml\

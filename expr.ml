@@ -482,9 +482,9 @@ let print_expr_in_env env fmt =
 let print_expr = print_expr_in_env def_print_env
 
 let print_expr_std = print_expr Format.std_formatter
-let print_expr_str = print_to_string print_expr
+let print_expr_str = write_to_string print_expr
 
-let print_expr_str_in_env env = print_to_string (print_expr_in_env env)
+let print_expr_str_in_env env = write_to_string (print_expr_in_env env)
 
 
 (* 
