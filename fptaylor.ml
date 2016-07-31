@@ -122,8 +122,8 @@ let errors =
     let total2 = get_eps exp2 *^ total2' in
     let err_approx =
       if Config.get_bool_option "opt-approx" then
-	let _ = Log.report_str "\nSolving the approximate optimization problem" in
-	let _ = Log.report_str "\nAbsolute errors:" in
+	let () = Log.report_str "\nSolving the approximate optimization problem" in
+	let () = Log.report_str "\nAbsolute errors:" in
 	let bounds1' = map compute_bound v1 in
 	let bounds1 = map (fun (e, exp) -> make_stronger e, exp) bounds1' in
 	let total1', exp1 = sum_high bounds1 in
@@ -133,12 +133,12 @@ let errors =
 	let all_indices = map (fun (_, err) -> err.proof_index) v1 
 	  @ map (fun (_, err) -> err.proof_index) v2 in
 	let _ = Proof.add_opt_approx all_indices all_bounds total in
-	let _ = Log.report "total1: %e\ntotal2: %e\ntotal: %e" total1 total2 total in
+	let () = Log.report "total1: %e\ntotal2: %e\ntotal: %e" total1 total2 total in
 	Some total
       else None in
     let err_exact =
       if Config.get_bool_option "opt-exact" then
-	let _ = Log.report_str "\nSolving the exact optimization problem" in
+	let () = Log.report_str "\nSolving the exact optimization problem" in
 	let abs_exprs = map (fun (e, err) -> mk_abs e, err.exp) v1 in
 	let full_expr', exp = sum_symbolic abs_exprs in
 	let full_expr = if Config.get_bool_option "simplification" then
@@ -162,8 +162,8 @@ let errors =
 	    total
 	  else
 	    (get_eps exp *^ bound) +^ total2 in
-	let _ = Log.report "exact bound (exp = %d): %f" exp bound in
-	let _ = Log.report "exact total: %e\ntotal2: %e" total total2 in
+	let () = Log.report "exact bound (exp = %d): %f" exp bound in
+	let () = Log.report "exact total: %e\ntotal2: %e" total total2 in
 	Some total
       else None in
     err_approx, err_exact
@@ -172,7 +172,7 @@ let errors =
     let f_int = {low = f_min; high = f_max} in
     let rel_tol = 0.0001 in
     if (abs_I f_int).low < rel_tol then
-      let _ = Log.report_str "\nCannot compute the relative error: values of the function are close to zero" in
+      let () = Log.report_str "\nCannot compute the relative error: values of the function are close to zero" in
       None, None
     else
       let v1, v2 = split f.v1 in
@@ -188,18 +188,18 @@ let errors =
       let b2 = (total2 /.$ abs_I f_int).high in
       let err_approx =
 	if Config.get_bool_option "opt-approx" then
-	  let _ = Log.report_str "\nSolving the approximate optimization probelm" in
-	  let _ = Log.report_str "\nRelative errors:" in
+	  let () = Log.report_str "\nSolving the approximate optimization probelm" in
+	  let () = Log.report_str "\nRelative errors:" in
 	  let bounds1 = map compute_bound v1 in
 	  let total1', exp1 = sum_high bounds1 in
 	  let total1 = get_eps exp1 *^ total1' in
 	  let total = total1 +^ b2 in
-	  let _ = Log.report "rel-total1: %e\nrel-total2: %e\nrel-total: %e" total1 b2 total in
+	  let () = Log.report "rel-total1: %e\nrel-total2: %e\nrel-total: %e" total1 b2 total in
 	  Some total
 	else None in
       let err_exact =
 	if Config.get_bool_option "opt-exact" then
-	  let _ = Log.report_str "\nSolving the exact optimization problem" in
+	  let () = Log.report_str "\nSolving the exact optimization problem" in
 	  let abs_exprs = map (fun (e, err) -> mk_abs e, err.exp) v1 in
 	  let full_expr', exp = sum_symbolic abs_exprs in
 	  let full_expr = if Config.get_bool_option "simplificaiton" then
@@ -213,9 +213,9 @@ let errors =
 	    Out_test.create_test_file "test_rel_exact.txt" full_expr in
 
 	  let bound = Opt.optimize_abs Opt_common.default_opt_pars full_expr in
-	  let _ = Log.report "exact bound-rel (exp = %d): %f" exp bound in
+	  let () = Log.report "exact bound-rel (exp = %d): %f" exp bound in
 	  let total = (get_eps exp *^ bound) +^ b2 in
-	  let _ = Log.report "exact total-rel: %e\ntotal2: %e" total b2 in
+	  let () = Log.report "exact total-rel: %e\ntotal2: %e" total b2 in
 	  Some total
 	else None in
       err_approx, err_exact
@@ -226,7 +226,7 @@ let errors =
 	Opt.optimize Opt_common.default_opt_pars form.v0
       else
 	neg_infinity, infinity in
-    let _ = Log.report "bounds: [%e, %e]" f_min f_max in
+    let () = Log.report "bounds: [%e, %e]" f_min f_max in
     let pi = {pi with real_min = f_min; real_max = f_max} in
     let pi =
       if Config.get_bool_option "opt-approx" || Config.get_bool_option "opt-exact" then
@@ -241,7 +241,7 @@ let errors =
 	  rel_error_exact = rel_exact
 	}
       else pi in
-    let _ = Log.report_str "" in
+    let () = Log.report_str "" in
     pi
 
 let safety_check e =
@@ -254,26 +254,26 @@ let safety_check e =
     if Config.fail_on_exception then
       failwith msg
     else
-      let _ = Log.warning_str msg in
+      let () = Log.warning_str msg in
 	zero_I
 
 let compute_form pi e =
-  let _ = Log.report_str "\n*************************************" in
-  let _ = Log.report "Taylor form for: %s" (print_expr_str e) in
+  let () = Log.report_str "\n*************************************" in
+  let () = Log.report "Taylor form for: %s" (print_expr_str e) in
   let _ = if Config.proof_flag then Proof.new_proof () in
   let start = Unix.gettimeofday() in
   let pi, tform = 
     try
       let bound0 = safety_check e in
-      let _ = Log.report "\nConservative bound: %s" (sprintf_I "%f" bound0) in
+      let () = Log.report "\nConservative bound: %s" (sprintf_I "%f" bound0) in
       let e = Rounding_simpl.simplify_rounding e in
-      let _ = Log.report "\nSimplified rounding: %s" (print_expr_str e) in
+      let () = Log.report "\nSimplified rounding: %s" (print_expr_str e) in
       let vars = var_bound_float in
-      let _ = Log.report_str "Building Taylor forms..." in
+      let () = Log.report_str "Building Taylor forms..." in
       let form' = build_form vars e in
-      let _ = Log.report_str "Simplifying Taylor forms..." in
+      let () = Log.report_str "Simplifying Taylor forms..." in
       let form = simplify_form vars form' in
-      let _ = Log.report_str "success" in
+      let () = Log.report_str "success" in
       let form = 
 	if Config.get_bool_option "simplification" then {
 	  form_index = form.form_index;
@@ -283,16 +283,16 @@ let compute_form pi e =
 	else
 	  form in
       let _ = print_form form in
-      let _ = Log.report_str "" in
+      let () = Log.report_str "" in
       let pi = errors pi form in
       pi, form
-    with Failure msg -> let _ = Log.error_str msg in pi, dummy_tform
+    with Failure msg -> let () = Log.error_str msg in pi, dummy_tform
   in
   let stop = Unix.gettimeofday() in
-  let _ = Log.report "Elapsed time: %.5f" (stop -. start) in
+  let () = Log.report "Elapsed time: %.5f" (stop -. start) in
   let _ = 
     if Config.proof_flag then
-      let _ = Log.report "Saving a proof certificate for %s" in
+      let () = Log.report "Saving a proof certificate for %s" pi.name in
       Proof.save_proof (pi.name ^ ".proof") in
   {pi with elapsed_time = stop -. start}, tform
 
@@ -302,10 +302,10 @@ let approximate_constraint pi c =
       | Le (a, b) -> mk_sub a b
       | Lt (a, b) -> mk_sub a b
       | Eq (a, b) -> failwith "approximate_constraint: Eq is not supported" in
-  let _ = Log.report_str "Constraint form" in
+  let () = Log.report_str "Constraint form" in
   let r, tform = compute_form pi e in
   let err = get_problem_error r in
-  let _ = Log.report "\n%s error: %e\n" r.name err in
+  let () = Log.report "\n%s error: %e\n" r.name err in
   Le (tform.v0, Const (const_of_float err))
 
 
@@ -345,13 +345,13 @@ let process_input fname =
   let constraints0 = map (fun name -> {default_problem_info with name = name}) cnames in
   let constraints = 
     if cs = [] then [] else
-      let _ = Log.report_str "\n****** Approximating constraints *******\n" in
+      let () = Log.report_str "\n****** Approximating constraints *******\n" in
       map2 approximate_constraint constraints0 cs in
   let _ = set_active_constraints (zip cnames constraints) in
   let problems = map2 compute_form problems0 es in
-  let _ = Log.report_str "*************************************\n" in
+  let () = Log.report_str "*************************************\n" in
   let _ = map (fun (p, _) -> print_problem_info p) problems in
-  let _ = Log.close_log () in
+  let () = Log.close_log () in
   Log.report_str ""
 
 let validate_options () =
