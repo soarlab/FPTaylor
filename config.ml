@@ -70,8 +70,8 @@ let parse_config_file ?(init = false) fname =
     | [param; value] -> 
        add_option ~init ~short:short_name (String.trim param) (String.trim value)
     | _ -> 
-       Log.error (Format.sprintf "[File %s, line %d] Parameter parsing error: %s" 
-				 fname c line);
+       Log.error "[File %s, line %d] Parameter parsing error: %s" 
+		 fname c line;
        failwith ("Error while parsing a configuration file: " ^ fname)
   in
   let rec parse_lines c short_name lines =
@@ -92,7 +92,7 @@ let parse_config_file ?(init = false) fname =
 	 parse_lines (c + 1) "" rest
     | [] -> ()
   in
-  let _ = Log.report ("Config: " ^ fname) in
+  let () = Log.report "Config: %s " fname in
   let lines = load_file fname in
   parse_lines 1 "" lines
 
@@ -144,7 +144,7 @@ let base_dir =
       Sys.getenv "FPTAYLOR_BASE"
     with Not_found ->
       Filename.dirname Sys.executable_name in
-  let _ = Log.report (Format.sprintf "Base path: %s" path) in
+  Log.report "Base path: %s" path;
   path
 
 (* Load the main configuration file *)
@@ -153,7 +153,7 @@ let () =
   try
     parse_config_file fname ~init:true
   with _ ->
-    Log.error ("Cannot open default.cfg: " ^ fname)
+    Log.error "Cannot open default.cfg: %s" fname
 
 (* Parse options and load other configuration files *)
 let input_files = parse_args ()

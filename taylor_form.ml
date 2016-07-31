@@ -42,7 +42,7 @@ let dummy_tform = {
 
 let info v str =
   if v <= Config.verbosity then
-    Log.report str
+    Log.report_str str
   else
     ()
 
@@ -85,10 +85,9 @@ let estimate_expr, reset_estimate_cache =
   let reset () = (cache := []) in
   let estimate vars e =
     if Config.get_bool_option "intermediate-opt" then
-      let _ = Log.report ("Estimating: " ^ print_expr_str e) in
+      let _ = Log.report "Estimating: %s" (print_expr_str e) in
       let min, max = Opt.optimize Opt_common.default_opt_pars e in
-      let _ = Log.report 
-	(Printf.sprintf "Estimation result: [%f, %f]" min max) in
+      let _ = Log.report "Estimation result: [%f, %f]" min max in
       {low = min; high = max}
     else
       Eval.eval_interval_expr vars e in
@@ -209,9 +208,9 @@ let precise_const_rnd_form rnd e =
 	(* Exact errors for constants can cancel each other: 
 	   use the same artificial constant (const_0) for indices *)
 	let err = mk_err_var (find_index (mk_rounding rnd const_0)) rnd.eps_exp in
-	let _ = Log.warning (Format.sprintf "Inexact constant: %s; err = %s"
-			       (print_expr_str e)
-			       (print_expr_str err_expr)) in
+	let _ = Log.warning "Inexact constant: %s; err = %s"
+			    (print_expr_str e)
+			    (print_expr_str err_expr) in
 	{
 	  form_index = form_index;
 	  v0 = e;
@@ -246,9 +245,9 @@ let const_rnd_form rnd e =
 	let m2 = rnd.coefficient *^ m2' in
 	let err_expr = fp_to_const m2 in
 	let err = mk_err_var (find_index (mk_rounding rnd e)) rnd.eps_exp in
-	let _ = Log.warning (Format.sprintf "Inexact constant: %s; err = %s" 
-			       (print_expr_str e) 
-			       (print_expr_str err_expr)) in
+	let _ = Log.warning "Inexact constant: %s; err = %s" 
+			    (print_expr_str e) 
+			    (print_expr_str err_expr) in
 	let _ = 
 	  Proof.add_rnd_bin_const_step form_index c.rational_v 
 	    (mk_proof_rnd_info rnd) p2_exp m2 err.proof_index in
@@ -469,7 +468,7 @@ let inv_form vars f =
       if Config.fail_on_exception then
 	failwith msg
       else
-	Log.warning msg
+	Log.warning_str msg
     else () in
   let b_high = (abs_I (inv_I d)).high in
   let b_high = make_stronger b_high in

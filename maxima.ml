@@ -38,10 +38,10 @@ let maxima_expr str =
     Parser.parse_expr out
   with
     | Failure msg ->
-      Log.error (Format.sprintf "Cannot parse Maxima output: %s" out);
+      Log.error "Cannot parse Maxima output: %s" out;
       failwith msg
     | _ ->
-      Log.error (Format.sprintf "Cannot parse Maxima output: %s" out);
+      Log.error "Cannot parse Maxima output: %s" out;
       failwith "parsing error"
 
 let simplify e =
@@ -50,10 +50,10 @@ let simplify e =
     maxima_expr str
   with 
     | Failure msg -> 
-      Log.error (Format.sprintf "Simplification failed: %s" msg);
+      Log.error "Simplification failed: %s" msg;
       e
     | _ -> 
-      Log.error (Format.sprintf "Simplification failed (unknown error)");
+      Log.error "Simplification failed (unknown error)";
       e
 
 let diff v e =

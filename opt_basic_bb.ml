@@ -93,8 +93,8 @@ let min_max_expr (pars : Opt_common.opt_pars) var_bound e =
 (*  let _ = counter := !counter + 1 in *)
   let _ = 
     if Config.debug then
-      Log.report (Format.sprintf "bb_opt: x_abs_tol = %e, f_rel_tol = %e, f_abs_tol = %e, iters = %d"
-		    pars.x_abs_tol pars.f_rel_tol pars.f_abs_tol pars.max_iters) in
+      Log.report "bb_opt: x_abs_tol = %e, f_rel_tol = %e, f_abs_tol = %e, iters = %d"
+		 pars.x_abs_tol pars.f_rel_tol pars.f_abs_tol pars.max_iters in
   let base = Config.base_dir in
   let tmp = Lib.get_tmp_dir () in
   let ml_name = Filename.concat tmp "bb.ml" in
@@ -148,9 +148,9 @@ let min_max_expr (pars : Opt_common.opt_pars) var_bound e =
 	  abs_float fmin, abs_float (fmin -. lower_min)
 	else
 	  abs_float fmax, abs_float (fmax -. lower_max) in
-      Log.report (Format.sprintf "iterations(%d, %d): %d" 
-		    iter_max iter_min (max iter_max iter_min));
-      Log.report (Format.sprintf "lower_max = %e, lower_min = %e, subopt = %e (%e)"
-				 lower_max lower_min subopt (subopt /. opt *. 100.0))
+      Log.report "iterations(%d, %d): %d" 
+		 iter_max iter_min (max iter_max iter_min);
+      Log.report "lower_max = %e, lower_min = %e, subopt = %e (%e)"
+		 lower_max lower_min subopt (subopt /. opt *. 100.0)
     else () in
   fmin, fmax
