@@ -37,15 +37,14 @@ let add_option ?(init = false) ?(short = "") name value =
     with Not_found ->
 	 failwith (Format.sprintf "Unknown option: %s = %s (see available options in default.cfg)" name value)
 
-let print_options fmt =
+let print_options ~level:level =
   let print name value =
-    Format.pp_print_string fmt (name ^ " = " ^ value);
-    Format.pp_print_newline fmt () in
+    Log.report level "%s = %s" name value in
   Hashtbl.iter print param_table
 
-let print_short_names fmt =
+let print_short_names ~level:level =
   let print short name =
-    Format.fprintf fmt "%s (short: %s)\n" name short in
+    Log.report level "%s (short: %s)" name short in
   Hashtbl.iter print short_names
 
 let is_comment =
@@ -92,7 +91,7 @@ let parse_config_file ?(init = false) fname =
 	 parse_lines (c + 1) "" rest
     | [] -> ()
   in
-  let () = Log.report "Config: %s " fname in
+  Log.report 2 "Config: %s " fname;
   let lines = load_file fname in
   parse_lines 1 "" lines
 
@@ -144,7 +143,7 @@ let base_dir =
       Sys.getenv "FPTAYLOR_BASE"
     with Not_found ->
       Filename.dirname Sys.executable_name in
-  Log.report "Base path: %s" path;
+  Log.report 2 "Base path: %s" path;
   path
 
 (* Load the main configuration file *)
@@ -185,5 +184,9 @@ let get_float_option name = stof ~name (find_option name)
 let debug = get_bool_option "debug"
 let proof_flag = get_bool_option "proof-record"
 let fail_on_exception = get_bool_option "fail-on-exception"
-let verbosity = get_int_option "verbosity"
 
+let () =
+  let verbosity = get_int_option "verbosity" in
+  if verbosity < 0 then
+    Log.warning 0 "verbosity < 0: %d" verbosity;
+  Log.set_log_level (max 0 verbosity)

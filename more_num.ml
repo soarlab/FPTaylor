@@ -137,14 +137,14 @@ let num_of_float =
 	if Config.fail_on_exception then
 	  failwith msg
 	else
-	  let _ = Log.warning "%s" msg in
+	  let () = Log.warning 0 "%s" msg in
 	  Int 0
       | FP_nan ->
 	let msg = "num_of_float: nan" in
 	if Config.fail_on_exception then
 	  failwith msg
 	else
-	  let _ = Log.warning "%s" msg in
+	  let () = Log.warning 0 "%s" msg in
 	  Int 0
 
 let is_exact str =

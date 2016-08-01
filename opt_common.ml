@@ -37,8 +37,8 @@ let empty_result = {
 let get_tol name default =
   let tol = Config.get_float_option name in
   if tol < 0.0 then
-    let _ = Log.warning "Bad tolerance value: %s = %e. Using default value: %e"
-			name tol default in
+    let () = Log.warning 0 "Bad tolerance value: %s = %e. Using default value: %e"
+		         name tol default in
     default
   else
     tol

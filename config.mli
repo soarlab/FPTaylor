@@ -11,7 +11,6 @@ val get_float_option : string -> float
 val debug : bool
 val fail_on_exception : bool
 val proof_flag : bool
-val verbosity : int
 
-val print_options : Format.formatter -> unit
-val print_short_names : Format.formatter -> unit
+val print_options : level:int -> unit
+val print_short_names : level:int -> unit

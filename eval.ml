@@ -196,9 +196,9 @@ let eval_interval_const_expr =
 
 
 let eval_const_expr e = 
-  let _ = Log.report "eval_const_expr: %s" (print_expr_str e) in
+  Log.report 4 "eval_const_expr: %s" (print_expr_str e);
   let n = eval_num_const_expr e in
-  let _ = Log.report "result: %s" (string_of_num n) in
+  Log.report 4 "result: %s" (string_of_num n);
   {
     rational_v = n;
     float_v = float_of_num n;

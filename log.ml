@@ -52,23 +52,23 @@ let open_log, close_log, append_to_log, log_fmt =
   append_to_log,
   log_fmt
 
+let log_level = ref 10
 
-let report_flag = ref true
-let warning_flag = ref true
+let set_log_level level = log_level := level
 
-let report_str str =
+let report_str level str =
   let _ = append_to_log str in
-  if !report_flag then
+  if level <= !log_level then
     let fmt = std_formatter in
     pp_print_string fmt str; 
     pp_print_newline fmt ()
   else
     ()
 
-let warning_str str =
+let warning_str level str =
   let str = "**WARNING**: " ^ str in
   let _ = append_to_log str in
-  if !warning_flag then
+  if level <= !log_level then
     let fmt = err_formatter in
     pp_print_string fmt str;
     pp_print_newline fmt ()
@@ -76,7 +76,7 @@ let warning_str str =
    ()
 
 let issue_warning_str p str =
-  if p then warning_str str else ()
+  if p then warning_str 0 str else ()
 
 let error_str str =
   let str = "**ERROR**: " ^ str in
@@ -85,11 +85,10 @@ let error_str str =
   pp_print_string fmt str;
   pp_print_newline fmt ()
 
-let report fmt = Format.ksprintf report_str fmt
+let report level fmt = Format.ksprintf (report_str level) fmt
                    
-let warning fmt = Format.ksprintf warning_str fmt
+let warning level fmt = Format.ksprintf (warning_str level) fmt
 
 let error fmt = Format.ksprintf error_str fmt
 
 let issue_warning p fmt = Format.ksprintf (issue_warning_str p) fmt
-

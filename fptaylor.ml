@@ -44,16 +44,16 @@ let default_problem_info = {
 let print_problem_info =
   let print_opt str = function
     | None -> ()
-    | Some v -> Log.report "%s: %e" str v in
+    | Some v -> Log.report 0 "%s: %e" str v in
   fun pi ->
-    Log.report_str "-------------------------------------------------------------------------------";
-    Log.report "Problem: %s\n" pi.name;
-    Log.report "Bounds (without rounding): [%e, %e]" pi.real_min pi.real_max;
+    Log.report_str 0 "-------------------------------------------------------------------------------";
+    Log.report 0 "Problem: %s\n" pi.name;
+    Log.report 0 "Bounds (without rounding): [%e, %e]" pi.real_min pi.real_max;
     print_opt "Absolute error (approximate)" pi.abs_error_approx;
     print_opt "Absolute error (exact)" pi.abs_error_exact;
     print_opt "Relative error (approximate)" pi.rel_error_approx;
     print_opt "Relative error (exact)" pi.rel_error_exact;
-    Log.report "\nElapsed time: %.5f\n" pi.elapsed_time
+    Log.report 0 "\nElapsed time: %.5f\n" pi.elapsed_time
   
 let get_problem_error pi =
   let get_val v =
@@ -68,17 +68,17 @@ let exprs () = env.expressions
 
 let var_bound_float name = variable_interval name
 
-let print_form f =
-  Log.report "v0 = %s" (print_expr_str f.v0);
+let print_form level f =
+  Log.report level "v0 = %s" (print_expr_str f.v0);
   ignore (map (fun (e, err) -> 
-              Log.report "%d (%d): exp = %d: %s" 
+              Log.report level "%d (%d): exp = %d: %s" 
 	                 err.index err.proof_index err.exp (print_expr_str e)) f.v1);
-  Log.report_str "\nCorresponding original subexpressions:";
+  Log.report_str level "\nCorresponding original subexpressions:";
   ignore (map (fun (_, err) ->
               let i = err.index in
               if i > 0 then
                 let expr = expr_for_index i in
-                Log.report "%d: %s" i (print_expr_str expr)
+                Log.report level "%d: %s" i (print_expr_str expr)
               else ()) f.v1)
 
 let add2_symbolic (e1, exp1) (e2, exp2) =
@@ -101,7 +101,7 @@ let sum_symbolic s = itlist add2_symbolic s (const_0, 0)
 let errors =
   let compute_bound (e, err) =
     let bound = Opt.optimize_abs Opt_common.default_opt_pars e in
-    Log.report "%d: exp = %d: %f" err.index err.exp bound;
+    Log.report 2 "%d: exp = %d: %f" err.index err.exp bound;
     bound, err.exp 
   in
   let rec split es =
@@ -122,57 +122,65 @@ let errors =
     let total2 = get_eps exp2 *^ total2' in
     let err_approx =
       if Config.get_bool_option "opt-approx" then
-	let () = Log.report_str "\nSolving the approximate optimization problem" in
-	let () = Log.report_str "\nAbsolute errors:" in
-	let bounds1' = map compute_bound v1 in
-	let bounds1 = map (fun (e, exp) -> make_stronger e, exp) bounds1' in
-	let total1', exp1 = sum_high bounds1 in
-	let total1 = get_eps exp1 *^ total1' in
-	let total = make_stronger (total1 +^ total2) in
-	let all_bounds = map fst bounds1 @ map fst bounds2 in
-	let all_indices = map (fun (_, err) -> err.proof_index) v1 
-	  @ map (fun (_, err) -> err.proof_index) v2 in
-	let _ = Proof.add_opt_approx all_indices all_bounds total in
-	let () = Log.report "total1: %e\ntotal2: %e\ntotal: %e" total1 total2 total in
-	Some total
-      else None in
+        begin
+	  Log.report_str 1 "\nSolving the approximate optimization problem";
+	  Log.report_str 1 "\nAbsolute errors:";
+	  let bounds1' = map compute_bound v1 in
+	  let bounds1 = map (fun (e, exp) -> make_stronger e, exp) bounds1' in
+	  let total1', exp1 = sum_high bounds1 in
+	  let total1 = get_eps exp1 *^ total1' in
+	  let total = make_stronger (total1 +^ total2) in
+	  let all_bounds = map fst bounds1 @ map fst bounds2 in
+	  let all_indices = map (fun (_, err) -> err.proof_index) v1 
+	                    @ map (fun (_, err) -> err.proof_index) v2 in
+	  let _ = Proof.add_opt_approx all_indices all_bounds total in
+	  Log.report 1 "total1: %e\ntotal2: %e\ntotal: %e" total1 total2 total;
+	  Some total
+        end
+      else
+        None
+    in
     let err_exact =
       if Config.get_bool_option "opt-exact" then
-	let () = Log.report_str "\nSolving the exact optimization problem" in
-	let abs_exprs = map (fun (e, err) -> mk_abs e, err.exp) v1 in
-	let full_expr', exp = sum_symbolic abs_exprs in
-	let full_expr = if Config.get_bool_option "simplification" then
-                          Maxima.simplify full_expr'
-                        else
-                          full_expr' in
+        begin
+	  Log.report_str 1 "\nSolving the exact optimization problem";
+	  let abs_exprs = map (fun (e, err) -> mk_abs e, err.exp) v1 in
+	  let full_expr', exp = sum_symbolic abs_exprs in
+	  let full_expr = if Config.get_bool_option "simplification" then
+                            Maxima.simplify full_expr'
+                          else
+                            full_expr' in
 
-	let _ = 
-	  Out_racket.create_racket_file "abs_exact" 
-	    "fptaylor-abs" total2 exp full_expr;
-	  Out_test.create_test_file "test_abs_exact.txt" full_expr in
+	  let _ = 
+	    Out_racket.create_racket_file "abs_exact" 
+	                                  "fptaylor-abs" total2 exp full_expr;
+	    Out_test.create_test_file "test_abs_exact.txt" full_expr in
 
-	let bound = Opt.optimize_abs Opt_common.default_opt_pars full_expr in
-	let total = 
-	  if Config.proof_flag then
-	    let e' = get_eps exp in
-	    let e = if e' = 0.0 then 1.0 else e' in
-	    let bound = make_stronger (bound +^ Fpu.fdiv_high total2 e) in
-	    let total = e *^ bound in
-	    let _ = Proof.add_opt_exact bound exp total in
-	    total
-	  else
-	    (get_eps exp *^ bound) +^ total2 in
-	let () = Log.report "exact bound (exp = %d): %f" exp bound in
-	let () = Log.report "exact total: %e\ntotal2: %e" total total2 in
-	Some total
-      else None in
+	  let bound = Opt.optimize_abs Opt_common.default_opt_pars full_expr in
+	  let total = 
+	    if Config.proof_flag then
+	      let e' = get_eps exp in
+	      let e = if e' = 0.0 then 1.0 else e' in
+	      let bound = make_stronger (bound +^ Fpu.fdiv_high total2 e) in
+	      let total = e *^ bound in
+	      let _ = Proof.add_opt_exact bound exp total in
+	      total
+	    else
+	      (get_eps exp *^ bound) +^ total2 in
+	  Log.report 1 "exact bound (exp = %d): %f" exp bound;
+	  Log.report 1 "exact total: %e\ntotal2: %e" total total2;
+	  Some total
+        end
+      else
+        None
+    in
     err_approx, err_exact
   in
   let rel_error f (f_min, f_max) =
     let f_int = {low = f_min; high = f_max} in
     let rel_tol = 0.0001 in
     if (abs_I f_int).low < rel_tol then
-      let () = Log.report_str "\nCannot compute the relative error: values of the function are close to zero" in
+      let () = Log.warning_str 0 "\nCannot compute the relative error: values of the function are close to zero" in
       None, None
     else
       let v1, v2 = split f.v1 in
@@ -188,36 +196,43 @@ let errors =
       let b2 = (total2 /.$ abs_I f_int).high in
       let err_approx =
 	if Config.get_bool_option "opt-approx" then
-	  let () = Log.report_str "\nSolving the approximate optimization probelm" in
-	  let () = Log.report_str "\nRelative errors:" in
-	  let bounds1 = map compute_bound v1 in
-	  let total1', exp1 = sum_high bounds1 in
-	  let total1 = get_eps exp1 *^ total1' in
-	  let total = total1 +^ b2 in
-	  let () = Log.report "rel-total1: %e\nrel-total2: %e\nrel-total: %e" total1 b2 total in
-	  Some total
-	else None in
+          begin
+	    Log.report_str 1 "\nSolving the approximate optimization probelm";
+	    Log.report_str 1 "\nRelative errors:";
+	    let bounds1 = map compute_bound v1 in
+	    let total1', exp1 = sum_high bounds1 in
+	    let total1 = get_eps exp1 *^ total1' in
+	    let total = total1 +^ b2 in
+	    Log.report 1 "rel-total1: %e\nrel-total2: %e\nrel-total: %e" total1 b2 total;
+	    Some total
+          end
+	else
+          None
+      in
       let err_exact =
 	if Config.get_bool_option "opt-exact" then
-	  let () = Log.report_str "\nSolving the exact optimization problem" in
-	  let abs_exprs = map (fun (e, err) -> mk_abs e, err.exp) v1 in
-	  let full_expr', exp = sum_symbolic abs_exprs in
-	  let full_expr = if Config.get_bool_option "simplificaiton" then
-                            Maxima.simplify full_expr'
-                          else
-                            full_expr' in
+          begin
+	    Log.report_str 1 "\nSolving the exact optimization problem";
+	    let abs_exprs = map (fun (e, err) -> mk_abs e, err.exp) v1 in
+	    let full_expr', exp = sum_symbolic abs_exprs in
+	    let full_expr = if Config.get_bool_option "simplificaiton" then
+                              Maxima.simplify full_expr'
+                            else
+                              full_expr' in
+	    let _ = 
+	      Out_racket.create_racket_file "rel_exact" 
+	                                    "fptaylor-rel" b2 exp full_expr;
+	      Out_test.create_test_file "test_rel_exact.txt" full_expr in
 
-	  let _ = 
-	    Out_racket.create_racket_file "rel_exact" 
-	      "fptaylor-rel" b2 exp full_expr;
-	    Out_test.create_test_file "test_rel_exact.txt" full_expr in
-
-	  let bound = Opt.optimize_abs Opt_common.default_opt_pars full_expr in
-	  let () = Log.report "exact bound-rel (exp = %d): %f" exp bound in
-	  let total = (get_eps exp *^ bound) +^ b2 in
-	  let () = Log.report "exact total-rel: %e\ntotal2: %e" total b2 in
-	  Some total
-	else None in
+	    let bound = Opt.optimize_abs Opt_common.default_opt_pars full_expr in
+	    Log.report 1 "exact bound-rel (exp = %d): %f" exp bound;
+	    let total = (get_eps exp *^ bound) +^ b2 in
+	    Log.report 1 "exact total-rel: %e\ntotal2: %e" total b2;
+	    Some total
+          end
+	else
+          None
+      in
       err_approx, err_exact
   in
   fun pi form ->
@@ -226,7 +241,7 @@ let errors =
 	Opt.optimize Opt_common.default_opt_pars form.v0
       else
 	neg_infinity, infinity in
-    let () = Log.report "bounds: [%e, %e]" f_min f_max in
+    Log.report 1 "bounds: [%e, %e]" f_min f_max;
     let pi = {pi with real_min = f_min; real_max = f_max} in
     let pi =
       if Config.get_bool_option "opt-approx" || Config.get_bool_option "opt-exact" then
@@ -241,7 +256,7 @@ let errors =
 	  rel_error_exact = rel_exact
 	}
       else pi in
-    let () = Log.report_str "" in
+    let () = Log.report_str 1 "" in
     pi
 
 let safety_check e =
@@ -249,31 +264,31 @@ let safety_check e =
     Rounding_simpl.check_expr var_bound_float e
   with Rounding_simpl.Exceptional_operation (e0, str) ->
     let msg =
-      Printf.sprintf "\nPotential exception detected: %s at:\n%s"
-	str (print_expr_str e0) in
+      Format.sprintf "\nPotential exception detected: %s at:\n%s"
+	             str (print_expr_str e0) in
     if Config.fail_on_exception then
       failwith msg
     else
-      let () = Log.warning_str msg in
+      let () = Log.warning_str 0 msg in
 	zero_I
 
 let compute_form pi e =
-  let () = Log.report_str "\n*************************************" in
-  let () = Log.report "Taylor form for: %s" (print_expr_str e) in
+  let () = Log.report_str 2 "\n*************************************" in
+  let () = Log.report 2 "Taylor form for: %s" (print_expr_str e) in
   let _ = if Config.proof_flag then Proof.new_proof () in
   let start = Unix.gettimeofday() in
   let pi, tform = 
     try
       let bound0 = safety_check e in
-      let () = Log.report "\nConservative bound: %s" (sprintf_I "%f" bound0) in
+      let () = Log.report 2 "\nConservative bound: %s" (sprintf_I "%f" bound0) in
       let e = Rounding_simpl.simplify_rounding e in
-      let () = Log.report "\nSimplified rounding: %s" (print_expr_str e) in
+      let () = Log.report 2 "\nSimplified rounding: %s" (print_expr_str e) in
       let vars = var_bound_float in
-      let () = Log.report_str "Building Taylor forms..." in
+      let () = Log.report_str 1 "Building Taylor forms..." in
       let form' = build_form vars e in
-      let () = Log.report_str "Simplifying Taylor forms..." in
+      let () = Log.report_str 1 "Simplifying Taylor forms..." in
       let form = simplify_form vars form' in
-      let () = Log.report_str "success" in
+      let () = Log.report_str 1 "success" in
       let form = 
 	if Config.get_bool_option "simplification" then {
 	  form_index = form.form_index;
@@ -282,17 +297,17 @@ let compute_form pi e =
 	}
 	else
 	  form in
-      let _ = print_form form in
-      let () = Log.report_str "" in
+      print_form 2 form;
+      Log.report_str 2 "";
       let pi = errors pi form in
       pi, form
     with Failure msg -> let () = Log.error_str msg in pi, dummy_tform
   in
   let stop = Unix.gettimeofday() in
-  let () = Log.report "Elapsed time: %.5f" (stop -. start) in
+  Log.report 2 "Elapsed time: %.5f" (stop -. start);
   let _ = 
     if Config.proof_flag then
-      let () = Log.report "Saving a proof certificate for %s" pi.name in
+      let () = Log.report 1 "Saving a proof certificate for %s" pi.name in
       Proof.save_proof (pi.name ^ ".proof") in
   {pi with elapsed_time = stop -. start}, tform
 
@@ -302,15 +317,15 @@ let approximate_constraint pi c =
       | Le (a, b) -> mk_sub a b
       | Lt (a, b) -> mk_sub a b
       | Eq (a, b) -> failwith "approximate_constraint: Eq is not supported" in
-  let () = Log.report_str "Constraint form" in
+  Log.report_str 1 "Constraint form";
   let r, tform = compute_form pi e in
   let err = get_problem_error r in
-  let () = Log.report "\n%s error: %e\n" r.name err in
+  Log.report 1 "\n%s error: %e\n" r.name err;
   Le (tform.v0, Const (const_of_float err))
 
 
 let process_input fname =
-  let () = Log.report "Loading: %s" fname in
+  let () = Log.report 0 "Loading: %s" fname in
   let date_str =
     let time = Unix.localtime (Unix.time ()) in
     Format.sprintf "%d-%02d-%02d-%02d%02d%02d"
@@ -334,10 +349,7 @@ let process_input fname =
                   else
                     tmp_base_dir in
     Lib.set_tmp_dir tmp_dir in
-  let _ =
-    match Log.log_fmt() with
-      | Some fmt -> Config.print_options fmt
-      | _ -> () in
+  let () = Config.print_options 4 in
   let _ = parse_file fname in
   let names, es = unzip (exprs ()) in
   let cnames, cs = unzip (all_constraints ()) in
@@ -345,22 +357,22 @@ let process_input fname =
   let constraints0 = map (fun name -> {default_problem_info with name = name}) cnames in
   let constraints = 
     if cs = [] then [] else
-      let () = Log.report_str "\n****** Approximating constraints *******\n" in
+      let () = Log.report_str 1 "\n****** Approximating constraints *******\n" in
       map2 approximate_constraint constraints0 cs in
   let _ = set_active_constraints (zip cnames constraints) in
   let problems = map2 compute_form problems0 es in
-  let () = Log.report_str "*************************************\n" in
-  let _ = map (fun (p, _) -> print_problem_info p) problems in
-  let () = Log.close_log () in
-  Log.report_str ""
+  Log.report_str 2 "*************************************\n";
+  ignore (map (fun (p, _) -> print_problem_info p) problems);
+  Log.close_log ();
+  Log.report_str 0 ""
 
 let validate_options () =
   let validate_simplification () =
     if Config.get_bool_option "simplification" && not (Maxima.test_maxima()) then
       begin
-        Log.warning_str "A computer algebra system Maxima is not installed. \
-                         Simplifications are disabled. \
-                         Go to http://maxima.sourceforge.net/ to install Maxima.";
+        Log.warning_str 0 "A computer algebra system Maxima is not installed. \
+                           Simplifications are disabled. \
+                           Go to http://maxima.sourceforge.net/ to install Maxima.";
         Config.add_option "simplification" "false"
       end
   in
@@ -368,13 +380,13 @@ let validate_options () =
     if Config.get_bool_option "proof-record" then
       if Config.get_bool_option "fp-power2-model" then
         begin
-          Log.warning_str "Proof certificates (proof-record = true) are not implemented for \
-                           the improved rounding model (fp-power2-model = true).";
+          Log.warning_str 0 "Proof certificates (proof-record = true) are not implemented for \
+                             the improved rounding model (fp-power2-model = true).";
         end
       else if Config.get_bool_option "develop" then
         begin
-          Log.warning_str "Proof certificates (proof-record = true) are not implemented for \
-                           some features of the development mode (develop = true).";
+          Log.warning_str 0 "Proof certificates (proof-record = true) are not implemented for \
+                             some features of the development mode (develop = true).";
         end
   in
   begin
@@ -385,15 +397,19 @@ let validate_options () =
 let main () =
   let p = print_string in
   if Config.input_files = [] then
-    let _ = p ("Usage: "
-	       ^ Sys.argv.(0) 
-	       ^ " [--opt-name opt-value ...] [-c config1 ...] input_file1 [input_file2 ...]\n\n"
-               ^ "See default.cfg for a list of available options.\n") in
-    exit 1
+    begin
+      p ("Usage: "
+	 ^ Sys.argv.(0) 
+	 ^ " [--opt-name opt-value ...] [-c config1 ...] input_file1 [input_file2 ...]\n\n"
+         ^ "See default.cfg for a list of available options.\n");
+      exit 1
+    end
   else
-    let () = validate_options () in
-    let () = Config.print_options Format.std_formatter in
-    let _ = map process_input Config.input_files in
-    exit 0
+    begin
+      validate_options ();
+      Log.report_str 0 "";
+      ignore (map process_input Config.input_files);
+      exit 0
+    end
 
 let () = main ()
