@@ -79,8 +79,8 @@ let proof = {
   proof_opts = [];
 }
 
-let save_proof fname =
-  let tmp = Lib.get_dir "proofs" in
+let save_proof dir fname =
+  let tmp = Lib.get_dir dir in
   let name = Filename.concat tmp fname in
   let oc = open_out_bin name in
   output_value oc proof;

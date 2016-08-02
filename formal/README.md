@@ -72,6 +72,7 @@ First of all, it is necessary to prepare FPTaylor proof certificates. Go to `FPT
     make tests2
     make taylor-a
     make trans-a
+    make taylor-c
 
 These commands will create proof certificates for all FPTaylor benchmarks in the directory `FPTaylor/benchmarks/proofs/proofs`.
 
@@ -100,7 +101,7 @@ The following commands will verify some simple certificates:
     needs "tests/exp1x.hl";;
     needs "tests/hypot.hl";;
     needs "tests/sphere.hl";;
-    needs "test/sqrt_sub.hl";;
+    needs "tests/sqrt_sub.hl";;
 
 The next command will verify all FPTaylor benchmarks with polynomial and
 rational functions:
@@ -108,6 +109,13 @@ rational functions:
     needs "tests/benchmarks_a.hl";;
 
 It requires about 1 hour to complete this verification.
+
+The command
+
+    needs "tests/benchmarks_c.hl";;
+
+verifies the same problems as the previous command but with better error bounds
+(because exact optimization problems are verified: `opt-exact = true`). 
 
 The command
 

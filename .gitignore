@@ -13,6 +13,7 @@ input_parser.mli
 ref.html
 vm_instructions.html
 fptaylor
+proof_to_text
 ocamlfpu
 *~
 *.proof

@@ -305,10 +305,14 @@ let compute_form pi e =
   in
   let stop = Unix.gettimeofday() in
   Log.report 2 "Elapsed time: %.5f" (stop -. start);
-  let _ = 
+  let () = 
     if Config.proof_flag then
-      let () = Log.report 1 "Saving a proof certificate for %s" pi.name in
-      Proof.save_proof (pi.name ^ ".proof") in
+      begin
+        let proof_dir = Config.get_string_option "proof-dir" in
+        Log.report 1 "Saving a proof certificate for %s (in %s)" pi.name proof_dir;
+        Proof.save_proof proof_dir (pi.name ^ ".proof")
+      end
+  in
   {pi with elapsed_time = stop -. start}, tform
 
 let approximate_constraint pi c =
