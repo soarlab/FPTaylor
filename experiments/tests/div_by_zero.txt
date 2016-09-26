@@ -1,0 +1,6 @@
+Variables
+  float64 x in [-10, 10],
+  float64 y in [0, 2];
+
+Expressions
+  div_by_zero rnd64= 1 / (x * x + y * y) + x;
