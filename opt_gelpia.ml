@@ -19,10 +19,11 @@ open Opt_common
 (* GELPIA parameters *)
 (*
 type gelpia_pars = {
-  input_epsilon  : float;
-  output_epsilon : float;
+  x_abs_tol      : float;
+  f_rel_tol      : float;
+  f_abs_tol      : float;
   timeout        : int;
-  max_iters      : int;
+  iters          : int;
 }
  *)
 
@@ -35,9 +36,9 @@ let gen_gelpia_code fmt =
     let timeout = max (pars.timeout / 1000) 1 in
     p (Format.sprintf "-ie %e" pars.x_abs_tol);
     p (Format.sprintf "-oe %e" pars.f_abs_tol);
+    p (Format.sprintf "-oer %e" pars.f_rel_tol);
     p (Format.sprintf "-t %d" timeout);
-    (*  p (Format.sprintf "-M %d" pars.max_iters); *)
-  (*    p (Format.sprintf "--solver %s" pars.solver) *) in
+    p (Format.sprintf "-M %d" pars.max_iters); in
 
   let func expr = 
     p' "-f \"";
@@ -91,7 +92,7 @@ let abs_max_expr (pars : Opt_common.opt_pars) var_bound expr =
   let gen = gen_gelpia_code in
   let abs_expr = mk_abs expr in
   let _ = write_to_file gelpia_name gen (pars, var_bound, abs_expr) in
-  let cmd = Format.sprintf "%s -T -t 5 -z %@%s" (get_gelpia_cmd()) gelpia_name in
+  let cmd = Format.sprintf "%s -T -z %@%s" (get_gelpia_cmd()) gelpia_name in
   let out = run_cmd cmd in
   try
     let min = get_float out "Minimum: " and
