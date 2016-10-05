@@ -68,14 +68,14 @@ let get_gelpia_cmd () =
       Sys.getenv "GELPIA_PATH"
     with Not_found ->
       cc Config.base_dir "gelpia" in
-  let cmd = cc (cc path "bin") "gelpia" in
+  let cmd = cc (cc path "bin") "gelpia_mm" in
   if Sys.file_exists cmd then
     cmd
   else
     failwith (cmd ^ " not found.\n" ^
 	      "Set the GELPIA_PATH variable or copy GELPIA to the FPTaylor root directory.")
 
-let abs_max_expr (pars : Opt_common.opt_pars) var_bound expr =
+let min_max_expr (pars : Opt_common.opt_pars) var_bound expr =
 (*
   let pars = {
     input_epsilon  = tol_x;
@@ -90,7 +90,7 @@ let abs_max_expr (pars : Opt_common.opt_pars) var_bound expr =
     Filename.concat tmp 
       (Format.sprintf "gelpia_%d.txt" !name_counter) in
   let gen = gen_gelpia_code in
-  let abs_expr = mk_abs expr in
+  let abs_expr = expr in
   let _ = write_to_file gelpia_name gen (pars, var_bound, abs_expr) in
   let cmd = Format.sprintf "%s -T -z %@%s" (get_gelpia_cmd()) gelpia_name in
   let out = run_cmd cmd in
@@ -100,5 +100,6 @@ let abs_max_expr (pars : Opt_common.opt_pars) var_bound expr =
     min, max
   with _ ->
     let msg = "GELPIA error: " ^ String.concat "\n" (cmd :: out) in
-    failwith msg
+    failwith msg 
+      
 
