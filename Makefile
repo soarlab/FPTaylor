@@ -56,7 +56,7 @@ OBJ_PROOF_SRC = $(PROOF_SRC:.ml=.cmo)
 TEST = $(addprefix $(TEST_DIR)/,$(TESTS))
 
 all: compile-interval compile-byte
-	$(ML) -o fptaylor -I $(INCLUDE) \
+	@$(ML) -o fptaylor -I $(INCLUDE) \
 		unix.cma str.cma nums.cma \
 		$(INTERVAL_DIR)/chcw.o interval.cma \
 		$(SRC:.ml=.cmo)
@@ -77,19 +77,19 @@ compile-native: $(OBJ_NATIVE)
 	@echo "FPTaylor compiled (native)"
 
 input_lexer.ml: input_lexer.mll
-	ocamllex input_lexer.mll
+	@ocamllex input_lexer.mll > /dev/null
 
 input_parser.ml input_parser.mli: input_parser.mly
-	ocamlyacc input_parser.mly
+	@ocamlyacc input_parser.mly
 
 %.cmi : %.mli
-	$(ML) -c -I $(INCLUDE) $^
+	@$(ML) -c -I $(INCLUDE) $^
 
 %.cmo : %.ml
-	$(ML) -c -I $(INCLUDE) $^
+	@$(ML) -c -I $(INCLUDE) $^
 
 %.cmx : %.ml
-	$(OPT_ML) -c -I $(INCLUDE) $^
+	@$(OPT_ML) -c -I $(INCLUDE) $^
 
 clean-interval:
 	cd $(INTERVAL_DIR); $(MAKE) clean
