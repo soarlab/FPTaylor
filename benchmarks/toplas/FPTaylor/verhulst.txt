@@ -3,7 +3,7 @@ Constants
   K = 1.11;
 
 Variables
-  x in [0.1, 0.3] +/- 1e-6;
+  x in [0.1, 0.3];
 	
 Definitions
   res rnd64= (r*x) / (1 + (x/K))

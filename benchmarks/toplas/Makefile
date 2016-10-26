@@ -1,6 +1,6 @@
 FPTAYLOR_HOME=../..
 ROSA_HOME=~/Work/Solvers/rosa
-GAPPA_HOME=~/Work/Solvers/gappa-1.1.2/src
+GAPPA_HOME=~/Work/Solvers/gappa-1.3.0/src
 
 FPTAYLOR=$(FPTAYLOR_HOME)/fptaylor
 FPTAYLOR_A=$(FPTAYLOR) -c FPTaylor/config-a.cfg
@@ -78,6 +78,61 @@ taylor-c:
 	$(FPTAYLOR_C) FPTaylor/sphere.txt
 	$(FPTAYLOR_C) FPTaylor/azimuth.txt
 	find log -name "*.log" -exec awk '/---/,0' '{}' \;
+
+gappa:
+	$(GAPPA) Gappa/t_div_t1.g
+	$(GAPPA) Gappa/carbonGas.g
+	$(GAPPA) Gappa/verhulst.g
+	$(GAPPA) Gappa/predatorPrey.g
+	$(GAPPA) Gappa/rigidBody1.g
+	$(GAPPA) Gappa/rigidBody2.g
+	$(GAPPA) Gappa/doppler1.g
+	$(GAPPA) Gappa/doppler2.g
+	$(GAPPA) Gappa/doppler3.g
+	$(GAPPA) Gappa/sine.g
+	$(GAPPA) Gappa/sqroot.g
+	$(GAPPA) Gappa/sineOrder3.g
+	$(GAPPA) Gappa/turbine1.g
+	$(GAPPA) Gappa/turbine2.g
+	$(GAPPA) Gappa/turbine3.g
+	$(GAPPA) Gappa/jet.g
+
+gappa-hints:
+	$(GAPPA) Gappa/t_div_t1-hints.g
+	$(GAPPA) Gappa/carbonGas-hints.g
+	$(GAPPA) Gappa/verhulst-hints.g
+	$(GAPPA) Gappa/predatorPrey-hints.g
+	$(GAPPA) Gappa/rigidBody1-hints.g
+	$(GAPPA) Gappa/rigidBody2-hints.g
+	$(GAPPA) Gappa/doppler1-hints.g
+	$(GAPPA) Gappa/doppler2-hints.g
+	$(GAPPA) Gappa/doppler3-hints.g
+	$(GAPPA) Gappa/sine-hints.g
+	$(GAPPA) Gappa/sqroot-hints.g
+	$(GAPPA) Gappa/sineOrder3-hints.g
+	$(GAPPA) Gappa/turbine1-hints.g
+	$(GAPPA) Gappa/turbine2-hints.g
+	$(GAPPA) Gappa/turbine3-hints.g
+	$(GAPPA) Gappa/jet-hints.g
+
+gappa-simple-hints:
+	$(GAPPA) Gappa/t_div_t1-simple-hints.g
+	$(GAPPA) Gappa/carbonGas-simple-hints.g
+	$(GAPPA) Gappa/verhulst-simple-hints.g
+	$(GAPPA) Gappa/predatorPrey-simple-hints.g
+	$(GAPPA) Gappa/rigidBody1-simple-hints.g
+	$(GAPPA) Gappa/rigidBody2-simple-hints.g
+	$(GAPPA) Gappa/doppler1-simple-hints.g
+	$(GAPPA) Gappa/doppler2-simple-hints.g
+	$(GAPPA) Gappa/doppler3-simple-hints.g
+	$(GAPPA) Gappa/sine-simple-hints.g
+	$(GAPPA) Gappa/sqroot-simple-hints.g
+	$(GAPPA) Gappa/sineOrder3-simple-hints.g
+	$(GAPPA) Gappa/turbine1-simple-hints.g
+	$(GAPPA) Gappa/turbine2-simple-hints.g
+	$(GAPPA) Gappa/turbine3-simple-hints.g
+	$(GAPPA) Gappa/jet-simple-hints.g
+
 
 show:
 	find log -name "*.log" -exec awk '/---/,0' '{}' \;
