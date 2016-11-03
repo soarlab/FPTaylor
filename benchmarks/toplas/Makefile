@@ -1,11 +1,13 @@
 FPTAYLOR_HOME=../..
 ROSA_HOME=~/Work/Solvers/rosa
 GAPPA_HOME=~/Work/Solvers/gappa-1.3.0/src
+GELPIA_HOME=~/Work/Solvers/gelpia
 
 FPTAYLOR=$(FPTAYLOR_HOME)/fptaylor
 FPTAYLOR_A=$(FPTAYLOR) -c FPTaylor/config-a.cfg
 FPTAYLOR_B=$(FPTAYLOR) -c FPTaylor/config-b.cfg
 FPTAYLOR_C=$(FPTAYLOR) -c FPTaylor/config-c.cfg
+FPTAYLOR_GELPIA=$(FPTAYLOR) -c FPTaylor/config-c.cfg --opt gelpia --opt-timeout 60000
 
 ROSA=$(ROSA_HOME)/rosa --real --z3Timeout=1000
 GAPPA=$(GAPPA_HOME)/gappa
@@ -79,6 +81,69 @@ taylor-c:
 	$(FPTAYLOR_C) FPTaylor/azimuth.txt
 	find log -name "*.log" -exec awk '/---/,0' '{}' \;
 
+taylor-gelpia:
+	rm -rf log tmp
+	export GELPIA_PATH=$(GELPIA_HOME)
+	export GELPIA=$(GELPIA_HOME)/bin/gelpia
+	$(FPTAYLOR_GELPIA) FPTaylor/t_div_t1.txt
+	$(FPTAYLOR_GELPIA) FPTaylor/carbonGas.txt
+	$(FPTAYLOR_GELPIA) FPTaylor/verhulst.txt
+	$(FPTAYLOR_GELPIA) FPTaylor/predatorPrey.txt
+	$(FPTAYLOR_GELPIA) FPTaylor/rigidBody1.txt
+	$(FPTAYLOR_GELPIA) FPTaylor/rigidBody2.txt
+	$(FPTAYLOR_GELPIA) FPTaylor/doppler1.txt
+	$(FPTAYLOR_GELPIA) FPTaylor/doppler2.txt
+	$(FPTAYLOR_GELPIA) FPTaylor/doppler3.txt
+	$(FPTAYLOR_GELPIA) FPTaylor/sine.txt
+	$(FPTAYLOR_GELPIA) FPTaylor/sqroot.txt
+	$(FPTAYLOR_GELPIA) FPTaylor/sineOrder3.txt
+	$(FPTAYLOR_GELPIA) FPTaylor/turbine1.txt
+	$(FPTAYLOR_GELPIA) FPTaylor/turbine2.txt
+	$(FPTAYLOR_GELPIA) FPTaylor/turbine3.txt
+	$(FPTAYLOR_GELPIA) FPTaylor/jet.txt
+	$(FPTAYLOR_GELPIA) FPTaylor/logexp.txt
+	$(FPTAYLOR_GELPIA) FPTaylor/sphere.txt
+	$(FPTAYLOR_GELPIA) FPTaylor/azimuth.txt
+	find log -name "*.log" -exec awk '/---/,0' '{}' \;
+
+extra-taylor-a:
+	rm -rf log tmp
+	$(FPTAYLOR_A) FPTaylor/kepler0.txt
+	$(FPTAYLOR_A) FPTaylor/kepler1.txt
+	$(FPTAYLOR_A) FPTaylor/kepler2.txt
+	$(FPTAYLOR_A) FPTaylor/himmilbeau.txt
+	$(FPTAYLOR_A) FPTaylor/hartman3.txt
+	find log -name "*.log" -exec awk '/---/,0' '{}' \;
+
+extra-taylor-b:
+	rm -rf log tmp
+	$(FPTAYLOR_B) FPTaylor/kepler0.txt
+	$(FPTAYLOR_B) FPTaylor/kepler1.txt
+	$(FPTAYLOR_B) FPTaylor/kepler2.txt
+	$(FPTAYLOR_B) FPTaylor/himmilbeau.txt
+	$(FPTAYLOR_B) FPTaylor/hartman3.txt
+	find log -name "*.log" -exec awk '/---/,0' '{}' \;
+
+extra-taylor-c:
+	rm -rf log tmp
+	$(FPTAYLOR_C) FPTaylor/kepler0.txt
+	$(FPTAYLOR_C) FPTaylor/kepler1.txt
+	$(FPTAYLOR_C) FPTaylor/kepler2.txt
+	$(FPTAYLOR_C) FPTaylor/himmilbeau.txt
+	$(FPTAYLOR_C) FPTaylor/hartman3.txt
+	find log -name "*.log" -exec awk '/---/,0' '{}' \;
+
+extra-taylor-gelpia:
+	rm -rf log tmp
+	export GELPIA_PATH=$(GELPIA_HOME)
+	export GELPIA=$(GELPIA_HOME)/bin/gelpia
+	$(FPTAYLOR_GELPIA) FPTaylor/kepler0.txt
+	$(FPTAYLOR_GELPIA) FPTaylor/kepler1.txt
+	$(FPTAYLOR_GELPIA) FPTaylor/kepler2.txt
+	$(FPTAYLOR_GELPIA) FPTaylor/himmilbeau.txt
+	$(FPTAYLOR_GELPIA) FPTaylor/hartman3.txt
+	find log -name "*.log" -exec awk '/---/,0' '{}' \;
+
 gappa:
 	$(GAPPA) Gappa/t_div_t1.g
 	$(GAPPA) Gappa/carbonGas.g
@@ -132,6 +197,24 @@ gappa-simple-hints:
 	$(GAPPA) Gappa/turbine2-simple-hints.g
 	$(GAPPA) Gappa/turbine3-simple-hints.g
 	$(GAPPA) Gappa/jet-simple-hints.g
+
+extra-gappa:
+	$(GAPPA) Gappa/kepler0.g
+	$(GAPPA) Gappa/kepler1.g
+	$(GAPPA) Gappa/kepler2.g
+	$(GAPPA) Gappa/himmilbeau.g
+
+extra-gappa-hints:
+	$(GAPPA) Gappa/kepler0-hints.g
+	$(GAPPA) Gappa/kepler1-hints.g
+	$(GAPPA) Gappa/kepler2-hints.g
+	$(GAPPA) Gappa/himmilbeau-hints.g
+
+extra-gappa-simple-hints:
+	$(GAPPA) Gappa/kepler0-simple-hints.g
+	$(GAPPA) Gappa/kepler1-simple-hints.g
+	$(GAPPA) Gappa/kepler2-simple-hints.g
+	$(GAPPA) Gappa/himmilbeau-simple-hints.g
 
 
 show:
