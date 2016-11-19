@@ -100,7 +100,7 @@ let sum_symbolic s = itlist add2_symbolic s (const_0, 0)
 
 let errors =
   let compute_bound (e, err) =
-    let bound = Opt.optimize_abs Opt_common.default_opt_pars e in
+    let bound = Opt.find_max_abs Opt_common.default_opt_pars e in
     Log.report 2 "%d: exp = %d: %f" err.index err.exp bound;
     bound, err.exp 
   in
@@ -156,7 +156,7 @@ let errors =
 	                                  "fptaylor-abs" total2 exp full_expr;
 	    Out_test.create_test_file "test_abs_exact.txt" full_expr in
 
-	  let bound = Opt.optimize_abs Opt_common.default_opt_pars full_expr in
+	  let bound = Opt.find_max Opt_common.default_opt_pars full_expr in
 	  let total = 
 	    if Config.proof_flag then
 	      let e' = get_eps exp in
@@ -224,7 +224,7 @@ let errors =
 	                                    "fptaylor-rel" b2 exp full_expr;
 	      Out_test.create_test_file "test_rel_exact.txt" full_expr in
 
-	    let bound = Opt.optimize_abs Opt_common.default_opt_pars full_expr in
+	    let bound = Opt.find_max Opt_common.default_opt_pars full_expr in
 	    Log.report 1 "exact bound-rel (exp = %d): %f" exp bound;
 	    let total = (get_eps exp *^ bound) +^ b2 in
 	    Log.report 1 "exact total-rel: %e\ntotal2: %e" total b2;
@@ -238,7 +238,7 @@ let errors =
   fun pi form ->
     let f_min, f_max = 
       if Config.get_bool_option "rel-error" || (Config.get_bool_option "find-bounds") then
-	Opt.optimize Opt_common.default_opt_pars form.v0
+	Opt.find_min_max Opt_common.default_opt_pars form.v0
       else
 	neg_infinity, infinity in
     Log.report 1 "bounds: [%e, %e]" f_min f_max;

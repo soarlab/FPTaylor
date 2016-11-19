@@ -80,7 +80,7 @@ let estimate_expr, reset_estimate_cache =
   let estimate vars e =
     if Config.get_bool_option "intermediate-opt" then
       let () = Log.report 4 "Estimating: %s" (print_expr_str e) in
-      let min, max = Opt.optimize Opt_common.default_opt_pars e in
+      let min, max = Opt.find_min_max Opt_common.default_opt_pars e in
       Log.report 4 "Estimation result: [%f, %f]" min max;
       {low = min; high = max}
     else

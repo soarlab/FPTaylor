@@ -7,6 +7,7 @@ FPTAYLOR=$(FPTAYLOR_HOME)/fptaylor
 FPTAYLOR_A=$(FPTAYLOR) -c FPTaylor/config-a.cfg
 FPTAYLOR_B=$(FPTAYLOR) -c FPTaylor/config-b.cfg
 FPTAYLOR_C=$(FPTAYLOR) -c FPTaylor/config-c.cfg
+FPTAYLOR_C_TOL=$(FPTAYLOR) -c FPTaylor/config-c-tol.cfg
 FPTAYLOR_GELPIA=$(FPTAYLOR) -c FPTaylor/config-c.cfg --opt gelpia --opt-timeout 60000
 
 ROSA=$(ROSA_HOME)/rosa --real --z3Timeout=1000
@@ -79,6 +80,29 @@ taylor-c:
 	$(FPTAYLOR_C) FPTaylor/logexp.txt
 	$(FPTAYLOR_C) FPTaylor/sphere.txt
 	$(FPTAYLOR_C) FPTaylor/azimuth.txt
+	find log -name "*.log" -exec awk '/---/,0' '{}' \;
+
+taylor-c-tol:
+	rm -rf log tmp
+	$(FPTAYLOR_C_TOL) FPTaylor/t_div_t1.txt
+	$(FPTAYLOR_C_TOL) FPTaylor/carbonGas.txt
+	$(FPTAYLOR_C_TOL) FPTaylor/verhulst.txt
+	$(FPTAYLOR_C_TOL) FPTaylor/predatorPrey.txt
+	$(FPTAYLOR_C_TOL) FPTaylor/rigidBody1.txt
+	$(FPTAYLOR_C_TOL) FPTaylor/rigidBody2.txt
+	$(FPTAYLOR_C_TOL) FPTaylor/doppler1.txt
+	$(FPTAYLOR_C_TOL) FPTaylor/doppler2.txt
+	$(FPTAYLOR_C_TOL) FPTaylor/doppler3.txt
+	$(FPTAYLOR_C_TOL) FPTaylor/sine.txt
+	$(FPTAYLOR_C_TOL) FPTaylor/sqroot.txt
+	$(FPTAYLOR_C_TOL) FPTaylor/sineOrder3.txt
+	$(FPTAYLOR_C_TOL) FPTaylor/turbine1.txt
+	$(FPTAYLOR_C_TOL) FPTaylor/turbine2.txt
+	$(FPTAYLOR_C_TOL) FPTaylor/turbine3.txt
+	$(FPTAYLOR_C_TOL) FPTaylor/jet.txt
+	$(FPTAYLOR_C_TOL) FPTaylor/logexp.txt
+	$(FPTAYLOR_C_TOL) FPTaylor/sphere.txt
+	$(FPTAYLOR_C_TOL) FPTaylor/azimuth.txt
 	find log -name "*.log" -exec awk '/---/,0' '{}' \;
 
 taylor-gelpia:

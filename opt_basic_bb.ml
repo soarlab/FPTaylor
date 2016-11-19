@@ -17,7 +17,7 @@ open Lib
 open Expr
 open Opt_common
 
-let gen_bb_opt_code (pars : Opt_common.opt_pars) fmt =
+let gen_bb_opt_code (pars : Opt_common.opt_pars) max_only fmt =
   let nl = Format.pp_print_newline fmt in
   let p str = Format.pp_print_string fmt str; nl() in
 (*  let p' = Format.pp_print_string fmt in*)
@@ -36,12 +36,21 @@ let gen_bb_opt_code (pars : Opt_common.opt_pars) fmt =
     p "  let () = Printf.printf \"iter_max = %d\\n\" c in";
     p "  let () = Printf.printf \"max = %0.20e\\n\" upper_bound in";
     p "  let () = Printf.printf \"lower_max = %0.20e\\n\" lower_bound in";
-    p (Format.sprintf 
-	 "  let upper_bound, lower_bound, c = Opt0.opt (fun x -> ~-$ (f_X x)) start_interval (%e) (%e) (%e) (%d) in" 
-	 pars.x_abs_tol pars.f_rel_tol pars.f_abs_tol pars.max_iters);
-    p "  let () = Printf.printf \"iter_min = %d\\n\" c in";
-    p "  let () = Printf.printf \"min = %0.20e\\n\" (-. upper_bound) in";
-    p "  let () = Printf.printf \"lower_min = %0.20e\\n\" (-. lower_bound) in";
+    if max_only then
+      begin
+        p "  let () = Printf.printf \"iter_min = 0\\n\" in";
+        p "  let () = Printf.printf \"min = 0\\n\" in";
+        p "  let () = Printf.printf \"lower_min = 0\\n\" in";
+      end
+    else
+      begin
+        p (Format.sprintf 
+	     "  let upper_bound, lower_bound, c = Opt0.opt (fun x -> ~-$ (f_X x)) start_interval (%e) (%e) (%e) (%d) in" 
+	     pars.x_abs_tol pars.f_rel_tol pars.f_abs_tol pars.max_iters);
+        p "  let () = Printf.printf \"iter_min = %d\\n\" c in";
+        p "  let () = Printf.printf \"min = %0.20e\\n\" (-. upper_bound) in";
+        p "  let () = Printf.printf \"lower_min = %0.20e\\n\" (-. lower_bound) in";
+      end;
     p "  flush stdout"; in
 
   let start_interval var_bounds =
@@ -89,7 +98,7 @@ let gen_bb_opt_code (pars : Opt_common.opt_pars) fmt =
  
 let counter = ref 0
 
-let min_max_expr (pars : Opt_common.opt_pars) var_bound e =
+let min_max_expr (pars : Opt_common.opt_pars) max_only var_bound e =
 (*  let _ = counter := !counter + 1 in *)
   let _ = 
     if Config.debug then
@@ -122,7 +131,7 @@ let min_max_expr (pars : Opt_common.opt_pars) var_bound e =
       interval_files_byte @ lib_files @ bb_files
     else
       interval_files_native @ lib_files @ bb_files in
-  let gen = gen_bb_opt_code pars in
+  let gen = gen_bb_opt_code pars max_only in
   let _ = write_to_file ml_name gen (var_bound, e) in
   let srcs = map (fun s -> Filename.concat base s) files in
   let cmd = Format.sprintf "%s -I %s -I %s -I %s -o %s %s %s" 
