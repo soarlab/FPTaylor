@@ -30,9 +30,11 @@ let gen_bb_opt_code (pars : Opt_common.opt_pars) max_only fmt =
   let tail_opt0 () =
     p "";
     p "let _ =";
+    p (Format.sprintf "  let x_tol = size_max_X start_interval *. %e +. %e in"
+                      pars.x_rel_tol pars.x_abs_tol);
     p (Format.sprintf 
-	 "  let upper_bound, lower_bound, c = Opt0.opt f_X start_interval (%e) (%e) (%e) (%d) in" 
-	 pars.x_abs_tol pars.f_rel_tol pars.f_abs_tol pars.max_iters);
+	 "  let upper_bound, lower_bound, c = Opt0.opt f_X start_interval x_tol (%e) (%e) (%d) in" 
+	 pars.f_rel_tol pars.f_abs_tol pars.max_iters);
     p "  let () = Printf.printf \"iter_max = %d\\n\" c in";
     p "  let () = Printf.printf \"max = %0.20e\\n\" upper_bound in";
     p "  let () = Printf.printf \"lower_max = %0.20e\\n\" lower_bound in";
@@ -45,8 +47,8 @@ let gen_bb_opt_code (pars : Opt_common.opt_pars) max_only fmt =
     else
       begin
         p (Format.sprintf 
-	     "  let upper_bound, lower_bound, c = Opt0.opt (fun x -> ~-$ (f_X x)) start_interval (%e) (%e) (%e) (%d) in" 
-	     pars.x_abs_tol pars.f_rel_tol pars.f_abs_tol pars.max_iters);
+	     "  let upper_bound, lower_bound, c = Opt0.opt (fun x -> ~-$ (f_X x)) start_interval x_tol (%e) (%e) (%d) in" 
+	     pars.f_rel_tol pars.f_abs_tol pars.max_iters);
         p "  let () = Printf.printf \"iter_min = %d\\n\" c in";
         p "  let () = Printf.printf \"min = %0.20e\\n\" (-. upper_bound) in";
         p "  let () = Printf.printf \"lower_min = %0.20e\\n\" (-. lower_bound) in";
