@@ -30,7 +30,7 @@ let optimize_expr (pars : Opt_common.opt_pars) max_only expr =
     | "nlopt" -> 
        Opt_nlopt.min_max_expr pars var_bound_float expr
     | "gelpia" -> 
-       Opt_gelpia.min_max_expr pars var_bound_float expr
+       Opt_gelpia.min_max_expr pars max_only var_bound_float expr
     | s -> failwith ("Unsupported optimization backend: " ^ s) in
   min, max
 

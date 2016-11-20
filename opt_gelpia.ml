@@ -32,9 +32,9 @@ let gen_gelpia_code fmt =
   let p str = Format.pp_print_string fmt str; nl () in
   let p' str = Format.pp_print_string fmt str in
 
-  let parameters pars =
+  let parameters pars x_tol =
     let timeout = max (pars.timeout / 1000) 1 in
-    p (Format.sprintf "-ie %e" pars.x_abs_tol);
+    p (Format.sprintf "-ie %e" x_tol);
     p (Format.sprintf "-oe %e" pars.f_abs_tol);
     p (Format.sprintf "-oer %e" pars.f_rel_tol);
     p (Format.sprintf "-t %d" timeout);
@@ -54,28 +54,33 @@ let gen_gelpia_code fmt =
   fun (pars, var_bound, expr) ->
     let var_names = vars_in_expr expr in
     let var_bounds = map var_bound var_names in
-    parameters pars;
+    let domain_size = Lib.itlist (fun b r -> max r (abs_float (b.high -. b.low)))
+                                 var_bounds 0.0 in
+    let x_tol = domain_size *. pars.x_rel_tol +. pars.x_abs_tol in
+    Log.report 2 "gelpia domain_size = %e" domain_size;
+    Log.report 2 "gelpia x_tol = %e" x_tol;
+    parameters pars x_tol;
     func expr;
     input var_names var_bounds
 
 
 let name_counter = ref 0
 
-let get_gelpia_cmd () =
+let get_gelpia_cmd max_only =
   let cc = Filename.concat in
   let path =
     try
       Sys.getenv "GELPIA_PATH"
     with Not_found ->
       cc Config.base_dir "gelpia" in
-  let cmd = cc (cc path "bin") "gelpia_mm" in
+  let cmd = cc (cc path "bin") (if max_only then "gelpia" else "gelpia_mm") in
   if Sys.file_exists cmd then
     cmd
   else
     failwith (cmd ^ " not found.\n" ^
 	      "Set the GELPIA_PATH variable or copy GELPIA to the FPTaylor root directory.")
 
-let min_max_expr (pars : Opt_common.opt_pars) var_bound expr =
+let min_max_expr (pars : Opt_common.opt_pars) max_only var_bound expr =
 (*
   let pars = {
     input_epsilon  = tol_x;
@@ -92,11 +97,11 @@ let min_max_expr (pars : Opt_common.opt_pars) var_bound expr =
   let gen = gen_gelpia_code in
   let abs_expr = expr in
   let _ = write_to_file gelpia_name gen (pars, var_bound, abs_expr) in
-  let cmd = Format.sprintf "%s -T -z %@%s" (get_gelpia_cmd()) gelpia_name in
+  let cmd = Format.sprintf "%s -T -z %@%s" (get_gelpia_cmd max_only) gelpia_name in
   let out = run_cmd cmd in
   try
-    let min = get_float out "Minimum: " and
-        max = get_float out "Maximum: " in
+    let min = if max_only then 0.0 else get_float out "Minimum: " in
+    let max = get_float out "Maximum: " in
     min, max
   with _ ->
     let msg = "GELPIA error: " ^ String.concat "\n" (cmd :: out) in
