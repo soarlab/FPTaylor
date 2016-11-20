@@ -9,6 +9,7 @@ FPTAYLOR_B=$(FPTAYLOR) -c FPTaylor/config-b.cfg
 FPTAYLOR_C=$(FPTAYLOR) -c FPTaylor/config-c.cfg
 FPTAYLOR_C_TOL=$(FPTAYLOR) -c FPTaylor/config-c-tol.cfg
 FPTAYLOR_GELPIA=$(FPTAYLOR) -c FPTaylor/config-c.cfg --opt gelpia --opt-timeout 60000
+FPTAYLOR_GELPIA_TOL=$(FPTAYLOR) -c FPTaylor/config-c-tol.cfg --opt gelpia --opt-timeout 60000
 
 ROSA=$(ROSA_HOME)/rosa --real --z3Timeout=1000
 GAPPA=$(GAPPA_HOME)/gappa
@@ -130,6 +131,31 @@ taylor-gelpia:
 	$(FPTAYLOR_GELPIA) FPTaylor/azimuth.txt
 	find log -name "*.log" -exec awk '/---/,0' '{}' \;
 
+taylor-gelpia-tol:
+	rm -rf log tmp
+	export GELPIA_PATH=$(GELPIA_HOME)
+	export GELPIA=$(GELPIA_HOME)/bin/gelpia
+	$(FPTAYLOR_GELPIA_TOL) FPTaylor/t_div_t1.txt
+	$(FPTAYLOR_GELPIA_TOL) FPTaylor/carbonGas.txt
+	$(FPTAYLOR_GELPIA_TOL) FPTaylor/verhulst.txt
+	$(FPTAYLOR_GELPIA_TOL) FPTaylor/predatorPrey.txt
+	$(FPTAYLOR_GELPIA_TOL) FPTaylor/rigidBody1.txt
+	$(FPTAYLOR_GELPIA_TOL) FPTaylor/rigidBody2.txt
+	$(FPTAYLOR_GELPIA_TOL) FPTaylor/doppler1.txt
+	$(FPTAYLOR_GELPIA_TOL) FPTaylor/doppler2.txt
+	$(FPTAYLOR_GELPIA_TOL) FPTaylor/doppler3.txt
+	$(FPTAYLOR_GELPIA_TOL) FPTaylor/sine.txt
+	$(FPTAYLOR_GELPIA_TOL) FPTaylor/sqroot.txt
+	$(FPTAYLOR_GELPIA_TOL) FPTaylor/sineOrder3.txt
+	$(FPTAYLOR_GELPIA_TOL) FPTaylor/turbine1.txt
+	$(FPTAYLOR_GELPIA_TOL) FPTaylor/turbine2.txt
+	$(FPTAYLOR_GELPIA_TOL) FPTaylor/turbine3.txt
+	$(FPTAYLOR_GELPIA_TOL) FPTaylor/jet.txt
+	$(FPTAYLOR_GELPIA_TOL) FPTaylor/logexp.txt
+	$(FPTAYLOR_GELPIA_TOL) FPTaylor/sphere.txt
+	$(FPTAYLOR_GELPIA_TOL) FPTaylor/azimuth.txt
+	find log -name "*.log" -exec awk '/---/,0' '{}' \;
+
 extra-taylor-a:
 	rm -rf log tmp
 	$(FPTAYLOR_A) FPTaylor/kepler0.txt
@@ -157,6 +183,15 @@ extra-taylor-c:
 	$(FPTAYLOR_C) FPTaylor/hartman3.txt
 	find log -name "*.log" -exec awk '/---/,0' '{}' \;
 
+extra-taylor-c-tol:
+	rm -rf log tmp
+	$(FPTAYLOR_C_TOL) FPTaylor/kepler0.txt
+	$(FPTAYLOR_C_TOL) FPTaylor/kepler1.txt
+	$(FPTAYLOR_C_TOL) FPTaylor/kepler2.txt
+	$(FPTAYLOR_C_TOL) FPTaylor/himmilbeau.txt
+	$(FPTAYLOR_C_TOL) FPTaylor/hartman3.txt
+	find log -name "*.log" -exec awk '/---/,0' '{}' \;
+
 extra-taylor-gelpia:
 	rm -rf log tmp
 	export GELPIA_PATH=$(GELPIA_HOME)
@@ -166,6 +201,17 @@ extra-taylor-gelpia:
 	$(FPTAYLOR_GELPIA) FPTaylor/kepler2.txt
 	$(FPTAYLOR_GELPIA) FPTaylor/himmilbeau.txt
 	$(FPTAYLOR_GELPIA) FPTaylor/hartman3.txt
+	find log -name "*.log" -exec awk '/---/,0' '{}' \;
+
+extra-taylor-gelpia-tol:
+	rm -rf log tmp
+	export GELPIA_PATH=$(GELPIA_HOME)
+	export GELPIA=$(GELPIA_HOME)/bin/gelpia
+	$(FPTAYLOR_GELPIA_TOL) FPTaylor/kepler0.txt
+	$(FPTAYLOR_GELPIA_TOL) FPTaylor/kepler1.txt
+	$(FPTAYLOR_GELPIA_TOL) FPTaylor/kepler2.txt
+	$(FPTAYLOR_GELPIA_TOL) FPTaylor/himmilbeau.txt
+	$(FPTAYLOR_GELPIA_TOL) FPTaylor/hartman3.txt
 	find log -name "*.log" -exec awk '/---/,0' '{}' \;
 
 gappa:

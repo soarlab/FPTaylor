@@ -57,8 +57,6 @@ let gen_gelpia_code fmt =
     let domain_size = Lib.itlist (fun b r -> max r (abs_float (b.high -. b.low)))
                                  var_bounds 0.0 in
     let x_tol = domain_size *. pars.x_rel_tol +. pars.x_abs_tol in
-    Log.report 2 "gelpia domain_size = %e" domain_size;
-    Log.report 2 "gelpia x_tol = %e" x_tol;
     parameters pars x_tol;
     func expr;
     input var_names var_bounds
