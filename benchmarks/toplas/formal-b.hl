@@ -1,0 +1,83 @@
+(* Instructions:                                                  *)
+(* 1) "FPTaylor/formal/load.hl" must be loaded                    *)
+(*    (see FPTaylor/formal/README.md for additional instructions) *)
+(* 2) "fptaylor_path" (defined in load.hl) must contain           *)
+(*    a correct value                                             *)
+(* 3) Run "make taylor-b-formal" before loading this file         *)
+
+needs "tests/utils.hl";;
+
+path := fptaylor_path ^ "/benchmarks/toplas/FPTaylor/proofs";;
+
+let add_result, get_result, print_results =
+  let results = ref [] in
+  let add name th time = 
+    let _ = results := !results @ [name, (th, time)] in th in
+  let get name = assoc name !results in
+  let print1 (name, (th, time)) =
+    let tm = rand (rand (snd (strip_forall (concl th)))) in
+      report (sprintf "%s (time = %f): %s" name time (string_of_term tm)) in
+  let print () =
+    let _ = map print1 !results in () in
+    add, get, print;;
+
+let pp = 10;;
+
+let form_th, bound_th, time = validate pp "t_div_t1.proof";;
+add_result "t_div_t1" (trans_bound bound_th `#5.72 * &10 ipow (-- &14)`) time;;
+
+let form_th, bound_th, time = validate pp "sine.proof";;
+add_result "sine" (trans_bound bound_th `#5.55 * &10 ipow (-- &16)`) time;;
+
+let form_th, bound_th, time = validate pp "sqroot.proof";;
+add_result "sqroot" (trans_bound bound_th `#7.00 * &10 ipow (-- &16)`) time;;
+
+let form_th, bound_th, time = validate pp "sineOrder3.proof";;
+add_result "sineOrder3" (trans_bound bound_th `#9.52 * &10 ipow (-- &16)`) time;;
+
+let form_th, bound_th, time = validate pp "carbon_gas.proof";;
+add_result "carbonGas" (trans_bound bound_th `#1.09 * &10 ipow (-- &8)`) time;;
+
+let form_th, bound_th, time = validate pp "verhulst.proof";;
+add_result "verhulst" (trans_bound bound_th `#3.24 * &10 ipow (-- &16)`) time;;
+
+let form_th, bound_th, time = validate pp "predatorPrey.proof";;
+add_result "predPrey" (trans_bound bound_th `#1.84 * &10 ipow (-- &16)`) time;;
+
+let form_th, bound_th, time = validate pp "rigidBody1.proof";;
+add_result "rigidBody1" (trans_bound bound_th `#3.87 * &10 ipow (-- &13)`) time;;
+
+let form_th, bound_th, time = validate pp "rigidBody2.proof";;
+add_result "rigidBody2" (trans_bound bound_th `#5.24 * &10 ipow (-- &11)`) time;;
+
+let form_th, bound_th, time = validate pp "doppler1.proof";;
+add_result "doppler1" (trans_bound bound_th `#1.59 * &10 ipow (-- &13)`) time;;
+
+let form_th, bound_th, time = validate pp "doppler2.proof";;
+add_result "doppler2" (trans_bound bound_th `#2.90 * &10 ipow (-- &13)`) time;;
+
+let form_th, bound_th, time = validate pp "doppler3.proof";;
+add_result "doppler3" (trans_bound bound_th `#8.22 * &10 ipow (-- &14)`) time;;
+
+let form_th, bound_th, time = validate pp "turbine1.proof";;
+add_result "turbine1" (trans_bound bound_th `#2.32 * &10 ipow (-- &14)`) time;;
+
+let form_th, bound_th, time = validate pp "turbine2.proof";;
+add_result "turbine2" (trans_bound bound_th `#2.55 * &10 ipow (-- &14)`) time;;
+
+let form_th, bound_th, time = validate pp "turbine3.proof";;
+add_result "turbine3" (trans_bound bound_th `#1.24 * &10 ipow (-- &14)`) time;;
+
+let form_th, bound_th, time = validate pp "jet.proof";;
+add_result "jet" (trans_bound bound_th `#1.34 * &10 ipow (-- &11)`) time;;
+
+let form_th, bound_th, time = validate pp "logexp.proof";;
+add_result "logexp" (trans_bound bound_th `#2.07 * &10 ipow (-- &15)`) time;;
+
+let form_th, bound_th, time = validate pp "sphere.proof";;
+add_result "sphere" (trans_bound bound_th `#1.01 * &10 ipow (-- &14)`) time;;
+
+let form_th, bound_th, time = validate pp "azimuth.proof";;
+add_result "azimuth" (trans_bound bound_th `#1.17 * &10 ipow (-- &14)`) time;;
+
+print_results ();;

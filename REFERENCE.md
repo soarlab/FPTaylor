@@ -449,11 +449,13 @@ Specifies the optimization backend of FPTaylor.
   transcendental functions, exact optimization problems, and the
   improved rounding model.
 
-- `gelpia` is the optimization backend based on [Gelpia](https://github.com/keram88/gelpia).
-  Gelpia must be installed and the environment variable `GELPIA_PATH`
-  should point to the Gelpia base directory. Alternatively, Gelpia can be copied
-  directly to the FPTaylor base directory. This optimization backend is experimental
-  and may not support the improved rounding model and other FPTaylor features.
+- `gelpia` is the optimization backend based on
+  [Gelpia](https://github.com/keram88/gelpia).  Gelpia must be
+  installed and the environment variable `GELPIA_PATH` should point to
+  the Gelpia base directory. Alternatively, Gelpia can be copied
+  directly to the FPTaylor base directory. This optimization backend
+  supports the improved rounding model and it is generally faster than
+  the default optimization backend `bb`.
 
 - `nlopt` is the optimization backend based on the [NLOpt optimization
   library](http://ab-initio.mit.edu/wiki/index.php/NLopt). This

@@ -1,0 +1,41 @@
+(* Instructions:                                                  *)
+(* 1) "FPTaylor/formal/load.hl" must be loaded                    *)
+(*    (see FPTaylor/formal/README.md for additional instructions) *)
+(* 2) "fptaylor_path" (defined in load.hl) must contain           *)
+(*    a correct value                                             *)
+(* 3) Run "make extra-taylor-b-formal" before loading this file   *)
+
+needs "tests/utils.hl";;
+
+path := fptaylor_path ^ "/benchmarks/toplas/FPTaylor/proofs";;
+
+let add_result, get_result, print_results =
+  let results = ref [] in
+  let add name th time = 
+    let _ = results := !results @ [name, (th, time)] in th in
+  let get name = assoc name !results in
+  let print1 (name, (th, time)) =
+    let tm = rand (rand (snd (strip_forall (concl th)))) in
+      report (sprintf "%s (time = %f): %s" name time (string_of_term tm)) in
+  let print () =
+    let _ = map print1 !results in () in
+    add, get, print;;
+
+let pp = 10;;
+
+let form_th, bound_th, time = validate pp "kepler0.proof";;
+add_result "kepler0" (trans_bound bound_th `#9.45 * &10 ipow (-- &14)`) time;;
+
+let form_th, bound_th, time = validate pp "kepler1.proof";;
+add_result "kepler1" (trans_bound bound_th `#3.57 * &10 ipow (-- &13)`) time;;
+
+let form_th, bound_th, time = validate pp "kepler2.proof";;
+add_result "kepler2" (trans_bound bound_th `#1.96 * &10 ipow (-- &12)`) time;;
+
+let form_th, bound_th, time = validate pp "himmilbeau.proof";;
+add_result "himmilbeau" (trans_bound bound_th `#1.32 * &10 ipow (-- &12)`) time;;
+
+let form_th, bound_th, time = validate pp "hartman3.proof";;
+add_result "hartman3" (trans_bound bound_th `#5.73 * &10 ipow (-- &15)`) time;;
+
+print_results ();;

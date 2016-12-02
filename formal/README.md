@@ -10,7 +10,16 @@ Requirements:
   The following [installation script](https://bitbucket.org/akrauss/hol-light-workbench) 
   can help to install HOL Light and compatible versions of OCaml and Camlp5.
 
-- [Nonlinear inequality verification tool.](https://github.com/monadius/formal_ineqs)
+  The script installs an old version of OCaml. It is not difficult to install HOL Light
+  if you have [OPAM](https://opam.ocaml.org):
+
+  1) Run `opam install camlp5`
+
+  2) `git clone https://github.com/jrh13/hol-light`
+
+  3) Run `make` inside the HOL Light directory
+
+- [Nonlinear inequalities verification tool.](https://github.com/monadius/formal_ineqs)
   Clone or download its source code to any directory on your machine.
 
 - [DMTCP](http://dmtcp.sourceforge.net/index.html) (Optional but recommended.)
@@ -32,6 +41,12 @@ is started. The setup process below assumes that DMTCP is installed.
 
 4) Now type
 
+    #use "hol.ml";;
+
+   If you get an error that `camlp5` libraries are not found
+   then exit (`#quit;;`) and run the following commands:
+
+    dmtcp_launch ocaml -I `camlp5 -where`
     #use "hol.ml";;
 
 5) Wait approximately 2 minutes until HOL Light core libraries are loaded. Type

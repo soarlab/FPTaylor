@@ -7,6 +7,7 @@ GELPIA_HOME=~/Work/Solvers/gelpia
 FPTAYLOR=$(FPTAYLOR_HOME)/fptaylor
 FPTAYLOR_A=$(FPTAYLOR) -c FPTaylor/config-a.cfg
 FPTAYLOR_B=$(FPTAYLOR) -c FPTaylor/config-b.cfg
+FPTAYLOR_B_PROOF=$(FPTAYLOR) -c FPTaylor/config-b.cfg --proof-record true --proof-dir FPTaylor/proofs
 FPTAYLOR_C=$(FPTAYLOR) -c FPTaylor/config-c.cfg
 FPTAYLOR_C_TOL=$(FPTAYLOR) -c FPTaylor/config-c-tol.cfg
 FPTAYLOR_GELPIA=$(FPTAYLOR) -c FPTaylor/config-c.cfg --opt gelpia --opt-timeout 60000
@@ -60,6 +61,29 @@ taylor-b:
 	time $(FPTAYLOR_B) FPTaylor/logexp.txt
 	time $(FPTAYLOR_B) FPTaylor/sphere.txt
 	time $(FPTAYLOR_B) FPTaylor/azimuth.txt
+	find log -name "*.log" -exec awk '/---/,0' '{}' \;
+
+taylor-b-formal:
+	rm -rf log tmp
+	time $(FPTAYLOR_B_PROOF) FPTaylor/carbonGas.txt
+	time $(FPTAYLOR_B_PROOF) FPTaylor/doppler1.txt
+	time $(FPTAYLOR_B_PROOF) FPTaylor/doppler2.txt
+	time $(FPTAYLOR_B_PROOF) FPTaylor/doppler3.txt
+	time $(FPTAYLOR_B_PROOF) FPTaylor/jet.txt
+	time $(FPTAYLOR_B_PROOF) FPTaylor/predatorPrey.txt
+	time $(FPTAYLOR_B_PROOF) FPTaylor/rigidBody1.txt
+	time $(FPTAYLOR_B_PROOF) FPTaylor/rigidBody2.txt
+	time $(FPTAYLOR_B_PROOF) FPTaylor/sine.txt
+	time $(FPTAYLOR_B_PROOF) FPTaylor/sineOrder3.txt
+	time $(FPTAYLOR_B_PROOF) FPTaylor/sqroot.txt
+	time $(FPTAYLOR_B_PROOF) FPTaylor/t_div_t1.txt
+	time $(FPTAYLOR_B_PROOF) FPTaylor/turbine1.txt
+	time $(FPTAYLOR_B_PROOF) FPTaylor/turbine2.txt
+	time $(FPTAYLOR_B_PROOF) FPTaylor/turbine3.txt
+	time $(FPTAYLOR_B_PROOF) FPTaylor/verhulst.txt
+	time $(FPTAYLOR_B_PROOF) FPTaylor/logexp.txt
+	time $(FPTAYLOR_B_PROOF) FPTaylor/sphere.txt
+	time $(FPTAYLOR_B_PROOF) FPTaylor/azimuth.txt
 	find log -name "*.log" -exec awk '/---/,0' '{}' \;
 
 taylor-c:
@@ -174,6 +198,15 @@ extra-taylor-b:
 	time $(FPTAYLOR_B) FPTaylor/kepler1.txt
 	time $(FPTAYLOR_B) FPTaylor/kepler2.txt
 	time $(FPTAYLOR_B) FPTaylor/hartman3.txt
+	find log -name "*.log" -exec awk '/---/,0' '{}' \;
+
+extra-taylor-b-formal:
+	rm -rf log tmp
+	time $(FPTAYLOR_B_PROOF) FPTaylor/himmilbeau.txt
+	time $(FPTAYLOR_B_PROOF) FPTaylor/kepler0.txt
+	time $(FPTAYLOR_B_PROOF) FPTaylor/kepler1.txt
+	time $(FPTAYLOR_B_PROOF) FPTaylor/kepler2.txt
+	time $(FPTAYLOR_B_PROOF) FPTaylor/hartman3.txt
 	find log -name "*.log" -exec awk '/---/,0' '{}' \;
 
 extra-taylor-c:
