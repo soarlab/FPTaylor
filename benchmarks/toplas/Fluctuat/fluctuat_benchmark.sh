@@ -14,4 +14,4 @@ daed_analyze $IIFILE |& tee ianlog
 echo ""
 echo "BENCHMARK: ${1%.*}"
 echo -n "ABS_ERROR: "
-head -n 3 output/res.var | tail -n 1 | sed "s|e-|EXP|g" | sed "s|-||g" | sed "s|EXP|e-|g" | sed "s| |\n|g" | sort | tail -n 1
+head -n 3 output/res.var | tail -n 1 | sed "s|e-|EXP|g" | sed "s|-||g" | sed "s|EXP|e-|g" | sed "s| |,|g" | sed "s|\(.*\)|print(max(\1))|g" | python -
