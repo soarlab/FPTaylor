@@ -11,12 +11,12 @@ int main(void)
   x5 = DBETWEEN_WITH_ULP(4.0, 6.36);
   x6 = DBETWEEN_WITH_ULP(4.0, 6.36);
 
-  SUBDIV_BEGIN(x1, 20)
-  SUBDIV_BEGIN(x2, 20)
-  SUBDIV_BEGIN(x3, 20)
-  SUBDIV_BEGIN(x4, 20)
-  SUBDIV_BEGIN(x5, 20)
-  SUBDIV_BEGIN(x6, 20)
+  SUBDIV_BEGIN(x1, 5)
+  SUBDIV_BEGIN(x2, 5)
+  SUBDIV_BEGIN(x3, 5)
+  SUBDIV_BEGIN(x4, 5)
+  SUBDIV_BEGIN(x5, 5)
+  SUBDIV_BEGIN(x6, 5)
 
   res = x1 * x4 * (-x1 + x2 + x3 - x4 + x5 + x6)
     + x2 * x5 * (x1 - x2 + x3 + x4 - x5 + x6)
