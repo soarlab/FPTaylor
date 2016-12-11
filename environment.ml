@@ -242,15 +242,23 @@ let add_variable_with_uncertainty var_type name lo hi uncertainty =
     let lo_expr = transform_raw_expr lo and
 	hi_expr = transform_raw_expr hi and
 	u_expr = transform_raw_expr uncertainty in
-    let v = {
-      var_type = var_type;
-      var_name = name;
-      var_index = max_var_index () + 1;
-      lo_bound = eval_const_expr lo_expr;
-      hi_bound = eval_const_expr hi_expr;
-      uncertainty = eval_const_expr u_expr;
-    } in
-    Hashtbl.add env.variables name v
+    let lo_bound = eval_const_expr lo_expr and
+        hi_bound = eval_const_expr hi_expr in
+    if var_type = real_type && lo_bound.rational_v =/ hi_bound.rational_v then
+      begin
+        Log.report 2 "Variable %s is a constant" name;
+        add_constant name lo
+      end
+    else
+      let v = {
+          var_type = var_type;
+          var_name = name;
+          var_index = max_var_index () + 1;
+          lo_bound = eval_const_expr lo_expr;
+          hi_bound = eval_const_expr hi_expr;
+          uncertainty = eval_const_expr u_expr;
+        } in
+      Hashtbl.add env.variables name v
 
 let add_variable var_type name lo hi =
   add_variable_with_uncertainty var_type name lo hi (Numeral (Int 0))
