@@ -216,7 +216,7 @@ let precise_const_rnd_form rnd e =
 (* constant with rounding *)
 let const_rnd_form rnd e =
   Log.report 3 "const_rnd_form";
-  if Config.get_bool_option "develop" then
+  if Config.get_bool_option "fp-power2-model" then
     precise_const_rnd_form rnd e
   else
   match e with
