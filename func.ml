@@ -79,6 +79,6 @@ let sub2 (x, y) =
   if (0.5 *. x <= y && y <= 2.0 *. x) then 0.0 else x -. y
 
 let sub2_I (x, y) = {
-  low = sub2 (x.low, y.high);
-  high = sub2 (x.high, y.low);
+    low = if (0.5 *. x.low <= y.high && y.high <= 2.0 *. x.low) then 0.0 else Fpu.fsub_low x.low y.high;
+    high = if (0.5 *. x.high <= y.low && y.low <= 2.0 *. x.high) then 0.0 else Fpu.fsub_high x.high y.low;
 }
