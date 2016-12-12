@@ -36,7 +36,7 @@ let form_th, bound_th, time = validate pp "sineOrder3.proof";;
 add_result "sineOrder3" (trans_bound bound_th `#9.52 * &10 ipow (-- &16)`) time;;
 
 let form_th, bound_th, time = validate pp "carbon_gas.proof";;
-add_result "carbonGas" (trans_bound bound_th `#1.09 * &10 ipow (-- &8)`) time;;
+add_result "carbonGas" (trans_bound bound_th `#9.13 * &10 ipow (-- &9)`) time;;
 
 let form_th, bound_th, time = validate pp "verhulst.proof";;
 add_result "verhulst" (trans_bound bound_th `#3.24 * &10 ipow (-- &16)`) time;;
