@@ -1,12 +1,6 @@
 FPTaylor: A Tool for Rigorous Estimation of Round-off Floating-point Errors
 ===========================================================================
 
-Demo
-----
-
-Try out FPTaylor without installing it at
-[Aptlab](https://www.aptlab.net/p/FPTaylor/FPTaylorVM)
-
 Publications
 ------------
 
@@ -69,3 +63,9 @@ Formal Verification of FPTaylor Results in HOL Light
 
 See the [formal](formal) directory for corresponding HOL Light
 theories and procedures.
+
+VirtualBox Image
+----------------
+
+An old version of FPTaylor is available as a VirtualBox image at
+[https://sites.google.com/site/fptaylordemo/installation](https://sites.google.com/site/fptaylordemo/installation)
