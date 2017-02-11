@@ -42,13 +42,26 @@ let default_problem_info = {
 }
 
 let print_problem_info =
+  let get_value = function
+    | None -> failwith "get_value: None"
+    | Some v -> v in
   let print_opt str = function
     | None -> ()
     | Some v -> Log.report 0 "%s: %e" str v in
+  let print_bounds pi =
+    if pi.real_min > neg_infinity && pi.real_max < infinity
+       && (pi.abs_error_approx <> None || pi.abs_error_exact <> None) then
+      let err = (try get_value pi.abs_error_exact with _ -> get_value pi.abs_error_approx) in
+      assert (err >= 0.);
+      let min = Fpu.fsub_low pi.real_min err and
+          max = Fpu.fadd_high pi.real_max err in
+      Log.report 0 "Bounds (floating-point): [%.20e, %.20e]" min max
+    else () in
   fun pi ->
     Log.report_str 0 "-------------------------------------------------------------------------------";
     Log.report 0 "Problem: %s\n" pi.name;
     Log.report 0 "Bounds (without rounding): [%e, %e]" pi.real_min pi.real_max;
+    print_bounds pi;
     print_opt "Absolute error (approximate)" pi.abs_error_approx;
     print_opt "Absolute error (exact)" pi.abs_error_exact;
     print_opt "Relative error (approximate)" pi.rel_error_approx;
