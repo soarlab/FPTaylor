@@ -61,8 +61,11 @@ let eval_float_expr vars =
 	  | Op_sub -> x1 -. x2
 	  | Op_mul -> x1 *. x2
 	  | Op_div -> x1 /. x2
+          | Op_max -> max x1 x2
+          | Op_min -> min x1 x2
 	  | Op_nat_pow -> x1 ** x2
 	  | Op_sub2 -> Func.sub2 (x1, x2)
+          | Op_abs_err -> Func.abs_err (x1, x2)
 	  | _ -> failwith ("eval_float_expr: Unsupported binary operation: " 
 			   ^ op_name op)
       end
@@ -108,6 +111,8 @@ let eval_num_expr vars =
 	  | Op_sub -> x1 -/ x2
 	  | Op_mul -> x1 */ x2
 	  | Op_div -> x1 // x2
+          | Op_max -> max_num x1 x2
+          | Op_min -> min_num x1 x2
 	  | Op_nat_pow -> x1 **/ x2
 	  | _ -> failwith ("eval_num_expr: Unsupported binary operation: " 
 			   ^ op_name op)
@@ -175,8 +180,11 @@ let eval_interval_expr vars =
 	    else
 	      x1 *$ eval arg2
 	  | Op_div -> x1 /$ eval arg2
+          | Op_max -> max_I_I x1 (eval arg2)
+          | Op_min -> min_I_I x1 (eval arg2)
 	  | Op_nat_pow -> x1 **$. (eval_float_const_expr arg2)
 	  | Op_sub2 -> Func.sub2_I (x1, eval arg2)
+          | Op_abs_err -> Func.abs_err_I (x1, eval arg2)
 	  | _ -> failwith ("eval_interval_expr: Unsupported binary operation: " 
 			   ^ op_name op)
       end

@@ -82,3 +82,19 @@ let sub2_I (x, y) = {
     low = if (0.5 *. x.low <= y.high && y.high <= 2.0 *. x.low) then 0.0 else Fpu.fsub_low x.low y.high;
     high = if (0.5 *. x.high <= y.low && y.low <= 2.0 *. x.high) then 0.0 else Fpu.fsub_high x.high y.low;
 }
+
+let abs_err (t, x) =
+  if x >= t then 1.
+  else if x <= -.t then -1.
+  else 0. (* should be [-1, 1] but we cannot return an interval here; 
+             this function is not important *)
+
+let neg_one_I = {low = -1.; high = -1.}
+let neg_one_one_I = {low = -1.; high = 1.}
+    
+let abs_err_I (t, x) =
+  if x.low >= t.high then one_I
+  else if x.high <= t.low then neg_one_I
+  else neg_one_one_I
+    
+         

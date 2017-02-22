@@ -57,9 +57,15 @@ let rec get_type e =
       begin
 	let arg_type = get_type arg in
 	match op with
-	  | Op_neg -> arg_type
+	  | Op_neg | Op_abs -> arg_type
 	  | _ -> real_type
       end
+    | Bin_op (Op_min, arg1, arg2) | Bin_op (Op_max, arg1, arg2) ->
+       let ty1 = get_type arg1 and
+           ty2 = get_type arg2 in
+       if is_subtype ty1 ty2 then ty2
+       else if is_subtype ty2 ty1 then ty1
+       else real_type
     | Bin_op (Op_mul, arg1, arg2) ->
       if is_power_of_2_or_0 arg1 then 
 	get_type arg2
@@ -260,8 +266,10 @@ let check_expr vars =
 		raise (Exceptional_operation (e, "Division by zero"))
 	      else
 		x1 /$ x2
+            | Op_max -> max_I_I x1 (eval arg2)
+            | Op_min -> min_I_I x1 (eval arg2)
 	    | Op_nat_pow -> x1 **$. (Eval.eval_float_const_expr arg2)
-	    | _ -> failwith ("eval_interval_expr: Unsupported binary operation: " 
+	    | _ -> failwith ("check_expr: Unsupported binary operation: " 
 			     ^ op_name op)
 	end
       | Gen_op (op, args) ->
@@ -269,7 +277,7 @@ let check_expr vars =
 	  let xs = map eval args in
 	  match (op, xs) with
 	    | (Op_fma, [a;b;c]) -> (a *$ b) +$ c
-	    | _ -> failwith ("eval_interval_expr: Unsupported general operation: " 
+	    | _ -> failwith ("check_expr: Unsupported general operation: " 
 			     ^ op_name op)
 	end
     in

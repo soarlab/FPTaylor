@@ -985,7 +985,104 @@ let atanh_form vars f =
     v1 = map (fun (e, err) -> mk_div e v1_0, err) f.v1
       @ [fp_to_const m3, m3_err];
   }
+    
+(* absolute value *)
+(* |x + e| = |x| + abs_err(t, x) * e where
+   t is an upper bound of |e| and
+   abs_err(t, x) = 1 if x >= t,
+   abs_err(t, x) = -1 if x <= -t,
+   abs_err(t, x) = [-1, 1] if -t < x < t.
+   
+   An interval version of abs_err can be defined as
+   Abs_err(t, X) = Abs_diff(X + [-t, t]) = Abs_diff(X + sym_interval(t))
+   where Abs_diff is defined as
+   Abs_diff([a, b]) = 1 if a >= 0,
+   Abs_diff([a, b]) = -1 if b <= 0,
+   Abs_diff([a, b]) = [-1, 1] if a < 0 and b > 0.
+   
+   We define Abs_err directly as
+   Abs_err([t1, t2], [a, b]) = 1 if a >= t2,
+   Abs_err([t1, t2], [a, b]) = -1 if b <= t1,
+   Abs_err([t1, t2], [a, b]) = [-1, 1] if a < t2 and b > t1.
 
+   Abs_err(sym_interval(t), [a, b]) = Abs_diff([a, b] + sym_interval(t)).
+   We prefer the explicit definition of Abs_err since it is slightly more accurate.
+ *)
+let abs_form vars f =
+  Log.report 3 "abs_form";
+  let i = next_form_index() in
+  let t =
+    let s, e = sum_high (abs_eval_v1 vars f.v1) in
+    make_stronger (get_eps e *^ s) in
+  let abs_err = mk_abs_err (mk_sym_interval (fp_to_const t)) f.v0 in
+  {
+    form_index = i;
+    v0 = mk_abs f.v0;
+    v1 = map (fun (e, err) -> mk_mul abs_err e, err) f.v1;
+  }
+
+(* maximum of two values *)
+(* max(x, y) = (|x - y| + x + y) / 2.
+   From this equality we get:
+
+   max(x + e1, y + e2) = (|x - y + (e1 - e2)| + (x + y) + (e1 + e2)) / 2.
+
+   Using the formula |x + e| = |x| + abs_err(t, x) * e 
+   where t is an upper bound of |e|, we get:
+
+   max(x + e1, y + e2) = max(x, y) + 0.5 * (abs_err(t, x - y) + 1) * e1 
+                                   + 0.5 * (1 - abs_err(t, x - y)) * e2
+   
+   where t is an upper bound of |e1 - e2| (or |e1| + |e2| >= |e1 - e2|).
+ *) 
+let max_form vars f1 f2 =
+  Log.report 3 "max_form";
+  let i = next_form_index() in
+  let t1 =
+    let s, e = sum_high (abs_eval_v1 vars f1.v1) in
+    make_stronger (get_eps e *^ s) in
+  let t2 =
+    let s, e = sum_high (abs_eval_v1 vars f2.v1) in
+    make_stronger (get_eps e *^ s) in
+  let x_sub_y = mk_sub f1.v0 f2.v0 in
+  let t = mk_sym_interval (fp_to_const (t1 +^ t2)) in
+  let err1 = mk_mul (fp_to_const 0.5) (mk_add const_1 (mk_abs_err t x_sub_y)) in
+  let err2 = mk_mul (fp_to_const 0.5) (mk_sub const_1 (mk_abs_err t x_sub_y)) in
+  {
+    form_index = i;
+    v0 = mk_max f1.v0 f2.v0;
+    v1 = map (fun (e, err) -> mk_mul err1 e, err) f1.v1
+         @ map (fun (e, err) -> mk_mul err2 e, err) f2.v1;
+  }
+
+(* minimum of two values *)
+(* min(x, y) = -max(-x, -y) = (x + y - |x - y|) / 2,
+   
+   min(x + e1, y + e2) = min(x, y) + 0.5 * (1 - abs_err(t, x - y)) * e1 
+                                   + 0.5 * (1 + abs_err(t, x - y)) * e2
+
+   where t is an upper bound of |e1 - e2|.
+*)
+let min_form vars f1 f2 =
+  Log.report 3 "min_form";
+  let i = next_form_index() in
+  let t1 =
+    let s, e = sum_high (abs_eval_v1 vars f1.v1) in
+    make_stronger (get_eps e *^ s) in
+  let t2 =
+    let s, e = sum_high (abs_eval_v1 vars f2.v1) in
+    make_stronger (get_eps e *^ s) in
+  let x_sub_y = mk_sub f1.v0 f2.v0 in
+  let t = mk_sym_interval (fp_to_const (t1 +^ t2)) in
+  let err1 = mk_mul (fp_to_const 0.5) (mk_sub const_1 (mk_abs_err t x_sub_y)) in
+  let err2 = mk_mul (fp_to_const 0.5) (mk_add const_1 (mk_abs_err t x_sub_y)) in
+  {
+    form_index = i;
+    v0 = mk_min f1.v0 f2.v0;
+    v1 = map (fun (e, err) -> mk_mul err1 e, err) f1.v1
+         @ map (fun (e, err) -> mk_mul err2 e, err) f2.v1;
+  }
+    
 (* Builds a Taylor form *)
 let build_form vars =
   let rec build e = 
@@ -1014,6 +1111,7 @@ let build_form vars =
 	  let arg_form = build arg in
 	  match op with
 	    | Op_neg -> neg_form arg_form
+            | Op_abs -> abs_form vars arg_form
 	    | Op_inv -> inv_form vars arg_form
 	    | Op_sqrt -> sqrt_form vars arg_form
 	    | Op_sin -> sin_form vars arg_form
@@ -1042,6 +1140,8 @@ let build_form vars =
 	    | Op_sub -> sub_form arg1_form arg2_form
 	    | Op_mul -> mul_form vars arg1_form arg2_form
 	    | Op_div -> div_form vars arg1_form arg2_form
+            | Op_max -> max_form vars arg1_form arg2_form
+            | Op_min -> min_form vars arg1_form arg2_form
 	    | _ -> failwith
 	      ("build_form: unsupported binary operation " ^ op_name op)
 	end

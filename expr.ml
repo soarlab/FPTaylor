@@ -26,6 +26,8 @@ type evaluated_const = {
 type op_type = 
   | Op_neg
   | Op_abs
+  | Op_max
+  | Op_min
   | Op_add
   | Op_sub
   | Op_mul
@@ -49,6 +51,7 @@ type op_type =
   | Op_fma
   | Op_nat_pow
   | Op_sub2
+  | Op_abs_err
   | Op_floor_power2
   | Op_sym_interval
 
@@ -87,6 +90,8 @@ let mk_const c = Const c and
     mk_asinh a = U_op (Op_asinh, a) and
     mk_acosh a = U_op (Op_acosh, a) and
     mk_atanh a = U_op (Op_atanh, a) and
+    mk_max a b = Bin_op (Op_max, a, b) and
+    mk_min a b = Bin_op (Op_min, a, b) and
     mk_add a b = Bin_op (Op_add, a, b) and
     mk_sub a b = Bin_op (Op_sub, a, b) and
     mk_mul a b = Bin_op (Op_mul, a, b) and
@@ -94,6 +99,7 @@ let mk_const c = Const c and
     mk_nat_pow a b = Bin_op (Op_nat_pow, a, b) and
     mk_fma a b c = Gen_op (Op_fma, [a; b; c]) and
     mk_sub2 a b = Bin_op (Op_sub2, a, b) and
+    mk_abs_err t x = Bin_op (Op_abs_err, t, x) and
     mk_floor_power2 a = U_op (Op_floor_power2, a) and
     mk_sym_interval a = U_op (Op_sym_interval, a)
 
@@ -146,6 +152,8 @@ let op_name_in_env env op =
     match op with
       | Op_neg -> "-"
       | Op_abs -> "abs"
+      | Op_max -> "max"
+      | Op_min -> "min"
       | Op_add -> "+"
       | Op_sub -> "-"
       | Op_mul -> "*"
@@ -169,6 +177,7 @@ let op_name_in_env env op =
       | Op_fma -> "fma"
       | Op_nat_pow -> "^" 
       | Op_sub2 -> "sub2"
+      | Op_abs_err -> "abs_err"
       | Op_floor_power2 -> "floor_power2"
       | Op_sym_interval -> "sym_interval"
 
@@ -238,10 +247,12 @@ let z3py_print_env = {
     match op with
       | Op_nat_pow -> true, "**"
       | Op_abs -> true, "z3_abs"
+      | Op_min -> true, "z3_min"
+      | Op_max -> true, "z3_max"
       | Op_sin | Op_cos | Op_tan | Op_asin | Op_acos | Op_atan 
       | Op_exp | Op_log 
       | Op_sinh | Op_cosh | Op_tanh | Op_asinh | Op_acosh | Op_atanh
-      | Op_sub2 | Op_floor_power2 | Op_sym_interval
+      | Op_sub2 | Op_floor_power2 | Op_sym_interval | Op_abs_err
 	-> failwith ("z3py: " ^ op_name op ^ " is not supported")
       | _ -> false, "");
 
@@ -269,8 +280,11 @@ let ocaml_float_print_env = {
     | Op_mul -> true, "*."
     | Op_div -> true, "/."
     | Op_abs -> true, "abs_float"
+    | Op_max -> true, "(fun (x, y) -> max x y)"
+    | Op_min -> true, "(fun (x, y) -> min x y)"
     | Op_nat_pow -> true, "**"
     | Op_sub2 -> true, "sub2"
+    | Op_abs_err -> true, "abs_err"
     | Op_floor_power2 -> true, "floor_power2"
     | Op_sym_interval -> true, "sym_interval_float"
     | _ -> false, "");
@@ -295,6 +309,8 @@ let ocaml_interval_print_env = {
     | Op_mul -> true, "*$"
     | Op_div -> true, "/$"
     | Op_abs -> true, "abs_I"
+    | Op_max -> true, "(fun (x, y) -> max_I_I x y)"
+    | Op_min -> true, "(fun (x, y) -> min_I_I x y)"
     | Op_inv -> true, "inv_I"
     | Op_sqrt -> true, "sqrt_I"
     | Op_sin -> true, "sin_I"
@@ -313,6 +329,7 @@ let ocaml_interval_print_env = {
     | Op_atanh -> true, "atanh_I"
     | Op_nat_pow -> true, "**$"
     | Op_sub2 -> true, "sub2_I"
+    | Op_abs_err -> true, "abs_err_I"
     | Op_floor_power2 -> true, "floor_power2_I"
     | Op_sym_interval -> true, "sym_interval_I"
     | _ -> false, "");

@@ -187,8 +187,8 @@ expr:
   | COS LPAREN expr RPAREN { Raw_u_op ("cos", $3) }
   | SIN LPAREN expr RPAREN { Raw_u_op ("sin", $3) }
   | TAN LPAREN expr RPAREN { Raw_u_op ("tan", $3) }
-  | MIN LPAREN expr COMMA expr RPAREN { raise TODO }
-  | MAX LPAREN expr COMMA expr RPAREN { raise TODO }
+  | MIN LPAREN expr COMMA expr RPAREN { Raw_bin_op ("min", $3, $5) }
+  | MAX LPAREN expr COMMA expr RPAREN { Raw_bin_op ("max", $3, $5) }
   | COSH LPAREN expr RPAREN { Raw_u_op ("cosh", $3) }
   | SINH LPAREN expr RPAREN { Raw_u_op ("sinh", $3) }
   | TANH LPAREN expr RPAREN { Raw_u_op ("tanh", $3) }

@@ -1,0 +1,17 @@
+Constants
+  T0 = 0,
+  T1 = 0.083;
+
+Variables
+  float64 sx in [-100, 100],
+  float64 sy in [-100, 100],
+  float64 vx in [-600, 600],
+  float64 vy in [-600, 600];
+
+Expressions
+  t_cpa rnd64= min(max(T0 * (vx * vx + vy * vy), -(sx * vx + sy * vy)),
+                   T1 * (vx * vx + vy * vy));
+
+
+  
+  

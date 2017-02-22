@@ -1,0 +1,10 @@
+Variables
+  real x in [-1, 1],
+  real y in [-2, 2];
+
+Expressions
+  max_x_y rnd32= max(x, y);
+
+
+  
+  

@@ -1,0 +1,12 @@
+Variables
+  real x in [-1, 1],
+  real y in [-2, 2];
+
+Expressions
+  abs_x rnd32= abs(x),
+  abs_y rnd32= abs(y),
+  abs_x_y rnd32= abs(x + y);
+
+
+  
+  

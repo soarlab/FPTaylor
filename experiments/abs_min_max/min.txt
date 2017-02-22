@@ -1,0 +1,10 @@
+Variables
+  real x in [-1, 1],
+  real y in [-2, 2];
+
+Expressions
+  min_e rnd32= min(x + y, 3 * y);
+
+
+  
+  

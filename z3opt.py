@@ -3,6 +3,12 @@ from z3 import *
 def z3_abs(x):
     return If(x >= 0, x, -x)
 
+def z3_max(x, y):
+    return If(x >= y, x, y)
+
+def z3_min(x, y):
+    return If(x <= y, x, y)
+
 def find_upper_bound(f, constraints, u, timeout):
     s = Solver()
     if timeout > 0:
