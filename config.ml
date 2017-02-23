@@ -3,14 +3,8 @@
 (*                                                                            *)
 (*      Author: Alexey Solovyev, University of Utah                           *)
 (*                                                                            *)
-(*      This file is distributed under the terms of the MIT licence           *)
+(*      This file is distributed under the terms of the MIT license           *)
 (* ========================================================================== *)
-
-(* -------------------------------------------------------------------------- *)
-(* FPTaylor configuration                                                     *)
-(* The code is partially based on config.ml from                              *)
-(* Victor Magron's nlcertify tool                                             *)
-(* -------------------------------------------------------------------------- *)
 
 open Lib
 open List

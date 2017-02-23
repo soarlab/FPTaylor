@@ -25,4 +25,4 @@ log/
 tmp/
 test/
 extra/
-
+.DS_Store

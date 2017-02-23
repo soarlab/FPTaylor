@@ -3,7 +3,7 @@
 (*                                                                            *)
 (*      Author: Alexey Solovyev, University of Utah                           *)
 (*                                                                            *)
-(*      This file is distributed under the terms of the MIT licence           *)
+(*      This file is distributed under the terms of the MIT license           *)
 (* ========================================================================== *)
 
 (* -------------------------------------------------------------------------- *)
@@ -97,7 +97,8 @@ let estimate_expr, reset_estimate_cache =
 
 let add2 (x1, e1) (x2, e2) =
   (* Swap if e1 > e2 *)
-  let x1, e1, x2, e2 = if e1 <= e2 then x1, e1, x2, e2 else x2, e2, x1, e1 in
+  let x1, e1, x2, e2 =
+    if e1 <= e2 then x1, e1, x2, e2 else x2, e2, x1, e1 in
   if e1 = 0 then 
     (if e2 = 0 then (0.0, 0) else (x2, e2))
   else if e2 = 0 then 
@@ -108,7 +109,23 @@ let add2 (x1, e1) (x2, e2) =
     let eps = get_eps (e1 - e2) in
     ((x1 *^ eps) +^ x2, e2)
 
-let sum_high s = itlist add2 s (0.0, 0)
+let add2_i (x1, e1) (x2, e2) =
+  (* Swap if e1 > e2 *)
+  let x1, e1, x2, e2 =
+    if e1 <= e2 then x1, e1, x2, e2 else x2, e2, x1, e1 in
+  if e1 = 0 then 
+    (if e2 = 0 then (zero_I, 0) else (x2, e2))
+  else if e2 = 0 then 
+    (x1, e1)
+  else if e1 = e2 then
+    (x1 +$ x2, e1)
+  else
+    let eps = get_eps (e1 - e2) in
+    ((x1 *$. eps) +$ x2, e2)
+
+let sum_high s = itlist add2 s (0., 0)
+
+let sum_i s = itlist add2_i s (zero_I, 0)
 
 let sum2_high s1 s2 = itlist 
   (fun (x,x_exp) s ->
@@ -122,6 +139,9 @@ let abs_eval vars ex =
   (abs_I v).high
 
 let abs_eval_v1 vars = map (fun (ex, err) -> abs_eval vars ex, err.exp)
+
+let eval_v1_i vars v1 =
+  map (fun (e, err) -> estimate_expr vars e, err.exp) v1
 
 let fp_to_const f = mk_const (const_of_float f)
 
