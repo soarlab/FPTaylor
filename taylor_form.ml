@@ -74,6 +74,13 @@ let make_stronger f =
   else
     f
 
+let make_stronger_i v =
+  if Config.proof_flag then {
+      low = More_num.prev_float v.low;
+      high = More_num.next_float v.high;
+    }
+  else v
+      
 let estimate_expr, reset_estimate_cache =
   let cache = ref [] in
   let reset () = (cache := []) in
@@ -109,29 +116,22 @@ let add2 (x1, e1) (x2, e2) =
     let eps = get_eps (e1 - e2) in
     ((x1 *^ eps) +^ x2, e2)
 
-let add2_i (x1, e1) (x2, e2) =
-  (* Swap if e1 > e2 *)
-  let x1, e1, x2, e2 =
-    if e1 <= e2 then x1, e1, x2, e2 else x2, e2, x1, e1 in
-  if e1 = 0 then 
-    (if e2 = 0 then (zero_I, 0) else (x2, e2))
-  else if e2 = 0 then 
-    (x1, e1)
-  else if e1 = e2 then
-    (x1 +$ x2, e1)
-  else
-    let eps = get_eps (e1 - e2) in
-    ((x1 *$. eps) +$ x2, e2)
-
 let sum_high s = itlist add2 s (0., 0)
-
-let sum_i s = itlist add2_i s (zero_I, 0)
 
 let sum2_high s1 s2 = itlist 
   (fun (x,x_exp) s ->
     let s0 = sum_high (map (fun (y,y_exp) -> x *^ y, x_exp + y_exp) s2) in
     add2 s s0) 
   s1 (0.0, 0)
+
+(* TODO: call (simplify_form f) before sum_i (eval_v1_i vars f.v1) *)
+(* A better solution: insert new error terms in such a way that the form is always simplified *)
+let sum_i s =
+  let mul (x, e) =
+    let eps = get_eps e in
+    x *$ {low = -.eps; high = eps} in
+  let vs = map mul s in
+  itlist (+$) vs zero_I
 
 let abs_eval vars ex = 
 (*  let v = Eval.eval_interval_expr vars ex in *)
@@ -1035,9 +1035,9 @@ let abs_form vars f =
   Log.report 3 "abs_form";
   let i = next_form_index() in
   let t =
-    let s, e = sum_high (abs_eval_v1 vars f.v1) in
-    make_stronger (get_eps e *^ s) in
-  let abs_err = mk_abs_err (mk_sym_interval (mk_float_const t)) f.v0 in
+    let s = sum_i (eval_v1_i vars f.v1) in
+    make_stronger_i s in
+  let abs_err = mk_abs_err (mk_interval_const t) f.v0 in
   {
     form_index = i;
     v0 = mk_abs f.v0;
