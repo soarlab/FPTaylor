@@ -46,39 +46,6 @@ let num_of_bin_float x =
   let v = Big_int x.significand */ (Int 2 **/ Int x.exponent) in
   if x.sign then minus_num v else v;;
 
-(* Returns the integer binary logarithm of big_int  *)
-(* Returns -1 for non-positive numbers              *)
-let log2_big_int_simple =
-  let rec log2 acc k =
-    if sign_big_int k <= 0 then 
-      acc
-    else
-      log2 (acc + 1) (shift_right_big_int k 1) in
-  log2 (-1);;
-
-let log2_big_int =
-  let p = 32 in
-  let u = power_int_positive_int 2 p in
-  let rec log2 acc k =
-    if compare_big_int k u >= 0 then
-      log2 (acc + p) (shift_right_big_int k p)
-    else
-      acc + log2_big_int_simple k in
-  log2 0;;
-
-(* Returns the integer binary logarithm of num *)
-(* Returns -1 for non-positive numbers         *)
-let log2_num r =
-  let log2 r = log2_big_int (big_int_of_num (integer_num r)) in
-  if sign_num r <= 0 then 
-    -1 
-  else
-    if r </ Int 1 then
-      let t = -log2 (Int 1 // r) in
-      if (Int 2 **/ Int t) =/ r then t else t - 1
-    else
-      log2 r;;
-
 let is_even_num r =
   sign_num (mod_num r (Int 2)) = 0;;
 
@@ -96,7 +63,7 @@ let bin_float_of_num p rnd r =
       t, e 
   in
   let bin_float_of_pos_num rnd r =
-    let n = log2_num r in
+    let n = More_num.log2_num r in
     let k = n + 1 - p in
     let y = (Int 2 **/ Int (-k)) */ r in
     let low = integer_num y in
