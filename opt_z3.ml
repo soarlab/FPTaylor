@@ -39,19 +39,23 @@ let gen_z3py_opt_code (pars : Opt_common.opt_pars) fmt =
     let ns = s (More_num.numerator n) and
 	ds = s (More_num.denominator n) in
 (*    "\"" ^ ns ^ "/" ^ ds ^ "\"" in*)
-    "Q(" ^ ns ^ "," ^ ds ^ ")" in 
+    "Q(" ^ ns ^ "," ^ ds ^ ")" in
+
+  let const_to_z3 c =
+    if Const.is_rat_const c then num_to_z3 (Const.to_num c)
+    else failwith "gen_z3py_opt_code: interval constant" in
 
   let print_constraint c =
     match c with
       | Le (e, Const c) ->
 	print_expr_in_env z3py_print_env fmt e;
 	p' " < ";
-	p' (num_to_z3 c.rational_v)
+	p' (const_to_z3 c)
       | _ -> failwith "z3opt: print_constraint(): unsupported constraint" in
 
   let constraint_vars (name, c) =
     match c with
-      | Le (e, Const c) -> vars_in_expr e
+      | Le (e, Const _) -> vars_in_expr e
       | _ -> failwith "z3opt: constraint_vars(): unsupported constraint" in
 
   let constraints cs =

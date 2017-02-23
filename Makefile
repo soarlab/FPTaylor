@@ -13,6 +13,8 @@ SRC=	lib.mli\
 	more_num.ml\
 	rounding.ml\
 	binary_float.ml\
+	const.mli\
+	const.ml\
 	expr.ml\
 	eval.ml\
 	environment.ml\

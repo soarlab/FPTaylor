@@ -18,7 +18,7 @@ let var_bound_float name =
 
 let var_bound_rat name =
   let v = find_variable name in
-  v.lo_bound.rational_v, v.hi_bound.rational_v
+  Const.low_bound_to_num v.lo_bound, Const.high_bound_to_num v.hi_bound
 
 let optimize_expr (pars : Opt_common.opt_pars) max_only expr =
   let min, max =

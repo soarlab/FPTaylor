@@ -21,7 +21,7 @@ open List
    floating-point values with variable names *)
 let eval_float_expr vars =
   let rec eval = function
-    | Const c -> c.float_v
+    | Const c -> Const.to_float c
     | Var v -> vars v
     | Rounding _ as expr -> failwith ("eval_float_expr: Rounding is not supported: " ^
 					 print_expr_str expr)
@@ -89,7 +89,10 @@ let eval_float_const_expr =
 let eval_num_expr vars =
   let one = Int 1 in
   let rec eval = function
-    | Const c -> c.rational_v
+    | Const c -> begin
+        try Const.to_num c
+        with Failure _ -> failwith "eval_num_expr: interval constant"
+      end
     | Var v -> vars v
     | Rounding (rnd, arg) -> round_num rnd (eval arg)
     | U_op (op, arg) ->
@@ -136,7 +139,7 @@ let eval_num_const_expr =
    inteval values with variable names *)
 let eval_interval_expr vars =
   let rec eval = function
-    | Const c -> c.interval_v
+    | Const c -> Const.to_interval c
     | Var v -> vars v
     | Rounding _ as expr -> failwith ("eval_interval_expr: Rounding is not supported: " ^
 					 print_expr_str expr)
@@ -207,8 +210,4 @@ let eval_const_expr e =
   Log.report 4 "eval_const_expr: %s" (print_expr_str e);
   let n = eval_num_const_expr e in
   Log.report 4 "result: %s" (string_of_num n);
-  {
-    rational_v = n;
-    float_v = float_of_num n;
-    interval_v = More_num.interval_of_num n;
-  }
+  Const.of_num n

@@ -49,8 +49,8 @@ let new_proof () =
   let vars0 = all_variables () in
   let vars = map (fun v -> {
     name = v.var_name;
-    low = v.lo_bound.Expr.rational_v;
-    high = v.hi_bound.Expr.rational_v;
+    low = Const.low_bound_to_num v.lo_bound;
+    high = Const.high_bound_to_num v.hi_bound;
   }) vars0 in
   proof.proof_vars <- vars;
   proof.proof_steps <- [];

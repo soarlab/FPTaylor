@@ -98,14 +98,14 @@ let add2_symbolic (e1, exp1) (e2, exp2) =
   (* Swap if exp1 > exp2 *)
   let e1, exp1, e2, exp2 = if exp1 <= exp2 then e1, exp1, e2, exp2 else e2, exp2, e1, exp1 in
   if exp1 = 0 then 
-    (if exp2 = 0 then (fp_to_const 0.0, 0) else (e2, exp2))
+    (if exp2 = 0 then (const_0, 0) else (e2, exp2))
   else if exp2 = 0 then 
     (e1, exp1)
   else if exp1 = exp2 then
     (mk_add e1 e2, exp1)
   else
     let eps = get_eps (exp1 - exp2) in
-    (mk_add (mk_mul (fp_to_const eps) e1) e2, exp2)
+    (mk_add (mk_mul (mk_float_const eps) e1) e2, exp2)
 
 
 let sum_symbolic s = itlist add2_symbolic s (const_0, 0)
@@ -338,7 +338,7 @@ let approximate_constraint pi c =
   let r, tform = compute_form pi e in
   let err = get_problem_error r in
   Log.report 1 "\n%s error: %e\n" r.name err;
-  Le (tform.v0, Const (const_of_float err))
+  Le (tform.v0, mk_float_const err)
 
 
 let process_input fname =

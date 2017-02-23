@@ -143,8 +143,6 @@ let abs_eval_v1 vars = map (fun (ex, err) -> abs_eval vars ex, err.exp)
 let eval_v1_i vars v1 =
   map (fun (e, err) -> estimate_expr vars e, err.exp) v1
 
-let fp_to_const f = mk_const (const_of_float f)
-
 let simplify_form vars f =
   let rec add_adjacent arg_index s =
     match s with
@@ -157,7 +155,7 @@ let simplify_form vars f =
 	let err = mk_err_var (-1) exp in
 	let _ = Proof.add_simpl_add_step i arg_index 
 	  err1.proof_index err2.proof_index err.proof_index f exp in
-	add_adjacent i ((fp_to_const f, err) :: t)
+	add_adjacent i ((mk_float_const f, err) :: t)
       | (e1, err1) :: (e2, err2) :: t ->
 	if err1.index = err2.index then
 	  (* we must have err1.exp = err2.exp here *)
@@ -195,12 +193,14 @@ let const_form e =
   Log.report 3 "const_form";
   match e with
     | Const c -> 
-      let i = next_form_index() in
-      let _ = Proof.add_const_step i c.rational_v in {
-	form_index = i;
-	v0 = e;
-	v1 = []
-      }
+       let i = next_form_index() in
+       let n = try Const.to_num c
+               with Failure _ -> (Log.warning 0 "const_form: interval constant"; Int 0) in
+       let _ = Proof.add_const_step i n in {
+	   form_index = i;
+	   v0 = e;
+	   v1 = []
+         }
     | _ -> failwith ("const_form: not a constant" ^ print_expr_str e)
 
 (* Constant with rounding *)
@@ -209,15 +209,17 @@ let precise_const_rnd_form rnd e =
   Log.report 3 "precise_const_rnd_form";
   match e with
     | Const c ->
-      let x = bin_float_of_num (-rnd.eps_exp) rnd.rnd_type c.rational_v in
+      assert (Const.is_rat_const c);
+      let cn = Const.to_num c in 
+      let x = bin_float_of_num (-rnd.eps_exp) rnd.rnd_type cn in
       let rc = num_of_bin_float x in
-      let d = c.rational_v -/ rc in
+      let d = cn -/ rc in
       (* exact fp number *)
       if d =/ Int 0 then
 	const_form e
       else
 	let form_index = next_form_index() in
-	let err_expr = mk_const (const_of_num (d // (Int 2 **/ Int rnd.eps_exp))) in
+	let err_expr = mk_num_const (d // (Int 2 **/ Int rnd.eps_exp)) in
 (*	let err = mk_err_var (find_index (mk_rounding rnd e)) rnd.eps_exp in *)
 	(* Exact errors for constants can cancel each other: 
 	   use the same artificial constant (const_0) for indices *)
@@ -240,12 +242,13 @@ let const_rnd_form rnd e =
     precise_const_rnd_form rnd e
   else
   match e with
-    | Const c -> 
+    | Const c ->
+      assert (Const.is_rat_const c);
       if is_fp_exact (get_eps rnd.eps_exp) c then 
 	const_form e
       else
 	let form_index = next_form_index() in
-	let bound = (abs_I c.interval_v).high in
+	let bound = (abs_I (Const.to_interval c)).high in
 	let p2 = Func.floor_power2 bound in
 	let _, p2_exp = frexp p2 in
 	let m2' =
@@ -257,13 +260,13 @@ let const_rnd_form rnd e =
 	(* Don't need to apply make_stronger since 
 	   everything can be proved with rational numbers *)
 	let m2 = rnd.coefficient *^ m2' in
-	let err_expr = fp_to_const m2 in
+	let err_expr = mk_float_const m2 in
 	let err = mk_err_var (find_index (mk_rounding rnd e)) rnd.eps_exp in
 	Log.report 4 "Inexact constant: %s; err = %s" 
 		   (print_expr_str e) 
 		   (print_expr_str err_expr);
 	let _ = 
-	  Proof.add_rnd_bin_const_step form_index c.rational_v 
+	  Proof.add_rnd_bin_const_step form_index (Const.to_num c) 
 	    (mk_proof_rnd_info rnd) p2_exp m2 err.proof_index in
 	{
 	  form_index = form_index;
@@ -274,9 +277,9 @@ let const_rnd_form rnd e =
 
 let get_var_uncertainty eps_exp var_name =
   let v = Environment.find_variable var_name in
-  let u = v.Environment.uncertainty.rational_v // More_num.num_of_float (get_eps eps_exp) in
+  let u = (Const.to_num v.Environment.uncertainty) // More_num.num_of_float (get_eps eps_exp) in
   if not (u =/ Int 0) then
-    [mk_const (const_of_num u), mk_err_var (find_index (mk_var (var_name ^ "$uncertainty"))) eps_exp]
+    [mk_num_const u, mk_err_var (find_index (mk_var (var_name ^ "$uncertainty"))) eps_exp]
   else 
     []
 
@@ -309,7 +312,7 @@ let var_rnd_form rnd e =
 	(* Don't need to apply make_stronger since 
 	   everything can be proved with rational numbers *)
 	let m2 = rnd.coefficient *^ m2' in
-	let err_expr = fp_to_const m2 in
+	let err_expr = mk_float_const m2 in
 	let err = mk_err_var (find_index (mk_rounding rnd e)) rnd.eps_exp in
 	let _ = 
 	  Proof.add_rnd_bin_var_step form_index v 
@@ -327,14 +330,14 @@ let var_rnd_form rnd e =
 	    if Config.get_bool_option "const-approx-real-vars" then
 	      let bound = (abs_I (Environment.variable_interval v)).high in
 	      let err = Func.floor_power2 bound in
-	      fp_to_const err
+	      mk_float_const err
 	    else if Config.get_bool_option "fp-power2-model" then
 	      mk_floor_power2 e
 	    else
 	      e in
 	  let err_expr = 
 	    if rnd.coefficient <> 1.0 then
-	      mk_mul (fp_to_const rnd.coefficient) err_expr0 
+	      mk_mul (mk_float_const rnd.coefficient) err_expr0 
 	    else 
 	      err_expr0 in
 	(* TODO: subnormal values of variables *)
@@ -352,7 +355,7 @@ let rounded_form vars original_expr rnd f =
   if rnd.eps_exp = 0 then {
     form_index = next_form_index();
     v0 = f.v0;
-    v1 = f.v1 @ [fp_to_const rnd.coefficient, mk_err_var (-1) rnd.delta_exp]
+    v1 = f.v1 @ [mk_float_const rnd.coefficient, mk_err_var (-1) rnd.delta_exp]
   }
   else
     let i = find_index original_expr in
@@ -360,7 +363,7 @@ let rounded_form vars original_expr rnd f =
     let s1 = make_stronger (get_eps exp1 *^ s1') in
     let r', m2' =
       if Config.get_bool_option "fp-power2-model" then
-	mk_floor_power2 (mk_add f.v0 (mk_sym_interval (fp_to_const s1))),
+	mk_floor_power2 (mk_add f.v0 (mk_sym_interval (mk_float_const s1))),
 	get_eps rnd.delta_exp /. get_eps rnd.eps_exp
       else
 	f.v0, 
@@ -369,7 +372,7 @@ let rounded_form vars original_expr rnd f =
       if rnd.coefficient = 1.0 then
 	r', m2'
       else
-	mk_mul (fp_to_const rnd.coefficient) r', rnd.coefficient *^ m2' in
+	mk_mul (mk_float_const rnd.coefficient) r', rnd.coefficient *^ m2' in
     let form_index = next_form_index() in
     let m2 = make_stronger m2 in
     let r_err = mk_err_var i rnd.eps_exp and
@@ -380,7 +383,7 @@ let rounded_form vars original_expr rnd f =
       form_index = form_index;
       v0 = f.v0;
       v1 = ((r, r_err) :: f.v1) @ 
-	[fp_to_const m2, m2_err];
+	[mk_float_const m2, m2_err];
     }
 
 (* negation *)
@@ -421,13 +424,13 @@ let rounded_sub_form vars original_expr rnd f1 f2 =
   let s2', exp2 = sum_high (abs_eval_v1 vars f2.v1) in
   let s1 = make_stronger (get_eps exp1 *^ s1') in
   let s2 = make_stronger (get_eps exp2 *^ s2') in
-  let r' = mk_floor_sub2 (mk_add f1.v0 (mk_sym_interval (fp_to_const s1)))
-                         (mk_add f2.v0 (mk_sym_interval (fp_to_const s2))) in
+  let r' = mk_floor_sub2 (mk_add f1.v0 (mk_sym_interval (mk_float_const s1)))
+                         (mk_add f2.v0 (mk_sym_interval (mk_float_const s2))) in
   let r = 
     if rnd.coefficient = 1.0 then
       r'
     else
-      mk_mul (fp_to_const rnd.coefficient) r' in
+      mk_mul (mk_float_const rnd.coefficient) r' in
   let form_index = next_form_index() in
   let r_err = mk_err_var i rnd.eps_exp in
   {
@@ -458,7 +461,7 @@ let mul_form =
     {
       form_index = form_index;
       v0 = mk_mul f1.v0 f2.v0;
-      v1 = mul1 f1.v0 f2.v1 @ mul1 f2.v0 f1.v1 @ [fp_to_const m2, m2_err];
+      v1 = mul1 f1.v0 f2.v1 @ mul1 f2.v0 f1.v1 @ [mk_float_const m2, m2_err];
     }
 
 (* reciprocal *)
@@ -498,7 +501,7 @@ let inv_form vars f =
     form_index = form_index;
     v0 = mk_div const_1 f.v0;
     v1 = map (fun (e, err) -> mk_neg (mk_div e (mk_mul f.v0 f.v0)), err) f.v1
-      @ [fp_to_const m3, m3_err];
+      @ [mk_float_const m3, m3_err];
   }
 
 (* division *)
@@ -535,7 +538,7 @@ let sqrt_form vars f =
     form_index = form_index;
     v0 = sqrt_v0;
     v1 = map (fun (e, err) -> mk_div e (mk_mul const_2 sqrt_v0), err) f.v1
-      @ [fp_to_const m3, m3_err];
+      @ [mk_float_const m3, m3_err];
   }
 
 (* sine *)
@@ -568,7 +571,7 @@ let sin_form vars f =
     form_index = form_index;
     v0 = sin_v0;
     v1 = map (fun (e, err) -> mk_mul cos_v0 e, err) f.v1
-      @ [fp_to_const m3, m3_err];
+      @ [mk_float_const m3, m3_err];
   }
 
 (* cosine *)
@@ -601,7 +604,7 @@ let cos_form vars f =
     form_index = form_index;
     v0 = cos_v0;
     v1 = map (fun (e, err) -> mk_neg (mk_mul sin_v0 e), err) f.v1
-      @ [fp_to_const m3, m3_err];
+      @ [mk_float_const m3, m3_err];
   }
 
 (* tangent *)
@@ -624,7 +627,7 @@ let tan_form vars f =
     form_index = next_form_index();
     v0 = mk_tan f.v0;
     v1 = map (fun (e, err) -> mk_div e v1_0, err) f.v1
-      @ [fp_to_const m2, mk_err_var (-1) m2_exp];
+      @ [mk_float_const m2, mk_err_var (-1) m2_exp];
   }
 
 (* arcsine *)
@@ -659,7 +662,7 @@ let asin_form vars f =
     form_index = form_index;
     v0 = mk_asin f.v0;
     v1 = map (fun (e, err) -> mk_div e v1_0, err) f.v1
-      @ [fp_to_const m3, m3_err];
+      @ [mk_float_const m3, m3_err];
   }
 
 (* arccosine *)
@@ -694,7 +697,7 @@ let acos_form vars f =
     form_index = form_index;
     v0 = mk_acos f.v0;
     v1 = map (fun (e, err) -> mk_neg (mk_div e v1_0), err) f.v1
-      @ [fp_to_const m3, m3_err];
+      @ [mk_float_const m3, m3_err];
   }
 
 (* arctangent *)
@@ -728,7 +731,7 @@ let atan_form vars f =
     form_index = form_index;
     v0 = mk_atan f.v0;
     v1 = map (fun (e, err) -> mk_div e v1_0, err) f.v1
-      @ [fp_to_const m3, m3_err];
+      @ [mk_float_const m3, m3_err];
   }
 
 (* exp *)
@@ -760,7 +763,7 @@ let exp_form vars f =
     form_index = form_index;
     v0 = exp_v0;
     v1 = map (fun (e, err) -> mk_mul exp_v0 e, err) f.v1
-      @ [fp_to_const m3, m3_err];
+      @ [mk_float_const m3, m3_err];
   }
 
 (* log *)
@@ -792,7 +795,7 @@ let log_form vars f =
     form_index = form_index;
     v0 = log_v0;
     v1 = map (fun (e, err) -> mk_div e f.v0, err) f.v1
-      @ [fp_to_const m3, m3_err];
+      @ [mk_float_const m3, m3_err];
   }
 
 (* sinh *)
@@ -827,7 +830,7 @@ let sinh_form vars f =
     form_index = form_index;
     v0 = mk_sinh f.v0;
     v1 = map (fun (e, err) -> mk_mul v1_0 e, err) f.v1
-      @ [fp_to_const m3, m3_err];
+      @ [mk_float_const m3, m3_err];
   }
 
 (* cosh *)
@@ -862,7 +865,7 @@ let cosh_form vars f =
     form_index = form_index;
     v0 = mk_cosh f.v0;
     v1 = map (fun (e, err) -> mk_mul v1_0 e, err) f.v1
-      @ [fp_to_const m3, m3_err];
+      @ [mk_float_const m3, m3_err];
   }
 
 (* tanh *)
@@ -897,7 +900,7 @@ let tanh_form vars f =
     form_index = form_index;
     v0 = mk_tanh f.v0;
     v1 = map (fun (e, err) -> mk_div e v1_0, err) f.v1
-      @ [fp_to_const m3, m3_err];
+      @ [mk_float_const m3, m3_err];
   }
 
 
@@ -933,7 +936,7 @@ let asinh_form vars f =
     form_index = form_index;
     v0 = mk_asinh f.v0;
     v1 = map (fun (e, err) -> mk_div e v1_0, err) f.v1
-      @ [fp_to_const m3, m3_err];
+      @ [mk_float_const m3, m3_err];
   }
 
 (* arcosh *)
@@ -968,7 +971,7 @@ let acosh_form vars f =
     form_index = form_index;
     v0 = mk_acosh f.v0;
     v1 = map (fun (e, err) -> mk_div e v1_0, err) f.v1
-      @ [fp_to_const m3, m3_err];
+      @ [mk_float_const m3, m3_err];
   }
 
 (* artanh *)
@@ -1003,7 +1006,7 @@ let atanh_form vars f =
     form_index = form_index;
     v0 = mk_atanh f.v0;
     v1 = map (fun (e, err) -> mk_div e v1_0, err) f.v1
-      @ [fp_to_const m3, m3_err];
+      @ [mk_float_const m3, m3_err];
   }
     
 (* absolute value *)
@@ -1034,7 +1037,7 @@ let abs_form vars f =
   let t =
     let s, e = sum_high (abs_eval_v1 vars f.v1) in
     make_stronger (get_eps e *^ s) in
-  let abs_err = mk_abs_err (mk_sym_interval (fp_to_const t)) f.v0 in
+  let abs_err = mk_abs_err (mk_sym_interval (mk_float_const t)) f.v0 in
   {
     form_index = i;
     v0 = mk_abs f.v0;
@@ -1065,9 +1068,9 @@ let max_form vars f1 f2 =
     let s, e = sum_high (abs_eval_v1 vars f2.v1) in
     make_stronger (get_eps e *^ s) in
   let x_sub_y = mk_sub f1.v0 f2.v0 in
-  let t = mk_sym_interval (fp_to_const (t1 +^ t2)) in
-  let err1 = mk_mul (fp_to_const 0.5) (mk_add const_1 (mk_abs_err t x_sub_y)) in
-  let err2 = mk_mul (fp_to_const 0.5) (mk_sub const_1 (mk_abs_err t x_sub_y)) in
+  let t = mk_sym_interval (mk_float_const (t1 +^ t2)) in
+  let err1 = mk_mul (mk_float_const 0.5) (mk_add const_1 (mk_abs_err t x_sub_y)) in
+  let err2 = mk_mul (mk_float_const 0.5) (mk_sub const_1 (mk_abs_err t x_sub_y)) in
   {
     form_index = i;
     v0 = mk_max f1.v0 f2.v0;
@@ -1093,9 +1096,9 @@ let min_form vars f1 f2 =
     let s, e = sum_high (abs_eval_v1 vars f2.v1) in
     make_stronger (get_eps e *^ s) in
   let x_sub_y = mk_sub f1.v0 f2.v0 in
-  let t = mk_sym_interval (fp_to_const (t1 +^ t2)) in
-  let err1 = mk_mul (fp_to_const 0.5) (mk_sub const_1 (mk_abs_err t x_sub_y)) in
-  let err2 = mk_mul (fp_to_const 0.5) (mk_add const_1 (mk_abs_err t x_sub_y)) in
+  let t = mk_sym_interval (mk_float_const (t1 +^ t2)) in
+  let err1 = mk_mul (mk_float_const 0.5) (mk_sub const_1 (mk_abs_err t x_sub_y)) in
+  let err2 = mk_mul (mk_float_const 0.5) (mk_add const_1 (mk_abs_err t x_sub_y)) in
   {
     form_index = i;
     v0 = mk_min f1.v0 f2.v0;
@@ -1109,7 +1112,7 @@ let build_form vars =
     match e with
       | Const _ -> const_form e
       | Var _ -> var_form e
-      | Rounding (rnd, Const c) 
+      | Rounding (rnd, Const c) when Const.is_rat_const c 
 	  (* when not Config.proof_flag *) -> const_rnd_form rnd (Const c)
       | Rounding (rnd, Var v) 
 	  (* when not Config.proof_flag *) -> var_rnd_form rnd (Var v)

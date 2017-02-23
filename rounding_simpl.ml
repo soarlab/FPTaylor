@@ -24,15 +24,15 @@ exception Exceptional_operation of expr * string
 
 let is_power_of_2_or_0 e =
   match e with
-    | Const c -> 
-      let n = c.rational_v in
+    | Const c when Const.is_rat_const c -> 
+      let n = Const.to_num c in
       n =/ Int 0 || More_num.is_power_of_two n
     | _ -> false
 
 let is_neg_power_of_2 e =
   match e with
-    | Const c ->
-      let n = c.rational_v in
+    | Const c when Const.is_rat_const c ->
+      let n = Const.to_num c in
       if n <>/ Int 0 then
 	More_num.is_power_of_two (Int 1 // n)
       else
@@ -41,17 +41,21 @@ let is_neg_power_of_2 e =
 
 let rec get_type e =
   match e with
-    | Const c ->
-      (* TODO: a universal procedure is required *)
-      let rnd = string_to_rounding "rnd32" in
-      if round_num rnd c.rational_v =/ c.rational_v then
-	rnd.fp_type
-      else
-	let rnd = string_to_rounding "rnd64" in
-	if round_num rnd c.rational_v =/ c.rational_v then
-	  rnd.fp_type
-	else
-	  real_type
+  | Const c ->
+     if Const.is_rat_const c then
+       let n = Const.to_num c in
+       (* TODO: a universal procedure is required *)
+       let rnd = string_to_rounding "rnd32" in
+       if round_num rnd n =/ n then
+	 rnd.fp_type
+       else
+	 let rnd = string_to_rounding "rnd64" in
+	 if round_num rnd n =/ n then
+	   rnd.fp_type
+	 else
+	   real_type
+     else
+       real_type
     | Var name -> Env.get_var_type name
     | U_op (op, arg) ->
       begin
@@ -185,7 +189,7 @@ let check_interval x =
 let check_expr vars =
   let rec eval e =
     let r = match e with
-      | Const c -> c.interval_v
+      | Const c -> Const.to_interval c
       | Var v -> vars v
       | Rounding (rnd, e1) ->
 	let r1 = eval e1 in

@@ -16,12 +16,6 @@ open Lib
 open Interval
 open Rounding
 
-type evaluated_const = {
-  rational_v : num;
-  float_v : float;
-  interval_v : interval;
-}
-
 (* Operations *)
 type op_type = 
   | Op_neg
@@ -57,7 +51,7 @@ type op_type =
 
 (* Expression *)
 type expr =
-  | Const of evaluated_const
+  | Const of Const.t
   | Var of string
   | Rounding of rnd_info * expr
   | U_op of op_type * expr
@@ -103,12 +97,23 @@ let mk_const c = Const c and
     mk_floor_power2 a = U_op (Op_floor_power2, a) and
     mk_sym_interval a = U_op (Op_sym_interval, a)
 
+let mk_int_const i = mk_const (Const.of_int i) and
+    mk_num_const n = mk_const (Const.of_num n) and
+    mk_float_const f = mk_const (Const.of_float f) and
+    mk_interval_const v = mk_const (Const.of_interval v)
+                             
 let mk_floor_sub2 a b = mk_floor_power2 (mk_sub2 a b)
+
+let const_0 = mk_int_const 0 and
+    const_1 = mk_int_const 1 and
+    const_2 = mk_int_const 2 and
+    const_3 = mk_int_const 3 and
+    const_4 = mk_int_const 4 and
+    const_5 = mk_int_const 5
 
 let rec eq_expr e1 e2 =
   match (e1, e2) with
-    | (Const c1, Const c2) ->
-      c1.rational_v =/ c2.rational_v
+    | (Const c1, Const c2) -> Const.eq_c c1 c2
     | (Var v1, Var v2) -> v1 = v2
     | (Rounding (r1, a1), Rounding (r2, a2)) when r1 = r2 -> 
       eq_expr a1 a2
@@ -204,8 +209,8 @@ let c_print_env = {
 
   env_print = (fun p _ e ->
     match e with
-      | Const f -> 
-	let _ = p ("(" ^ string_of_float f.float_v ^ ")") in
+      | Const c -> 
+	let _ = p ("(" ^ string_of_float (Const.to_float c) ^ ")") in
 	true
       | _ -> false);
 }
@@ -221,23 +226,25 @@ let gelpia_print_env = {
 
   env_print = (fun p print e ->
     match e with
-      | Const f -> 
-	let _ = p (Format.sprintf "interval(%.20e, %.20e)" 
-		     f.interval_v.low f.interval_v.high) in
-	true
+      | Const c ->
+         let v = Const.to_interval c in
+	 let _ = p (Format.sprintf "interval(%.20e, %.20e)" v.low v.high) in
+	 true
       | Bin_op (Op_nat_pow, arg1, arg2) ->
 	begin
 	  match arg2 with
-	    | Const f -> 
-	      let n = f.rational_v in
-	      if is_integer_num n && n >/ Int 0 then
-		let _ =
-		  p "pow("; print arg1; p ", ";
-		  p (string_of_num n); p ")" in
-		true
-	      else
-		failwith "Op_nat_pow: non-integer exponent"
-	    | _ -> failwith "Op_nat_pow: non-constant exponent"
+	  | Const c -> begin
+	       let n = try Const.to_num c
+                       with Failure _ -> failwith "Op_nat_pow: interval exponent" in
+	       if is_integer_num n && n >/ Int 0 then
+		 let _ =
+		   p "pow("; print arg1; p ", ";
+		   p (string_of_num n); p ")" in
+		 true
+	       else
+		 failwith "Op_nat_pow: non-integer exponent"
+            end
+	  | _ -> failwith "Op_nat_pow: non-constant exponent"
 	end
       | _ -> false);
 }
@@ -261,15 +268,17 @@ let z3py_print_env = {
 
   env_print = (fun p _ e ->
     match e with
-      | Const f -> 
+    | Const c -> begin
+        let n = try Const.to_num c
+                with Failure _ -> failwith "z3py: interval constants are not supported" in
 	let s = Big_int.string_of_big_int in
-	let n = f.rational_v in
 	let ns = s (More_num.numerator n) and
 	    ds = s (More_num.denominator n) in
 (*	let _ = p ("(" ^ string_of_num f.rational_v ^ ")") in *)
 	let _ = p ("(Q(" ^ ns ^ "," ^ ds ^ "))") in
 	true
-      | _ -> false);
+      end
+    | _ -> false);
 }
 
 let ocaml_float_print_env = {
@@ -295,8 +304,8 @@ let ocaml_float_print_env = {
   env_print = (fun p _ e ->
     match e with
       | Var v -> let _ = p ("var_" ^ v) in true
-      | Const f -> 
-	let _ = p ("(" ^ string_of_float f.float_v ^ ")") in
+      | Const c -> 
+	let _ = p ("(" ^ string_of_float (Const.to_float c) ^ ")") in
 	true
       | _ -> false);
 }
@@ -340,15 +349,16 @@ let ocaml_interval_print_env = {
   env_print = (fun p print e ->
     match e with
       | Var name -> let _ = p ("var_" ^ name) in true
-      | Const f -> 
-	let _ = p (Format.sprintf "{low = %.30e; high = %.30e}" 
-		     f.interval_v.low f.interval_v.high) in
-	true
+      | Const c ->
+         let v = Const.to_interval c in
+	 let _ = p (Format.sprintf "{low = %.20e; high = %.20e}" v.low v.high) in
+	 true
       | Bin_op (Op_nat_pow, arg1, arg2) ->
 	begin
 	  match arg2 with
-	    | Const f -> 
-	      let n = f.rational_v in
+	  | Const c -> begin
+              let n = try Const.to_num c
+                      with Failure _ -> failwith "Op_nat_pow: interval exponent" in
 	      if is_integer_num n && n >/ Int 0 then
 		let _ =
 		  p "(pow_I_i ";
@@ -358,7 +368,8 @@ let ocaml_interval_print_env = {
 		true
 	      else
 		failwith "Op_nat_pow: non-integer exponent"
-	    | _ -> failwith "Op_nat_pow: non-constant exponent"
+            end
+	  | _ -> failwith "Op_nat_pow: non-constant exponent"
 	end
       | _ -> false);
 }
@@ -408,12 +419,20 @@ let racket_interval_print_env = {
     let _ =
       match e with
 	| Var name -> p (name ^ "-var")
-	| Const f -> 
-	  let s = Big_int.string_of_big_int in
-	  let n = f.rational_v in
-	  let ns = s (More_num.numerator n) and
-	      ds = s (More_num.denominator n) in
-	  p (Format.sprintf "(make-interval %s/%s)" ns ds)
+	| Const c -> 
+	   let s = Big_int.string_of_big_int in
+           let a, b =
+             if Const.is_rat_const c then
+	       let n = Const.to_num c in
+               n, n
+             else
+               let v = Const.to_interval c in
+               More_num.num_of_float v.low, More_num.num_of_float v.high in
+	   let na = s (More_num.numerator a) and
+	       da = s (More_num.denominator a) and
+               nb = s (More_num.numerator b) and
+               db = s (More_num.denominator b) in
+	   p (Format.sprintf "(make-interval %s/%s %s/%s)" na da nb db)
 	| U_op (op, arg) ->
 	  begin
 	    p "("; 
@@ -452,7 +471,12 @@ let print_expr_in_env env fmt =
     let b = env.env_print p print e in
     if b then () else
       match e with
-	| Const f -> p ("(" ^ string_of_num f.rational_v ^ ")")
+        | Const c ->
+           if Const.is_rat_const c then
+             p ("(" ^ string_of_num (Const.to_num c) ^ ")")
+           else
+             let v = Const.to_interval c in
+             p (Format.sprintf "interval(%.20e, %.20e)" v.low v.high)
 	| Var v -> p v
 	| Rounding (rnd, arg) ->
 	  begin
@@ -509,35 +533,11 @@ let print_expr_str_in_env env = write_to_string (print_expr_in_env env)
 * with a floating point number 
 *)
 let is_fp_exact eps c =
-  if c.interval_v.low <> c.float_v || c.interval_v.high <> c.float_v then
+  let v = Const.to_interval c in
+  if v.low <> v.high then
     false
   else
     let () = if eps <> 2.0 ** (-53.0) then
                Log.warning 0 "is_fp_exact: possible inexact result for eps <> eps64" in
     true
 	  
-let const_of_num n = {
-  rational_v = n;
-  float_v = float_of_num n;
-  interval_v = More_num.interval_of_num n;
-}
-
-let const_of_int n = const_of_num (num_of_int n)
-
-let mk_int_const i = mk_const (const_of_int i)
-
-let const_of_float f = {
-  rational_v = More_num.num_of_float f;
-  float_v = f;
-  interval_v = {low = f; high = f};
-}
-
-
-let const_0 = mk_int_const 0
-let const_1 = mk_int_const 1
-let const_2 = mk_int_const 2
-let const_3 = mk_int_const 3
-let const_4 = mk_int_const 4
-let const_5 = mk_int_const 5
-
-
