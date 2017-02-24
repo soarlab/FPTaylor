@@ -101,67 +101,41 @@ let gen_bb_opt_code (pars : Opt_common.opt_pars) max_only fmt =
 let counter = ref 0
 
 let min_max_expr (pars : Opt_common.opt_pars) max_only var_bound e =
-(*  let _ = counter := !counter + 1 in *)
-  let _ = 
-    if Config.debug then
-      Log.report 4 "bb_opt: x_abs_tol = %e, f_rel_tol = %e, f_abs_tol = %e, iters = %d"
-		 pars.x_abs_tol pars.f_rel_tol pars.f_abs_tol pars.max_iters in
+  if Config.debug then
+    Log.report 4 "bb_opt: x_abs_tol = %e, f_rel_tol = %e, f_abs_tol = %e, iters = %d"
+	       pars.x_abs_tol pars.f_rel_tol pars.f_abs_tol pars.max_iters;
   let base = Config.base_dir in
   let tmp = Lib.get_tmp_dir () in
-  let ml_name = Filename.concat tmp "bb.ml" in
-
-(*  let ml_name = Format.sprintf "%s/bb_%d.ml" tmp !counter in *)
-
-  let exe_name = Filename.concat tmp "bb" in
-  let interval_files_native = map (Filename.concat "INTERVAL") [
-    "libinterval.a";
-    "interval.cmxa";
-  ] in
-  let interval_files_byte = map (Filename.concat "INTERVAL") [
-    "chcw.o";
-    "interval.cma";
-  ] in
-  let lib_files = [
-    "func.ml";
-  ] in
-  let bb_files = map (Filename.concat "b_and_b") [
-    "opt0.ml";
-  ] in
-  let ocamlc = Config.get_string_option "bb-ocamlc" in
-  let files = 
-    if ocamlc = "ocamlc" then
-      interval_files_byte @ lib_files @ bb_files
-    else
-      interval_files_native @ lib_files @ bb_files in
+  let in_name = 
+    let name = incr counter; Format.sprintf "bb_%d.ml" !counter in
+    Filename.concat tmp name in
+  let out_name = Filename.concat tmp "bb" in
   let gen = gen_bb_opt_code pars max_only in
-  let _ = write_to_file ml_name gen (var_bound, e) in
-  let srcs = map (fun s -> Filename.concat base s) files in
-  let cmd = Format.sprintf "%s -I %s -I %s -I %s -o %s %s %s" 
-    ocamlc
-    base
-    (Filename.concat base "INTERVAL")
-    (Filename.concat base "b_and_b")
-    exe_name
-    (String.concat " " srcs) 
-    ml_name in
+  let () = write_to_file in_name gen (var_bound, e) in
+  let cmd =
+    let quote s = "\"" ^ s ^ "\"" in
+    let str = Config.get_string_option "bb-compile" in
+    let str = Str.global_replace (Str.regexp "{base}") (quote base) str in
+    let str = Str.global_replace (Str.regexp "{out}") (quote out_name) str in
+    let str = Str.global_replace (Str.regexp "{input}") (quote in_name) str in
+    str in
   let _ = run_cmd cmd in
-  let out = run_cmd exe_name in
+  let out = run_cmd out_name in
   let fmin = Opt_common.get_float out "min = " and
       fmax = Opt_common.get_float out "max = " in
-  let _ = 
-    if Config.debug then
+  if Config.debug then begin
       let iter_max = truncate (Opt_common.get_float out "iter_max = ") and
 	  iter_min = truncate (Opt_common.get_float out "iter_min = ") and
 	  lower_max = Opt_common.get_float out "lower_max = " and
 	  lower_min = Opt_common.get_float out "lower_min = " in
       let opt, subopt =
-	if abs_float fmin > abs_float fmax then
+        if abs_float fmin > abs_float fmax then
 	  abs_float fmin, abs_float (fmin -. lower_min)
-	else
+        else
 	  abs_float fmax, abs_float (fmax -. lower_max) in
       Log.report 4 "iterations(%d, %d): %d" 
-		 iter_max iter_min (max iter_max iter_min);
+	         iter_max iter_min (max iter_max iter_min);
       Log.report 4 "lower_max = %e, lower_min = %e, subopt = %e (%e)"
-		 lower_max lower_min subopt (subopt /. opt *. 100.0)
-    else () in
+	         lower_max lower_min subopt (subopt /. opt *. 100.0)
+    end;
   fmin, fmax
