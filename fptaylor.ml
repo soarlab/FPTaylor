@@ -412,13 +412,14 @@ let validate_options () =
   end
          
 let main () =
-  let p = print_string in
+  Log.report 0 "FPTaylor, version %s" Version.version;
   if Config.input_files = [] then
     begin
-      p ("Usage: "
-	 ^ Sys.argv.(0) 
-	 ^ " [--opt-name opt-value ...] [-c config1 ...] input_file1 [input_file2 ...]\n\n"
-         ^ "See default.cfg for a list of available options.\n");
+      Printf.printf
+        "\nUsage: %s [--opt-name opt-value ...] [-c config1 ...] \
+         input_file1 [input_file2 ...]\n\n\
+         See default.cfg for a list of available options.\n\n"
+        Sys.argv.(0);
       exit 1
     end
   else
