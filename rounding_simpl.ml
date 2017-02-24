@@ -248,7 +248,6 @@ let check_expr vars =
 	    else
 	      Func.atanh_I x
 	  | Op_floor_power2 -> Func.floor_power2_I x
-	  | Op_sym_interval -> Func.sym_interval_I x
 	  | _ -> failwith ("check_expr: Unsupported unary operation: " 
 			   ^ op_name op)
 	end

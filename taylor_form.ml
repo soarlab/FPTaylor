@@ -62,6 +62,11 @@ let mk_err_var, reset_error_index =
 let mk_proof_rnd_info rnd =
   Proof.mk_rnd_info rnd.fp_type.bits rnd.coefficient
 
+let mk_sym_interval_const f =
+  let t = abs_float f in
+  let v = {low = -.t; high = t} in
+  mk_interval_const v
+                    
 let ( +^ ) = Fpu.fadd_high and
     ( *^ ) = Fpu.fmul_high
 
@@ -363,7 +368,7 @@ let rounded_form vars original_expr rnd f =
     let s1 = make_stronger (get_eps exp1 *^ s1') in
     let r', m2' =
       if Config.get_bool_option "fp-power2-model" then
-	mk_floor_power2 (mk_add f.v0 (mk_sym_interval (mk_float_const s1))),
+	mk_floor_power2 (mk_add f.v0 (mk_sym_interval_const s1)),
 	get_eps rnd.delta_exp /. get_eps rnd.eps_exp
       else
 	f.v0, 
@@ -424,8 +429,8 @@ let rounded_sub_form vars original_expr rnd f1 f2 =
   let s2', exp2 = sum_high (abs_eval_v1 vars f2.v1) in
   let s1 = make_stronger (get_eps exp1 *^ s1') in
   let s2 = make_stronger (get_eps exp2 *^ s2') in
-  let r' = mk_floor_sub2 (mk_add f1.v0 (mk_sym_interval (mk_float_const s1)))
-                         (mk_add f2.v0 (mk_sym_interval (mk_float_const s2))) in
+  let r' = mk_floor_sub2 (mk_add f1.v0 (mk_sym_interval_const s1))
+                         (mk_add f2.v0 (mk_sym_interval_const s2)) in
   let r = 
     if rnd.coefficient = 1.0 then
       r'
@@ -1035,9 +1040,9 @@ let abs_form vars f =
   Log.report 3 "abs_form";
   let i = next_form_index() in
   let t =
-    let s = sum_i (eval_v1_i vars f.v1) in
-    make_stronger_i s in
-  let abs_err = mk_abs_err (mk_interval_const t) f.v0 in
+    let s, e = sum_high (abs_eval_v1 vars f.v1) in
+    make_stronger (get_eps e *^ s) in
+  let abs_err = mk_abs_err (mk_sym_interval_const t) f.v0 in
   {
     form_index = i;
     v0 = mk_abs f.v0;
@@ -1068,7 +1073,7 @@ let max_form vars f1 f2 =
     let s, e = sum_high (abs_eval_v1 vars f2.v1) in
     make_stronger (get_eps e *^ s) in
   let x_sub_y = mk_sub f1.v0 f2.v0 in
-  let t = mk_sym_interval (mk_float_const (t1 +^ t2)) in
+  let t = mk_sym_interval_const (t1 +^ t2) in
   let err1 = mk_mul (mk_float_const 0.5) (mk_add const_1 (mk_abs_err t x_sub_y)) in
   let err2 = mk_mul (mk_float_const 0.5) (mk_sub const_1 (mk_abs_err t x_sub_y)) in
   {
@@ -1096,7 +1101,7 @@ let min_form vars f1 f2 =
     let s, e = sum_high (abs_eval_v1 vars f2.v1) in
     make_stronger (get_eps e *^ s) in
   let x_sub_y = mk_sub f1.v0 f2.v0 in
-  let t = mk_sym_interval (mk_float_const (t1 +^ t2)) in
+  let t = mk_sym_interval_const (t1 +^ t2) in
   let err1 = mk_mul (mk_float_const 0.5) (mk_sub const_1 (mk_abs_err t x_sub_y)) in
   let err2 = mk_mul (mk_float_const 0.5) (mk_add const_1 (mk_abs_err t x_sub_y)) in
   {

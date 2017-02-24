@@ -171,7 +171,6 @@ let rec transform_raw_expr = function
 	| "acosh" -> U_op (Op_acosh, e1)
 	| "atanh" -> U_op (Op_atanh, e1)
 	| "floor_power2" -> U_op (Op_floor_power2, e1)
-	| "sym_interval" -> U_op (Op_sym_interval, e1)
 	| _ -> failwith ("transform_raw_expr: Unknown unary operation: " ^ str)
     end
   | Raw_bin_op (str, arg1, arg2) -> 

@@ -47,7 +47,6 @@ type op_type =
   | Op_sub2
   | Op_abs_err
   | Op_floor_power2
-  | Op_sym_interval
 
 (* Expression *)
 type expr =
@@ -94,14 +93,13 @@ let mk_const c = Const c and
     mk_fma a b c = Gen_op (Op_fma, [a; b; c]) and
     mk_sub2 a b = Bin_op (Op_sub2, a, b) and
     mk_abs_err t x = Bin_op (Op_abs_err, t, x) and
-    mk_floor_power2 a = U_op (Op_floor_power2, a) and
-    mk_sym_interval a = U_op (Op_sym_interval, a)
+    mk_floor_power2 a = U_op (Op_floor_power2, a)
 
 let mk_int_const i = mk_const (Const.of_int i) and
     mk_num_const n = mk_const (Const.of_num n) and
     mk_float_const f = mk_const (Const.of_float f) and
     mk_interval_const v = mk_const (Const.of_interval v)
-                             
+                                   
 let mk_floor_sub2 a b = mk_floor_power2 (mk_sub2 a b)
 
 let const_0 = mk_int_const 0 and
@@ -184,7 +182,6 @@ let op_name_in_env env op =
       | Op_sub2 -> "sub2"
       | Op_abs_err -> "abs_err"
       | Op_floor_power2 -> "floor_power2"
-      | Op_sym_interval -> "sym_interval"
 
 let is_infix_in_env env op =
   let b, r = env.env_op_infix op in
@@ -259,7 +256,7 @@ let z3py_print_env = {
       | Op_sin | Op_cos | Op_tan | Op_asin | Op_acos | Op_atan 
       | Op_exp | Op_log 
       | Op_sinh | Op_cosh | Op_tanh | Op_asinh | Op_acosh | Op_atanh
-      | Op_sub2 | Op_floor_power2 | Op_sym_interval | Op_abs_err
+      | Op_sub2 | Op_floor_power2 | Op_abs_err
 	-> failwith ("z3py: " ^ op_name op ^ " is not supported")
       | _ -> false, "");
 
@@ -295,7 +292,6 @@ let ocaml_float_print_env = {
     | Op_sub2 -> true, "sub2"
     | Op_abs_err -> true, "abs_err"
     | Op_floor_power2 -> true, "floor_power2"
-    | Op_sym_interval -> true, "sym_interval_float"
     | _ -> false, "");
 
   env_op_infix = (function
@@ -340,7 +336,6 @@ let ocaml_interval_print_env = {
     | Op_sub2 -> true, "sub2_I"
     | Op_abs_err -> true, "abs_err_I"
     | Op_floor_power2 -> true, "floor_power2_I"
-    | Op_sym_interval -> true, "sym_interval_I"
     | _ -> false, "");
 
   env_op_infix = (function
@@ -400,7 +395,6 @@ let racket_interval_env_op_name = function
   | Op_nat_pow -> true, "iexpt"
   | Op_sub2 -> true, "isub2"
   | Op_floor_power2 -> true, "ifloor-pow2"
-  | Op_sym_interval -> true, "sym-interval"
   | _ -> false, ""
 
 let racket_interval_print_env = {
