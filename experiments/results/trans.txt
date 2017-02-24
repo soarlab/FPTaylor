@@ -1,0 +1,6 @@
+name			s3fp		(b)		(a)		time (b)	time (a)
+
+logexp			1.198e-15	1.525e-15	1.710e-15	0.98 		1.61
+point_on_sphere		5.054e-15	8.077e-15	1.288e-14	407.05		3.55
+rhumb_distance						3.545e-10
+greatCircleAzimuth	2.531e-15	8.778e-15	1.409e-14	16.42		28.11

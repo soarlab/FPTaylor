@@ -1,0 +1,7 @@
+Variables
+  float32 z in [-2, 2];
+	
+Expressions
+  sineOrder3 rnd32= 0.954929658551372 * z -  0.12900613773279798*(z*z*z)
+;
+  

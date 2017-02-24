@@ -3,7 +3,7 @@
 (*                                                                            *)
 (*      Author: Alexey Solovyev, University of Utah                           *)
 (*                                                                            *)
-(*      This file is distributed under the terms of the MIT licence           *)
+(*      This file is distributed under the terms of the MIT license           *)
 (* ========================================================================== *)
 
 (* -------------------------------------------------------------------------- *)
@@ -14,8 +14,9 @@ open Num
 open List
 open Lib
 open Expr
+open Opt_common
 
-let gen_z3py_opt_code fmt =
+let gen_z3py_opt_code (pars : Opt_common.opt_pars) fmt =
   let nl = Format.pp_print_newline fmt in
   let p str = Format.pp_print_string fmt str; nl() in
   let p' = Format.pp_print_string fmt in
@@ -25,11 +26,11 @@ let gen_z3py_opt_code fmt =
     p "from z3opt import *";
     p "" in
 
-  let tail tol =
+  let tail () =
     p "";
-    p (Format.sprintf "fTol = %f" tol);
-    p (Format.sprintf "l, u = find_bounds(f, var_constraints + constraints, fTol, %s)"
-	 (Config.get_option "z3-timeout" "1000"));
+    p (Format.sprintf "fTol = %f" pars.f_abs_tol);
+    p (Format.sprintf "l, u = find_bounds(f, var_constraints + constraints, fTol, %d)"
+	 (Config.get_int_option "z3-timeout"));
     p "print '%.25f' % l";
     p "print '%.25f' % u" in
 
@@ -38,19 +39,23 @@ let gen_z3py_opt_code fmt =
     let ns = s (More_num.numerator n) and
 	ds = s (More_num.denominator n) in
 (*    "\"" ^ ns ^ "/" ^ ds ^ "\"" in*)
-    "Q(" ^ ns ^ "," ^ ds ^ ")" in 
+    "Q(" ^ ns ^ "," ^ ds ^ ")" in
+
+  let const_to_z3 c =
+    if Const.is_rat_const c then num_to_z3 (Const.to_num c)
+    else failwith "gen_z3py_opt_code: interval constant" in
 
   let print_constraint c =
     match c with
       | Le (e, Const c) ->
 	print_expr_in_env z3py_print_env fmt e;
 	p' " < ";
-	p' (num_to_z3 c.rational_v)
+	p' (const_to_z3 c)
       | _ -> failwith "z3opt: print_constraint(): unsupported constraint" in
 
   let constraint_vars (name, c) =
     match c with
-      | Le (e, Const c) -> vars_in_expr e
+      | Le (e, Const _) -> vars_in_expr e
       | _ -> failwith "z3opt: constraint_vars(): unsupported constraint" in
 
   let constraints cs =
@@ -101,31 +106,31 @@ let gen_z3py_opt_code fmt =
     p' "f = ";
     print_expr_in_env z3py_print_env fmt e in
 
-  fun (tol, var_bound, e) ->
+  fun (var_bound, e) ->
     let cs = Environment.get_active_constraints() in
     let vars_cs = map constraint_vars cs in
     let var_names = unions (vars_in_expr e :: vars_cs) in
     let var_bounds = map var_bound var_names in
-    head();
+    head ();
     vars var_names var_bounds;
     constraints cs;
     expr e;
-    tail tol
+    tail ()
 
 let name_counter = ref 0;;
 
-let min_max_expr tol var_bound e =
+let min_max_expr (pars : Opt_common.opt_pars) var_bound e =
   if vars_in_expr e = [] then
     let n = Eval.eval_num_const_expr e in
     let t = More_num.interval_of_num n in
     (t.Interval.low, t.Interval.high)
   else
-    let tmp = Lib.get_dir "tmp" in
+    let tmp = Lib.get_tmp_dir () in
     let _ = incr name_counter in
     let py_name = Filename.concat tmp 
       (Format.sprintf "min_max_%d.py" !name_counter) in
-    let gen = gen_z3py_opt_code in
-    let _ = write_to_file py_name gen (tol, var_bound, e) in
+    let gen = gen_z3py_opt_code pars in
+    let _ = write_to_file py_name gen (var_bound, e) in
     let cmd = Format.sprintf "PYTHONPATH=\"%s\" python %s"
       Config.base_dir py_name in
     let ss = run_cmd cmd in

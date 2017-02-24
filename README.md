@@ -1,12 +1,6 @@
 FPTaylor: A Tool for Rigorous Estimation of Round-off Floating-point Errors
 ===========================================================================
 
-Demo
-----
-
-Try out FPTaylor without installing it at
-[Aptlab](https://www.aptlab.net/p/FPTaylor/FPTaylorVM)
-
 Publications
 ------------
 
@@ -23,7 +17,7 @@ Steps below have been tested on Ubuntu 12.04 and Ubuntu 14.04.
 
 Requirements:
 
-- [OCaml](http://ocaml.org/) with a native compiler (do
+- [OCaml](http://ocaml.org/) version 4.00.0 or higher with a native compiler (do
   not forget `make opt` if you are building from source code). 
   The easiest way to install OCaml on Ubuntu is `sudo apt-get install ocaml`
 
@@ -31,10 +25,12 @@ Requirements:
   (see [INTERVAL](INTERVAL))
 
 - [Maxima](http://maxima.sourceforge.net), a Computer Algebra System
-  (optional but recommended).
+  (optional; not used by default).
   The easiest way to install Maxima on Ubuntu is `sudo apt-get install maxima`
 
 - [Z3](https://github.com/Z3Prover/z3) (optional)
+
+- [Gelpia](https://github.com/keram88/gelpia) (optional)
 
 
 The following command will build FPTaylor and the interval computation library:
@@ -67,3 +63,9 @@ Formal Verification of FPTaylor Results in HOL Light
 
 See the [formal](formal) directory for corresponding HOL Light
 theories and procedures.
+
+VirtualBox Image
+----------------
+
+An old version of FPTaylor is available as a VirtualBox image at
+[https://sites.google.com/site/fptaylordemo/installation](https://sites.google.com/site/fptaylordemo/installation)

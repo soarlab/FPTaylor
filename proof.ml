@@ -3,95 +3,18 @@
 (*                                                                            *)
 (*      Author: Alexey Solovyev, University of Utah                           *)
 (*                                                                            *)
-(*      This file is distributed under the terms of the MIT licence           *)
+(*      This file is distributed under the terms of the MIT license           *)
 (* ========================================================================== *)
 
 (* -------------------------------------------------------------------------- *)
-(* Proof certificate data structures                                          *)
+(* Proof certificate data structures and constructors                         *)
 (* -------------------------------------------------------------------------- *)
 
 open List
 open Num
 open Environment
 
-type proof_var = {
-  name : string;
-  low : num;
-  high : num;
-}
-
-(* TODO: all rounding operations *)
-type rnd_proof_info = {
-  bits : int;
-  coefficient : float;
-}
-
-type proof_op =
-  | Proof_var of string
-  | Proof_const of num
-  | Proof_rnd_bin_var of rnd_proof_info * string
-  | Proof_rnd_bin_const of rnd_proof_info * num
-  | Proof_rnd of rnd_proof_info
-  | Proof_simpl_eq of int * int
-  | Proof_simpl_add of int * int
-  | Proof_neg
-  | Proof_add
-  | Proof_sub
-  | Proof_mul
-  | Proof_inv
-  | Proof_sqrt
-  | Proof_sin
-  | Proof_cos
-  | Proof_atn
-  | Proof_exp
-  | Proof_log
-
-type proof_opt_type =
-  | Proof_opt_approx
-
-type proof_args = {
-  arg_indices : int list;
-  err_indices : int list;
-  bounds : float list;
-}
-
-type proof_step = {
-  step_index : int;
-  proof_op : proof_op;
-  proof_args : proof_args;
-}
-
-type proof_opt = {
-  opt_type : proof_opt_type;
-  opt_bounds : float list;
-  opt_indices : int list;
-  total_bound : float;
-}
-
-type proof = {
-  mutable proof_vars : proof_var list;
-  mutable proof_steps : proof_step list;
-  mutable proof_opts : proof_opt list;
-}
-
-let proof = {
-  proof_vars = [];
-  proof_steps = [];
-  proof_opts = [];
-}
-
-let save_proof fname =
-  let tmp = Lib.get_dir "proofs" in
-  let name = Filename.concat tmp fname in
-  let oc = open_out_bin name in
-  output_value oc proof;
-  close_out oc
-
-let load_proof fname =
-  let ic = open_in_bin fname in
-  let p : proof = input_value ic in
-  let _ = close_in ic in
-  p
+include Proof_base
 
 let mk_rnd_info bits c = {
   bits = bits;
@@ -126,8 +49,8 @@ let new_proof () =
   let vars0 = all_variables () in
   let vars = map (fun v -> {
     name = v.var_name;
-    low = v.lo_bound.Expr.rational_v;
-    high = v.hi_bound.Expr.rational_v;
+    low = Const.low_bound_to_num v.lo_bound;
+    high = Const.high_bound_to_num v.hi_bound;
   }) vars0 in
   proof.proof_vars <- vars;
   proof.proof_steps <- [];
@@ -226,3 +149,7 @@ let add_log_step i arg m1 m2 e2 b m3 m3_index =
 let add_opt_approx indices bounds total =
   let opt = Proof_opt_approx in
   add_proof_opt (mk_proof_opt opt indices bounds total)
+
+let add_opt_exact bound e_exp total =
+  let opt = Proof_opt_exact in
+  add_proof_opt (mk_proof_opt opt [] [bound; float_of_int e_exp] total)

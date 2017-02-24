@@ -2,7 +2,7 @@ FPTAYLOR_HOME=../..
 ROSA_HOME=~/Work/Solvers/rosa
 GAPPA_HOME=~/Work/Solvers/gappa-1.0.0/src
 
-ROSA=$(ROSA_HOME)/rosa --real  --specGen --z3Timeout=1000
+ROSA=$(ROSA_HOME)/rosa --real --specGen --z3Timeout=1000
 
 GAPPA=$(GAPPA_HOME)/gappa
 
@@ -21,6 +21,9 @@ rosa-f1: generated
 
 rosa-sqrt-sub: generated
 	$(ROSA) --functions=sqrt_sub rosa/benchmarks.scala
+
+rosa-sqrt-add: generated
+	$(ROSA) --functions=sqrt_add rosa/benchmarks.scala
 
 clean:
 	rm -rf tmp generated log *.log *~

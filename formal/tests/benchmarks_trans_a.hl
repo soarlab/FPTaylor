@@ -15,7 +15,7 @@ let add_result, get_result, print_results =
 let pp = 10;;
 
 let form_th, bound_th, time = validate pp "logexp.proof";;
-add_result "logexp" (trans_bound bound_th `#1.710 * &10 ipow (-- &15)`) time;;
+add_result "logexp" (trans_bound bound_th `#1.615 * &10 ipow (-- &15)`) time;;
 
 let form_th, bound_th, time = validate pp "sphere.proof";;
 add_result "sphere" (trans_bound bound_th `#1.288 * &10 ipow (-- &14)`) time;;
@@ -23,7 +23,7 @@ add_result "sphere" (trans_bound bound_th `#1.288 * &10 ipow (-- &14)`) time;;
 use_rat_verifier := false;;
 
 let form_th, bound_th, time = validate pp "azimuth.proof";;
-add_result "azimuth" (trans_bound bound_th `#1.409 * &10 ipow (-- &14)`) time;;
+add_result "azimuth" (trans_bound bound_th `#1.456 * &10 ipow (-- &14)`) time;;
 
 use_rat_verifier := true;;
 

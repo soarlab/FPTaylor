@@ -1,0 +1,11 @@
+Variables
+  float32 x in [600.0,1000.0];
+	
+Definitions
+  r1 rnd32= sqrt(x + 2)
+;
+
+Expressions
+  sqrt1 = r1
+;
+

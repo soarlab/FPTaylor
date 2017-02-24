@@ -1,0 +1,14 @@
+Absolute 32
+
+Benchmark	Test		FPTaylor	FPTaylor (dev)		Gappa
+
+sqroot		2.406e-07	2.813e-07	2.813e-07
+sine3		1.943e-07	3.604e-07	3.007e-07
+
+
+Absolute 64
+
+Benchmark	Test		FPTaylor	FPTaylor (dev)		Gappa
+
+sqroot		4.456e-16	5.239e-16	5.239e-16
+sine3		3.407e-16	6.715e-16	5.010e-16

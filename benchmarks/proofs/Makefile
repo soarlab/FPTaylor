@@ -2,6 +2,7 @@ FPTAYLOR_HOME=../..
 
 FPTAYLOR=$(FPTAYLOR_HOME)/fptaylor
 FPTAYLOR_A=$(FPTAYLOR) -c config.cfg
+FPTAYLOR_C=$(FPTAYLOR) -c config-c.cfg
 FPTAYLOR_TRANS_A=$(FPTAYLOR) -c config-trans-a.cfg
 
 tests:
@@ -30,6 +31,20 @@ taylor-a:
 	$(FPTAYLOR_A) func.txt
 	$(FPTAYLOR_A) turbine.txt
 	$(FPTAYLOR_A) jet.txt
+	find log -name "*.log" -exec awk '/---/,0' '{}' \;
+
+taylor-c:
+	rm -rf log tmp
+	$(FPTAYLOR_C) carbonGas.txt
+	$(FPTAYLOR_C) verhulst.txt
+	$(FPTAYLOR_C) predatorPrey.txt
+	$(FPTAYLOR_C) rigidBody.txt
+	$(FPTAYLOR_C) doppler1.txt
+	$(FPTAYLOR_C) doppler2.txt
+	$(FPTAYLOR_C) doppler3.txt
+	$(FPTAYLOR_C) func.txt
+	$(FPTAYLOR_C) turbine.txt
+	$(FPTAYLOR_C) jet.txt
 	find log -name "*.log" -exec awk '/---/,0' '{}' \;
 
 trans-a:

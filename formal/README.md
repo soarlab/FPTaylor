@@ -10,7 +10,16 @@ Requirements:
   The following [installation script](https://bitbucket.org/akrauss/hol-light-workbench) 
   can help to install HOL Light and compatible versions of OCaml and Camlp5.
 
-- [Nonlinear inequality verification tool.](https://github.com/monadius/formal_ineqs)
+  The script installs an old version of OCaml. It is not difficult to install HOL Light
+  if you have [OPAM](https://opam.ocaml.org):
+
+  1) Run `opam install camlp5`
+
+  2) `git clone https://github.com/jrh13/hol-light`
+
+  3) Run `make` inside the HOL Light directory
+
+- [Nonlinear inequalities verification tool.](https://github.com/monadius/formal_ineqs)
   Clone or download its source code to any directory on your machine.
 
 - [DMTCP](http://dmtcp.sourceforge.net/index.html) (Optional but recommended.)
@@ -32,6 +41,12 @@ is started. The setup process below assumes that DMTCP is installed.
 
 4) Now type
 
+    #use "hol.ml";;
+
+   If you get an error that `camlp5` libraries are not found
+   then exit (`#quit;;`) and run the following commands:
+
+    dmtcp_launch ocaml -I `camlp5 -where`
     #use "hol.ml";;
 
 5) Wait approximately 2 minutes until HOL Light core libraries are loaded. Type
@@ -72,6 +87,7 @@ First of all, it is necessary to prepare FPTaylor proof certificates. Go to `FPT
     make tests2
     make taylor-a
     make trans-a
+    make taylor-c
 
 These commands will create proof certificates for all FPTaylor benchmarks in the directory `FPTaylor/benchmarks/proofs/proofs`.
 
@@ -100,7 +116,7 @@ The following commands will verify some simple certificates:
     needs "tests/exp1x.hl";;
     needs "tests/hypot.hl";;
     needs "tests/sphere.hl";;
-    needs "test/sqrt_sub.hl";;
+    needs "tests/sqrt_sub.hl";;
 
 The next command will verify all FPTaylor benchmarks with polynomial and
 rational functions:
@@ -108,6 +124,13 @@ rational functions:
     needs "tests/benchmarks_a.hl";;
 
 It requires about 1 hour to complete this verification.
+
+The command
+
+    needs "tests/benchmarks_c.hl";;
+
+verifies the same problems as the previous command but with better error bounds
+(because exact optimization problems are verified: `opt-exact = true`). 
 
 The command
 

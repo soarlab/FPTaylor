@@ -1,0 +1,112 @@
+(* Set the correct (absolute) path to the FPTaylor/formal directory or
+   copy this file into that directory *)
+load_path := "~/FPTaylor/formal" :: !load_path;;
+
+needs "proof_rules.hl";;
+
+open Proof;;
+open Build_tform2;;
+open Proof_rules;;
+
+let prec = 10;;
+let x_tm, dom_tm, dom_vars, var_names = build_domain prec [
+  {name = "T"; low = Num.num_of_string "-30"; high = Num.num_of_string "50"};
+  {name = "v"; low = Num.num_of_string "20"; high = Num.num_of_string "20000"};
+  {name = "u"; low = Num.num_of_string "-100"; high = Num.num_of_string "100"};
+];;
+let dom = prec, dom_tm, dom_vars, var_names;;
+
+(* Taylor form theorems *)
+let tform_0 = rule_rnd_bin_const dom "1657/5"
+  {bits = 64; coefficient = 1.00000000000000000000e+00} (9) 2.56000000000000056843e+02 [1];;
+let tform_1 = rule_rnd_bin_const dom "3/5"
+  {bits = 64; coefficient = 1.00000000000000000000e+00} (0) 5.00000000000000111022e-01 [2];;
+let tform_2 = rule_rnd_bin_var dom (rev_assoc "T" var_names)
+  {bits = 64; coefficient = 1.00000000000000000000e+00} (6) 3.20000000000000071054e+01 [3];;
+let tform_3 = rule_mul dom 1.60000000000000142109e+01 (-106) [4] tform_1 tform_2;;
+let tform_4 = rule_rnd dom {bits = 64; coefficient = 1.00000000000000000000e+00}
+  4.90718576884319537966e-15 4.90718576884319695738e-15 [5; 6] tform_3;;
+let tform_5 = rule_add dom tform_0 tform_4;;
+let tform_6 = rule_rnd dom {bits = 64; coefficient = 1.00000000000000000000e+00}
+  3.66595642731226866353e-14 3.66595642731226992570e-14 [7; 8] tform_5;;
+let tform_7 = rule_neg dom tform_6;;
+let tform_8 = rule_rnd_bin_var dom (rev_assoc "v" var_names)
+  {bits = 64; coefficient = 1.00000000000000000000e+00} (15) 1.63840000000000036380e+04 [9];;
+let tform_9 = rule_mul dom 1.13311744000000096858e+07 (-106) [10] tform_7 tform_8;;
+let tform_10 = rule_rnd dom {bits = 64; coefficient = 1.00000000000000000000e+00}
+  2.19304325810299087688e-09 2.19304325810299170406e-09 [11; 12] tform_9;;
+let tform_11 = rule_rnd_bin_const dom "1657/5"
+  {bits = 64; coefficient = 1.00000000000000000000e+00} (9) 2.56000000000000056843e+02 [13];;
+let tform_12 = rule_rnd_bin_const dom "3/5"
+  {bits = 64; coefficient = 1.00000000000000000000e+00} (0) 5.00000000000000111022e-01 [14];;
+let tform_13 = rule_rnd_bin_var dom (rev_assoc "T" var_names)
+  {bits = 64; coefficient = 1.00000000000000000000e+00} (6) 3.20000000000000071054e+01 [15];;
+let tform_14 = rule_mul dom 1.60000000000000142109e+01 (-106) [16] tform_12 tform_13;;
+let tform_15 = rule_rnd dom {bits = 64; coefficient = 1.00000000000000000000e+00}
+  4.90718576884319537966e-15 4.90718576884319695738e-15 [17; 18] tform_14;;
+let tform_16 = rule_add dom tform_11 tform_15;;
+let tform_17 = rule_rnd dom {bits = 64; coefficient = 1.00000000000000000000e+00}
+  3.66595642731226866353e-14 3.66595642731226992570e-14 [19; 20] tform_16;;
+let tform_18 = rule_rnd_bin_var dom (rev_assoc "u" var_names)
+  {bits = 64; coefficient = 1.00000000000000000000e+00} (7) 6.40000000000000142109e+01 [21];;
+let tform_19 = rule_add dom tform_17 tform_18;;
+let tform_20 = rule_rnd dom {bits = 64; coefficient = 1.00000000000000000000e+00}
+  8.38884517406768812059e-14 8.38884517406769064494e-14 [22; 23] tform_19;;
+let tform_21 = rule_rnd_bin_const dom "1657/5"
+  {bits = 64; coefficient = 1.00000000000000000000e+00} (9) 2.56000000000000056843e+02 [24];;
+let tform_22 = rule_rnd_bin_const dom "3/5"
+  {bits = 64; coefficient = 1.00000000000000000000e+00} (0) 5.00000000000000111022e-01 [25];;
+let tform_23 = rule_rnd_bin_var dom (rev_assoc "T" var_names)
+  {bits = 64; coefficient = 1.00000000000000000000e+00} (6) 3.20000000000000071054e+01 [26];;
+let tform_24 = rule_mul dom 1.60000000000000142109e+01 (-106) [27] tform_22 tform_23;;
+let tform_25 = rule_rnd dom {bits = 64; coefficient = 1.00000000000000000000e+00}
+  4.90718576884319537966e-15 4.90718576884319695738e-15 [28; 29] tform_24;;
+let tform_26 = rule_add dom tform_21 tform_25;;
+let tform_27 = rule_rnd dom {bits = 64; coefficient = 1.00000000000000000000e+00}
+  3.66595642731226866353e-14 3.66595642731226992570e-14 [30; 31] tform_26;;
+let tform_28 = rule_rnd_bin_var dom (rev_assoc "u" var_names)
+  {bits = 64; coefficient = 1.00000000000000000000e+00} (7) 6.40000000000000142109e+01 [32];;
+let tform_29 = rule_add dom tform_27 tform_28;;
+let tform_30 = rule_rnd dom {bits = 64; coefficient = 1.00000000000000000000e+00}
+  8.38884517406768812059e-14 8.38884517406769064494e-14 [33; 34] tform_29;;
+let tform_31 = rule_mul dom 1.48108900000000162981e+06 (-106) [35] tform_20 tform_30;;
+let tform_32 = rule_rnd dom {bits = 64; coefficient = 1.00000000000000000000e+00}
+  1.24683330327002538219e-10 1.24683330327002589918e-10 [36; 37] tform_31;;
+let tform_33 = rule_inv dom 1.48318863857355444870e-10 1.78472916421875878906e+12 (-106) 1.05884772896325234772e-14 1.88975642234751675663e-02 [38] tform_32;;
+let tform_34 = rule_mul dom 1.73807855260912001540e+04 (-106) [39] tform_10 tform_33;;
+let tform_35 = rule_rnd dom {bits = 64; coefficient = 1.00000000000000000000e+00}
+  5.82714361570013562109e-13 5.82714361570013764057e-13 [40; 41] tform_34;;
+let tform_36 = rule_simpl_add dom 27 29 1.07479291468209919701e-14 (-53) [42] tform_35;;
+let tform_37 = rule_simpl_add dom 42 31 6.97008561282211796547e-14 (-53) [43] tform_36;;
+let tform_38 = rule_simpl_add dom 43 34 2.04603435253436144335e-13 (-53) [44] tform_37;;
+let tform_39 = rule_simpl_add dom 44 16 2.07460027717707552885e-13 (-53) [45] tform_38;;
+let tform_40 = rule_simpl_add dom 45 18 2.15351364400257212036e-13 (-53) [46] tform_39;;
+let tform_41 = rule_simpl_add dom 46 20 2.74304291381657462829e-13 (-53) [47] tform_40;;
+let tform_42 = rule_simpl_add dom 47 23 4.09206870506872440131e-13 (-53) [48] tform_41;;
+let tform_43 = rule_simpl_add dom 48 35 9.82308798919746948203e-13 (-53) [49] tform_42;;
+let tform_44 = rule_simpl_add dom 49 37 1.41686792754702826228e-12 (-53) [50] tform_43;;
+let tform_45 = rule_simpl_add dom 50 38 1.65815812134647143399e-11 (-53) [51] tform_44;;
+let tform_46 = rule_simpl_add dom 51 4 1.65823613513665350952e-11 (-53) [52] tform_45;;
+let tform_47 = rule_simpl_add dom 52 6 1.65845164823203057634e-11 (-53) [53] tform_46;;
+let tform_48 = rule_simpl_add dom 53 8 1.66006165782690283252e-11 (-53) [54] tform_47;;
+let tform_49 = rule_simpl_add dom 54 10 1.66282411989612914972e-11 (-53) [55] tform_48;;
+let tform_50 = rule_simpl_add dom 55 12 1.66763980818583418733e-11 (-53) [56] tform_49;;
+let tform_51 = rule_simpl_add dom 56 39 1.86060529095721569968e-11 (-53) [57] tform_50;;
+let tform_52 = rule_simpl_add dom 57 41 1.91887672711421755066e-11 (-53) [58] tform_51;;
+let tform_53 = rule_simpl_eq dom 24 13 tform_52;;
+let tform_54 = rule_simpl_eq dom 24 1 tform_53;;
+let tform_55 = rule_simpl_eq dom 25 14 tform_54;;
+let tform_56 = rule_simpl_eq dom 25 2 tform_55;;
+let tform_57 = rule_simpl_eq dom 26 15 tform_56;;
+let tform_58 = rule_simpl_eq dom 26 3 tform_57;;
+let tform_59 = rule_simpl_eq dom 28 17 tform_58;;
+let tform_60 = rule_simpl_eq dom 28 5 tform_59;;
+let tform_61 = rule_simpl_eq dom 30 19 tform_60;;
+let tform_62 = rule_simpl_eq dom 30 7 tform_61;;
+let tform_63 = rule_simpl_eq dom 32 21 tform_62;;
+let tform_64 = rule_simpl_eq dom 33 22 tform_63;;
+
+(* Verification of inequalities *)
+let result = verify_bounds prec
+  [2.17805829277674234845e+02; 1.29195583708608090490e+01; 1.63423829678957517331e+01; 1.55034700450329623322e+01; 2.66643185994890302482e+02; 1.12761950269172658068e+02; 1.37643718450507719808e+02; 8.25635179454462502235e+01; 2.75282290276849550992e+02; 1.37643718450507719808e+02; 1.37643718450507719808e+02; 1.91887672711421787378e-11]
+  1.56847128673849978611e-13 [24; 25; 26; 28; 30; 9; 11; 32; 33; 36; 40; 58] var_names tform_64;;

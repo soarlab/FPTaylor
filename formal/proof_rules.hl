@@ -1,0 +1,159 @@
+needs "build_tform2.hl";;
+
+module Proof_rules = struct
+
+open Proof;;
+open Misc_functions;;
+open Bin_float;;
+open Build_tform;;
+open Build_tform2;;
+
+let prove_hyps (pp, _, dom_vars, var_names) arg_ths th0 =
+  let hs_forall, hs = partition is_forall (hyp th0) in
+  let hs_rat, hs_other = partition (fun tm -> frees tm = []) hs in
+    try
+      let rat_ths = map prove_rat_hyp hs_rat in
+      let forall_ths = map (prove_forall_hyp pp var_names dom_vars arg_ths) hs_forall in
+      let other_ths = map (prove_other_hyp pp dom_vars arg_ths) hs_other in
+      let r = itlist MY_PROVE_HYP (forall_ths @ other_ths @ rat_ths) th0 in
+	if hyp r <> [] then failwith "non-empty assumptions" else r
+    with 
+      | Failure msg -> error ("prove_hyps: " ^ msg) (hyp th0) (th0 :: arg_ths)
+      | Not_found -> error "Not_found" (hyp th0) (th0 :: arg_ths);;
+
+let rule_var ((_, dom_tm, _, _) as dom) index =
+  let th0 = build_var_tform dom_tm index in
+    prove_hyps dom [] th0;;
+
+let rule_rnd_bin_var ((_, dom_tm, _, _) as dom) index rnd n b err_indices =
+  let n_tm = mk_intconst (Int n) and
+      b_tm = mk_bin_float b and
+      rnd_th = get_rnd_thm true rnd in
+  let th0 = build_rnd_bin_var_tform dom_tm index rnd_th n_tm b_tm err_indices in
+    prove_hyps dom [] th0;;
+
+let rule_const ((_, dom_tm, _, _) as dom) c =
+  let th0 = build_const_tform dom_tm (term_of_rat (Num.num_of_string c)) in
+    prove_hyps dom [] th0;;
+
+let rule_rnd_bin_const ((_, dom_tm, _, _) as dom) c rnd n b err_indices =
+  let c_tm = term_of_rat (Num.num_of_string c) and
+      n_tm = mk_intconst (Int n) and
+      b_tm = mk_bin_float b and
+      rnd_th = get_rnd_thm true rnd in
+  let th0 = build_rnd_bin_const_tform dom_tm c_tm rnd_th n_tm b_tm err_indices in
+    prove_hyps dom [] th0;;
+
+let rule_rnd dom rnd m2 b err_indices arg =
+  let m2_tm = mk_bin_float m2 and
+      b_tm = mk_bin_float b and
+      rnd_th = get_rnd_thm false rnd in
+  let th0 = build_rnd_tform rnd_th m2_tm b_tm err_indices arg in
+    prove_hyps dom [arg] th0;;
+
+let rule_neg dom arg =
+  let th0 = build_neg_tform arg in
+    prove_hyps dom [arg] th0;;
+
+let rule_add dom arg1 arg2 =
+  let th0 = build_add_tform arg1 arg2 in
+    prove_hyps dom [arg1; arg2] th0;;
+
+let rule_sub dom arg1 arg2 =
+  let th0 = build_sub_tform arg1 arg2 in
+    prove_hyps dom [arg1; arg2] th0;;
+
+let rule_mul dom m2 e err_indices arg1 arg2 =
+  let m2_tm = mk_bin_float m2 and
+      e_tm = mk_ipow2 (Int e) in
+  let th0 = build_mul_tform m2_tm e_tm err_indices arg1 arg2 in
+    prove_hyps dom [arg1; arg2] th0;;
+
+let rule_inv dom m1 m2 e2 b m3 err_indices arg =
+  let m1_tm = mk_bin_float m1 and
+      m2_tm = mk_bin_float m2 and
+      e2_tm = mk_ipow2 (Int e2) and
+      b_tm = mk_bin_float b and
+      m3_tm = mk_bin_float m3 in
+  let th0 = build_inv_tform m1_tm m2_tm e2_tm b_tm m3_tm err_indices arg in
+    prove_hyps dom [arg] th0;;
+
+let rule_sqrt dom m1 m2 e2 b m3 err_indices arg =
+  let m1_tm = mk_bin_float m1 and
+      m2_tm = mk_bin_float m2 and
+      e2_tm = mk_ipow2 (Int e2) and
+      b_tm = mk_bin_float b and
+      m3_tm = mk_bin_float m3 in
+  let th0 = build_sqrt_tform m1_tm m2_tm e2_tm b_tm m3_tm err_indices arg in
+    prove_hyps dom [arg] th0;;
+
+let rule_sin dom m1 m2 e2 b m3 err_indices arg =
+  let m1_tm = mk_bin_float m1 and
+      m2_tm = mk_bin_float m2 and
+      e2_tm = mk_ipow2 (Int e2) and
+      b_tm = mk_bin_float b and
+      m3_tm = mk_bin_float m3 in
+  let th0 = build_sin_tform m1_tm m2_tm e2_tm b_tm m3_tm err_indices arg in
+    prove_hyps dom [arg] th0;;
+
+let rule_cos dom m1 m2 e2 b m3 err_indices arg =
+  let m1_tm = mk_bin_float m1 and
+      m2_tm = mk_bin_float m2 and
+      e2_tm = mk_ipow2 (Int e2) and
+      b_tm = mk_bin_float b and
+      m3_tm = mk_bin_float m3 in
+  let th0 = build_cos_tform m1_tm m2_tm e2_tm b_tm m3_tm err_indices arg in
+    prove_hyps dom [arg] th0;;
+
+let rule_exp dom m1 m2 e2 b m3 err_indices arg =
+  let m1_tm = mk_bin_float m1 and
+      m2_tm = mk_bin_float m2 and
+      e2_tm = mk_ipow2 (Int e2) and
+      b_tm = mk_bin_float b and
+      m3_tm = mk_bin_float m3 in
+  let th0 = build_exp_tform m1_tm m2_tm e2_tm b_tm m3_tm err_indices arg in
+    prove_hyps dom [arg] th0;;
+
+let rule_log dom m1 m2 e2 b m3 err_indices arg =
+  let m1_tm = mk_bin_float m1 and
+      m2_tm = mk_bin_float m2 and
+      e2_tm = mk_ipow2 (Int e2) and
+      b_tm = mk_bin_float b and
+      m3_tm = mk_bin_float m3 in
+  let th0 = build_log_tform m1_tm m2_tm e2_tm b_tm m3_tm err_indices arg in
+    prove_hyps dom [arg] th0;;
+
+let rule_atn dom m1 m2 e2 b m3 err_indices arg =
+  let m1_tm = mk_bin_float m1 and
+      m2_tm = mk_bin_float m2 and
+      e2_tm = mk_ipow2 (Int e2) and
+      b_tm = mk_bin_float b and
+      m3_tm = mk_bin_float m3 in
+  let th0 = build_atn_tform m1_tm m2_tm e2_tm b_tm m3_tm err_indices arg in
+    prove_hyps dom [arg] th0;;
+
+let rule_simpl_eq dom i j arg =
+  let th0 = build_simpl_eq_tform i j arg in
+    prove_hyps dom [arg] th0;;
+
+let rule_simpl_add dom i j b e err_indices arg =
+  let b_tm = mk_bin_float b and
+      e_tm = mk_ipow2 (Int e) in
+  let th0 = build_simpl_add_tform i j b_tm e_tm err_indices arg in
+    prove_hyps dom [arg] th0;;
+
+let verify_bounds_approx pp bounds total indices var_names approx_th =
+  let bounds_tm0 = map mk_bin_float bounds in
+  let total_tm = mk_bin_float total in
+  let bounds_tm = get_bounds_tm bounds_tm0 indices approx_th in
+    prove_opt_approx pp var_names bounds_tm total_tm approx_th;;
+
+let verify_bounds_exact pp bounds total indices var_names approx_th =
+  let bound, e_exp = Lib.list_to_pair bounds in
+  let bound_tm = mk_bin_float bound in
+  let e_tm = mk_ipow2 (Int (int_of_float e_exp)) in
+  let total_tm = mk_bin_float total in
+    prove_opt_exact pp var_names bound_tm e_tm total_tm approx_th;;
+
+
+end;;

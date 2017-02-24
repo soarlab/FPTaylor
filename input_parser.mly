@@ -11,8 +11,7 @@
 %token EQ LE GE LT GT IN PLUS_MINUS
 
 %token <string> ID
-%token <string> INTEGER
-%token <string> NUMBER
+%token <string> NUMBER SINGLE_NUMERAL DOUBLE_NUMERAL
 
 %token CONSTANTS VARIABLES DEFINITIONS CONSTRAINTS EXPRESSIONS
 %token INT REAL 
@@ -26,7 +25,7 @@
 %token EXP LOG
 %token COS SIN TAN COSH SINH TANH
 %token ACOS ASIN ATAN ACOSH ASINH ATANH ATAN2
-%token FLOOR_POWER2 SYM_INTERVAL
+%token SUB2 FLOOR_POWER2
 
 %left PLUS MINUS
 %left MULT DIVIDE
@@ -161,8 +160,11 @@ rnd:
 
 expr:
   ID { Identifier $1 }
-  | INTEGER { Numeral $1 }
-  | NUMBER { Numeral $1 }
+  | NUMBER { Numeral (More_num.num_of_float_string $1) }
+  | SINGLE_NUMERAL 
+    { Raw_rounding (string_to_rounding "rnd32", Numeral (More_num.num_of_float_string $1)) }
+  | DOUBLE_NUMERAL 
+    { Raw_rounding (string_to_rounding "rnd64", Numeral (More_num.num_of_float_string $1)) }
   | rnd LPAREN expr RPAREN { Raw_rounding ($1, $3) }
   | expr PLUS expr { Raw_bin_op ("+", $1, $3) }
   | expr MINUS expr { Raw_bin_op ("-", $1, $3) }
@@ -171,8 +173,9 @@ expr:
   | MINUS expr %prec NEG { Raw_u_op ("-", $2) }
   | PLUS expr %prec NEG { $2 }
   | E_CONST POW expr { Raw_u_op ("exp", $3) }
-  | expr POW NUMBER { Raw_bin_op ("^", $1, Numeral $3) }
-  | expr POW LPAREN MINUS NUMBER RPAREN { Raw_bin_op ("^", $1, Numeral ("-" ^ $5)) }
+  | expr POW NUMBER { Raw_bin_op ("^", $1, Numeral (Num.num_of_string $3)) }
+  | expr POW LPAREN MINUS NUMBER RPAREN 
+      { Raw_bin_op ("^", $1, Numeral (Num.minus_num (Num.num_of_string $5))) }
   | LPAREN expr RPAREN { $2 }
   | ABS LPAREN expr RPAREN { Raw_u_op ("abs", $3) }
   | INV LPAREN expr RPAREN { Raw_u_op ("inv", $3) }
@@ -184,20 +187,20 @@ expr:
   | COS LPAREN expr RPAREN { Raw_u_op ("cos", $3) }
   | SIN LPAREN expr RPAREN { Raw_u_op ("sin", $3) }
   | TAN LPAREN expr RPAREN { Raw_u_op ("tan", $3) }
-  | MIN LPAREN expr COMMA expr RPAREN { raise TODO }
-  | MAX LPAREN expr COMMA expr RPAREN { raise TODO }
-  | COSH LPAREN expr RPAREN { raise TODO }
-  | SINH LPAREN expr RPAREN { raise TODO }
-  | TANH LPAREN expr RPAREN { raise TODO }
-  | ACOS LPAREN expr RPAREN { raise TODO }
-  | ASIN LPAREN expr RPAREN { raise TODO }
+  | MIN LPAREN expr COMMA expr RPAREN { Raw_bin_op ("min", $3, $5) }
+  | MAX LPAREN expr COMMA expr RPAREN { Raw_bin_op ("max", $3, $5) }
+  | COSH LPAREN expr RPAREN { Raw_u_op ("cosh", $3) }
+  | SINH LPAREN expr RPAREN { Raw_u_op ("sinh", $3) }
+  | TANH LPAREN expr RPAREN { Raw_u_op ("tanh", $3) }
+  | ACOS LPAREN expr RPAREN { Raw_u_op ("acos", $3) }
+  | ASIN LPAREN expr RPAREN { Raw_u_op ("asin", $3) }
   | ATAN LPAREN expr RPAREN { Raw_u_op ("atan", $3) }
-  | ACOSH LPAREN expr RPAREN { raise TODO }
-  | ASINH LPAREN expr RPAREN { raise TODO }
-  | ATANH LPAREN expr RPAREN { raise TODO }
+  | ACOSH LPAREN expr RPAREN { Raw_u_op ("acosh", $3) }
+  | ASINH LPAREN expr RPAREN { Raw_u_op ("asinh", $3) }
+  | ATANH LPAREN expr RPAREN { Raw_u_op ("atanh", $3) }
   | ATAN2 LPAREN expr COMMA expr RPAREN { raise TODO }
+  | SUB2 LPAREN expr COMMA expr RPAREN { Raw_bin_op ("sub2", $3, $5) }
   | FLOOR_POWER2 LPAREN expr RPAREN { Raw_u_op ("floor_power2", $3) }
-  | SYM_INTERVAL LPAREN expr RPAREN { Raw_u_op ("sym_interval", $3) }
 ;
 
 %%

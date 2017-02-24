@@ -1,0 +1,12 @@
+Constants
+	c = 0.09651229728906250000
+;
+
+Variables
+	real x in [-5.2, 5.2]
+;
+
+Expressions
+	e1 rnd64= c * x
+//	e2 rnd64  = x / 10
+;

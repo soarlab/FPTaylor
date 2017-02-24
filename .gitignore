@@ -13,12 +13,16 @@ input_parser.mli
 ref.html
 vm_instructions.html
 fptaylor
+proof_to_text
 ocamlfpu
 *~
 *.proof
+*.log
+generated/
 Fluctuat_*/
+gelpia/
 log/
 tmp/
 test/
 extra/
-
+.DS_Store

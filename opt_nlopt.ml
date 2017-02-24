@@ -3,7 +3,7 @@
 (*                                                                            *)
 (*      Author: Alexey Solovyev, University of Utah                           *)
 (*                                                                            *)
-(*      This file is distributed under the terms of the MIT licence           *)
+(*      This file is distributed under the terms of the MIT license           *)
 (* ========================================================================== *)
 
 (* -------------------------------------------------------------------------- *)
@@ -14,8 +14,9 @@ open Interval
 open List
 open Lib
 open Expr
-open Opt_utils
+open Opt_common
 
+(*
 (* nlopt C/C++ code generator *)
 type nlopt_pars = {
   nl_alg : int;
@@ -34,9 +35,15 @@ let nlopt_default = {
   nl_xtol_rel = 0.0;
   nl_maxeval = 20000;
 };;
+ *)
+
+type nlopt_pars = {
+  opt : Opt_common.opt_pars;
+  nl_alg : int;
+}
 
 
-let gen_nlopt_code pars fmt =
+let gen_nlopt_code (pars : nlopt_pars) fmt =
   let nl = Format.pp_print_newline fmt in
   let p str = Format.pp_print_string fmt str; nl () in
 (*  let p' str = Format.pp_print_string fmt str in*)
@@ -77,8 +84,8 @@ let gen_nlopt_code pars fmt =
     p (Format.sprintf "  nlopt_set_lower_bounds(opt, (double[])%s);" (str_of_array ls));
     p (Format.sprintf "  nlopt_set_upper_bounds(opt, (double[])%s);" (str_of_array us));
     p "  // Stopping criteria";
-    p (Format.sprintf "  nlopt_set_ftol_abs(opt, %f);" pars.nl_ftol_abs);
-    p (Format.sprintf "  nlopt_set_maxeval(opt, %d);" pars.nl_maxeval);
+    p (Format.sprintf "  nlopt_set_ftol_abs(opt, %f);" pars.opt.f_abs_tol);
+    p (Format.sprintf "  nlopt_set_maxeval(opt, %d);" pars.opt.max_iters);
     p "  // x0";
     p ("  double x_min[] = " ^ str_of_array ms ^ ";");
     p ("  double x_max[] = " ^ str_of_array ms ^ ";") in
@@ -110,14 +117,14 @@ let gen_nlopt_code pars fmt =
     main var_names var_bounds
 
     
-let min_max_expr ftol var_bound expr =
-  let tmp = Lib.get_dir "tmp" in
+let min_max_expr (pars : Opt_common.opt_pars) var_bound expr =
+  let tmp = Lib.get_tmp_dir () in
   let c_name = Filename.concat tmp "nlopt-f.c" in
   let exe_name = Filename.concat tmp "nlopt-f" in
-  let gen = gen_nlopt_code {nlopt_default with nl_ftol_abs = ftol} in
+  let gen = gen_nlopt_code {opt = pars; nl_alg = 0} in
   let _ = write_to_file c_name gen (var_bound, expr) in
-  let cc = Config.get_option "nlopt-cc" "gcc -std=c99 -O3" in
-  let cc_lib = Config.get_option "nlopt-lib" "-lnlopt -lm" in
+  let cc = Config.get_string_option "nlopt-cc" in
+  let cc_lib = Config.get_string_option "nlopt-lib" in
   let cmd = Format.sprintf "%s -o %s %s %s" cc exe_name c_name cc_lib in
   let out = run_cmd cmd in
   if out <> [] then

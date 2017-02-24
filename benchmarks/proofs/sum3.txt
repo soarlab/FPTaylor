@@ -1,0 +1,16 @@
+Variables
+  float32 x0 in [1.0, 2.0],
+  float32 x1 in [1.0, 2.0],
+  float32 x2 in [1.0, 2.0]
+;
+	
+Definitions
+  sum rnd32= (x0 + x1) + x2
+;
+  
+
+Expressions
+  sum3 = sum
+;
+
+

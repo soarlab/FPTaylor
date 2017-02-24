@@ -1,0 +1,22 @@
+Variables
+  float32 f in [-0.1, 0.1];
+
+Constants
+  Lg1 =      0xaaaaaa.0p-24,	// 0.66666662693
+  Lg2 =      0xccce13.0p-25,	// 0.40000972152
+  Lg3 =      0x91e9ee.0p-25,	// 0.28498786688
+  Lg4 =      0xf89e26.0p-26;	// 0.24279078841
+
+Definitions
+  s rnd32= f/(2.0+f),
+  z rnd32= s*s,
+  w rnd32= z*z,
+  t1 rnd32= w*(Lg2+w*Lg4),
+  t2 rnd32= z*(Lg1+w*Lg3),
+  R rnd32= t2+t1,
+  hfsq rnd32= 0.5*f*f;
+
+Expressions
+  k_log1pf rnd32= s*(hfsq+R);
+
+

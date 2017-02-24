@@ -1,0 +1,11 @@
+Variables
+  float64 x1 in [1, 100],
+  float64 x2 in [1, 100];
+	
+Definitions
+  r rnd64= sqrt(x1 * x1 + x2 * x2)
+;
+  
+Expressions
+  hypot64 = r
+;

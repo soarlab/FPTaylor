@@ -3,15 +3,13 @@
 (*                                                                            *)
 (*      Author: Alexey Solovyev, University of Utah                           *)
 (*                                                                            *)
-(*      This file is distributed under the terms of the MIT licence           *)
+(*      This file is distributed under the terms of the MIT license           *)
 (* ========================================================================== *)
 
 (* -------------------------------------------------------------------------- *)
 (* Auxiliary functions                                                        *)
 (* Some code is from HOL Light (lib.ml), the Flyspeck project, and nlcertify  *)
 (* -------------------------------------------------------------------------- *)
-
-open List
 
 (* -------------------------------------------------------------------------- *)
 (* "Set" operations on lists.                                                 *)
@@ -62,9 +60,9 @@ let union l1 l2 = itlist insert l1 l2
 
 let unions l = itlist union l []
 
-let intersect l1 l2 = filter (fun x -> mem x l2) l1
+let intersect l1 l2 = List.filter (fun x -> mem x l2) l1
 
-let subtract l1 l2 = filter (fun x -> not (mem x l2)) l1
+let subtract l1 l2 = List.filter (fun x -> not (mem x l2)) l1
 
 let rec assoc a = function
   | (k, v) :: t -> if k = a then v else assoc a t
@@ -100,17 +98,25 @@ let rec unzip = function
 
 let rec (--) = fun m n -> if m > n then [] else m::((m + 1) -- n);;
 
+let enumerate =
+  let rec enum acc i = function
+    | v :: vs -> enum ((i, v) :: acc) (succ i) vs
+    | [] -> List.rev acc
+  in
+  fun start list ->
+  enum [] start list
+ 
 (* -------------------------------------------------------------------------- *)
 (* String operations                                                          *)
 (* -------------------------------------------------------------------------- *)
 
-let implode l = itlist (^) l "";;
+let implode l = itlist (^) l ""
 
 let explode s =
   let rec exap n l =
       if n < 0 then l else
       exap (n - 1) ((String.sub s n 1)::l) in
-  exap (String.length s - 1) [];;
+  exap (String.length s - 1) []
 
 let print_list fp sep =
   let rec print = function
@@ -119,9 +125,17 @@ let print_list fp sep =
     | s1 :: s2 :: rest -> fp s1; sep(); print (s2 :: rest) in
   print
 
+let starts_with str ~prefix =
+  let n = String.length prefix in
+  if n > String.length str then
+    false
+  else
+    String.sub str 0 n = prefix
+
 (* -------------------------------------------------------------------------- *)
 (* IO operations.                                                             *)
 (* -------------------------------------------------------------------------- *)
+
 let load_and_close_channel do_close ic = 
   let rec lf ichan a = 
     try
@@ -129,7 +143,7 @@ let load_and_close_channel do_close ic =
     with End_of_file -> a in
     let rs = lf ic [] in
       if do_close then Pervasives.close_in ic else ();
-      rev rs
+      List.rev rs
 
 let load_file filename = 
   let ic = Pervasives.open_in filename in load_and_close_channel true ic
@@ -140,28 +154,46 @@ let run_cmd cmd =
   let _ = Unix.close_process (ic, oc) in
   s
 
-let write_to_file fname f a =
+let write_to_file fname writer arg =
   let oc = open_out fname in
   let fmt = Format.make_formatter (output oc) (fun () -> flush oc) in
-  let r = f fmt a in
-  let _ = close_out oc in
+  let r = writer fmt arg in
+  let () = close_out oc in
   r
+
+(* From hol_light/printer.ml *)
+let write_to_string writer =
+  let sbuff = ref "" in
+  let output s m n = sbuff := (!sbuff) ^ (String.sub s m n) and flush() = () in
+  let fmt = Format.make_formatter output flush in
+  ignore (Format.pp_set_max_boxes fmt 100);
+  fun arg -> ignore (writer fmt arg);
+             ignore (Format.pp_print_flush fmt ());
+             let s = !sbuff in
+             let () = sbuff := "" in
+             s
+
+(* Creates all missing directories in a given path *)
+let make_path ?(perm = 0o777) path =
+  let rec make path =
+    if Sys.file_exists path then
+      if Sys.is_directory path then ()
+      else failwith ("make_path: " ^ path)
+    else
+      begin
+        make (Filename.dirname path);
+        Unix.mkdir path perm
+      end
+  in
+  make path
 
 (* Creates a directory if it doesn't exist and returns its name *)
 let get_dir dir_name =
-  let _ = 
-    if Sys.file_exists dir_name then ()
-    else Unix.mkdir dir_name 0o777 in
+  let () = make_path dir_name in 
   dir_name
 
-(* From hol_light/printer.ml *)
-let print_to_string printer =
-  let sbuff = ref "" in
-  let output s m n = sbuff := (!sbuff)^(String.sub s m n) and flush() = () in
-  let fmt = Format.make_formatter output flush in
-  ignore(Format.pp_set_max_boxes fmt 100);
-  fun i -> ignore(printer fmt i);
-    ignore(Format.pp_print_flush fmt ());
-    let s = !sbuff in sbuff := ""; s
-
-
+let set_tmp_dir, get_tmp_dir =
+  let tmp_dir = ref "tmp" in
+  let set_tmp_dir path = tmp_dir := get_dir path in
+  let get_tmp_dir () = get_dir !tmp_dir in
+  set_tmp_dir, get_tmp_dir

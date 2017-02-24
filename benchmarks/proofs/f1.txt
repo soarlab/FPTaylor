@@ -1,0 +1,8 @@
+Variables
+  real x in [1, 999];
+
+Definitions
+  r rnd64= x / (x + 1);
+
+Expressions
+  f1 = r;

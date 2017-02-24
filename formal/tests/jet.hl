@@ -1,6 +1,6 @@
 needs "tests/utils.hl";;
 
 let bound_th, time = 
-  validate_bound 10 "jet.proof" `#1.484 * &10 ipow (-- &11)`;;
+  validate_bound 10 "jet.proof" `#1.495 * &10 ipow (-- &11)`;;
 
 

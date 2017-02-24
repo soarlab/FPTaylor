@@ -229,7 +229,7 @@ let prove_ineq pp (conv : conv) tm =
       let ineq_th, stats = M_verifier_main.verify_ineq M_verifier_main.default_params pp ineq_tm in
       let ineq_th1 = SPEC_ALL ineq_th in
       let imp_tm = mk_imp (concl ineq_th1, ineq_tm) in
-      let ineq_th2 = MP (REAL_ARITH imp_tm) ineq_th1 in
+      let ineq_th2 = MP (TAUT imp_tm) ineq_th1 in
 	ONCE_REWRITE_RULE[GSYM eq_th] (itlist GEN vars ineq_th2), 
         stats.M_verifier_main.total_time;;
 

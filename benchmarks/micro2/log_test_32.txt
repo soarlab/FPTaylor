@@ -1,0 +1,10 @@
+Variables
+  float32 x in [1.01, 2.0];
+	
+Definitions
+  r = rnd(32, ne, 1.8)(log(x))
+;
+
+Expressions
+  log_test_32 = r
+;

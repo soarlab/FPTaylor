@@ -3,7 +3,7 @@
 (*                                                                            *)
 (*      Author: Alexey Solovyev, University of Utah                           *)
 (*                                                                            *)
-(*      This file is distributed under the terms of the MIT licence           *)
+(*      This file is distributed under the terms of the MIT license           *)
 (* ========================================================================== *)
 
 (* -------------------------------------------------------------------------- *)
@@ -12,27 +12,16 @@
 
 open Interval
 open Num
-open Rounding
+open Binary_float
 open Expr
 open List
-
-let floor_power2_I x = {
-  low = floor_power2 x.low;
-  high = floor_power2 x.high
-}
-
-let sym_interval_I x = 
-  let f = (abs_I x).high in {
-    low = -.f;
-    high = f;
-  }
 
 (* Computes a floating-point value of an expression *)
 (* vars : string -> float is a function which associates 
    floating-point values with variable names *)
 let eval_float_expr vars =
   let rec eval = function
-    | Const c -> c.float_v
+    | Const c -> Const.to_float c
     | Var v -> vars v
     | Rounding _ as expr -> failwith ("eval_float_expr: Rounding is not supported: " ^
 					 print_expr_str expr)
@@ -47,11 +36,18 @@ let eval_float_expr vars =
 	  | Op_sin -> sin x
 	  | Op_cos -> cos x
 	  | Op_tan -> tan x
+	  | Op_asin -> asin x
+	  | Op_acos -> acos x
 	  | Op_atan -> atan x
 	  | Op_exp -> exp x
 	  | Op_log -> log x
-	  | Op_floor_power2 -> floor_power2 x
-	  | Op_sym_interval -> 0.0
+	  | Op_sinh -> sinh x
+	  | Op_cosh -> cosh x
+	  | Op_tanh -> tanh x
+	  | Op_asinh -> Func.asinh x
+	  | Op_acosh -> Func.acosh x
+	  | Op_atanh -> Func.atanh x
+	  | Op_floor_power2 -> Func.floor_power2 x
 	  | _ -> failwith ("eval_float_expr: Unsupported unary operation: " 
 			   ^ op_name op)
       end
@@ -64,7 +60,11 @@ let eval_float_expr vars =
 	  | Op_sub -> x1 -. x2
 	  | Op_mul -> x1 *. x2
 	  | Op_div -> x1 /. x2
+          | Op_max -> max x1 x2
+          | Op_min -> min x1 x2
 	  | Op_nat_pow -> x1 ** x2
+	  | Op_sub2 -> Func.sub2 (x1, x2)
+          | Op_abs_err -> Func.abs_err (x1, x2)
 	  | _ -> failwith ("eval_float_expr: Unsupported binary operation: " 
 			   ^ op_name op)
       end
@@ -88,10 +88,12 @@ let eval_float_const_expr =
 let eval_num_expr vars =
   let one = Int 1 in
   let rec eval = function
-    | Const c -> c.rational_v
+    | Const c -> begin
+        try Const.to_num c
+        with Failure _ -> failwith "eval_num_expr: interval constant"
+      end
     | Var v -> vars v
-    | Rounding _ as expr -> failwith ("eval_num_expr: Rounding is not supported: " ^
-					 print_expr_str expr)
+    | Rounding (rnd, arg) -> round_num rnd (eval arg)
     | U_op (op, arg) ->
       begin
 	let x = eval arg in
@@ -111,6 +113,8 @@ let eval_num_expr vars =
 	  | Op_sub -> x1 -/ x2
 	  | Op_mul -> x1 */ x2
 	  | Op_div -> x1 // x2
+          | Op_max -> max_num x1 x2
+          | Op_min -> min_num x1 x2
 	  | Op_nat_pow -> x1 **/ x2
 	  | _ -> failwith ("eval_num_expr: Unsupported binary operation: " 
 			   ^ op_name op)
@@ -134,7 +138,7 @@ let eval_num_const_expr =
    inteval values with variable names *)
 let eval_interval_expr vars =
   let rec eval = function
-    | Const c -> c.interval_v
+    | Const c -> Const.to_interval c
     | Var v -> vars v
     | Rounding _ as expr -> failwith ("eval_interval_expr: Rounding is not supported: " ^
 					 print_expr_str expr)
@@ -149,11 +153,18 @@ let eval_interval_expr vars =
 	  | Op_sin -> sin_I x
 	  | Op_cos -> cos_I x
 	  | Op_tan -> tan_I x
+	  | Op_asin -> asin_I x
+	  | Op_acos -> acos_I x
 	  | Op_atan -> atan_I x
 	  | Op_exp -> exp_I x
 	  | Op_log -> log_I x
-	  | Op_floor_power2 -> floor_power2_I x
-	  | Op_sym_interval -> sym_interval_I x
+	  | Op_sinh -> sinh_I x
+	  | Op_cosh -> cosh_I x
+	  | Op_tanh -> tanh_I x
+	  | Op_asinh -> Func.asinh_I x
+	  | Op_acosh -> Func.acosh_I x
+	  | Op_atanh -> Func.atanh_I x
+	  | Op_floor_power2 -> Func.floor_power2_I x
 	  | _ -> failwith ("eval_interval_expr: Unsupported unary operation: " 
 			   ^ op_name op)
       end
@@ -170,7 +181,11 @@ let eval_interval_expr vars =
 	    else
 	      x1 *$ eval arg2
 	  | Op_div -> x1 /$ eval arg2
+          | Op_max -> max_I_I x1 (eval arg2)
+          | Op_min -> min_I_I x1 (eval arg2)
 	  | Op_nat_pow -> x1 **$. (eval_float_const_expr arg2)
+	  | Op_sub2 -> Func.sub2_I (x1, eval arg2)
+          | Op_abs_err -> Func.abs_err_I (x1, eval arg2)
 	  | _ -> failwith ("eval_interval_expr: Unsupported binary operation: " 
 			   ^ op_name op)
       end
@@ -189,8 +204,8 @@ let eval_interval_const_expr =
   eval_interval_expr (fun v -> failwith ("eval_interval_const_expr: Var " ^ v))
 
 
-let eval_const_expr e = {
-  rational_v = eval_num_const_expr e;
-  float_v = eval_float_const_expr e;
-  interval_v = eval_interval_const_expr e;
-}
+let eval_const_expr e = 
+  Log.report 4 "eval_const_expr: %s" (print_expr_str e);
+  let n = eval_num_const_expr e in
+  Log.report 4 "result: %s" (string_of_num n);
+  Const.of_num n

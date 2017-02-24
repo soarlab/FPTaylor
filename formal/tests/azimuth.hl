@@ -10,7 +10,7 @@ let result = prove_bound pp proof tf;;
 *)
 
 let form_th, bound_th, time = validate pp "azimuth.proof";;
-let result_th = trans_bound bound_th `#1.409 * &10 ipow (-- &14)`;;
+let result_th = trans_bound bound_th `#1.456 * &10 ipow (-- &14)`;;
 
 use_rat_verifier := true;;
 

@@ -3,7 +3,7 @@
 (*                                                                            *)
 (*      Author: Alexey Solovyev, University of Utah                           *)
 (*                                                                            *)
-(*      This file is distributed under the terms of the MIT licence           *)
+(*      This file is distributed under the terms of the MIT license           *)
 (* ========================================================================== *)
 
 (* -------------------------------------------------------------------------- *)
@@ -16,16 +16,12 @@ open Lib
 open Interval
 open Rounding
 
-type evaluated_const = {
-  rational_v : num;
-  float_v : float;
-  interval_v : interval;
-}
-
 (* Operations *)
 type op_type = 
   | Op_neg
   | Op_abs
+  | Op_max
+  | Op_min
   | Op_add
   | Op_sub
   | Op_mul
@@ -35,17 +31,26 @@ type op_type =
   | Op_sin
   | Op_cos
   | Op_tan
+  | Op_asin
+  | Op_acos
   | Op_atan
   | Op_exp
   | Op_log
+  | Op_sinh
+  | Op_cosh
+  | Op_tanh
+  | Op_asinh
+  | Op_acosh
+  | Op_atanh
   | Op_fma
   | Op_nat_pow
+  | Op_sub2
+  | Op_abs_err
   | Op_floor_power2
-  | Op_sym_interval
 
 (* Expression *)
 type expr =
-  | Const of evaluated_const
+  | Const of Const.t
   | Var of string
   | Rounding of rnd_info * expr
   | U_op of op_type * expr
@@ -67,22 +72,46 @@ let mk_const c = Const c and
     mk_sin a = U_op (Op_sin, a) and
     mk_cos a = U_op (Op_cos, a) and
     mk_tan a = U_op (Op_tan, a) and
+    mk_asin a = U_op (Op_asin, a) and
+    mk_acos a = U_op (Op_acos, a) and
     mk_atan a = U_op (Op_atan, a) and
     mk_exp a = U_op (Op_exp, a) and
     mk_log a = U_op (Op_log, a) and
+    mk_sinh a = U_op (Op_sinh, a) and
+    mk_cosh a = U_op (Op_cosh, a) and
+    mk_tanh a = U_op (Op_tanh, a) and
+    mk_asinh a = U_op (Op_asinh, a) and
+    mk_acosh a = U_op (Op_acosh, a) and
+    mk_atanh a = U_op (Op_atanh, a) and
+    mk_max a b = Bin_op (Op_max, a, b) and
+    mk_min a b = Bin_op (Op_min, a, b) and
     mk_add a b = Bin_op (Op_add, a, b) and
     mk_sub a b = Bin_op (Op_sub, a, b) and
     mk_mul a b = Bin_op (Op_mul, a, b) and
     mk_div a b = Bin_op (Op_div, a, b) and
     mk_nat_pow a b = Bin_op (Op_nat_pow, a, b) and
     mk_fma a b c = Gen_op (Op_fma, [a; b; c]) and
-    mk_floor_power2 a = U_op (Op_floor_power2, a) and
-    mk_sym_interval a = U_op (Op_sym_interval, a)
+    mk_sub2 a b = Bin_op (Op_sub2, a, b) and
+    mk_abs_err t x = Bin_op (Op_abs_err, t, x) and
+    mk_floor_power2 a = U_op (Op_floor_power2, a)
+
+let mk_int_const i = mk_const (Const.of_int i) and
+    mk_num_const n = mk_const (Const.of_num n) and
+    mk_float_const f = mk_const (Const.of_float f) and
+    mk_interval_const v = mk_const (Const.of_interval v)
+                                   
+let mk_floor_sub2 a b = mk_floor_power2 (mk_sub2 a b)
+
+let const_0 = mk_int_const 0 and
+    const_1 = mk_int_const 1 and
+    const_2 = mk_int_const 2 and
+    const_3 = mk_int_const 3 and
+    const_4 = mk_int_const 4 and
+    const_5 = mk_int_const 5
 
 let rec eq_expr e1 e2 =
   match (e1, e2) with
-    | (Const c1, Const c2) ->
-      c1.rational_v =/ c2.rational_v
+    | (Const c1, Const c2) -> Const.eq_c c1 c2
     | (Var v1, Var v2) -> v1 = v2
     | (Rounding (r1, a1), Rounding (r2, a2)) when r1 = r2 -> 
       eq_expr a1 a2
@@ -126,6 +155,8 @@ let op_name_in_env env op =
     match op with
       | Op_neg -> "-"
       | Op_abs -> "abs"
+      | Op_max -> "max"
+      | Op_min -> "min"
       | Op_add -> "+"
       | Op_sub -> "-"
       | Op_mul -> "*"
@@ -135,13 +166,22 @@ let op_name_in_env env op =
       | Op_sin -> "sin"
       | Op_cos -> "cos"
       | Op_tan -> "tan"
+      | Op_asin -> "asin"
+      | Op_acos -> "acos"
       | Op_atan -> "atan"
       | Op_exp -> "exp"
       | Op_log -> "log"
+      | Op_sinh -> "sinh"
+      | Op_cosh -> "cosh"
+      | Op_tanh -> "tanh"
+      | Op_asinh -> "asinh"
+      | Op_acosh -> "acosh"
+      | Op_atanh -> "atanh"
       | Op_fma -> "fma"
       | Op_nat_pow -> "^" 
+      | Op_sub2 -> "sub2"
+      | Op_abs_err -> "abs_err"
       | Op_floor_power2 -> "floor_power2"
-      | Op_sym_interval -> "sym_interval"
 
 let is_infix_in_env env op =
   let b, r = env.env_op_infix op in
@@ -166,9 +206,43 @@ let c_print_env = {
 
   env_print = (fun p _ e ->
     match e with
-      | Const f -> 
-	let _ = p ("(" ^ string_of_float f.float_v ^ ")") in
+      | Const c -> 
+	let _ = p ("(" ^ string_of_float (Const.to_float c) ^ ")") in
 	true
+      | _ -> false);
+}
+
+let gelpia_print_env = {
+  env_op_name = (function
+    | Op_nat_pow -> true, "pow"
+    | _ -> false, "");
+
+  env_op_infix = (function
+    | Op_nat_pow -> true, false
+    | _ -> false, false);
+
+  env_print = (fun p print e ->
+    match e with
+      | Const c ->
+         let v = Const.to_interval c in
+	 let _ = p (Format.sprintf "interval(%.20e, %.20e)" v.low v.high) in
+	 true
+      | Bin_op (Op_nat_pow, arg1, arg2) ->
+	begin
+	  match arg2 with
+	  | Const c -> begin
+	       let n = try Const.to_num c
+                       with Failure _ -> failwith "Op_nat_pow: interval exponent" in
+	       if is_integer_num n && n >/ Int 0 then
+		 let _ =
+		   p "pow("; print arg1; p ", ";
+		   p (string_of_num n); p ")" in
+		 true
+	       else
+		 failwith "Op_nat_pow: non-integer exponent"
+            end
+	  | _ -> failwith "Op_nat_pow: non-constant exponent"
+	end
       | _ -> false);
 }
 
@@ -176,7 +250,13 @@ let z3py_print_env = {
   env_op_name = (fun op ->
     match op with
       | Op_nat_pow -> true, "**"
-      | Op_abs | Op_sin | Op_cos | Op_tan | Op_atan | Op_exp | Op_log
+      | Op_abs -> true, "z3_abs"
+      | Op_min -> true, "z3_min"
+      | Op_max -> true, "z3_max"
+      | Op_sin | Op_cos | Op_tan | Op_asin | Op_acos | Op_atan 
+      | Op_exp | Op_log 
+      | Op_sinh | Op_cosh | Op_tanh | Op_asinh | Op_acosh | Op_atanh
+      | Op_sub2 | Op_floor_power2 | Op_abs_err
 	-> failwith ("z3py: " ^ op_name op ^ " is not supported")
       | _ -> false, "");
 
@@ -185,15 +265,17 @@ let z3py_print_env = {
 
   env_print = (fun p _ e ->
     match e with
-      | Const f -> 
+    | Const c -> begin
+        let n = try Const.to_num c
+                with Failure _ -> failwith "z3py: interval constants are not supported" in
 	let s = Big_int.string_of_big_int in
-	let n = f.rational_v in
 	let ns = s (More_num.numerator n) and
 	    ds = s (More_num.denominator n) in
 (*	let _ = p ("(" ^ string_of_num f.rational_v ^ ")") in *)
 	let _ = p ("(Q(" ^ ns ^ "," ^ ds ^ "))") in
 	true
-      | _ -> false);
+      end
+    | _ -> false);
 }
 
 let ocaml_float_print_env = {
@@ -204,9 +286,12 @@ let ocaml_float_print_env = {
     | Op_mul -> true, "*."
     | Op_div -> true, "/."
     | Op_abs -> true, "abs_float"
+    | Op_max -> true, "(fun (x, y) -> max x y)"
+    | Op_min -> true, "(fun (x, y) -> min x y)"
     | Op_nat_pow -> true, "**"
+    | Op_sub2 -> true, "sub2"
+    | Op_abs_err -> true, "abs_err"
     | Op_floor_power2 -> true, "floor_power2"
-    | Op_sym_interval -> true, "sym_interval_float"
     | _ -> false, "");
 
   env_op_infix = (function
@@ -215,8 +300,8 @@ let ocaml_float_print_env = {
   env_print = (fun p _ e ->
     match e with
       | Var v -> let _ = p ("var_" ^ v) in true
-      | Const f -> 
-	let _ = p ("(" ^ string_of_float f.float_v ^ ")") in
+      | Const c -> 
+	let _ = p ("(" ^ string_of_float (Const.to_float c) ^ ")") in
 	true
       | _ -> false);
 }
@@ -229,17 +314,28 @@ let ocaml_interval_print_env = {
     | Op_mul -> true, "*$"
     | Op_div -> true, "/$"
     | Op_abs -> true, "abs_I"
+    | Op_max -> true, "(fun (x, y) -> max_I_I x y)"
+    | Op_min -> true, "(fun (x, y) -> min_I_I x y)"
     | Op_inv -> true, "inv_I"
     | Op_sqrt -> true, "sqrt_I"
     | Op_sin -> true, "sin_I"
     | Op_cos -> true, "cos_I"
     | Op_tan -> true, "tan_I"
+    | Op_asin -> true, "asin_I"
+    | Op_acos -> true, "acos_I"
     | Op_atan -> true, "atan_I"
     | Op_exp -> true, "exp_I"
     | Op_log -> true, "log_I"
+    | Op_sinh -> true, "sinh_I"
+    | Op_cosh -> true, "cosh_I"
+    | Op_tanh -> true, "tanh_I"
+    | Op_asinh -> true, "asinh_I"
+    | Op_acosh -> true, "acosh_I"
+    | Op_atanh -> true, "atanh_I"
     | Op_nat_pow -> true, "**$"
+    | Op_sub2 -> true, "sub2_I"
+    | Op_abs_err -> true, "abs_err_I"
     | Op_floor_power2 -> true, "floor_power2_I"
-    | Op_sym_interval -> true, "sym_interval_I"
     | _ -> false, "");
 
   env_op_infix = (function
@@ -248,15 +344,16 @@ let ocaml_interval_print_env = {
   env_print = (fun p print e ->
     match e with
       | Var name -> let _ = p ("var_" ^ name) in true
-      | Const f -> 
-	let _ = p (Format.sprintf "{low = %.30e; high = %.30e}" 
-		     f.interval_v.low f.interval_v.high) in
-	true
+      | Const c ->
+         let v = Const.to_interval c in
+	 let _ = p (Format.sprintf "{low = %.20e; high = %.20e}" v.low v.high) in
+	 true
       | Bin_op (Op_nat_pow, arg1, arg2) ->
 	begin
 	  match arg2 with
-	    | Const f -> 
-	      let n = f.rational_v in
+	  | Const c -> begin
+              let n = try Const.to_num c
+                      with Failure _ -> failwith "Op_nat_pow: interval exponent" in
 	      if is_integer_num n && n >/ Int 0 then
 		let _ =
 		  p "(pow_I_i ";
@@ -266,7 +363,8 @@ let ocaml_interval_print_env = {
 		true
 	      else
 		failwith "Op_nat_pow: non-integer exponent"
-	    | _ -> failwith "Op_nat_pow: non-constant exponent"
+            end
+	  | _ -> failwith "Op_nat_pow: non-constant exponent"
 	end
       | _ -> false);
 }
@@ -283,12 +381,20 @@ let racket_interval_env_op_name = function
   | Op_sin -> true, "isin"
   | Op_cos -> true, "icos"
   | Op_tan -> true, "itan"
+  | Op_asin -> true, "iasin"
+  | Op_acos -> true, "iacos"
   | Op_atan -> true, "iatan"
   | Op_exp -> true, "iexp"
   | Op_log -> true, "ilog"
+  | Op_sinh -> true, "isinh"
+  | Op_cosh -> true, "icosh"
+  | Op_tanh -> true, "itanh"
+  | Op_asinh -> true, "iasinh"
+  | Op_acosh -> true, "iacosh"
+  | Op_atanh -> true, "iatanh"
   | Op_nat_pow -> true, "iexpt"
+  | Op_sub2 -> true, "isub2"
   | Op_floor_power2 -> true, "ifloor-pow2"
-  | Op_sym_interval -> true, "sym-interval"
   | _ -> false, ""
 
 let racket_interval_print_env = {
@@ -307,12 +413,20 @@ let racket_interval_print_env = {
     let _ =
       match e with
 	| Var name -> p (name ^ "-var")
-	| Const f -> 
-	  let s = Big_int.string_of_big_int in
-	  let n = f.rational_v in
-	  let ns = s (More_num.numerator n) and
-	      ds = s (More_num.denominator n) in
-	  p (Format.sprintf "(make-interval %s/%s)" ns ds)
+	| Const c -> 
+	   let s = Big_int.string_of_big_int in
+           let a, b =
+             if Const.is_rat_const c then
+	       let n = Const.to_num c in
+               n, n
+             else
+               let v = Const.to_interval c in
+               More_num.num_of_float v.low, More_num.num_of_float v.high in
+	   let na = s (More_num.numerator a) and
+	       da = s (More_num.denominator a) and
+               nb = s (More_num.numerator b) and
+               db = s (More_num.denominator b) in
+	   p (Format.sprintf "(make-interval %s/%s %s/%s)" na da nb db)
 	| U_op (op, arg) ->
 	  begin
 	    p "("; 
@@ -351,7 +465,12 @@ let print_expr_in_env env fmt =
     let b = env.env_print p print e in
     if b then () else
       match e with
-	| Const f -> p ("(" ^ string_of_num f.rational_v ^ ")")
+        | Const c ->
+           if Const.is_rat_const c then
+             p ("(" ^ string_of_num (Const.to_num c) ^ ")")
+           else
+             let v = Const.to_interval c in
+             p (Format.sprintf "interval(%.20e, %.20e)" v.low v.high)
 	| Var v -> p v
 	| Rounding (rnd, arg) ->
 	  begin
@@ -398,9 +517,9 @@ let print_expr_in_env env fmt =
 let print_expr = print_expr_in_env def_print_env
 
 let print_expr_std = print_expr Format.std_formatter
-let print_expr_str = print_to_string print_expr
+let print_expr_str = write_to_string print_expr
 
-let print_expr_str_in_env env = print_to_string (print_expr_in_env env)
+let print_expr_str_in_env env = write_to_string (print_expr_in_env env)
 
 
 (* 
@@ -408,35 +527,11 @@ let print_expr_str_in_env env = print_to_string (print_expr_in_env env)
 * with a floating point number 
 *)
 let is_fp_exact eps c =
-  if c.interval_v.low <> c.float_v || c.interval_v.high <> c.float_v then
+  let v = Const.to_interval c in
+  if v.low <> v.high then
     false
   else
-    let _ = Log.issue_warning (eps <> 2.0 ** (-53.0))
-      "is_fp_exact: possible inexact result for eps <> eps64" in
+    let () = if eps <> 2.0 ** (-53.0) then
+               Log.warning 0 "is_fp_exact: possible inexact result for eps <> eps64" in
     true
 	  
-let const_of_num n = {
-  rational_v = n;
-  float_v = float_of_num n;
-  interval_v = More_num.interval_of_num n;
-}
-
-let const_of_int n = const_of_num (num_of_int n)
-
-let mk_int_const i = mk_const (const_of_int i)
-
-let const_of_float f = {
-  rational_v = More_num.num_of_float f;
-  float_v = f;
-  interval_v = {low = f; high = f};
-}
-
-
-let const_0 = mk_int_const 0
-let const_1 = mk_int_const 1
-let const_2 = mk_int_const 2
-let const_3 = mk_int_const 3
-let const_4 = mk_int_const 4
-let const_5 = mk_int_const 5
-
-

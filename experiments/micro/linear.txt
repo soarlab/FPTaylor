@@ -1,0 +1,13 @@
+Constants
+  a = -1e+10,
+  b = 1e+10;
+
+Variables
+  float64 x0 in [a, b],
+  float64 x1 in [a, b],
+  float64 x2 in [a, b],
+  float64 x3 in [a, b],
+  float64 x4 in [a, b];
+
+Expressions
+  y0 rnd64= (((((-0.793176*x0)+(0.154365*x1))+(-0.377883*x2))+(-0.360608*x3))+(-0.142123*x4));

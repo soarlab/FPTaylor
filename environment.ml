@@ -3,7 +3,7 @@
 (*                                                                            *)
 (*      Author: Alexey Solovyev, University of Utah                           *)
 (*                                                                            *)
-(*      This file is distributed under the terms of the MIT licence           *)
+(*      This file is distributed under the terms of the MIT license           *)
 (* ========================================================================== *)
 
 (* -------------------------------------------------------------------------- *)
@@ -19,7 +19,7 @@ open Interval
 
 type raw_expr =
   | Identifier of string
-  | Numeral of string
+  | Numeral of num
   | Raw_rounding of rnd_info * raw_expr
   | Raw_u_op of string * raw_expr
   | Raw_bin_op of string * raw_expr * raw_expr
@@ -32,16 +32,16 @@ type raw_formula =
 
 type constant_def = {
   const_name : string;
-  value : evaluated_const;
+  value : Const.t;
 }
 
 type var_def = {
   var_type : value_type;
   var_name : string;
   var_index : int;
-  lo_bound : evaluated_const;
-  hi_bound : evaluated_const;
-  uncertainty : evaluated_const;
+  lo_bound : Const.t;
+  hi_bound : Const.t;
+  uncertainty : Const.t;
 }
 
 type definition = {
@@ -98,14 +98,10 @@ let get_active_constraints () =
   env.active_constraints
 
 let variable_interval name =
-  let v = find_variable name in {
-    low = v.lo_bound.interval_v.low;
-    high = v.hi_bound.interval_v.high;
-  }
-
-let is_same_bounds name =
-  let v = find_variable name in
-  v.lo_bound.rational_v =/ v.hi_bound.rational_v
+  let var = find_variable name in {
+      low = (Const.to_interval var.lo_bound).low;
+      high = (Const.to_interval var.hi_bound).high;
+    }
 
 let get_low_bound name =
   let v = find_variable name in
@@ -163,11 +159,18 @@ let rec transform_raw_expr = function
 	| "sin" -> U_op (Op_sin, e1)
 	| "cos" -> U_op (Op_cos, e1)
 	| "tan" -> U_op (Op_tan, e1)
+	| "asin" -> U_op (Op_asin, e1)
+	| "acos" -> U_op (Op_acos, e1)
 	| "atan" -> U_op (Op_atan, e1)
 	| "exp" -> U_op (Op_exp, e1)
 	| "log" -> U_op (Op_log, e1)
+	| "sinh" -> U_op (Op_sinh, e1)
+	| "cosh" -> U_op (Op_cosh, e1)
+	| "tanh" -> U_op (Op_tanh, e1)
+	| "asinh" -> U_op (Op_asinh, e1)
+	| "acosh" -> U_op (Op_acosh, e1)
+	| "atanh" -> U_op (Op_atanh, e1)
 	| "floor_power2" -> U_op (Op_floor_power2, e1)
-	| "sym_interval" -> U_op (Op_sym_interval, e1)
 	| _ -> failwith ("transform_raw_expr: Unknown unary operation: " ^ str)
     end
   | Raw_bin_op (str, arg1, arg2) -> 
@@ -179,7 +182,10 @@ let rec transform_raw_expr = function
 	| "-" -> Bin_op (Op_sub, e1, e2)
 	| "*" -> Bin_op (Op_mul, e1, e2)
 	| "/" -> Bin_op (Op_div, e1, e2)
+        | "max" -> Bin_op (Op_max, e1, e2)
+        | "min" -> Bin_op (Op_min, e1, e2)
 	| "^" -> Bin_op (Op_nat_pow, e1, e2)
+	| "sub2" -> Bin_op (Op_sub2, e1, e2)
 	| _ -> failwith ("transform_raw_expr: Unknown binary operation: " ^ str)
     end
   | Raw_gen_op (str, args) ->
@@ -189,13 +195,7 @@ let rec transform_raw_expr = function
 	| "fma" -> Gen_op (Op_fma, es)
 	| _ -> failwith ("transform_raw_expr: Unknown operation: " ^ str)
     end
-  | Numeral str ->
-    let c = {
-      rational_v = More_num.num_of_float_string str;
-      float_v = float_of_string str;
-      interval_v = More_num.interval_of_string str;
-    } in
-    Const c
+  | Numeral n -> mk_num_const n
   | Identifier name ->
     try let def = find_definition name in def.def_expr
     with Not_found ->
@@ -225,6 +225,13 @@ let add_constant name raw =
     } in
     Hashtbl.add env.constants name c
 
+let is_same_bounds lo hi =
+  try
+    let a = Const.to_num lo and
+        b = Const.to_num hi in
+    a =/ b
+  with _ -> false
+
 (* Adds a variable to the environment *)
 let add_variable_with_uncertainty var_type name lo hi uncertainty =
   if Hashtbl.mem env.variables name then
@@ -233,18 +240,26 @@ let add_variable_with_uncertainty var_type name lo hi uncertainty =
     let lo_expr = transform_raw_expr lo and
 	hi_expr = transform_raw_expr hi and
 	u_expr = transform_raw_expr uncertainty in
-    let v = {
-      var_type = var_type;
-      var_name = name;
-      var_index = max_var_index () + 1;
-      lo_bound = eval_const_expr lo_expr;
-      hi_bound = eval_const_expr hi_expr;
-      uncertainty = eval_const_expr u_expr;
-    } in
-    Hashtbl.add env.variables name v
+    let lo_bound = eval_const_expr lo_expr and
+        hi_bound = eval_const_expr hi_expr in
+    if var_type = real_type && is_same_bounds lo_bound hi_bound then
+      begin
+        Log.report 2 "Variable %s is a constant" name;
+        add_constant name lo
+      end
+    else
+      let v = {
+          var_type = var_type;
+          var_name = name;
+          var_index = max_var_index () + 1;
+          lo_bound = eval_const_expr lo_expr;
+          hi_bound = eval_const_expr hi_expr;
+          uncertainty = eval_const_expr u_expr;
+        } in
+      Hashtbl.add env.variables name v
 
 let add_variable var_type name lo hi =
-  add_variable_with_uncertainty var_type name lo hi (Numeral "0")
+  add_variable_with_uncertainty var_type name lo hi (Numeral (Int 0))
 
 (* Adds a definition to the environment *)
 let add_definition name raw =
@@ -279,7 +294,7 @@ let print_raw_expr fmt =
   let p = Format.pp_print_string fmt in
   let rec print = function
     | Identifier name -> p name
-    | Numeral n -> p n
+    | Numeral n -> p (string_of_num n)
     | Raw_rounding (rnd, e) ->
       p (rounding_to_string rnd); p "("; print e; p ")";
     | Raw_u_op (op, e) -> 

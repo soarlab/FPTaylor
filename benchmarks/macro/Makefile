@@ -48,11 +48,9 @@ taylor-b:
 	$(FPTAYLOR_B) FPTaylor/verhulst.txt
 	$(FPTAYLOR_B) FPTaylor/predatorPrey.txt
 	$(FPTAYLOR_B) FPTaylor/rigidBody.txt
-# A simple branch and bound method cannot find exact maximum;
-# use approximations
-	$(FPTAYLOR_B) -c FPTaylor/approx.cfg FPTaylor/doppler1.txt
-	$(FPTAYLOR_B) -c FPTaylor/approx.cfg FPTaylor/doppler2.txt
-	$(FPTAYLOR_B) -c FPTaylor/approx.cfg FPTaylor/doppler3.txt
+	$(FPTAYLOR_B) FPTaylor/doppler1.txt
+	$(FPTAYLOR_B) FPTaylor/doppler2.txt
+	$(FPTAYLOR_B) FPTaylor/doppler3.txt
 	$(FPTAYLOR_B) FPTaylor/func.txt
 	$(FPTAYLOR_B) FPTaylor/turbine.txt
 	$(FPTAYLOR_B) FPTaylor/jet.txt

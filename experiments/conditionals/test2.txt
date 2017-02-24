@@ -1,0 +1,6 @@
+Variables
+  float64 a in [0, 1],
+  float64 b in [0, 1];
+
+Expressions
+  else rnd64= b / 0.5;

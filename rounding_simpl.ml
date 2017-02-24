@@ -3,7 +3,7 @@
 (*                                                                            *)
 (*      Author: Alexey Solovyev, University of Utah                           *)
 (*                                                                            *)
-(*      This file is distributed under the terms of the MIT licence           *)
+(*      This file is distributed under the terms of the MIT license           *)
 (* ========================================================================== *)
 
 (* -------------------------------------------------------------------------- *)
@@ -16,6 +16,7 @@ open Num
 open Rounding
 open Expr
 open Interval
+open Binary_float
 module Env = Environment
 
 exception Exceptional_operation of expr * string
@@ -23,23 +24,52 @@ exception Exceptional_operation of expr * string
 
 let is_power_of_2_or_0 e =
   match e with
-    | Const c -> 
-      let n = c.rational_v in
+    | Const c when Const.is_rat_const c -> 
+      let n = Const.to_num c in
       n =/ Int 0 || More_num.is_power_of_two n
     | _ -> false
 
+let is_neg_power_of_2 e =
+  match e with
+    | Const c when Const.is_rat_const c ->
+      let n = Const.to_num c in
+      if n <>/ Int 0 then
+	More_num.is_power_of_two (Int 1 // n)
+      else
+	false
+    | _ -> false
 
 let rec get_type e =
   match e with
-    | Const _ -> real_type
+  | Const c ->
+     if Const.is_rat_const c then
+       let n = Const.to_num c in
+       (* TODO: a universal procedure is required *)
+       let rnd = string_to_rounding "rnd32" in
+       if round_num rnd n =/ n then
+	 rnd.fp_type
+       else
+	 let rnd = string_to_rounding "rnd64" in
+	 if round_num rnd n =/ n then
+	   rnd.fp_type
+	 else
+	   real_type
+     else
+       real_type
     | Var name -> Env.get_var_type name
     | U_op (op, arg) ->
       begin
 	let arg_type = get_type arg in
 	match op with
-	  | Op_neg -> arg_type
+	  | Op_neg | Op_abs -> arg_type
 	  | _ -> real_type
       end
+    | Bin_op (Op_min, arg1, arg2) | Bin_op (Op_max, arg1, arg2) ->
+       let ty1 = get_type arg1 and
+           ty2 = get_type arg2 in
+       if is_subtype ty1 ty2 then ty2
+       else if is_subtype ty2 ty1 then ty1
+       else real_type
     | Bin_op (Op_mul, arg1, arg2) ->
       if is_power_of_2_or_0 arg1 then 
 	get_type arg2
@@ -90,8 +120,8 @@ let simplify_rounding =
 		if (is_subtype (get_type e1) rnd.fp_type && 
 		      is_subtype (get_type e2) rnd.fp_type &&
 		      not Config.proof_flag) then
-		(* Delta = 0 *)
-		  Rounding ({rnd with delta_exp = 0}, arg)
+		(* delta = 0 *)
+		  Rounding ({rnd with delta_exp = 0; special_flag = true;}, arg)
 		else
 		  Rounding (rnd, arg)
 	      (* Multiplication *)
@@ -99,13 +129,29 @@ let simplify_rounding =
 		  (is_power_of_2_or_0 e1 && is_subtype (get_type e2) rnd.fp_type) 
 		  || (is_power_of_2_or_0 e2 && is_subtype (get_type e1) rnd.fp_type) ->
 		arg
+	      | Bin_op (Op_mul, e1, e2) when 
+		  (is_neg_power_of_2 e1 && is_subtype (get_type e2) rnd.fp_type) 
+		  || (is_neg_power_of_2 e2 && is_subtype (get_type e1) rnd.fp_type) ->
+		if Config.proof_flag then
+		  (* FIXME: this is not the correct step but the formalization
+		     does not define the required rounding operation *)
+		  arg
+		else
+		  Rounding ({rnd with eps_exp = 0}, arg)
 	      (* Division *)
 	      | Bin_op (Op_div, e1, e2) when
 		  is_power_of_2_or_0 e2 && 
 		    is_subtype (get_type e1) rnd.fp_type &&
 		    not Config.proof_flag ->
-		(* Eps = 0 *)
+		(* eps = 0 *)
 		Rounding ({rnd with eps_exp = 0}, arg)
+	      | Bin_op (Op_div, e1, e2) when
+		  is_neg_power_of_2 e2 && is_subtype (get_type e1) rnd.fp_type ->
+		arg
+	      (* Square root *)
+	      | U_op (Op_sqrt, e1) ->
+		(* delta = 0 *)
+		Rounding ({rnd with delta_exp = 0}, arg)
 	      | _ -> Rounding (rnd, arg)
 	end 
   in
@@ -143,7 +189,7 @@ let check_interval x =
 let check_expr vars =
   let rec eval e =
     let r = match e with
-      | Const c -> c.interval_v
+      | Const c -> Const.to_interval c
       | Var v -> vars v
       | Rounding (rnd, e1) ->
 	let r1 = eval e1 in
@@ -170,6 +216,16 @@ let check_expr vars =
 	  | Op_sin -> sin_I x
 	  | Op_cos -> cos_I x
 	  | Op_tan -> tan_I x
+	  | Op_asin ->
+	    if x.low < -1.0 || x.high > 1.0 then
+	      raise (Exceptional_operation (e, "Arcsine of an invalid argument"))
+	    else
+	      asin_I x
+	  | Op_acos ->
+	    if x.low < -1.0 || x.high > 1.0 then
+	      raise (Exceptional_operation (e, "Arccosine of an invalid argument"))
+	    else
+	      acos_I x
 	  | Op_atan -> atan_I x
 	  | Op_exp -> exp_I x
 	  | Op_log -> 
@@ -177,8 +233,21 @@ let check_expr vars =
 	      raise (Exceptional_operation (e, "Log of non-positive number"))
 	    else
 	      log_I x
-	  | Op_floor_power2 -> Eval.floor_power2_I x
-	  | Op_sym_interval -> Eval.sym_interval_I x
+	  | Op_sinh -> sinh_I x
+	  | Op_cosh -> cosh_I x
+	  | Op_tanh -> tanh_I x
+	  | Op_asinh -> Func.asinh_I x
+	  | Op_acosh ->
+	    if x.low < 1.0 then
+	      raise (Exceptional_operation (e, "arcosh of x < 1.0"))
+	    else
+	      Func.acosh_I x
+	  | Op_atanh ->
+	    if x.low <= -1.0 || x.high >= 1.0 then
+	      raise (Exceptional_operation (e, "artanh of an argument outside of (-1, 1)"))
+	    else
+	      Func.atanh_I x
+	  | Op_floor_power2 -> Func.floor_power2_I x
 	  | _ -> failwith ("check_expr: Unsupported unary operation: " 
 			   ^ op_name op)
 	end
@@ -200,8 +269,10 @@ let check_expr vars =
 		raise (Exceptional_operation (e, "Division by zero"))
 	      else
 		x1 /$ x2
+            | Op_max -> max_I_I x1 (eval arg2)
+            | Op_min -> min_I_I x1 (eval arg2)
 	    | Op_nat_pow -> x1 **$. (Eval.eval_float_const_expr arg2)
-	    | _ -> failwith ("eval_interval_expr: Unsupported binary operation: " 
+	    | _ -> failwith ("check_expr: Unsupported binary operation: " 
 			     ^ op_name op)
 	end
       | Gen_op (op, args) ->
@@ -209,7 +280,7 @@ let check_expr vars =
 	  let xs = map eval args in
 	  match (op, xs) with
 	    | (Op_fma, [a;b;c]) -> (a *$ b) +$ c
-	    | _ -> failwith ("eval_interval_expr: Unsupported general operation: " 
+	    | _ -> failwith ("check_expr: Unsupported general operation: " 
 			     ^ op_name op)
 	end
     in

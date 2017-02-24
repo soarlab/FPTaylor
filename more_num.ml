@@ -3,7 +3,7 @@
 (*                                                                            *)
 (*      Author: Alexey Solovyev, University of Utah                           *)
 (*                                                                            *)
-(*      This file is distributed under the terms of the MIT licence           *)
+(*      This file is distributed under the terms of the MIT license           *)
 (* ========================================================================== *)
 
 (* -------------------------------------------------------------------------- *)
@@ -20,84 +20,87 @@ let numerator = function
 
 let denominator = function
   | Ratio r -> Ratio.denominator_ratio r
-  | _ -> Big_int.big_int_of_int 1
+  | _ -> Big_int.unit_big_int
 
-let decode_num_str str =
-  let int_of_string str =
-    let s = if str.[0] = '+' then 
-	String.sub str 1 (String.length str - 1) 
-      else
-	str in
-    Pervasives.int_of_string s in
+type gen_float = {
+  base : int;
+  significand : num;
+  exponent : num;
+}
+
+let num_of_gen_float f =
+  (* Bound the exponent to avoid huge numbers *)
+  if f.exponent <=/ Int (-100000) || f.exponent >=/ Int 100000 then
+    failwith "num_of_gen_float: the exponent is out of bounds"
+  else
+    f.significand */ (Int f.base **/ f.exponent)
+
+let decode_num_str =
   let split_at str ch = 
+    let n = String.length str in
     let i = try String.index str ch with Not_found -> -1 in
-    if i < 0 || i >= String.length str then
+    if i < 0 || i >= n then
       str, ""
     else
       String.sub str 0 i,
-      String.sub str (i + 1) (String.length str - i - 1) in
-  let s_int, s2 = split_at str '.' in
-  let s_int, s_dec, s_exp =
-    if s2 = "" then
-      let s1, s2 = split_at s_int 'e' in
-      s1, "", s2
+      String.sub str (i + 1) (n - i - 1) 
+  in
+  let starts_with str prefix =
+    let len_str = String.length str and
+	len_p = String.length prefix in
+    if len_p > len_str then
+      false
     else
-      let s1, s2 = split_at s2 'e' in
-      s_int, s1, s2 in
-  let m_int = Big_int.big_int_of_string (s_int ^ s_dec) and
-      n_exp = if s_exp <> "" then int_of_string s_exp else 0 in
-  let exp = n_exp - String.length s_dec in
-  m_int, exp
+      String.sub str 0 len_p = prefix
+  in
+  let extract_exp str =
+    let s1, s2 = split_at str 'p' in
+    if s2 <> "" then
+      s1, 2, s2
+    else
+      let s1, s2 = split_at str 'e' in
+      if s2 <> "" then
+	s1, 10, s2
+      else
+	s1, 10, "0"
+  in
+  let compute_exp_shift hex base s_frac =
+    let n = String.length s_frac in
+    if n = 0 then 0 else
+      match (hex, base) with
+	| true, 2 -> n * 4
+	| false, 10 -> n
+	| _ -> failwith "Fractional part is not allowed for the given base"
+  in
+  fun str ->
+    let hex = starts_with str "0x" || starts_with str "-0x" in
+    let s_significand, base, s_exp = extract_exp str in
+    let s_int, s_frac = split_at s_significand '.' in
+    let exp_shift = compute_exp_shift hex base s_frac in
+    {
+      base = base;
+      significand = num_of_string (s_int ^ s_frac);
+      exponent = num_of_string s_exp -/ Int exp_shift;
+    }
 
 let num_of_float_string str =
-  let m, exp = decode_num_str str in
-  let t = power_num (Int 10) (Int exp) in
-  Big_int m */  t
+  num_of_gen_float (decode_num_str str)
 
-let interval_of_big_int =
-  let max, (<), (>>), (&) = 
-    Big_int.power_int_positive_int 2 32,
-    Big_int.lt_big_int,
-    Big_int.shift_right_big_int,
-    Big_int.and_big_int in
-  let mask = Big_int.pred_big_int max in
-  let max_f = Big_int.float_of_big_int max in
-  let rec pos_big_int n =
-    if n < max then
-      let v = Big_int.float_of_big_int n in
-      {low = v; high = v}
-    else
-      let i1 = pos_big_int (n >> 32) in
-      let i2 = pos_big_int (n & mask) in
-      (max_f *.$ i1) +$ i2 in
-  fun n ->
-    if (Big_int.sign_big_int n >= 0) then
-      pos_big_int n
-    else
-      ~-$ (pos_big_int (Big_int.abs_big_int n))
-
-let interval_of_num n =
-  let p = interval_of_big_int (numerator n) and
-      q = interval_of_big_int (denominator n) in
-  p /$ q
-
-let interval_of_string str =
-  let n = num_of_float_string str in
-  interval_of_num n
-
-let num_of_float =
-  let base = Int (1 lsl 10) in
-  let rec to_num f =
-    if f <= 0.0 then Int 0
-    else
-      let d = int_of_float f in
-      let f' = ldexp (f -. float_of_int d) 10 in
-      Int d +/ (to_num f' // base) in
-  fun f ->
-    let m, e = frexp f in
-    let m, sign = if m < 0.0 then -.m, true else m, false in
-    let n = to_num m */ (Int 2 **/ Int e) in
-    if sign then minus_num n else n
+let is_nan x = (compare x nan = 0)
+                  
+let num_of_float x =
+  match classify_float x with
+  | FP_nan | FP_infinite ->
+     let msg = Printf.sprintf "num_of_float: %e" x in
+     if Config.fail_on_exception then
+       failwith msg
+     else
+       (Log.warning 0 "%s" msg; Int 0)
+  | FP_zero -> Int 0
+  | FP_normal | FP_subnormal ->
+     let m, e = frexp x in
+     let t = Int64.of_float (ldexp m 53) in
+     num_of_big_int (Big_int.big_int_of_int64 t) */ (Int 2 **/ Int (e - 53))
 
 let is_exact str =
   let f = float_of_string str in
@@ -115,9 +118,110 @@ let is_power_of_two n =
   else
     false
 
-let next_float =
-  let t = ldexp 1.0 (-53) in
-  fun f ->
-    let m, e = frexp f in
-    ldexp (m +. t) e
+let next_float x =
+  match classify_float x with
+  | FP_nan -> nan
+  | FP_infinite ->
+     if x = infinity then x else nan
+  | FP_zero -> ldexp 1. (-1074)
+  | _ ->
+     begin
+       let bits = Int64.bits_of_float x in
+       if x < 0. then
+         Int64.float_of_bits (Int64.pred bits)
+       else
+         Int64.float_of_bits (Int64.succ bits)
+     end
+                               
+let prev_float x =
+  match classify_float x with
+  | FP_nan -> nan
+  | FP_infinite ->
+     if x = neg_infinity then x else nan
+  | FP_zero -> ldexp (-1.) (-1074)
+  | _ ->
+     begin
+       let bits = Int64.bits_of_float x in
+       if x < 0. then
+         Int64.float_of_bits (Int64.succ bits)
+       else
+         Int64.float_of_bits (Int64.pred bits)
+     end
 
+(* Returns the integer binary logarithm of big_int.
+   Returns -1 for non-positive numbers. *)
+let log2_big_int_simple =
+  let rec log2 acc k =
+    if Big_int.sign_big_int k <= 0 then acc
+    else log2 (acc + 1) (Big_int.shift_right_big_int k 1) in
+  log2 (-1)
+
+let log2_big_int =
+  let p = 32 in
+  let u = Big_int.power_int_positive_int 2 p in
+  let rec log2 acc k =
+    if Big_int.ge_big_int k u then
+      log2 (acc + p) (Big_int.shift_right_big_int k p)
+    else
+      acc + log2_big_int_simple k in
+  log2 0
+
+(* Returns the integer binary logarithm of the absolute value of num. *)
+let log2_num r =
+  let log2 r = log2_big_int (big_int_of_num (floor_num r)) in
+  let r = abs_num r in
+  if r </ Int 1 then
+    let t = -log2 (Int 1 // r) in
+    if (Int 2 **/ Int t) =/ r then t else t - 1
+  else log2 r
+
+let float_of_pos_num_lo r =
+  assert (sign_num r >= 0);
+  if sign_num r = 0 then 0.
+  else begin
+      let n = log2_num r in
+      let k = min (n + 1074) 52 in
+      if k < 0 then 0.0
+      else
+        let m = big_int_of_num (floor_num ((Int 2 **/ Int (k - n)) */ r)) in
+        let f = Int64.to_float (Big_int.int64_of_big_int m) in
+        let x = ldexp f (n - k) in
+        if x = infinity then max_float else x
+    end
+
+let float_of_pos_num_hi r =
+  assert (sign_num r >= 0);
+  if sign_num r = 0 then 0.0
+  else begin
+      let n = log2_num r in
+      let k = min (n + 1074) 52 in
+      if k < 0 then ldexp 1.0 (-1074)
+      else
+        let t = (Int 2 **/ Int (k - n)) */ r in
+        let m0 = floor_num t in
+        let m = if t =/ m0 then big_int_of_num m0
+                else Big_int.succ_big_int (big_int_of_num m0) in
+        let f = Int64.to_float (Big_int.int64_of_big_int m) in
+        ldexp f (n - k)
+    end
+        
+let float_of_num_lo r =
+  if sign_num r < 0 then
+    -. float_of_pos_num_hi (minus_num r)
+  else
+    float_of_pos_num_lo r
+
+let float_of_num_hi r =
+  if sign_num r < 0 then
+    -. float_of_pos_num_lo (minus_num r)
+  else
+    float_of_pos_num_hi r
+
+let interval_of_num n = {
+    low = float_of_num_lo n;
+    high = float_of_num_hi n
+  }
+
+let interval_of_string str =
+  let n = num_of_float_string str in
+  interval_of_num n

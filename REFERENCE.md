@@ -261,10 +261,17 @@ with the appropriately selected rounding operator.
 3. `exp` exponent
 4. `log` logarithm
 5. `tan` tangent
-6. `atan` arctangent
+6. `asin` (or `arcsin`) arcsine
+7. `acos` (or `arccos`) arccosine
+8. `atan` (or `arctan`) arctangent
+9. `sinh` hyperbolic sine
+10. `cosh` hyperbolic cosine
+11. `tanh` hyperbolic tangent
+12. `asinh` (or `arsinh`, `arcsinh`, `argsinh`) inverse hyperbolic sine
+13. `acosh` (or `arcosh`, `arccosh`, `argcosh`) inverse hyperbolic cosine
+14. `atanh` (or `artanh`, `arctanh`, `argtanh`) inverse hyperbolic tangent
 
-Other transcendental functions will be added to FPTaylor
-soon. Transcendental functions may be not supported by some
+Transcendental functions may be not supported by some
 optimization backends of FPTaylor. The default optimization backend
 (interval branch and bound, `bb`) supports all operations.
 
@@ -427,7 +434,7 @@ support exact optimization problems.
 
 ### `opt`
 
-Possible values: `bb`, `z3`, and `nlopt`.
+Possible values: `bb`, `z3`, `gelpia`, and `nlopt`
 
 Specifies the optimization backend of FPTaylor.
 
@@ -441,6 +448,14 @@ Specifies the optimization backend of FPTaylor.
   binding must work. This optimization backend does not support
   transcendental functions, exact optimization problems, and the
   improved rounding model.
+
+- `gelpia` is the optimization backend based on
+  [Gelpia](https://github.com/keram88/gelpia).  Gelpia must be
+  installed and the environment variable `GELPIA_PATH` should point to
+  the Gelpia base directory. Alternatively, Gelpia can be copied
+  directly to the FPTaylor base directory. This optimization backend
+  supports the improved rounding model and it is generally faster than
+  the default optimization backend `bb`.
 
 - `nlopt` is the optimization backend based on the [NLOpt optimization
   library](http://ab-initio.mit.edu/wiki/index.php/NLopt). This
@@ -462,9 +477,8 @@ expressions. These proof certificates can be validated with a special
 procedure in the HOL Light proof assistant. All proof certificates are
 saved in the `proofs` directory (relative to the directory from which
 FPTaylor is invoked). In the current version of FPTaylor, proof
-certificates cannot be produced for exact optimization problems
-(`opt-exact = true`), for the improved rounding model
-(`fp-power2-model = true`), and for relative errors (`rel-error =
+certificates cannot be produced for the improved rounding model
+(`fp-power2-model = true`) and for relative errors (`rel-error =
 true`).
 
 
@@ -484,7 +498,7 @@ end. This summary contains the following information
   optimization problem if `abs-error = true` and `opt-approx = true`.
 
 - The relative round-off error obtained with the exact optimization
-  problem if `rel-error = true` and `opt-approx = true`.
+  problem if `rel-error = true` and `opt-exact = true`.
 
 - The relative round-off error obtained with the approximate
   optimization problem if `rel-error = true` and `opt-approx = true`.
