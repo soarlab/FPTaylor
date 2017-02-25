@@ -1,0 +1,57 @@
+#!/bin/bash
+
+base_dir=$1
+in_file=$2
+out_file=$3
+
+if [ -z "$base_dir" ]; then
+    base_dir=".."
+fi
+
+if [ -z "$out_file" ]; then
+    out_file="bb"
+fi
+    
+if [ -z "$in_file" ]; then
+    echo "No input file"
+    exit 1
+fi
+
+b_and_b_dir="$base_dir/b_and_b"
+
+compile_native_with_INTERVAL()
+{
+    interval_dir="$base_dir/INTERVAL"
+    ocamlopt -o "$out_file" -I "$interval_dir" -I "$b_and_b_dir"\
+	     "$interval_dir/libinterval.a" "$interval_dir/interval.cmxa"\
+	     "$b_and_b_dir/opt_func.ml" "$b_and_b_dir/opt0.ml"\
+	     "$in_file"
+}
+
+compile_byte_with_INTERVAL()
+{
+    interval_dir="$base_dir/INTERVAL"
+    ocamlc -o "$out_file" -I "$interval_dir" -I "$b_and_b_dir"\
+	   "$interval_dir/chcw.o" "$interval_dir/interval.cma"\
+	   "$b_and_b_dir/opt_func.ml" "$b_and_b_dir/opt0.ml"\
+	   "$in_file"
+}
+
+compile_native_with_simple_interval()
+{
+    interval_dir="$base_dir/simple_interval/fast_interval"
+    ocamlopt -o "$out_file" -I "$interval_dir" -I "$b_and_b_dir"\
+	     "$interval_dir/fast_interval.cmxa"\
+	     "$b_and_b_dir/opt_func.ml" "$b_and_b_dir/opt0.ml"\
+	     "$in_file"
+}
+
+compile_byte_with_simple_interval()
+{
+    interval_dir="$base_dir/simple_interval/fast_interval"
+    ocamlc -o "$out_file" -I "$interval_dir" -I "$b_and_b_dir"\
+	   "$interval_dir/fast_interval.cma"\
+	   "$b_and_b_dir/opt_func.ml" "$b_and_b_dir/opt0.ml"\
+	   "$in_file"
+}
+

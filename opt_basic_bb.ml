@@ -24,7 +24,7 @@ let gen_bb_opt_code (pars : Opt_common.opt_pars) max_only fmt =
 
   let head () = 
     p "open Interval";
-    p "open Func";
+    p "open Opt_func";
     p "" in
 
   let tail_opt0 () =
@@ -135,7 +135,7 @@ let min_max_expr (pars : Opt_common.opt_pars) max_only var_bound e =
 	  abs_float fmax, abs_float (fmax -. lower_max) in
       Log.report 4 "iterations(%d, %d): %d" 
 	         iter_max iter_min (max iter_max iter_min);
-      Log.report 4 "lower_max = %e, lower_min = %e, subopt = %e (%e)"
+      Log.report 4 "lower_max = %e, lower_min = %e, subopt = %e (%.1f%%)"
 	         lower_max lower_min subopt (subopt /. opt *. 100.0)
     end;
   fmin, fmax
