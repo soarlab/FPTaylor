@@ -15,7 +15,7 @@ Requirements
 
 - [OCaml](http://ocaml.org/) version 4.00.0 or higher with a native compiler (do
   not forget `make opt` if you are building from source code). 
-  A recommended way to install OCaml is with [`OPAM`](https://opam.ocaml.org/doc/Install.html)
+  A recommended way to install OCaml is with [OPAM](https://opam.ocaml.org/doc/Install.html)
 
 - (Included) Interval computation library for OCaml. It is distributed with
   FPTaylor (see [INTERVAL](INTERVAL)). There is also an alternative
