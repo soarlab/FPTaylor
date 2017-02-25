@@ -24,7 +24,7 @@ let gen_bb_opt_code (pars : Opt_common.opt_pars) max_only fmt =
 
   let head () = 
     p "open Interval";
-    p "open Func";
+    p "open Opt_func";
     p "" in
 
   let tail_opt0 () =
