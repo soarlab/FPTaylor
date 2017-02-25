@@ -159,7 +159,7 @@ let errors =
 	  Log.report_str 1 "\nSolving the exact optimization problem";
 	  let abs_exprs = map (fun (e, err) -> mk_abs e, err.exp) v1 in
 	  let full_expr', exp = sum_symbolic abs_exprs in
-	  let full_expr = if Config.get_bool_option "simplification" then
+	  let full_expr = if Config.get_bool_option "maxima-simplification" then
                             Maxima.simplify full_expr'
                           else
                             full_expr' in
@@ -199,7 +199,7 @@ let errors =
       let v1, v2 = split f.v1 in
       let v1 = map (fun (e, err) -> mk_div e f.v0, err) v1 in
       let v1 = 
-	if Config.get_bool_option "simplificaiton" then
+	if Config.get_bool_option "maxima-simplification" then
           map (fun (e, err) -> Maxima.simplify e, err) v1
         else
           v1 in
@@ -228,7 +228,7 @@ let errors =
 	    Log.report_str 1 "\nSolving the exact optimization problem";
 	    let abs_exprs = map (fun (e, err) -> mk_abs e, err.exp) v1 in
 	    let full_expr', exp = sum_symbolic abs_exprs in
-	    let full_expr = if Config.get_bool_option "simplificaiton" then
+	    let full_expr = if Config.get_bool_option "maxima-simplification" then
                               Maxima.simplify full_expr'
                             else
                               full_expr' in
@@ -303,7 +303,7 @@ let compute_form pi e =
       let form = simplify_form vars form' in
       let () = Log.report_str 1 "success" in
       let form = 
-	if Config.get_bool_option "simplification" then {
+	if Config.get_bool_option "maxima-simplification" then {
 	  form_index = form.form_index;
 	  v0 = Maxima.simplify form.v0;
 	  v1 = map (fun (e, err) -> (if err.index < 0 then e else Maxima.simplify e), err) form.v1;
@@ -385,12 +385,12 @@ let process_input fname =
 
 let validate_options () =
   let validate_simplification () =
-    if Config.get_bool_option "simplification" && not (Maxima.test_maxima()) then
+    if Config.get_bool_option "maxima-simplification" && not (Maxima.test_maxima()) then
       begin
         Log.warning_str 0 "A computer algebra system Maxima is not installed. \
                            Simplifications are disabled. \
                            Go to http://maxima.sourceforge.net/ to install Maxima.";
-        Config.add_option "simplification" "false"
+        Config.add_option "maxima-simplification" "false"
       end
   in
   let validate_proof_record () =
