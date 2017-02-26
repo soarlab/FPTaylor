@@ -1,3 +1,11 @@
+(* ========================================================================== *)
+(*      FPTaylor: A Tool for Rigorous Estimation of Round-off Errors          *)
+(*                                                                            *)
+(*      Author: Alexey Solovyev, University of Utah                           *)
+(*                                                                            *)
+(*      This file is distributed under the terms of the MIT license           *)
+(* ========================================================================== *)
+
 (* -------------------------------------------------------------------------- *)
 (* "Set" operations on lists.                                                 *)
 (* -------------------------------------------------------------------------- *)
@@ -44,6 +52,22 @@ val (--) : int -> int -> int list
 
 val enumerate : int -> 'a list -> (int * 'a) list
 
+(* -------------------------------------------------------------------------- *)
+(* Option type operations                                                     *)
+(* -------------------------------------------------------------------------- *)
+
+val is_none : 'a option -> bool
+
+val is_some : 'a option -> bool
+
+val option_lift : ('a -> 'b) -> default:'b -> 'a option -> 'b
+
+val option_default : default:'a -> 'a option -> 'a
+
+val option_value : 'a option -> 'a
+
+val option_first : 'a option list -> 'a
+                                             
 (* -------------------------------------------------------------------------- *)
 (* String operations                                                          *)
 (* -------------------------------------------------------------------------- *)
