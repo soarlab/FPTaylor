@@ -29,7 +29,7 @@ type opt_result = {
 
 let empty_result = {
   result = 0.0;
-  lower_bound = 0.0;
+  lower_bound = neg_infinity;
   iters = 0;
   time = 0.0;
 }
@@ -52,12 +52,14 @@ let default_opt_pars = {
   timeout = Config.get_int_option "opt-timeout";
 }
 
-let get_float strs name =
+let get_float ?default strs name =
   let pat = name in
   let n = String.length pat in
   let r = Str.regexp pat in
   let rec find = function
-    | [] -> raise Not_found
+    | [] ->
+       if Lib.is_none default then raise Not_found
+       else Lib.option_value default
     | str :: t ->
       let i = try Str.search_forward r str 0 with Not_found -> -1 in
       if i == 0 then

@@ -12,6 +12,7 @@
 
 open Expr
 open Environment
+open Opt_common
 
 let var_bound_float name = 
   variable_interval name
@@ -21,27 +22,38 @@ let var_bound_rat name =
   Const.low_bound_to_num v.lo_bound, Const.high_bound_to_num v.hi_bound
 
 let optimize_expr (pars : Opt_common.opt_pars) max_only expr =
-  let min, max =
+  let rmin, rmax =
     match Config.get_string_option "opt" with
     | "z3" -> 
-       Opt_z3.min_max_expr pars var_bound_rat expr
+       let fmin, fmax = Opt_z3.min_max_expr pars var_bound_rat expr in
+       {empty_result with result = fmin},
+       {empty_result with result = fmax}
     | "bb" -> 
        Opt_basic_bb.min_max_expr pars max_only var_bound_float expr
     | "nlopt" -> 
-       Opt_nlopt.min_max_expr pars var_bound_float expr
+       let fmin, fmax = Opt_nlopt.min_max_expr pars var_bound_float expr in
+       {empty_result with result = fmin},
+       {empty_result with result = fmax}
     | "gelpia" -> 
-       Opt_gelpia.min_max_expr pars max_only var_bound_float expr
+       let fmin, fmax = Opt_gelpia.min_max_expr pars max_only var_bound_float expr in
+       {empty_result with result = fmin},
+       {empty_result with result = fmax}
     | s -> failwith ("Unsupported optimization backend: " ^ s) in
-  min, max
+  rmin, rmax
 
 let find_min_max pars expr =
-  optimize_expr pars false expr
+  let rmin, rmax = optimize_expr pars false expr in
+  rmin.result, rmax.result
 
 let find_max pars expr =
-  let _, max = optimize_expr pars true expr in
-  max
+  let _, rmax = optimize_expr pars true expr in
+  rmax
 
 let find_max_abs pars expr =
-  let min_f, max_f = optimize_expr pars false expr in
-  max (abs_float min_f) (abs_float max_f)
+  let rmin, rmax = optimize_expr pars false expr in
+  let r =
+    if abs_float rmax.result >= abs_float rmin.result then rmax else rmin in
+  if r.result >= 0. then r
+  else
+    {r with result = abs_float r.result; lower_bound = -.r.lower_bound}
 

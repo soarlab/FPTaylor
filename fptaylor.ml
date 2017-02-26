@@ -22,10 +22,13 @@ open Taylor_form
 type problem_info = {
   name : string;
   real_bounds : interval;
-  abs_error_approx : float option;
-  abs_error_exact : float option;
-  rel_error_approx : float option;
-  rel_error_exact : float option;
+  (* Lower bounds of error intervals represent lower bounds
+     returned by a global optimization procedure.
+     low = neg_infinity if a lower bound is not returned. *)
+  abs_error_approx : interval option;
+  abs_error_exact : interval option;
+  rel_error_approx : interval option;
+  rel_error_exact : interval option;
   elapsed_time : float;
 }
 
@@ -40,14 +43,15 @@ let default_problem_info = {
 }
 
 let get_problem_absolute_error pi =
-  let e1 = option_default ~default:infinity pi.abs_error_approx and
-      e2 = option_default ~default:infinity pi.abs_error_exact in
-  min e1 e2
+  let entire = {low = neg_infinity; high = infinity} in
+  let e1 = option_default ~default:entire pi.abs_error_approx and
+      e2 = option_default ~default:entire pi.abs_error_exact in
+  min e1.high e2.high
 
 let print_problem_info pi =
   let print_opt str = function
     | None -> ()
-    | Some v -> Log.report 0 "%s: %e" str v
+    | Some v -> Log.report 0 "%s: %e" str v.high
   in
   let print_bounds pi =
     if pi.real_bounds.low > neg_infinity || pi.real_bounds.high < infinity then
@@ -102,8 +106,9 @@ let add2_symbolic (e1, exp1) (e2, exp2) =
 let sum_symbolic s = itlist add2_symbolic s (const_0, 0)
 
 let compute_bound (expr, err) =
-  let bound = Opt.find_max_abs Opt_common.default_opt_pars expr in
-  Log.report 2 "%d: exp = %d: %f" err.index err.exp bound;
+  let r = Opt.find_max_abs Opt_common.default_opt_pars expr in
+  let bound = {low = r.Opt_common.lower_bound; high = r.Opt_common.result} in
+  Log.report 2 "%d: exp = %d: %f (low = %f)" err.index err.exp bound.high bound.low;
   bound, err.exp 
 
 let rec split_error_terms err_terms =
@@ -115,31 +120,45 @@ let rec split_error_terms err_terms =
        es1, (e, err) :: es2
      else
        (e, err) :: es1, es2
+
+let sum_err_bounds bounds =
+  let high = map (fun (v, exp) -> v.high, exp) bounds and
+      low = map (fun (v, exp) -> -.v.low, exp) bounds in
+  let s_high, exp = sum_high high in
+  let s_low, exp' =
+    let s, e = sum_high low in
+    -.s, e in
+  assert (exp = exp');
+  let eps = get_eps exp in
+  eps *.$ {low = s_low; high = s_high}
                             
 let absolute_errors tf =
   Log.report 1 "\nComputing absolute errors";
   let v1, v2 = split_error_terms tf.v1 in
-  let bounds2' = map compute_bound v2 in
-  let bounds2 = map (fun (e, exp) -> make_stronger e, exp) bounds2' in
-  let total2', exp2 = sum_high bounds2 in
-  let total2 = get_eps exp2 *^ total2' in
+  let bounds2 =
+    let bounds2' = map compute_bound v2 in
+    map (fun (e, exp) -> make_stronger_i e, exp) bounds2' in
+  let total2_i = sum_err_bounds bounds2 in
   let err_approx =
     if not (Config.get_bool_option "opt-approx") then None
     else
       begin
 	Log.report 1 "\nSolving the approximate optimization problem";
 	Log.report 1 "\nAbsolute errors:";
-	let bounds1' = map compute_bound v1 in
-	let bounds1 = map (fun (e, exp) -> make_stronger e, exp) bounds1' in
-	let total1', exp1 = sum_high bounds1 in
-	let total1 = get_eps exp1 *^ total1' in
-	let total = make_stronger (total1 +^ total2) in
-	let all_bounds = map fst bounds1 @ map fst bounds2 in
-	let all_indices = map (fun (_, err) -> err.proof_index) v1 
-	                  @ map (fun (_, err) -> err.proof_index) v2 in
-	Proof.add_opt_approx all_indices all_bounds total;
-	Log.report 1 "total1: %e\ntotal2: %e\ntotal: %e" total1 total2 total;
-	Some total
+        let bounds1 =
+	  let bounds1' = map compute_bound v1 in
+	  map (fun (e, exp) -> make_stronger_i e, exp) bounds1' in
+        let total1_i = sum_err_bounds bounds1 in
+	let total_i = make_stronger_i (total1_i +$ total2_i) in
+        let () =
+	  let all_bounds = map (fun (v, _) -> v.high) bounds1
+                           @ map (fun (v, _) -> v.high) bounds2 in
+	  let all_indices = map (fun (_, err) -> err.proof_index) v1 
+	                    @ map (fun (_, err) -> err.proof_index) v2 in
+	  Proof.add_opt_approx all_indices all_bounds total_i.high in
+	Log.report 1 "total1: %e (low = %e)\ntotal2: %e (low = %e)\ntotal: %e (low = %e)"
+                   total1_i.high total1_i.low total2_i.high total2_i.low total_i.high total_i.low;
+	Some total_i
       end
   in
   let err_exact =
@@ -148,32 +167,36 @@ let absolute_errors tf =
       begin
 	Log.report 1 "\nSolving the exact optimization problem";
 	let abs_exprs = map (fun (e, err) -> mk_abs e, err.exp) v1 in
-	let full_expr', exp = sum_symbolic abs_exprs in
-	let full_expr = if Config.get_bool_option "maxima-simplification" then
-                          Maxima.simplify full_expr'
-                        else
-                          full_expr' in
+        let full_expr, exp =
+	  let full_expr', exp = sum_symbolic abs_exprs in
+	  if Config.get_bool_option "maxima-simplification" then
+            Maxima.simplify full_expr', exp
+          else
+            full_expr', exp in
 
 	let _ = 
 	  Out_racket.create_racket_file "abs_exact" 
-	                                "fptaylor-abs" total2 exp full_expr;
+	                                "fptaylor-abs" total2_i.high exp full_expr;
 	  Out_test.create_test_file "test_abs_exact.txt" full_expr in
 
-	let bound = Opt.find_max Opt_common.default_opt_pars full_expr in
-	let total = 
+	let bound =
+          let r = Opt.find_max Opt_common.default_opt_pars full_expr in
+          {low = r.Opt_common.lower_bound; high = r.Opt_common.result} in          
+	let total_i = 
 	  if Config.proof_flag then begin
 	      let e' = get_eps exp in
 	      let e = if e' = 0.0 then 1.0 else e' in
-	      let bound = make_stronger (bound +^ Fpu.fdiv_high total2 e) in
-	      let total = e *^ bound in
-	      Proof.add_opt_exact bound exp total;
-	      total
+	      let bound = make_stronger_i (bound +$ total2_i /$. e) in
+	      let total_i = e *.$ bound in
+	      Proof.add_opt_exact bound.high exp total_i.high;
+	      total_i
             end
 	  else
-	    (get_eps exp *^ bound) +^ total2 in
-	Log.report 1 "exact bound (exp = %d): %f" exp bound;
-	Log.report 1 "exact total: %e\ntotal2: %e" total total2;
-	Some total
+	    (get_eps exp *.$ bound) +$ total2_i in
+	Log.report 1 "exact bound (exp = %d): %f (low = %f)" exp bound.high bound.low;
+	Log.report 1 "exact total: %e (low = %e)\ntotal2: %e (low = %e)"
+                   total_i.high total_i.low total2_i.high total2_i.low;
+	Some total_i
       end
   in
   err_approx, err_exact
@@ -195,9 +218,8 @@ let relative_errors tf (f_min, f_max) =
       else
         v1 in
     let bounds2 = map compute_bound v2 in
-    let total2', exp2 = sum_high bounds2 in
-    let total2 = get_eps exp2 *^ total2' in
-    let b2 = (total2 /.$ abs_I f_int).high in
+    let total2_i = sum_err_bounds bounds2 in
+    let b2_i = total2_i /$ abs_I f_int in
     let err_approx =
       if not (Config.get_bool_option "opt-approx") then None
       else
@@ -205,11 +227,11 @@ let relative_errors tf (f_min, f_max) =
 	  Log.report 1 "\nSolving the approximate optimization probelm";
 	  Log.report 1 "\nRelative errors:";
 	  let bounds1 = map compute_bound v1 in
-	  let total1', exp1 = sum_high bounds1 in
-	  let total1 = get_eps exp1 *^ total1' in
-	  let total = total1 +^ b2 in
-	  Log.report 1 "rel-total1: %e\nrel-total2: %e\nrel-total: %e" total1 b2 total;
-	  Some total
+          let total1_i = sum_err_bounds bounds1 in
+	  let total_i = total1_i +$ b2_i in
+	  Log.report 1 "rel-total1: %e\nrel-total2: %e\nrel-total: %e"
+                     total1_i.high b2_i.high total_i.high;
+	  Some total_i          
         end
     in
     let err_exact =
@@ -218,21 +240,25 @@ let relative_errors tf (f_min, f_max) =
         begin
 	  Log.report 1 "\nSolving the exact optimization problem";
 	  let abs_exprs = map (fun (e, err) -> mk_abs e, err.exp) v1 in
-	  let full_expr', exp = sum_symbolic abs_exprs in
-	  let full_expr = if Config.get_bool_option "maxima-simplification" then
-                            Maxima.simplify full_expr'
-                          else
-                            full_expr' in
+          let full_expr, exp =
+	    let full_expr', exp = sum_symbolic abs_exprs in
+	    if Config.get_bool_option "maxima-simplification" then
+              Maxima.simplify full_expr', exp
+            else
+              full_expr', exp in
+
 	  let _ = 
 	    Out_racket.create_racket_file "rel_exact" 
-	                                  "fptaylor-rel" b2 exp full_expr;
+	                                  "fptaylor-rel" b2_i.high exp full_expr;
 	    Out_test.create_test_file "test_rel_exact.txt" full_expr in
           
-	  let bound = Opt.find_max Opt_common.default_opt_pars full_expr in
-	  Log.report 1 "exact bound-rel (exp = %d): %f" exp bound;
-	  let total = (get_eps exp *^ bound) +^ b2 in
-	  Log.report 1 "exact total-rel: %e\ntotal2: %e" total b2;
-	  Some total
+	  let bound =
+            let r = Opt.find_max Opt_common.default_opt_pars full_expr in
+            {low = r.Opt_common.lower_bound; high = r.Opt_common.result} in
+	  Log.report 1 "exact bound-rel (exp = %d): %f" exp bound.high;
+	  let total_i = (get_eps exp *.$ bound) +$ b2_i in
+	  Log.report 1 "exact total-rel: %e\ntotal2: %e" total_i.high b2_i.high;
+	  Some total_i
         end
     in
     err_approx, err_exact
