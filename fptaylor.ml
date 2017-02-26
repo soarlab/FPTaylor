@@ -21,8 +21,7 @@ open Taylor_form
 
 type problem_info = {
   name : string;
-  real_min : float;
-  real_max : float;
+  real_bounds : interval;
   abs_error_approx : float option;
   abs_error_exact : float option;
   rel_error_approx : float option;
@@ -32,8 +31,7 @@ type problem_info = {
 
 let default_problem_info = {
   name = "NONE";
-  real_min = neg_infinity;
-  real_max = infinity;
+  real_bounds = {low = neg_infinity; high = infinity};
   abs_error_approx = None;
   abs_error_exact = None;
   rel_error_approx = None;
@@ -46,32 +44,30 @@ let get_problem_absolute_error pi =
       e2 = option_default ~default:infinity pi.abs_error_exact in
   min e1 e2
 
-let print_problem_info =
+let print_problem_info pi =
   let print_opt str = function
     | None -> ()
     | Some v -> Log.report 0 "%s: %e" str v
   in
   let print_bounds pi =
-    if pi.real_min > neg_infinity && pi.real_max < infinity then
+    if pi.real_bounds.low > neg_infinity || pi.real_bounds.high < infinity then
       begin
         let err = get_problem_absolute_error pi in
         assert (err >= 0.);
         if err < infinity then
-          let min = Fpu.fsub_low pi.real_min err and
-              max = Fpu.fadd_high pi.real_max err in
-          Log.report 0 "Bounds (floating-point): [%.20e, %.20e]" min max
+          let bounds = pi.real_bounds +$ {low = -.err; high = err} in
+          Log.report 0 "Bounds (floating-point): %s" (sprintf_I "%.20e" bounds)
       end
   in
-  fun pi ->
-    Log.report 0 "-------------------------------------------------------------------------------";
-    Log.report 0 "Problem: %s\n" pi.name;
-    Log.report 0 "Bounds (without rounding): [%e, %e]" pi.real_min pi.real_max;
-    print_bounds pi;
-    print_opt "Absolute error (approximate)" pi.abs_error_approx;
-    print_opt "Absolute error (exact)" pi.abs_error_exact;
-    print_opt "Relative error (approximate)" pi.rel_error_approx;
-    print_opt "Relative error (exact)" pi.rel_error_exact;
-    Log.report 0 "\nElapsed time: %.2f\n" pi.elapsed_time
+  Log.report 0 "-------------------------------------------------------------------------------";
+  Log.report 0 "Problem: %s\n" pi.name;
+  Log.report 0 "Bounds (without rounding): %s" (sprintf_I "%e" pi.real_bounds);
+  print_bounds pi;
+  print_opt "Absolute error (approximate)" pi.abs_error_approx;
+  print_opt "Absolute error (exact)" pi.abs_error_exact;
+  print_opt "Relative error (approximate)" pi.rel_error_approx;
+  print_opt "Relative error (exact)" pi.rel_error_exact;
+  Log.report 0 "\nElapsed time: %.2f\n" pi.elapsed_time
   
 let exprs () = env.expressions
 
@@ -248,7 +244,7 @@ let errors pi tform =
     else
       neg_infinity, infinity in
   Log.report 1 "bounds: [%e, %e]" f_min f_max;
-  let pi = {pi with real_min = f_min; real_max = f_max} in
+  let pi = {pi with real_bounds = {low = f_min; high = f_max}} in
   let pi =
     if Config.get_bool_option "opt-approx" || Config.get_bool_option "opt-exact" then
       let abs_approx, abs_exact = 
