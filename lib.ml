@@ -17,31 +17,31 @@
 
 let rec itlist f l b =
   match l with
-    [] -> b
-  | (h::t) -> f h (itlist f t b)
+  | [] -> b
+  | h :: t -> f h (itlist f t b)
 
 let rec rev_itlist f l b =
   match l with
-    [] -> b
-  | (h::t) -> rev_itlist f t (f h b)
+  | [] -> b
+  | h :: t -> rev_itlist f t (f h b)
 
 let rec end_itlist f l =
   match l with
-        []     -> failwith "end_itlist"
-      | [x]    -> x
-      | (h::t) -> f h (end_itlist f t)
+  | [] -> failwith "end_itlist"
+  | [x] -> x
+  | h :: t -> f h (end_itlist f t)
 
 let rec itlist2 f l1 l2 b =
-  match (l1,l2) with
-    ([],[]) -> b
-  | (h1::t1,h2::t2) -> f h1 h2 (itlist2 f t1 t2 b)
+  match (l1, l2) with
+  | ([], []) -> b
+  | (h1 :: t1, h2 :: t2) -> f h1 h2 (itlist2 f t1 t2 b)
   | _ -> failwith "itlist2";;
 
 let rec rev_itlist2 f l1 l2 b =
-   match (l1,l2) with
-     ([],[]) -> b
-   | (h1::t1,h2::t2) -> rev_itlist2 f t1 t2 (f h1 h2 b)
-      | _ -> failwith "rev_itlist2";;
+   match (l1, l2) with
+   | ([], []) -> b
+   | (h1 :: t1, h2 :: t2) -> rev_itlist2 f t1 t2 (f h1 h2 b)
+   | _ -> failwith "rev_itlist2";;
 
 let rec last = function
   | [] -> failwith "last"
@@ -50,11 +50,11 @@ let rec last = function
 
 let rec mem x lis =
   match lis with
-    [] -> false
-  | (h::t) -> Pervasives.compare x h = 0 || mem x t
+  | [] -> false
+  | h :: t -> Pervasives.compare x h = 0 || mem x t
 
 let insert x l =
-  if mem x l then l else x::l
+  if mem x l then l else x :: l
 
 let union l1 l2 = itlist insert l1 l2
 
@@ -106,6 +106,35 @@ let enumerate =
   fun start list ->
   enum [] start list
  
+(* -------------------------------------------------------------------------- *)
+(* Option type operations                                                     *)
+(* -------------------------------------------------------------------------- *)
+
+let is_none = function
+  | None -> true
+  | Some _ -> false
+
+let is_some = function
+  | None -> false
+  | Some _ -> true
+
+let option_lift f ~default:v = function
+  | None -> v
+  | Some x -> f x
+
+let option_default ~default:v = function
+  | None -> v
+  | Some x -> x
+
+let option_value = function
+  | None -> failwith "option_value: None"
+  | Some x -> x
+
+let rec option_first = function
+  | [] -> failwith "option_first: all None"
+  | None :: rest -> option_first rest
+  | Some x :: _ -> x
+       
 (* -------------------------------------------------------------------------- *)
 (* String operations                                                          *)
 (* -------------------------------------------------------------------------- *)

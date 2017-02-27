@@ -122,20 +122,33 @@ let min_max_expr (pars : Opt_common.opt_pars) max_only var_bound e =
   let _ = run_cmd cmd in
   let out = run_cmd out_name in
   let fmin = Opt_common.get_float out "min = " and
-      fmax = Opt_common.get_float out "max = " in
+      fmax = Opt_common.get_float out "max = " and
+      iter_max = truncate (Opt_common.get_float out ~default:0. "iter_max = ") and
+      iter_min = truncate (Opt_common.get_float out ~default:0. "iter_min = ") and
+      lower_max = Opt_common.get_float out ~default:neg_infinity "lower_max = " and
+      lower_min = Opt_common.get_float out ~default:infinity "lower_min = " in
+  let rmin = {
+      result = fmin;
+      lower_bound = lower_min;
+      iters = iter_min;
+      time = 0.;
+    } in
+  let rmax = {
+      result = fmax;
+      lower_bound = lower_max;
+      iters = iter_max;
+      time = 0.;
+    } in
   if Config.debug then begin
-      let iter_max = truncate (Opt_common.get_float out "iter_max = ") and
-	  iter_min = truncate (Opt_common.get_float out "iter_min = ") and
-	  lower_max = Opt_common.get_float out "lower_max = " and
-	  lower_min = Opt_common.get_float out "lower_min = " in
       let opt, subopt =
         if abs_float fmin > abs_float fmax then
 	  abs_float fmin, abs_float (fmin -. lower_min)
         else
 	  abs_float fmax, abs_float (fmax -. lower_max) in
-      Log.report 4 "iterations(%d, %d): %d" 
-	         iter_max iter_min (max iter_max iter_min);
-      Log.report 4 "lower_max = %e, lower_min = %e, subopt = %e (%.1f%%)"
-	         lower_max lower_min subopt (subopt /. opt *. 100.0)
+      Log.report 4 "iterations(min = %d, max = %d): %d" 
+	         iter_min iter_max (max iter_max iter_min);
+      Log.report 4 "min = %e (lower_min = %e)" fmin lower_min;
+      Log.report 4 "max = %e (lower_max = %e)" fmax lower_max;
+      Log.report 4 "subopt = %e (%.1f%%)" subopt (subopt /. opt *. 100.0)
     end;
-  fmin, fmax
+  rmin, rmax

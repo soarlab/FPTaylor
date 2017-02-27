@@ -40,8 +40,8 @@ following command
 If several configuration files are provided, options in the second
 configuration file will override options in the first file, and so
 on. The default configuration file `default.cfg` is always loaded
-first. See the section *Options* for a complete description of
-available options in FPTaylor.
+first. See the section *Options* for a description of FPTaylor
+options.
 
 
 ## Input file format
@@ -359,9 +359,10 @@ This example is equivalent to
 
 ## Options
 
-Options are specified in configuration files. Base options are defined
-in the default configuration file `default.cfg`. A configuration file
-`config.cfg` can be loaded with the following command
+Options are specified in configuration files. All options and their
+default values are defined in the main configuration file
+`default.cfg`. A configuration file `config.cfg` can be loaded with
+the following command
 
     fptaylor -c config.cfg input_file1 [input_file2 ...]
 
@@ -373,21 +374,21 @@ Options defined in `config2.cfg` override options defined in
 `config1.cfg` and in `default.cfg`, options in `config3.cfg` override
 options in `config2.cfg`, etc.
 
-The syntax of configuration files is the following:
+The syntax of a configuration file is the following:
 
     option_name = option_value
     ...
     option_name = option_value
 
-Empty lines and lines containing `*` are ignored. Example:
+Empty lines and lines starting with `#` (or `*`) are ignored. Example:
 
     abs-error = true
-    * This is a comment
-    This is also * a comment
+    # This is a comment
+    * This is also a comment
 
     rel-error = false
 
-Important options are described below. Other options can be found in `default.cfg`.
+Some important options are described below. Other options can be found in `default.cfg`.
 
 ### `abs-error`
 
@@ -464,9 +465,6 @@ Specifies the optimization backend of FPTaylor.
   optimization backend does not support the improved rounding model
   (will be corrected in future releases of FPTaylor).
 
-### `z3-timeout`
-
-Specifies timeout in milliseconds for Z3 optimization backend.
 
 ### `proof-record`
 
@@ -491,17 +489,53 @@ end. This summary contains the following information
 - The name of the analyzed expression printed as `Problem:
   name_of_the_expression`.
 
-- The absolute round-off error obtained with the exact optimization
-  problem if `abs-error = true` and `opt-exact = true`.
+- Bounds of the analyzed expression if `find-bounds = true`.
 
-- The absolute round-off error obtained with the approximate
-  optimization problem if `abs-error = true` and `opt-approx = true`.
+- Lower bounds for all solved optimization problems if
+  `print-opt-lower-bounds = true`. *These lower bounds are not lower
+  bounds of round-off errors. They are only valid for corresponding
+  round-off error models.* Lower bounds may be not available for some
+  optimization backends (in this case, `-inf` is printed).  If a lower
+  bound is significantly different from the corresponding upper bound
+  then it might be possible to get better results by changing
+  optimization parameters (for example, `opt-f-abs-tol = 0` or
+  `opt-x-abs-tol = 0`).
 
-- The relative round-off error obtained with the exact optimization
-  problem if `rel-error = true` and `opt-exact = true`.
+- An upper bound of the absolute round-off error obtained with the
+  approximate optimization problem if `abs-error = true` and
+  `opt-approx = true`. It is printed as `Absolute error (approximate): ...`.
 
-- The relative round-off error obtained with the approximate
-  optimization problem if `rel-error = true` and `opt-approx = true`.
+- An upper bound of the absolute round-off error obtained with the
+  exact optimization problem if `abs-error = true` and `opt-exact = true`. 
+  It is printed as `Absolute error (exact): ...`.
+
+- An upper bound of the relative round-off error obtained with the
+  approximate optimization problem if `rel-error = true` and
+  `opt-approx = true`. It is printed as `Relative error (approximate): ...`.
+
+- An upper bound of the relative round-off error obtained with the
+  exact optimization problem if `rel-error = true` and `opt-exact = true`. 
+  It is printed as `Relative error (exact): ...`.
 
 - The analysis time in seconds printed as `Elapsed time: time`.
 
+An example:
+
+```
+Problem: sqroot
+
+Bounds (without rounding): [9.920349e-01, 1.410787e+00]
+Bounds (floating-point): [9.92034912109374000799e-01, 1.41078659147024310094e+00]
+
+Optimization lower bound for absolute error (approximate): 4.941403e-16 (suboptimality = 3.5%)
+Optimization lower bound for absolute error (exact):       4.874573e-16 (suboptimality = 2.8%)
+Optimization lower bound for relative error (approximate): 4.757544e-16 (suboptimality = 4.6%)
+Optimization lower bound for relative error (exact):       4.410886e-16 (suboptimality = 0.9%)
+
+Absolute error (approximate): 5.121506e-16
+Absolute error (exact):       5.016452e-16
+Relative error (approximate): 4.985282e-16
+Relative error (exact):       4.450252e-16
+
+Elapsed time: 12.10
+```
