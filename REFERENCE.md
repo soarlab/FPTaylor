@@ -492,28 +492,30 @@ end. This summary contains the following information
 - Bounds of the analyzed expression if `find-bounds = true`.
 
 - Lower bounds for all solved optimization problems if
-  `print-opt-lower-bounds = true`.  Lower bounds may be not available
-  for some optimization backends (in this case, `-inf` is printed).
-  If a lower bound is significantly different from the corresponding
-  upper bound then it might be possible to get better results by
-  changing optimization parameters (for example, `opt-f-abs-tol = 0`
-  or `opt-x-abs-tol = 0`).
+  `print-opt-lower-bounds = true`. *These lower bounds are not lower
+  bounds of round-off errors. They are only valid for corresponding
+  round-off error models.* Lower bounds may be not available for some
+  optimization backends (in this case, `-inf` is printed).  If a lower
+  bound is significantly different from the corresponding upper bound
+  then it might be possible to get better results by changing
+  optimization parameters (for example, `opt-f-abs-tol = 0` or
+  `opt-x-abs-tol = 0`).
 
 - An upper bound of the absolute round-off error obtained with the
   approximate optimization problem if `abs-error = true` and
   `opt-approx = true`. It is printed as `Absolute error (approximate): ...`.
 
 - An upper bound of the absolute round-off error obtained with the
-  exact optimization problem if `abs-error = true` and `opt-exact =
-  true`. It is printed as `Absolute error (exact): ...`.
+  exact optimization problem if `abs-error = true` and `opt-exact = true`. 
+  It is printed as `Absolute error (exact): ...`.
 
 - An upper bound of the relative round-off error obtained with the
   approximate optimization problem if `rel-error = true` and
   `opt-approx = true`. It is printed as `Relative error (approximate): ...`.
 
 - An upper bound of the relative round-off error obtained with the
-  exact optimization problem if `rel-error = true` and `opt-exact =
-  true`. It is printed as `Relative error (exact): ...`.
+  exact optimization problem if `rel-error = true` and `opt-exact = true`. 
+  It is printed as `Relative error (exact): ...`.
 
 - The analysis time in seconds printed as `Elapsed time: time`.
 
