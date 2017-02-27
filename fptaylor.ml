@@ -49,10 +49,18 @@ let get_problem_absolute_error pi =
   min e1.high e2.high
 
 let print_problem_info pi =
-  let print_opt str = function
+  let print_upper_bound width str = function
     | None -> ()
-    | Some v -> Log.report 0 "%s: %e" str v.high
-  in
+    | Some v -> Log.report 0 "%-*s %e" width str v.high in
+  let print_lower_bound width str = function
+    | None -> ()
+    | Some v ->
+       if v.low > neg_infinity then
+         let subopt = v.high -. v.low in
+         Log.report 0 "%-*s %e (suboptimality = %.1f%%)"
+                    width str v.low (subopt /. v.high *. 100.)
+       else
+         Log.report 0 "%-*s %e" width str v.low in
   let print_bounds pi =
     if pi.real_bounds.low > neg_infinity || pi.real_bounds.high < infinity then
       begin
@@ -61,16 +69,45 @@ let print_problem_info pi =
         if err < infinity then
           let bounds = pi.real_bounds +$ {low = -.err; high = err} in
           Log.report 0 "Bounds (floating-point): %s" (sprintf_I "%.20e" bounds)
-      end
+      end in
+  let rec max_length strs_and_opts =
+    match strs_and_opts with
+    | [] -> 0
+    | (s, None) :: rest -> max_length rest
+    | (s, Some _) :: rest -> max (String.length s) (max_length rest)
   in
   Log.report 0 "-------------------------------------------------------------------------------";
   Log.report 0 "Problem: %s\n" pi.name;
   Log.report 0 "Bounds (without rounding): %s" (sprintf_I "%e" pi.real_bounds);
   print_bounds pi;
-  print_opt "Absolute error (approximate)" pi.abs_error_approx;
-  print_opt "Absolute error (exact)" pi.abs_error_exact;
-  print_opt "Relative error (approximate)" pi.rel_error_approx;
-  print_opt "Relative error (exact)" pi.rel_error_exact;
+  if Config.get_bool_option "print-opt-lower-bounds" then begin
+      Log.report 0 "";
+      let abs_approx_str = "Optimization lower bound for absolute error (approximate):" in
+      let abs_exact_str = "Optimization lower bound for absolute error (exact):" in
+      let rel_approx_str = "Optimization lower bound for relative error (approximate):" in
+      let rel_exact_str = "Optimization lower bound for relative error (exact):" in
+      let w = max_length [abs_approx_str, pi.abs_error_approx;
+                          abs_exact_str, pi.abs_error_exact;
+                          rel_approx_str, pi.rel_error_approx;
+                          rel_exact_str, pi.rel_error_exact] in
+      print_lower_bound w abs_approx_str pi.abs_error_approx;
+      print_lower_bound w abs_exact_str pi.abs_error_exact;
+      print_lower_bound w rel_approx_str pi.rel_error_approx;
+      print_lower_bound w rel_exact_str pi.rel_error_exact;
+    end;
+  Log.report 0 "";
+  let abs_approx_str = "Absolute error (approximate):" in
+  let abs_exact_str = "Absolute error (exact):" in
+  let rel_approx_str = "Relative error (approximate):" in
+  let rel_exact_str = "Relative error (exact):" in
+  let w = max_length [abs_approx_str, pi.abs_error_approx;
+                      abs_exact_str, pi.abs_error_exact;
+                      rel_approx_str, pi.rel_error_approx;
+                      rel_exact_str, pi.rel_error_exact] in
+  print_upper_bound w abs_approx_str pi.abs_error_approx;
+  print_upper_bound w abs_exact_str pi.abs_error_exact;
+  print_upper_bound w rel_approx_str pi.rel_error_approx;
+  print_upper_bound w rel_exact_str pi.rel_error_exact;
   Log.report 0 "\nElapsed time: %.2f\n" pi.elapsed_time
   
 let exprs () = env.expressions
@@ -88,6 +125,14 @@ let print_form level f =
       if i > 0 then
         let expr = expr_for_index i in
         Log.report level "%d: %s" i (print_expr_str expr)) f.v1
+
+let bound_info bound =
+  if bound.low > neg_infinity then
+    let subopt = (bound.high -. bound.low) /. bound.high *. 100. in
+    Format.sprintf "%e (low = %e, subopt = %.1f%%)"
+                   bound.high bound.low subopt
+  else
+    Format.sprintf "%e (low = %e)" bound.high bound.low
 
 let add2_symbolic (e1, exp1) (e2, exp2) =
   (* Swap if exp1 > exp2 *)
@@ -108,7 +153,7 @@ let sum_symbolic s = itlist add2_symbolic s (const_0, 0)
 let compute_bound (expr, err) =
   let r = Opt.find_max_abs Opt_common.default_opt_pars expr in
   let bound = {low = r.Opt_common.lower_bound; high = r.Opt_common.result} in
-  Log.report 2 "%d: exp = %d: %f (low = %f)" err.index err.exp bound.high bound.low;
+  Log.report 2 "%d: exp = %d: %s" err.index err.exp (bound_info bound);
   bound, err.exp 
 
 let rec split_error_terms err_terms =
@@ -156,8 +201,9 @@ let absolute_errors tf =
 	  let all_indices = map (fun (_, err) -> err.proof_index) v1 
 	                    @ map (fun (_, err) -> err.proof_index) v2 in
 	  Proof.add_opt_approx all_indices all_bounds total_i.high in
-	Log.report 1 "total1: %e (low = %e)\ntotal2: %e (low = %e)\ntotal: %e (low = %e)"
-                   total1_i.high total1_i.low total2_i.high total2_i.low total_i.high total_i.low;
+	Log.report 1 "total1: %s" (bound_info total1_i);
+        Log.report 1 "total2: %s" (bound_info total2_i);
+        Log.report 1 "total: %s" (bound_info total_i);
 	Some total_i
       end
   in
@@ -193,9 +239,9 @@ let absolute_errors tf =
             end
 	  else
 	    (get_eps exp *.$ bound) +$ total2_i in
-	Log.report 1 "exact bound (exp = %d): %f (low = %f)" exp bound.high bound.low;
-	Log.report 1 "exact total: %e (low = %e)\ntotal2: %e (low = %e)"
-                   total_i.high total_i.low total2_i.high total2_i.low;
+	Log.report 1 "exact bound (exp = %d): %s" exp (bound_info bound);
+        Log.report 1 "total2: %s" (bound_info total2_i);
+        Log.report 1 "exact total: %s" (bound_info total_i);
 	Some total_i
       end
   in
@@ -229,8 +275,9 @@ let relative_errors tf (f_min, f_max) =
 	  let bounds1 = map compute_bound v1 in
           let total1_i = sum_err_bounds bounds1 in
 	  let total_i = total1_i +$ b2_i in
-	  Log.report 1 "rel-total1: %e\nrel-total2: %e\nrel-total: %e"
-                     total1_i.high b2_i.high total_i.high;
+	  Log.report 1 "rel-total1: %s" (bound_info total1_i);
+          Log.report 1 "rel-total2: %s" (bound_info b2_i);
+          Log.report 1 "rel-total: %s" (bound_info total_i);
 	  Some total_i          
         end
     in
@@ -255,9 +302,10 @@ let relative_errors tf (f_min, f_max) =
 	  let bound =
             let r = Opt.find_max Opt_common.default_opt_pars full_expr in
             {low = r.Opt_common.lower_bound; high = r.Opt_common.result} in
-	  Log.report 1 "exact bound-rel (exp = %d): %f" exp bound.high;
 	  let total_i = (get_eps exp *.$ bound) +$ b2_i in
-	  Log.report 1 "exact total-rel: %e\ntotal2: %e" total_i.high b2_i.high;
+	  Log.report 1 "exact bound-rel (exp = %d): %s" exp (bound_info bound);
+          Log.report 1 "total2: %s" (bound_info b2_i);
+          Log.report 1 "exact total-rel: %s" (bound_info total_i);
 	  Some total_i
         end
     in

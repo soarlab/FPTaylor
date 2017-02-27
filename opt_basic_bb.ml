@@ -126,7 +126,7 @@ let min_max_expr (pars : Opt_common.opt_pars) max_only var_bound e =
       iter_max = truncate (Opt_common.get_float out ~default:0. "iter_max = ") and
       iter_min = truncate (Opt_common.get_float out ~default:0. "iter_min = ") and
       lower_max = Opt_common.get_float out ~default:neg_infinity "lower_max = " and
-      lower_min = Opt_common.get_float out ~default:neg_infinity "lower_min = " in
+      lower_min = Opt_common.get_float out ~default:infinity "lower_min = " in
   let rmin = {
       result = fmin;
       lower_bound = lower_min;

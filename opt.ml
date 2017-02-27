@@ -26,18 +26,18 @@ let optimize_expr (pars : Opt_common.opt_pars) max_only expr =
     match Config.get_string_option "opt" with
     | "z3" -> 
        let fmin, fmax = Opt_z3.min_max_expr pars var_bound_rat expr in
-       {empty_result with result = fmin},
-       {empty_result with result = fmax}
+       {empty_result with result = fmin; lower_bound = infinity},
+       {empty_result with result = fmax; lower_bound = neg_infinity}
     | "bb" -> 
        Opt_basic_bb.min_max_expr pars max_only var_bound_float expr
     | "nlopt" -> 
        let fmin, fmax = Opt_nlopt.min_max_expr pars var_bound_float expr in
-       {empty_result with result = fmin},
-       {empty_result with result = fmax}
+       {empty_result with result = fmin; lower_bound = infinity},
+       {empty_result with result = fmax; lower_bound = neg_infinity}
     | "gelpia" -> 
        let fmin, fmax = Opt_gelpia.min_max_expr pars max_only var_bound_float expr in
-       {empty_result with result = fmin},
-       {empty_result with result = fmax}
+       {empty_result with result = fmin; lower_bound = infinity},
+       {empty_result with result = fmax; lower_bound = neg_infinity}
     | s -> failwith ("Unsupported optimization backend: " ^ s) in
   rmin, rmax
 

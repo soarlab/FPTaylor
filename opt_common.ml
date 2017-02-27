@@ -28,10 +28,10 @@ type opt_result = {
 }
 
 let empty_result = {
-  result = 0.0;
-  lower_bound = neg_infinity;
+  result = 0.;
+  lower_bound = 0.;
   iters = 0;
-  time = 0.0;
+  time = 0.;
 }
 
 let get_tol name default =
