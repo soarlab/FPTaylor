@@ -40,8 +40,8 @@ following command
 If several configuration files are provided, options in the second
 configuration file will override options in the first file, and so
 on. The default configuration file `default.cfg` is always loaded
-first. See the section *Options* for a complete description of
-available options in FPTaylor.
+first. See the section *Options* for a description of FPTaylor
+options.
 
 
 ## Input file format
@@ -359,9 +359,10 @@ This example is equivalent to
 
 ## Options
 
-Options are specified in configuration files. Base options are defined
-in the default configuration file `default.cfg`. A configuration file
-`config.cfg` can be loaded with the following command
+Options are specified in configuration files. All options and their
+default values are defined in the main configuration file
+`default.cfg`. A configuration file `config.cfg` can be loaded with
+the following command
 
     fptaylor -c config.cfg input_file1 [input_file2 ...]
 
@@ -373,21 +374,21 @@ Options defined in `config2.cfg` override options defined in
 `config1.cfg` and in `default.cfg`, options in `config3.cfg` override
 options in `config2.cfg`, etc.
 
-The syntax of configuration files is the following:
+The syntax of a configuration file is the following:
 
     option_name = option_value
     ...
     option_name = option_value
 
-Empty lines and lines containing `*` are ignored. Example:
+Empty lines and lines starting with `#` (or `*`) are ignored. Example:
 
     abs-error = true
-    * This is a comment
-    This is also * a comment
+    # This is a comment
+    * This is also a comment
 
     rel-error = false
 
-Important options are described below. Other options can be found in `default.cfg`.
+Some important options are described below. Other options can be found in `default.cfg`.
 
 ### `abs-error`
 
@@ -464,9 +465,6 @@ Specifies the optimization backend of FPTaylor.
   optimization backend does not support the improved rounding model
   (will be corrected in future releases of FPTaylor).
 
-### `z3-timeout`
-
-Specifies timeout in milliseconds for Z3 optimization backend.
 
 ### `proof-record`
 
@@ -490,6 +488,16 @@ end. This summary contains the following information
 
 - The name of the analyzed expression printed as `Problem:
   name_of_the_expression`.
+
+- Bounds of the analyzed expression if `find-bounds = true`.
+
+- Lower bounds for all solved optimization problems if
+  `print-opt-lower-bounds = true`.  Lower bounds may be not available
+  for some optimization backends (in this case, `-inf` is printed).
+  If a lower bound is significantly different from the corresponding
+  upper bound then it might be possible to get better results by
+  changing optimization parameters (for example, `opt-f-abs-tol = 0`
+  or `opt-x-abs-tol = 0`).
 
 - The absolute round-off error obtained with the exact optimization
   problem if `abs-error = true` and `opt-exact = true`.
