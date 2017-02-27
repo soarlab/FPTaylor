@@ -499,17 +499,41 @@ end. This summary contains the following information
   changing optimization parameters (for example, `opt-f-abs-tol = 0`
   or `opt-x-abs-tol = 0`).
 
-- The absolute round-off error obtained with the exact optimization
-  problem if `abs-error = true` and `opt-exact = true`.
+- An upper bound of the absolute round-off error obtained with the
+  approximate optimization problem if `abs-error = true` and
+  `opt-approx = true`. It is printed as `Absolute error (approximate): ...`.
 
-- The absolute round-off error obtained with the approximate
-  optimization problem if `abs-error = true` and `opt-approx = true`.
+- An upper bound of the absolute round-off error obtained with the
+  exact optimization problem if `abs-error = true` and `opt-exact =
+  true`. It is printed as `Absolute error (exact): ...`.
 
-- The relative round-off error obtained with the exact optimization
-  problem if `rel-error = true` and `opt-exact = true`.
+- An upper bound of the relative round-off error obtained with the
+  approximate optimization problem if `rel-error = true` and
+  `opt-approx = true`. It is printed as `Relative error (approximate): ...`.
 
-- The relative round-off error obtained with the approximate
-  optimization problem if `rel-error = true` and `opt-approx = true`.
+- An upper bound of the relative round-off error obtained with the
+  exact optimization problem if `rel-error = true` and `opt-exact =
+  true`. It is printed as `Relative error (exact): ...`.
 
 - The analysis time in seconds printed as `Elapsed time: time`.
 
+An example:
+
+```
+Problem: sqroot
+
+Bounds (without rounding): [9.920349e-01, 1.410787e+00]
+Bounds (floating-point): [9.92034912109374000799e-01, 1.41078659147024310094e+00]
+
+Optimization lower bound for absolute error (approximate): 4.941403e-16 (suboptimality = 3.5%)
+Optimization lower bound for absolute error (exact):       4.874573e-16 (suboptimality = 2.8%)
+Optimization lower bound for relative error (approximate): 4.757544e-16 (suboptimality = 4.6%)
+Optimization lower bound for relative error (exact):       4.410886e-16 (suboptimality = 0.9%)
+
+Absolute error (approximate): 5.121506e-16
+Absolute error (exact):       5.016452e-16
+Relative error (approximate): 4.985282e-16
+Relative error (exact):       4.450252e-16
+
+Elapsed time: 12.10
+```
