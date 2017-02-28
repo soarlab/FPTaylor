@@ -179,7 +179,7 @@ let sum_err_bounds bounds =
 
 (* Issue a warning if the second-order error term is too large *)
 let error2_warning ?(eps = 1e-2) err1 err2 =
-  if abs_float err2 >= eps *. abs_float err1 then begin
+  if abs_float err1 > 0. && abs_float err2 >= eps *. abs_float err1 then begin
       Log.warning 0 "Large second-order error: %e (first-order = %e)" err2 err1;
       Log.warning 0 "Try to split intervals of input variables and rerun FPTaylor";
     end
@@ -474,7 +474,7 @@ let validate_options () =
         Log.warning 0 "A computer algebra system Maxima is not installed. \
                        Simplifications are disabled. \
                        Go to http://maxima.sourceforge.net/ to install Maxima.";
-        Config.add_option "maxima-simplification" "false"
+        Config.set_option "maxima-simplification" "false"
       end
   in
   let validate_proof_record () =

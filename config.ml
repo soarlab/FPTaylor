@@ -15,21 +15,28 @@ let short_names = Hashtbl.create 100
 
 let find_option ?default p = 
   try Hashtbl.find param_table p
-  with Not_found ->
-    (match default with
-     | Some d -> d
-     | None -> failwith ("Unknown option: " ^ p))
+  with Not_found -> begin
+      match default with
+      | Some d -> d
+      | None -> failwith ("Unknown option: " ^ p)
+    end
 
-let add_option ?(init = false) ?(short = "") name value =
-  if short <> "" then Hashtbl.replace short_names short name;
-  if init then
+let set_option ?(init = false) ?(short = "") name value =
+  if short <> "" then begin
+      if Hashtbl.mem short_names short then
+        let old = Hashtbl.find short_names short in
+        failwith (Format.sprintf
+                    "Short name '%s' is already used for '%s' (new option name = '%s')"
+                    short old name)
+      else
+        Hashtbl.replace short_names short name
+    end;
+  if init || Hashtbl.mem param_table name then
     Hashtbl.replace param_table name value
   else
-    try
-      let _ = Hashtbl.find param_table name in
-      Hashtbl.replace param_table name value
-    with Not_found ->
-	 failwith (Format.sprintf "Unknown option: %s = %s (see available options in default.cfg)" name value)
+    failwith (Format.sprintf
+                "Unknown option: %s = %s (see available options in default.cfg)"
+                name value)
 
 let print_options ~level:level =
   let print name value =
@@ -61,7 +68,7 @@ let parse_config_file ?(init = false) fname =
     let strs = Str.bounded_split split_regexp line 2 in 
     match strs with 
     | [param; value] -> 
-       add_option ~init ~short:short_name (String.trim param) (String.trim value)
+       set_option ~init ~short:short_name (String.trim param) (String.trim value)
     | _ -> 
        Log.error "[File %s, line %d] Parameter parsing error: %s" 
 		 fname c line;
@@ -117,7 +124,7 @@ let parse_args () =
 	     begin
 	       try
 		 let opt_name = get_opt_name name in
-		 add_option opt_name value
+		 set_option opt_name value
 	       with Not_found ->
 		 failwith (Format.sprintf "Unknown command line option: %s (value: %s)" name value)
 	     end
