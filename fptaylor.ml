@@ -176,7 +176,14 @@ let sum_err_bounds bounds =
   assert (exp = exp');
   let eps = get_eps exp in
   eps *.$ {low = s_low; high = s_high}
-                            
+
+(* Issue a warning if the second-order error term is too large *)
+let error2_warning ?(eps = 1e-2) err1 err2 =
+  if abs_float err2 >= eps *. abs_float err1 then begin
+      Log.warning 0 "Large second-order error: %e (first-order = %e)" err2 err1;
+      Log.warning 0 "Try to split intervals of input variables and rerun FPTaylor";
+    end
+            
 let absolute_errors tf =
   Log.report 1 "\nComputing absolute errors";
   let v1, v2 = split_error_terms tf.v1 in
@@ -204,6 +211,7 @@ let absolute_errors tf =
 	Log.report 1 "total1: %s" (bound_info total1_i);
         Log.report 1 "total2: %s" (bound_info total2_i);
         Log.report 1 "total: %s" (bound_info total_i);
+        error2_warning total1_i.high total2_i.high;
 	Some total_i
       end
   in
@@ -227,7 +235,8 @@ let absolute_errors tf =
 
 	let bound =
           let r = Opt.find_max Opt_common.default_opt_pars full_expr in
-          {low = r.Opt_common.lower_bound; high = r.Opt_common.result} in          
+          {low = r.Opt_common.lower_bound; high = r.Opt_common.result} in
+        let total1_i = get_eps exp *.$ bound in
 	let total_i = 
 	  if Config.proof_flag then begin
 	      let e' = get_eps exp in
@@ -238,10 +247,11 @@ let absolute_errors tf =
 	      total_i
             end
 	  else
-	    (get_eps exp *.$ bound) +$ total2_i in
+	    total1_i +$ total2_i in
 	Log.report 1 "exact bound (exp = %d): %s" exp (bound_info bound);
         Log.report 1 "total2: %s" (bound_info total2_i);
         Log.report 1 "exact total: %s" (bound_info total_i);
+        error2_warning total1_i.high total2_i.high;
 	Some total_i
       end
   in
@@ -278,6 +288,7 @@ let relative_errors tf (f_min, f_max) =
 	  Log.report 1 "rel-total1: %s" (bound_info total1_i);
           Log.report 1 "rel-total2: %s" (bound_info b2_i);
           Log.report 1 "rel-total: %s" (bound_info total_i);
+          error2_warning total1_i.high b2_i.high;
 	  Some total_i          
         end
     in
@@ -302,10 +313,12 @@ let relative_errors tf (f_min, f_max) =
 	  let bound =
             let r = Opt.find_max Opt_common.default_opt_pars full_expr in
             {low = r.Opt_common.lower_bound; high = r.Opt_common.result} in
-	  let total_i = (get_eps exp *.$ bound) +$ b2_i in
+          let total1_i = get_eps exp *.$ bound in
+	  let total_i = total1_i +$ b2_i in
 	  Log.report 1 "exact bound-rel (exp = %d): %s" exp (bound_info bound);
           Log.report 1 "total2: %s" (bound_info b2_i);
           Log.report 1 "exact total-rel: %s" (bound_info total_i);
+          error2_warning total1_i.high b2_i.high;
 	  Some total_i
         end
     in

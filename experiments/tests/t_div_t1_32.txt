@@ -1,0 +1,5 @@
+Variables
+  float32 t in [0, 999];
+
+Expressions
+  e rnd32= t / (t + 1);
