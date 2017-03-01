@@ -2,12 +2,10 @@ Variables
   real x in [1,1000];
 	
 Definitions
-  r1 rnd64= sqrt(x + 1),
-  r2 rnd64= sqrt(x),
-  r rnd64= r1 - r2
-;
+  r1 rnd64= sqrt(x + 1);
+  r2 rnd64= sqrt(x);
+  r rnd64= r1 - r2;
 
 Expressions
-  sqrt_sub = r
-;
+  sqrt_sub = r;
 

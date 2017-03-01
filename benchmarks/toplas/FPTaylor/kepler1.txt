@@ -1,7 +1,7 @@
 Variables
-  real x1 in [4, 6.36],
-  real x2 in [4, 6.36],
-  real x3 in [4, 6.36],
+  real x1 in [4, 6.36];
+  real x2 in [4, 6.36];
+  real x3 in [4, 6.36];
   real x4 in [4, 6.36];
 
 Expressions

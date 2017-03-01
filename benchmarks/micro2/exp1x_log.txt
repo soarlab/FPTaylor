@@ -2,13 +2,11 @@ Variables
   real x in [0.01,0.5];
 	
 Definitions
-  f rnd64= x,
-  e = rnd(64, ne, 1.02)(exp(f)),
-  l = rnd(64, ne, 1.02)(log(e)),
-  r rnd64= (e - 1) / l
-//  r = rnd64((e - 1) / l)
-;
+  f rnd64= x;
+  e = rnd(64, ne, 1.02)(exp(f));
+  l = rnd(64, ne, 1.02)(log(e));
+  r rnd64= (e - 1) / l;
+//  r = rnd64((e - 1) / l);
 
 Expressions
-  exp1x_log = r
-;
+  exp1x_log = r;

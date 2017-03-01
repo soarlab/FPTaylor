@@ -1,5 +1,5 @@
 Variables
-  real x1 in [-5, 5],
+  real x1 in [-5, 5];
   real x2 in [-5, 5];
 	
 Expressions

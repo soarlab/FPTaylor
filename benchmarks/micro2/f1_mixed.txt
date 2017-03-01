@@ -2,7 +2,7 @@ Variables
   real x in [1, 999];
 
 Definitions
-  t rnd32= x + 1,
+  t rnd32= x + 1;
   r rnd64= x / t;
 
 Expressions

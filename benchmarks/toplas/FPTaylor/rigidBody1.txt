@@ -1,6 +1,6 @@
 Variables
-  x1 in [-15, 15],
-  x2 in [-15, 15],
+  x1 in [-15, 15];
+  x2 in [-15, 15];
   x3 in [-15, 15];
 	
 Definitions

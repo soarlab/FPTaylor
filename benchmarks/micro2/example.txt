@@ -1,7 +1,6 @@
 Variables
-  float32 x in [1, 4],
-  float32 y in [1, 4]
-;
+  float32 x in [1, 4];
+  float32 y in [1, 4];
 
 Definitions
   r rnd32= x / (x + y);
