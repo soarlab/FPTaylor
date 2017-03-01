@@ -82,10 +82,10 @@ let print_problem_info pi =
   print_bounds pi;
   if Config.get_bool_option "print-opt-lower-bounds" then begin
       Log.report 0 "";
-      let abs_approx_str = "Optimization lower bound for absolute error (approximate):" in
-      let abs_exact_str = "Optimization lower bound for absolute error (exact):" in
-      let rel_approx_str = "Optimization lower bound for relative error (approximate):" in
-      let rel_exact_str = "Optimization lower bound for relative error (exact):" in
+      let abs_approx_str = "Optimization lower bound for absolute error model (approximate):" in
+      let abs_exact_str = "Optimization lower bound for absolute error model (exact):" in
+      let rel_approx_str = "Optimization lower bound for relative error model (approximate):" in
+      let rel_exact_str = "Optimization lower bound for relative error model (exact):" in
       let w = max_length [abs_approx_str, pi.abs_error_approx;
                           abs_exact_str, pi.abs_error_exact;
                           rel_approx_str, pi.rel_error_approx;

@@ -55,3 +55,11 @@ compile_byte_with_simple_interval()
 	   "$in_file"
 }
 
+compile_native_with_simple_interval2()
+{
+    interval_dir="$base_dir/simple_interval"
+    ocamlopt -o "$out_file" -I "$interval_dir" -I "$b_and_b_dir"\
+	     nums.cmxa "$interval_dir/interval.cmxa"\
+	     "$b_and_b_dir/opt_func.ml" "$b_and_b_dir/opt0.ml"\
+	     "$in_file"
+}

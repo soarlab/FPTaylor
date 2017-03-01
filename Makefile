@@ -91,6 +91,17 @@ fptaylor-simple-interval: compile-simple-interval compile-byte
 	echo "compile_native_with_simple_interval" >> $(OPT_DIR)/compile.sh
 	chmod +x $(OPT_DIR)/compile.sh	
 
+fptaylor-simple-interval2: INCLUDE=$(SIMPLE_INTERVAL_DIR)
+
+fptaylor-simple-interval2: compile-simple-interval compile-byte
+	$(ML) -o fptaylor -I $(SIMPLE_INTERVAL_DIR) \
+		unix.cma str.cma nums.cma \
+		$(SIMPLE_INTERVAL_DIR)/interval.cma \
+		$(SRC:.ml=.cmo)
+	cp $(OPT_DIR)/compile.template $(OPT_DIR)/compile.sh
+	echo "compile_native_with_simple_interval2" >> $(OPT_DIR)/compile.sh
+	chmod +x $(OPT_DIR)/compile.sh	
+
 compile-interval:
 	cd $(INTERVAL_DIR); $(MAKE)
 

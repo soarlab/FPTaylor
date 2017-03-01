@@ -143,7 +143,7 @@ let implode l = itlist (^) l ""
 
 let explode s =
   let rec exap n l =
-      if n < 0 then l else
+    if n < 0 then l else
       exap (n - 1) ((String.sub s n 1)::l) in
   exap (String.length s - 1) []
 
@@ -156,8 +156,7 @@ let print_list fp sep =
 
 let starts_with str ~prefix =
   let n = String.length prefix in
-  if n > String.length str then
-    false
+  if n > String.length str then false
   else
     String.sub str 0 n = prefix
 
@@ -168,14 +167,15 @@ let starts_with str ~prefix =
 let load_and_close_channel do_close ic = 
   let rec lf ichan a = 
     try
-      lf ic (Pervasives.input_line ic::a)
+      lf ic (Pervasives.input_line ic :: a)
     with End_of_file -> a in
-    let rs = lf ic [] in
-      if do_close then Pervasives.close_in ic else ();
-      List.rev rs
+  let rs = lf ic [] in
+  if do_close then Pervasives.close_in ic;
+  List.rev rs
 
 let load_file filename = 
-  let ic = Pervasives.open_in filename in load_and_close_channel true ic
+  let ic = Pervasives.open_in filename in
+  load_and_close_channel true ic
 
 let run_cmd cmd =
   let (ic, oc) = Unix.open_process cmd in
@@ -187,13 +187,14 @@ let write_to_file fname writer arg =
   let oc = open_out fname in
   let fmt = Format.make_formatter (output oc) (fun () -> flush oc) in
   let r = writer fmt arg in
-  let () = close_out oc in
+  close_out oc;
   r
 
 (* From hol_light/printer.ml *)
 let write_to_string writer =
   let sbuff = ref "" in
-  let output s m n = sbuff := (!sbuff) ^ (String.sub s m n) and flush() = () in
+  let output s m n = sbuff := !sbuff ^ String.sub s m n and
+      flush () = () in
   let fmt = Format.make_formatter output flush in
   ignore (Format.pp_set_max_boxes fmt 100);
   fun arg -> ignore (writer fmt arg);
@@ -218,7 +219,7 @@ let make_path ?(perm = 0o777) path =
 
 (* Creates a directory if it doesn't exist and returns its name *)
 let get_dir dir_name =
-  let () = make_path dir_name in 
+  make_path dir_name; 
   dir_name
 
 let set_tmp_dir, get_tmp_dir =
