@@ -78,23 +78,25 @@ let print_problem_info pi =
   in
   Log.report 0 "-------------------------------------------------------------------------------";
   Log.report 0 "Problem: %s\n" pi.name;
-  Log.report 0 "Bounds (without rounding): %s" (sprintf_I "%e" pi.real_bounds);
-  print_bounds pi;
   if Config.get_bool_option "print-opt-lower-bounds" then begin
-      Log.report 0 "";
-      let abs_approx_str = "Optimization lower bound for the absolute error model (approximate):" in
-      let abs_exact_str = "Optimization lower bound for the absolute error model (exact):" in
-      let rel_approx_str = "Optimization lower bound for the relative error model (approximate):" in
-      let rel_exact_str = "Optimization lower bound for the relative error model (exact):" in
+      let abs_approx_str = "The absolute error model (approximate):" in
+      let abs_exact_str = "The absolute error model (exact):" in
+      let rel_approx_str = "The relative error model (approximate):" in
+      let rel_exact_str = "The relative error model (exact):" in
       let w = max_length [abs_approx_str, pi.abs_error_approx;
                           abs_exact_str, pi.abs_error_exact;
                           rel_approx_str, pi.rel_error_approx;
                           rel_exact_str, pi.rel_error_exact] in
+      if w > 0 then
+        Log.report 0 "Optimization lower bounds for error models:";
       print_lower_bound w abs_approx_str pi.abs_error_approx;
       print_lower_bound w abs_exact_str pi.abs_error_exact;
       print_lower_bound w rel_approx_str pi.rel_error_approx;
       print_lower_bound w rel_exact_str pi.rel_error_exact;
+      Log.report 0 "";
     end;
+  Log.report 0 "Bounds (without rounding): %s" (sprintf_I "%e" pi.real_bounds);
+  print_bounds pi;
   Log.report 0 "";
   let abs_approx_str = "Absolute error (approximate):" in
   let abs_exact_str = "Absolute error (exact):" in
@@ -181,7 +183,7 @@ let sum_err_bounds bounds =
 let error2_warning ?(eps = 1e-2) err1 err2 =
   if abs_float err1 > 0. && abs_float err2 >= eps *. abs_float err1 then begin
       Log.warning 0 "Large second-order error: %e (first-order = %e)" err2 err1;
-      Log.warning 0 "Try to split intervals of input variables and rerun FPTaylor";
+      Log.warning 0 "Try intermediate-opt = true or manually split intervals of input variables.";
     end
             
 let absolute_errors tf =
