@@ -43,125 +43,117 @@
 
 %%
 
-first: 
-  pragma SEMICOLON next_pragma {}
+first:
+  | section_list {}
 ;
 
-next_pragma: /* empty */ {}
-  | first {}
+section_list:
+  | {}
+  | section section_list {}
 ;
 
-pragma:
-  CONSTANTS constants {}
-  | VARIABLES variables {}
-  | DEFINITIONS definitions {}
-  | CONSTRAINTS constraints {}
-  | EXPRESSIONS expressions {}
+section:
+  | CONSTANTS constants_list {}
+  | VARIABLES variables_list {}
+  | DEFINITIONS definitions_list {}
+  | CONSTRAINTS constraints_list {}
+  | EXPRESSIONS expressions_list {}
 ;
 
-constants:
-  constant next_constants {}
+separator:
+  | COMMA {}
+  | SEMICOLON {}
 ;
 
-next_constants: /* empty */ {}
-  | COMMA constants {}
+constants_list:
+  | {}
+  | constant separator constants_list {}
 ;
 
 constant:
   ID EQ expr { add_constant $1 $3 }
 ;
 
-variables:
-  variable next_variables {}
-;
-
-next_variables: /* empty */ {}
-  | COMMA variables {}
+variables_list:
+  | {}
+  | variable separator variables_list {}
 ;
 
 variable:
-  var_type ID IN LBRACKET expr COMMA expr RBRACKET PLUS_MINUS expr 
-  { add_variable_with_uncertainty $1 $2 $5 $7 $10 }
+  | var_type ID IN LBRACKET expr COMMA expr RBRACKET PLUS_MINUS expr 
+    { add_variable_with_uncertainty $1 $2 $5 $7 $10 }
   | var_type ID IN LBRACKET expr COMMA expr RBRACKET 
-      { add_variable $1 $2 $5 $7 }
+    { add_variable $1 $2 $5 $7 }
 ;
 
-var_type: /* empty */ { real_type }
+var_type:
+  | { real_type }
   | INT { real_type }
   | REAL { real_type }
   | FLOAT { mk_value_type $1 }
 ;
 
-definitions:
-  definition next_definitions {}
-;
-
-next_definitions: /* empty */ {}
-  | COMMA definitions {}
+definitions_list:
+  | {}
+  | definition separator definitions_list {}
 ;
 
 definition:
-  ID EQ expr { add_definition $1 $3 }
+  | ID EQ expr { add_definition $1 $3 }
   | ID rnd EQ expr { add_definition $1 (apply_raw_rounding $2 $4) }
 ;
 
-constraints:
-  constr next_constraints {}
-;
-
-next_constraints: /* empty */ {}
-  | COMMA constraints {}
+constraints_list:
+  | {}
+  | constr separator constraints_list {}
 ;
 
 constr:
-  ID COLON raw_constr { add_constraint $1 $3 }
+  | ID COLON raw_constr { add_constraint $1 $3 }
   | ID rnd COLON raw_constr { add_constraint $1 (apply_raw_rounding_to_formula $2 $4) }
 ;
 
 raw_constr:
-  expr EQ expr { Raw_eq ($1, $3) }
+  | expr EQ expr { Raw_eq ($1, $3) }
   | expr LE expr { Raw_le ($1, $3) }
   | expr LT expr { Raw_lt ($1, $3) }
   | expr GE expr { Raw_le ($3, $1) }
   | expr GT expr { Raw_lt ($3, $1) }
 ;
 
-expressions:
-  expression next_expressions {}
-;
-
-next_expressions: /* empty */ {}
-  | COMMA expressions {}
+expressions_list:
+  | {}
+  | expression separator expressions_list {}
 ;
 
 expression:
-  ID EQ expr { add_expression_with_name $1 $3 }
+  | ID EQ expr { add_expression_with_name $1 $3 }
   | ID rnd EQ expr { add_expression_with_name $1 (apply_raw_rounding $2 $4) }
   | expr { add_expression $1 }
 ;
 
 pos_neg_number:
-  NUMBER { $1 }
+  | NUMBER { $1 }
   | MINUS NUMBER { ("-" ^ $2) }
 ;
 
 rnd:
-  RND LPAREN NUMBER COMMA ID COMMA NUMBER COMMA pos_neg_number COMMA pos_neg_number RPAREN
-  { create_explicit_rounding (int_of_string $3) ($5) 
-      (float_of_string $7) (int_of_string $9) (int_of_string $11) }
+  | RND LPAREN NUMBER COMMA ID COMMA NUMBER COMMA pos_neg_number COMMA pos_neg_number RPAREN
+    { create_explicit_rounding (int_of_string $3) ($5) 
+        (float_of_string $7) (int_of_string $9) (int_of_string $11) }
   | NO_RND { create_rounding 0 "ne" 1.0 }
   | RND LPAREN NUMBER COMMA ID COMMA NUMBER RPAREN
-  { create_rounding (int_of_string $3) ($5) (float_of_string $7) }
+    { create_rounding (int_of_string $3) ($5) (float_of_string $7) }
   | RND LPAREN NUMBER COMMA ID RPAREN
-      { create_rounding (int_of_string $3) ($5) 1.0 }
+    { create_rounding (int_of_string $3) ($5) 1.0 }
   | RND_PAR
-      { create_rounding (fst $1) (snd $1) 1.0 }
+    { create_rounding (fst $1) (snd $1) 1.0 }
 ;
 
 expr:
-  ID { Identifier $1 }
+  | ID { Identifier $1 }
   | NUMBER { Numeral (More_num.num_of_float_string $1) }
-  | SINGLE_NUMERAL 
+  | SINGLE_NUMERAL
     { Raw_rounding (string_to_rounding "rnd32", Numeral (More_num.num_of_float_string $1)) }
   | DOUBLE_NUMERAL 
     { Raw_rounding (string_to_rounding "rnd64", Numeral (More_num.num_of_float_string $1)) }
@@ -175,12 +167,12 @@ expr:
   | E_CONST POW expr { Raw_u_op ("exp", $3) }
   | expr POW NUMBER { Raw_bin_op ("^", $1, Numeral (Num.num_of_string $3)) }
   | expr POW LPAREN MINUS NUMBER RPAREN 
-      { Raw_bin_op ("^", $1, Numeral (Num.minus_num (Num.num_of_string $5))) }
+    { Raw_bin_op ("^", $1, Numeral (Num.minus_num (Num.num_of_string $5))) }
   | LPAREN expr RPAREN { $2 }
   | ABS LPAREN expr RPAREN { Raw_u_op ("abs", $3) }
   | INV LPAREN expr RPAREN { Raw_u_op ("inv", $3) }
   | FMA LPAREN expr COMMA expr COMMA expr RPAREN 
-      { Raw_gen_op ("fma", [$3; $5; $7]) }
+    { Raw_gen_op ("fma", [$3; $5; $7]) }
   | SQRT LPAREN expr RPAREN { Raw_u_op ("sqrt", $3) }
   | EXP LPAREN expr RPAREN { Raw_u_op ("exp", $3) }
   | LOG LPAREN expr RPAREN { Raw_u_op ("log", $3) }

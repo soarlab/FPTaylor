@@ -67,22 +67,22 @@ Comments in **FPTaylor** input files have the form
 The section with constants has the following syntax
 
     Constants
-      name = constant expression,
-      name = constant expression,
+      name = constant expression;
+      name = constant expression;
       ...
       name = constant expression;
 
-All constant definitions must be separated by comma and the last
-definition must end with a semicolon. It is possible to refer to
-previously defined constants in constant definitions. All constants
-are assumed to be real rational numbers. It is not possible to define
-irrational constants (e.g., a square root of 2: `sqrt(2)`). Irrational
-constants may be defined in the *Definitions* section.
+All constant definitions must be separated by semicolons. It is
+possible to refer to previously defined constants in constant
+definitions. All constants are assumed to be real rational numbers. It
+is not possible to define irrational constants (e.g., a square root of
+2: `sqrt(2)`). Irrational constants may be defined in the
+*Definitions* section.
 
 Example:
 
     Constants
-      k = 0.1,
+      k = 0.1;
       c = 1 / k * 2;
 
 ### Variables
@@ -90,14 +90,13 @@ Example:
 The section with variables has the following syntax
 
     Variables
-      type var_name in [low, high],
+      type var_name in [low, high];
       ...
       type var_name in [low, high];
 
-All variable definitions must be separated by comma and the last
-definition must end with a semicolon. Each variable has a type, name,
-and the interval of values. The type can be omitted; in this case, a
-variable will get the `real` type.
+All variable definitions must be separated by semicolons. Each
+variable has a type, name, and the interval of values. The type can be
+omitted; in this case, a variable will get the `real` type.
 
 Variables can be of the following types:
 
@@ -120,8 +119,8 @@ Example:
       k = 2;
 
     Variables
-      float32 x in [0, 1],
-      y in [2.1 / 3, 20/7 + 0.1],
+      float32 x in [0, 1];
+      y in [2.1 / 3, 20/7 + 0.1];
       real z in [-3, 4.5 + k]; // k is a constant
 
 In the example above, `y` and `z` are real variables, `x` is a single
@@ -145,19 +144,18 @@ bounded by `a` and `b` (not by `a - u` and `b + u`).
 The section with definitions has the following syntax
 
     Definitions
-      def_name = expr,
+      def_name = expr;
       ...
       def_name = expr;
 
-All definitions must be separated by comma and the last definition
-must end with a semicolon. It is possible to refer to previous
-definitions. Definition names must be different from names of
-variables and constants.
+All definitions must be separated by semicolons. It is possible to
+refer to previous definitions. Definition names must be different from
+names of variables and constants.
 
 Example:
 
     Definitions
-      t = x * y + 1,
+      t = x * y + 1;
       z = (t - 1) / (t + 1);
 
 There is an alternative way to write a definition
@@ -172,19 +170,19 @@ does not propagate inside another rounding operator.
 
 Example:
 
-    r0 = 1 + x,
-    r1 rnd32= x,
-    r2 rnd64= x + r0 * y,
-    r3 rnd16_up= rnd32(x) + y,
+    r0 = 1 + x;
+    r1 rnd32= x;
+    r2 rnd64= x + r0 * y;
+    r3 rnd16_up= rnd32(x) + y;
     r4 rnd32= rnd64(x + y);
     
 
 It is equivalent to
 
-    r0 = 1 + x,
-    r1 = rnd32(x),
-    r2 = rnd64(rnd64(x) + rnd64(rnd64(r0) * rnd64(y))),
-    r3 = rnd16_up(rnd32(x) + rnd16_up(y)),
+    r0 = 1 + x;
+    r1 = rnd32(x);
+    r2 = rnd64(rnd64(x) + rnd64(rnd64(r0) * rnd64(y)));
+    r3 = rnd16_up(rnd32(x) + rnd16_up(y));
     r4 = rnd64(x + y);
 
 ### Constraints
@@ -193,7 +191,7 @@ Each variable have lower and upper bounds. Additional constraints can
 be defined in the following section
 
     Constraints
-      constr_name: formula,
+      constr_name: formula;
       ...
       constr_name: formula;
 
@@ -211,16 +209,15 @@ Example:
 The section with expressions has the following syntax
 
     Expressions
-      expr_name = expr,
+      expr_name = expr;
       ...
       expr_name = expr;
 
-All expressions must be separated by comma and the last expression
-must end with a semicolon. This section works in the same way as the
-*Definitions* section but names of expressions (and the equality sign)
-can be omitted. Expressions without names will get automatically
-generated names "Expression k" where k is the number of the expression
-in the definition list.
+All expressions must be separated by semicolons. This section works in
+the same way as the *Definitions* section but names of expressions
+(and the equality sign) can be omitted. Expressions without names will
+get automatically generated names "Expression k" where k is the number
+of the expression in the definition list.
 
 It is also possible to use the alternative syntax of definitions with
 automatic rounding (see the *Definitions* section).
@@ -228,8 +225,8 @@ automatic rounding (see the *Definitions* section).
 Example:
 
     Expressions
-      2 * x,	// This expression will be named "Expression 1"
-      t rnd16= 2 * x,
+      2 * x;	// This expression will be named "Expression 1"
+      t rnd16= 2 * x;
       1 + t;   // This expression will be named "Expression 3"
 
 In the example above, the value of the last expression is `1 + rnd16(rnd16(2) * rnd16(x))`.
@@ -527,10 +524,10 @@ Problem: sqroot
 Bounds (without rounding): [9.920349e-01, 1.410787e+00]
 Bounds (floating-point): [9.92034912109374000799e-01, 1.41078659147024310094e+00]
 
-Optimization lower bound for absolute error (approximate): 4.941403e-16 (suboptimality = 3.5%)
-Optimization lower bound for absolute error (exact):       4.874573e-16 (suboptimality = 2.8%)
-Optimization lower bound for relative error (approximate): 4.757544e-16 (suboptimality = 4.6%)
-Optimization lower bound for relative error (exact):       4.410886e-16 (suboptimality = 0.9%)
+Optimization lower bound for the absolute error model (approximate): 4.941403e-16 (suboptimality = 3.5%)
+Optimization lower bound for the absolute error model (exact):       4.874573e-16 (suboptimality = 2.8%)
+Optimization lower bound for the relative error model (approximate): 4.757544e-16 (suboptimality = 4.6%)
+Optimization lower bound for the relative error model (exact):       4.410886e-16 (suboptimality = 0.9%)
 
 Absolute error (approximate): 5.121506e-16
 Absolute error (exact):       5.016452e-16
