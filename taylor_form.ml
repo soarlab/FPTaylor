@@ -526,9 +526,11 @@ let sqrt_form vars f =
   let m1 = make_stronger (abs_I s1).high in
   let d =
     if Config.proof_flag then
-      (x0_int +$ {low = -.m1; high = m1}) **$. 1.5
+      let t = (x0_int +$ {low = -.m1; high = m1}) in
+      sqrt_I t *$ t
     else
-      (x0_int +$ s1) **$. 1.5 in
+      let t = (x0_int +$ s1) in
+      sqrt_I t *$ t in
   let b_high = 0.125 *^ (abs_I (inv_I d)).high in
   let b_high = make_stronger b_high in
   let m2, m2_exp = sum2_high x1 x1 in
