@@ -11,7 +11,7 @@
 
   let resolve_id =
     let table = Hashtbl.create 100 in
-    let _ = List.map (fun (k, v) -> Hashtbl.add table k v) [
+    let () = List.iter (fun (k, v) -> Hashtbl.add table k v) [
       "Constants", CONSTANTS;
       "constants", CONSTANTS;
       "Variables", VARIABLES;

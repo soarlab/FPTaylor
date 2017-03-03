@@ -501,11 +501,12 @@ let main () =
   Log.report 0 "FPTaylor, version %s" Version.version;
   if Config.input_files = [] then
     begin
+      let prog_name = Sys.argv.(0) in
       Printf.printf
-        "\nUsage: %s [--opt-name opt-value ...] [-c config1 ...] \
+        "\nUsage: %s [--opt_name opt_value ...] [-c config1 ...] \
          input_file1 [input_file2 ...]\n\n\
-         See default.cfg for a list of available options.\n\n"
-        Sys.argv.(0);
+         Run '%s --help' to see a list of available options.\n\n"
+        prog_name prog_name;
       exit 1
     end
   else

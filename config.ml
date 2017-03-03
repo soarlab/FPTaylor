@@ -6,12 +6,18 @@
 (*      This file is distributed under the terms of the MIT license           *)
 (* ========================================================================== *)
 
-open Lib
-open List
-
+let usage_msg =
+  Printf.sprintf "\nUsage: %s [--opt_name opt_value ...] [-c config1 ...] \
+                  input_file1 [input_file2 ...]\n\n\
+                  See default.cfg for a complete list of available \
+                  options and their values.\n"
+                 Sys.argv.(0)
+       
 let param_table = Hashtbl.create 100 
 
 let short_names = Hashtbl.create 100
+
+let loaded_cfg_files = ref []
 
 let find_option ?default p = 
   try Hashtbl.find param_table p
@@ -38,16 +44,6 @@ let set_option ?(init = false) ?(short = "") name value =
                 "Unknown option: %s = %s (see available options in default.cfg)"
                 name value)
 
-let print_options ~level:level =
-  let print name value =
-    Log.report level "%s = %s" name value in
-  Hashtbl.iter print param_table
-
-let print_short_names ~level:level =
-  let print short name =
-    Log.report level "%s (short: %s)" name short in
-  Hashtbl.iter print short_names
-
 let is_comment =
   let comment = Str.regexp "^[ \t]*[\\*#].*" in
   fun str -> Str.string_match comment str 0 
@@ -56,122 +52,119 @@ let is_spaces str =
   String.trim str = ""
 
 let parse_config_file ?(init = false) fname =
+  let arg_list = ref [] in
+  let doc_comment = ref "" in
+  let short_name = ref "" in
   let split_regexp = Str.regexp "=" in
   let short_regexp = Str.regexp "^\\[short:[ \t]*\\([a-zA-Z][a-zA-Z0-9]*\\)\\]$" in
   let parse_short_name str =
     if Str.string_match short_regexp str 0 then
-      Str.matched_group 1 str
+      short_name := Str.matched_group 1 str
     else
-      ""
+      ()
   in
-  let parse_option c short_name line =
+  let parse_option c short doc line =
     let strs = Str.bounded_split split_regexp line 2 in 
     match strs with 
-    | [param; value] -> 
-       set_option ~init ~short:short_name (String.trim param) (String.trim value)
+    | [param; value] ->
+       let param = String.trim param in
+       let value = String.trim value in
+       set_option ~init ~short:short param value;
+       let doc_str =
+         let doc' = if short <> "" then "(-" ^ short ^ ")" else "" in
+         doc' ^ doc in
+       arg_list := ("--" ^ param, Arg.String (set_option param), doc_str)
+                   :: !arg_list;
+       if short <> "" then
+         arg_list := ("-" ^ short, Arg.String (set_option param), "")
+                     :: !arg_list
     | _ -> 
-       Log.error "[File %s, line %d] Parameter parsing error: %s" 
-		 fname c line;
+       Log.error "[File %s, line %d] Parameter parsing error: %s" fname c line;
        failwith ("Error while parsing a configuration file: " ^ fname)
   in
-  let rec parse_lines c short_name lines =
+  let rec parse_lines c lines =
     match lines with
     | line :: rest ->
        let line = String.trim line in
-       if line = "" || is_comment line then
-	 parse_lines (c + 1) short_name rest
+       if line = "" then ()
+       else if is_comment line then begin
+           if Lib.starts_with line ~prefix:"##" then
+             doc_comment := String.sub line 2 (String.length line - 2)
+         end
        else if Lib.starts_with line ~prefix:"[" then
-	 let short = parse_short_name line in
-	 if short <> "" then
-	   parse_lines (c + 1) short rest
-	 else
-	   let () = parse_option c short_name line in
-	   parse_lines (c + 1) "" rest
-       else
-	 let () = parse_option c short_name line in
-	 parse_lines (c + 1) "" rest
+	 parse_short_name line
+       else begin
+	   parse_option c !short_name !doc_comment line;
+           short_name := "";
+           doc_comment := "";
+         end;
+       parse_lines (c + 1) rest
     | [] -> ()
   in
-  Log.report 2 "Config: %s " fname;
-  let lines = load_file fname in
-  parse_lines 1 "" lines
-
-let parse_args () =
-  let input_files = ref [] in
-  let get_opt_name opt =
-    let k = String.length opt in
-    if Lib.starts_with opt ~prefix:"--" then
-      String.sub opt 2 (k - 2)
-    else if Lib.starts_with opt ~prefix:"-" then
-      let short = String.sub opt 1 (k - 1) in
-      Hashtbl.find short_names short 
-    else
-      raise Not_found
-  in
-  let rec parse args =
-    match args with
-    | [] -> ()
-    | name :: rest ->
-       if Lib.starts_with name ~prefix:"-" then
-	 let value, rest =
-	   (match rest with
-	    | value :: rs -> value, rs
-	    | [] -> failwith (Format.sprintf "Option without value: %s" name)) in
-	 let () =
-	   if name = "-c" then
-	     parse_config_file value
-	   else
-	     begin
-	       try
-		 let opt_name = get_opt_name name in
-		 set_option opt_name value
-	       with Not_found ->
-		 failwith (Format.sprintf "Unknown command line option: %s (value: %s)" name value)
-	     end
-	 in
-	 parse rest
-       else
-	 let () = input_files := name :: !input_files in
-	 parse rest
-  in
-  let () = parse (tl (Array.to_list Sys.argv)) in
-  rev !input_files
+  let lines = try Lib.load_file fname
+              with _ -> failwith ("Cannot open a configuration file: " ^ fname) in
+  parse_lines 1 lines;
+  loaded_cfg_files := !loaded_cfg_files @ [fname];
+  List.rev !arg_list
 
 (* Set the base directory *)
-let base_dir = 
-  let path =
-    try
-      Sys.getenv "FPTAYLOR_BASE"
-    with Not_found ->
-      Filename.dirname Sys.executable_name in
-  Log.report 2 "Base path: %s" path;
-  path
+let base_dir =
+  try Sys.getenv "FPTAYLOR_BASE"
+  with Not_found ->
+    Filename.dirname Sys.executable_name
 
-(* Load the main configuration file *)
-let () = 
-  let fname = Filename.concat base_dir "default.cfg" in
+(* Load the main configuration file and parse arguments *)
+let input_files =
+  let files = ref [] in
+  let add_file name = files := name :: !files in
+  let parse_config_arg name = ignore (parse_config_file ~init:false name) in
+  let main_cfg = Filename.concat base_dir "default.cfg" in
   try
-    parse_config_file fname ~init:true
-  with _ ->
-    Log.error "Cannot open default.cfg: %s" fname
+    let c_arg = ("-c", Arg.String parse_config_arg, "filename Load options from a file.") in 
+    let args = c_arg :: parse_config_file main_cfg ~init:true in
+    let args = Arg.align ~limit:20 args in
+    Arg.parse args add_file usage_msg;
+    List.rev !files
+  with
+  | Failure msg | Sys_error msg ->
+     Log.error_str msg;
+     exit 2
+  | _ ->
+     Log.error "Cannot open default.cfg: %s" main_cfg;
+     exit 2
 
-(* Parse options and load other configuration files *)
-let input_files = parse_args ()
-  
+let print_options ~level:level =
+  let print name value =
+    Log.report level "%s = %s" name value in
+  Log.report level "Base path: %s" base_dir;
+  List.iter (Log.report level "Config file: %s") !loaded_cfg_files;
+  Hashtbl.iter print param_table
+
+let print_short_names ~level:level =
+  let print short name =
+    Log.report level "%s (short: %s)" name short in
+  Hashtbl.iter print short_names
+
 let stob ?(name = "??") str = 
   try bool_of_string str
   with _ ->
-    failwith (Format.sprintf "Cannot convert a string into a boolean value: %s (parameter = %s)" str name)
+    failwith (Format.sprintf
+                "Cannot convert a string into a boolean value: %s (parameter = %s)"
+                str name)
     
 let stoi ?(name = "??") str = 
   try int_of_string str
   with _ -> 
-    failwith (Format.sprintf "Cannot convert a string into an integer value: %s (parameter = %s)" str name)
+    failwith (Format.sprintf
+                "Cannot convert a string into an integer value: %s (parameter = %s)"
+                str name)
   
 let stof ?(name = "??") str = 
   try float_of_string str
   with _ ->
-    failwith (Format.sprintf "Cannot convert a string into a floating-point value: %s (parameter = %s)" str name)
+    failwith (Format.sprintf
+                "Cannot convert a string into a floating-point value: %s (parameter = %s)"
+                str name)
 
 let get_string_option name = find_option name
 
