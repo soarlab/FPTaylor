@@ -1,0 +1,12 @@
+Variables
+  float32 x in [1, 3];
+
+Definitions
+  x2 rnd32= x * x;
+  x4 rnd32= x2 * x2;
+  x8 rnd32= x4 * x4;
+
+Expressions
+  pow9_iter rnd32= x * x * x * x * x * x * x * x * x;
+  pow9_sqr  rnd32= x8 * x;
+
