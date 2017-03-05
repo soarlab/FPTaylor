@@ -17,15 +17,9 @@ open Interval
 open Rounding
 
 (* Operations *)
-type op_type = 
+type u_op_type = 
   | Op_neg
   | Op_abs
-  | Op_max
-  | Op_min
-  | Op_add
-  | Op_sub
-  | Op_mul
-  | Op_div
   | Op_inv
   | Op_sqrt
   | Op_sin
@@ -42,20 +36,30 @@ type op_type =
   | Op_asinh
   | Op_acosh
   | Op_atanh
-  | Op_fma
+  | Op_floor_power2
+
+type bin_op_type =
+  | Op_max
+  | Op_min
+  | Op_add
+  | Op_sub
+  | Op_mul
+  | Op_div
   | Op_nat_pow
   | Op_sub2
   | Op_abs_err
-  | Op_floor_power2
+
+type gen_op_type =
+  | Op_fma
 
 (* Expression *)
 type expr =
   | Const of Const.t
   | Var of string
   | Rounding of rnd_info * expr
-  | U_op of op_type * expr
-  | Bin_op of op_type * expr * expr
-  | Gen_op of op_type * expr list
+  | U_op of u_op_type * expr
+  | Bin_op of bin_op_type * expr * expr
+  | Gen_op of gen_op_type * expr list
 
 type formula =
   | Le of expr * expr
@@ -109,6 +113,41 @@ let const_0 = mk_int_const 0 and
     const_4 = mk_int_const 4 and
     const_5 = mk_int_const 5
 
+let u_op_name = function
+  | Op_neg -> "neg"
+  | Op_abs -> "abs"
+  | Op_inv -> "inv"
+  | Op_sqrt -> "sqrt"
+  | Op_sin -> "sin"
+  | Op_cos -> "cos"
+  | Op_tan -> "tan"
+  | Op_asin -> "asin"
+  | Op_acos -> "acos"
+  | Op_atan -> "atan"
+  | Op_exp -> "exp"
+  | Op_log -> "log"
+  | Op_sinh -> "sinh"
+  | Op_cosh -> "cosh"
+  | Op_tanh -> "tanh"
+  | Op_asinh -> "asinh"
+  | Op_acosh -> "acosh"
+  | Op_atanh -> "atanh"
+  | Op_floor_power2 -> "floor_power2"
+
+let bin_op_name = function
+  | Op_max -> "max"
+  | Op_min -> "min"
+  | Op_add -> "+"
+  | Op_sub -> "-"
+  | Op_mul -> "*"
+  | Op_div -> "/"
+  | Op_nat_pow -> "^" 
+  | Op_sub2 -> "sub2"
+  | Op_abs_err -> "abs_err"
+
+let gen_op_name = function
+  | Op_fma -> "fma"
+
 let rec eq_expr e1 e2 =
   match (e1, e2) with
     | (Const c1, Const c2) -> Const.eq_c c1 c2
@@ -138,51 +177,33 @@ let rec vars_in_expr e =
     | _ -> []
 
 type print_env = {
-  env_op_name : op_type -> bool * string;
-  env_op_infix : op_type -> bool * bool;
-  env_print : (string -> unit) -> (expr -> unit) -> expr -> bool
-}
+    env_u_op_name : u_op_type -> bool * string;
+    env_bin_op_name : bin_op_type -> bool * string;
+    env_gen_op_name : gen_op_type -> bool * string;
+    env_op_infix : bin_op_type -> bool * bool;
+    env_print : (string -> unit) -> (expr -> unit) -> expr -> bool
+  }
 
 let def_print_env = {
-  env_op_name = (fun _ -> false, "");
-  env_op_infix = (fun _ -> false, false);
-  env_print = (fun _ _ _ -> false);
-}
+    env_u_op_name = (fun _ -> false, "");
+    env_bin_op_name = (fun _ -> false, "");
+    env_gen_op_name = (fun _ -> false, "");
+    env_op_infix = (fun _ -> false, false);
+    env_print = (fun _ _ _ -> false);
+  }
 
-let op_name_in_env env op =
-  let b, str = env.env_op_name op in
-  if b then str else
-    match op with
-      | Op_neg -> "-"
-      | Op_abs -> "abs"
-      | Op_max -> "max"
-      | Op_min -> "min"
-      | Op_add -> "+"
-      | Op_sub -> "-"
-      | Op_mul -> "*"
-      | Op_div -> "/"
-      | Op_inv -> "inv"
-      | Op_sqrt -> "sqrt"
-      | Op_sin -> "sin"
-      | Op_cos -> "cos"
-      | Op_tan -> "tan"
-      | Op_asin -> "asin"
-      | Op_acos -> "acos"
-      | Op_atan -> "atan"
-      | Op_exp -> "exp"
-      | Op_log -> "log"
-      | Op_sinh -> "sinh"
-      | Op_cosh -> "cosh"
-      | Op_tanh -> "tanh"
-      | Op_asinh -> "asinh"
-      | Op_acosh -> "acosh"
-      | Op_atanh -> "atanh"
-      | Op_fma -> "fma"
-      | Op_nat_pow -> "^" 
-      | Op_sub2 -> "sub2"
-      | Op_abs_err -> "abs_err"
-      | Op_floor_power2 -> "floor_power2"
+let u_op_name_in_env env op =
+  let b, str = env.env_u_op_name op in
+  if b then str else u_op_name op
 
+let bin_op_name_in_env env op =
+  let b, str = env.env_bin_op_name op in
+  if b then str else bin_op_name op
+
+let gen_op_name_in_env env op =
+  let b, str = env.env_gen_op_name op in
+  if b then str else gen_op_name op
+                             
 let is_infix_in_env env op =
   let b, r = env.env_op_infix op in
   if b then r else
@@ -190,13 +211,14 @@ let is_infix_in_env env op =
       | Op_add | Op_sub | Op_mul | Op_div | Op_nat_pow -> true
       | _ -> false
 
-let op_name = op_name_in_env def_print_env
-
 let is_infix = is_infix_in_env def_print_env
 
-let c_print_env = {
-  env_op_name = (function
+let c_print_env = { def_print_env with
+  env_u_op_name = (function
     | Op_abs -> true, "fabs"
+    | _ -> false, "");
+
+  env_bin_op_name = (function
     | Op_nat_pow -> true, "pow"
     | _ -> false, "");
 
@@ -212,8 +234,8 @@ let c_print_env = {
       | _ -> false);
 }
 
-let gelpia_print_env = {
-  env_op_name = (function
+let gelpia_print_env = { def_print_env with
+  env_bin_op_name = (function
     | Op_nat_pow -> true, "pow"
     | _ -> false, "");
 
@@ -246,18 +268,24 @@ let gelpia_print_env = {
       | _ -> false);
 }
 
-let z3py_print_env = {
-  env_op_name = (fun op ->
+let z3py_print_env = { def_print_env with
+  env_u_op_name = (fun op ->
     match op with
-      | Op_nat_pow -> true, "**"
       | Op_abs -> true, "z3_abs"
-      | Op_min -> true, "z3_min"
-      | Op_max -> true, "z3_max"
       | Op_sin | Op_cos | Op_tan | Op_asin | Op_acos | Op_atan 
       | Op_exp | Op_log 
       | Op_sinh | Op_cosh | Op_tanh | Op_asinh | Op_acosh | Op_atanh
-      | Op_sub2 | Op_floor_power2 | Op_abs_err
-	-> failwith ("z3py: " ^ op_name op ^ " is not supported")
+      | Op_floor_power2
+	-> failwith ("z3py: " ^ u_op_name op ^ " is not supported")
+      | _ -> false, "");
+
+  env_bin_op_name = (fun op ->
+    match op with
+      | Op_nat_pow -> true, "**"
+      | Op_min -> true, "z3_min"
+      | Op_max -> true, "z3_max"
+      | Op_sub2 | Op_abs_err
+	-> failwith ("z3py: " ^ bin_op_name op ^ " is not supported")
       | _ -> false, "");
 
   env_op_infix = (function
@@ -278,22 +306,24 @@ let z3py_print_env = {
     | _ -> false);
 }
 
-let ocaml_float_print_env = {
-  env_op_name = (function
+let ocaml_float_print_env = { def_print_env with
+  env_u_op_name = (function
     | Op_neg -> true, "-."
+    | Op_abs -> true, "abs_float"
+    | Op_floor_power2 -> true, "floor_power2"
+    | _ -> false, "");
+
+  env_bin_op_name = (function
     | Op_add -> true, "+."
     | Op_sub -> true, "-."
     | Op_mul -> true, "*."
     | Op_div -> true, "/."
-    | Op_abs -> true, "abs_float"
     | Op_max -> true, "(fun (x, y) -> max x y)"
     | Op_min -> true, "(fun (x, y) -> min x y)"
     | Op_nat_pow -> true, "**"
     | Op_sub2 -> true, "sub2"
-    | Op_abs_err -> true, "abs_err"
-    | Op_floor_power2 -> true, "floor_power2"
-    | _ -> false, "");
-
+    | Op_abs_err -> true, "abs_err");
+  
   env_op_infix = (function
     | _ -> false, false);
 
@@ -306,6 +336,7 @@ let ocaml_float_print_env = {
       | _ -> false);
 }
 
+(*                              
 let racket_interval_env_op_name = function
   | Op_neg -> true, "i-"
   | Op_add -> true, "i+"
@@ -394,6 +425,7 @@ let racket_interval_print_env = {
 	  failwith "Racket environment: rounding is not supported"
     in true);
 }
+ *)
 
 
 let print_expr_in_env env fmt =
@@ -417,12 +449,12 @@ let print_expr_in_env env fmt =
 	| U_op (op, arg) ->
 	  begin
 	    p "(";
-	    p (op_name_in_env env op);
+	    p (u_op_name_in_env env op);
 	    p "("; print arg; p ")";
 	    p ")";
 	  end
 	| Bin_op (op, arg1, arg2) ->
-	  let name = op_name_in_env env op in
+	  let name = bin_op_name_in_env env op in
 	  if is_infix_in_env env op then
 	    begin
 	      p "(";
@@ -441,7 +473,7 @@ let print_expr_in_env env fmt =
 	      p ")";
 	    end
 	| Gen_op (op, args) -> 
-	  let name = op_name_in_env env op in
+	  let name = gen_op_name_in_env env op in
 	  begin
 	    p name;
 	    p "(";

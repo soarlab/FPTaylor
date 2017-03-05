@@ -1159,7 +1159,7 @@ let build_form vars =
 	    | Op_acosh -> acosh_form vars arg_form
 	    | Op_atanh -> atanh_form vars arg_form
 	    | _ -> failwith 
-	      ("build_form: unsupported unary operation " ^ op_name op)
+	      ("build_form: unsupported unary operation " ^ u_op_name op)
 	end
       | Bin_op (op, arg1, arg2) ->
 	begin
@@ -1173,7 +1173,7 @@ let build_form vars =
             | Op_max -> max_form vars arg1_form arg2_form
             | Op_min -> min_form vars arg1_form arg2_form
 	    | _ -> failwith
-	      ("build_form: unsupported binary operation " ^ op_name op)
+	      ("build_form: unsupported binary operation " ^ bin_op_name op)
 	end
       | Gen_op (op, args) ->
 	begin
@@ -1181,7 +1181,7 @@ let build_form vars =
 	  match (op, arg_forms) with
 	    | (Op_fma, [a;b;c]) -> add_form (mul_form vars a b) c
 	    | _ -> failwith
-	      ("build_form: unsupported general operation " ^ op_name op)
+	      ("build_form: unsupported general operation " ^ gen_op_name op)
 	end
   in
   fun e ->

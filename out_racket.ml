@@ -25,7 +25,7 @@ let gen_racket_function fmt (name, total2, exp, e) =
   p' (Format.sprintf "(define (%s " name);
   print_list p' (fun () -> p' " ") vars;
   p' ")\n\t";
-  print_expr_in_env racket_interval_print_env fmt e;
+  (*  print_expr_in_env racket_interval_print_env fmt e; *)
   p' ")"
 
 let create_racket_file fname name total2 exp expr =

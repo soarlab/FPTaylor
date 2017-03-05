@@ -48,8 +48,6 @@ let eval_float_expr vars =
 	  | Op_acosh -> Func.acosh x
 	  | Op_atanh -> Func.atanh x
 	  | Op_floor_power2 -> Func.floor_power2 x
-	  | _ -> failwith ("eval_float_expr: Unsupported unary operation: " 
-			   ^ op_name op)
       end
     | Bin_op (op, arg1, arg2) ->
       begin
@@ -65,8 +63,6 @@ let eval_float_expr vars =
 	  | Op_nat_pow -> x1 ** x2
 	  | Op_sub2 -> Func.sub2 (x1, x2)
           | Op_abs_err -> Func.abs_err (x1, x2)
-	  | _ -> failwith ("eval_float_expr: Unsupported binary operation: " 
-			   ^ op_name op)
       end
     | Gen_op (op, args) ->
       begin
@@ -74,7 +70,7 @@ let eval_float_expr vars =
 	match (op, xs) with
 	  | (Op_fma, [a;b;c]) -> a *. b +. c
 	  | _ -> failwith ("eval_float_expr: Unsupported general operation: " 
-			   ^ op_name op)
+			   ^ gen_op_name op)
       end
   in
   eval
@@ -102,7 +98,7 @@ let eval_num_expr vars =
 	  | Op_abs -> abs_num x
 	  | Op_inv -> one // x
 	  | _ -> failwith ("eval_num_expr: Unsupported unary operation: " 
-			   ^ op_name op)
+			   ^ u_op_name op)
       end
     | Bin_op (op, arg1, arg2) ->
       begin
@@ -117,7 +113,7 @@ let eval_num_expr vars =
           | Op_min -> min_num x1 x2
 	  | Op_nat_pow -> x1 **/ x2
 	  | _ -> failwith ("eval_num_expr: Unsupported binary operation: " 
-			   ^ op_name op)
+			   ^ bin_op_name op)
       end
     | Gen_op (op, args) ->
       begin
@@ -125,7 +121,7 @@ let eval_num_expr vars =
 	match (op, xs) with
 	  | (Op_fma, [a;b;c]) -> (a */ b) +/ c
 	  | _ -> failwith ("eval_num_expr: Unsupported general operation: " 
-			   ^ op_name op)
+			   ^ gen_op_name op)
       end
   in
   eval
@@ -165,8 +161,6 @@ let eval_interval_expr vars =
 	  | Op_acosh -> Func.acosh_I x
 	  | Op_atanh -> Func.atanh_I x
 	  | Op_floor_power2 -> Func.floor_power2_I x
-	  | _ -> failwith ("eval_interval_expr: Unsupported unary operation: " 
-			   ^ op_name op)
       end
     | Bin_op (op, arg1, arg2) ->
       begin
@@ -186,8 +180,6 @@ let eval_interval_expr vars =
 	  | Op_nat_pow -> x1 **$. (eval_float_const_expr arg2)
 	  | Op_sub2 -> Func.sub2_I (x1, eval arg2)
           | Op_abs_err -> Func.abs_err_I (x1, eval arg2)
-	  | _ -> failwith ("eval_interval_expr: Unsupported binary operation: " 
-			   ^ op_name op)
       end
     | Gen_op (op, args) ->
       begin
@@ -195,7 +187,7 @@ let eval_interval_expr vars =
 	match (op, xs) with
 	  | (Op_fma, [a;b;c]) -> (a *$ b) +$ c
 	  | _ -> failwith ("eval_interval_expr: Unsupported general operation: " 
-			   ^ op_name op)
+			   ^ gen_op_name op)
       end
   in
   eval

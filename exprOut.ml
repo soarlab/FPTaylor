@@ -60,7 +60,6 @@ module InfoPrinter : PrinterType = struct
         | Op_acosh -> fprintf fmt "acosh(%a)" print arg
         | Op_atanh -> fprintf fmt "atanh(%a)" print arg
         | Op_floor_power2 -> fprintf fmt "floor_power2(%a)" print arg
-        | _ -> failwith "Info: unknown unary operation"
       end
     | Bin_op (op, arg1, arg2) -> begin
         match op with
@@ -73,7 +72,6 @@ module InfoPrinter : PrinterType = struct
         | Op_nat_pow -> fprintf fmt "(%a ^ %a)" print arg1 print arg2
         | Op_abs_err -> fprintf fmt "abs_err(%a, %a)" print arg1 print arg2
         | Op_sub2 -> fprintf fmt "sub2(%a, %a)" print arg1 print arg2
-        | _ -> failwith "Info: unknown binary operation"
       end
     | Gen_op (op, args) -> begin
         match (op, args) with
@@ -117,7 +115,6 @@ module OCamlIntervalPrinter : PrinterType = struct
         | Op_acosh -> fprintf fmt "acosh_I(%a)" print arg
         | Op_atanh -> fprintf fmt "atanh_I(%a)" print arg
         | Op_floor_power2 -> fprintf fmt "floor_power2_I(%a)" print arg
-        | _ -> failwith "OCamlInterval: unknown unary operation"
       end
     | Bin_op (op, arg1, arg2) -> begin
         match op with
@@ -136,7 +133,6 @@ module OCamlIntervalPrinter : PrinterType = struct
             | _ ->
                failwith "OCamlInterval: Op_nat_pow: non-integer exponent"
           end
-        | _ -> failwith "OCamlInterval: unknown binary operation"
       end
     | Gen_op (op, args) -> begin
         match (op, args) with

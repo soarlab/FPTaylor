@@ -248,8 +248,6 @@ let check_expr vars =
 	    else
 	      Func.atanh_I x
 	  | Op_floor_power2 -> Func.floor_power2_I x
-	  | _ -> failwith ("check_expr: Unsupported unary operation: " 
-			   ^ op_name op)
 	end
       | Bin_op (op, arg1, arg2) ->
 	begin
@@ -273,7 +271,7 @@ let check_expr vars =
             | Op_min -> min_I_I x1 (eval arg2)
 	    | Op_nat_pow -> x1 **$. (Eval.eval_float_const_expr arg2)
 	    | _ -> failwith ("check_expr: Unsupported binary operation: " 
-			     ^ op_name op)
+			     ^ bin_op_name op)
 	end
       | Gen_op (op, args) ->
 	begin
@@ -281,7 +279,7 @@ let check_expr vars =
 	  match (op, xs) with
 	    | (Op_fma, [a;b;c]) -> (a *$ b) +$ c
 	    | _ -> failwith ("check_expr: Unsupported general operation: " 
-			     ^ op_name op)
+			     ^ gen_op_name op)
 	end
     in
     let c = check_interval r in
