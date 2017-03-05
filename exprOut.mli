@@ -10,10 +10,7 @@
 (* Symbolic expression printing                                               *)
 (* -------------------------------------------------------------------------- *)
 
-module type PrinterType =
-  sig
-    val print : Format.formatter -> Expr.expr -> unit
-  end
+module type PrinterType
 
 module type P =
   sig
