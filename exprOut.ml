@@ -10,27 +10,23 @@
 (* Symbolic expression printing                                               *)
 (* -------------------------------------------------------------------------- *)
 
-open Expr
-open Format
 open Interval
 
 module type PrinterType =
   sig
-    val print : formatter -> expr -> unit
+    val print : Format.formatter -> Expr.expr -> unit
   end
 
-module Make(Printer: PrinterType) = struct
-
+module Make(Printer : PrinterType) = struct
   let print_fmt = Printer.print
-
-  let print_std = print_fmt std_formatter
-
+  let print_std = print_fmt Format.std_formatter
   let print_str = Lib.write_to_string print_fmt
-
 end
         
 module InfoPrinter : PrinterType = struct
-
+  open Expr
+  open Format
+  
   let rec print fmt expr =
     match expr with
     | Const c -> begin
@@ -64,7 +60,7 @@ module InfoPrinter : PrinterType = struct
         | Op_acosh -> fprintf fmt "acosh(%a)" print arg
         | Op_atanh -> fprintf fmt "atanh(%a)" print arg
         | Op_floor_power2 -> fprintf fmt "floor_power2(%a)" print arg
-        | _ -> failwith "Info.print: unknown unary operation"
+        | _ -> failwith "Info: unknown unary operation"
       end
     | Bin_op (op, arg1, arg2) -> begin
         match op with
@@ -76,15 +72,76 @@ module InfoPrinter : PrinterType = struct
         | Op_div -> fprintf fmt "(%a / %a)" print arg1 print arg2
         | Op_nat_pow -> fprintf fmt "(%a ^ %a)" print arg1 print arg2
         | Op_abs_err -> fprintf fmt "abs_err(%a, %a)" print arg1 print arg2
-        | _ -> failwith "Info.print: unknown binary operation"
+        | Op_sub2 -> fprintf fmt "sub2(%a, %a)" print arg1 print arg2
+        | _ -> failwith "Info: unknown binary operation"
       end
     | Gen_op (op, args) -> begin
         match (op, args) with
         | Op_fma, [a1; a2; a3] ->
            fprintf fmt "fma(%a, %a, %a)" print a1 print a2 print a3
-        | _ -> failwith "Info.print: unknown general operation"
+        | _ -> failwith "Info: unknown general operation"
       end
+end
 
+module OCamlIntervalPrinter : PrinterType = struct
+  open Expr
+  open Format
+  
+  let rec print fmt expr =
+    match expr with
+    | Const c ->
+        let v = Const.to_interval c in
+        fprintf fmt "{low = %.20e; high = %.20e}" v.low v.high
+    | Var v -> fprintf fmt "var_%s" v
+    | Rounding (rnd, arg) ->
+       let rnd_str = Rounding.rounding_to_string rnd in
+       failwith ("OCamlInterval: rounding is not allowed: " ^ rnd_str)
+    | U_op (op, arg) -> begin
+        match op with
+        | Op_neg -> fprintf fmt "(~-$(%a))" print arg
+        | Op_abs -> fprintf fmt "abs_I(%a)" print arg
+        | Op_inv -> fprintf fmt "inv_I(%a)" print arg
+        | Op_sqrt -> fprintf fmt "sqrt_I(%a)" print arg
+        | Op_exp -> fprintf fmt "exp_I(%a)" print arg
+        | Op_log -> fprintf fmt "log_I(%a)" print arg
+        | Op_sin -> fprintf fmt "sin_I(%a)" print arg
+        | Op_cos -> fprintf fmt "cos_I(%a)" print arg
+        | Op_tan -> fprintf fmt "tan_I(%a)" print arg
+        | Op_asin -> fprintf fmt "asin_I(%a)" print arg
+        | Op_acos -> fprintf fmt "acos_I(%a)" print arg
+        | Op_atan -> fprintf fmt "atan_I(%a)" print arg
+        | Op_sinh -> fprintf fmt "sinh_I(%a)" print arg
+        | Op_cosh -> fprintf fmt "cosh_I(%a)" print arg
+        | Op_tanh -> fprintf fmt "tanh_I(%a)" print arg                       
+        | Op_asinh -> fprintf fmt "asinh_I(%a)" print arg
+        | Op_acosh -> fprintf fmt "acosh_I(%a)" print arg
+        | Op_atanh -> fprintf fmt "atanh_I(%a)" print arg
+        | Op_floor_power2 -> fprintf fmt "floor_power2_I(%a)" print arg
+        | _ -> failwith "OCamlInterval: unknown unary operation"
+      end
+    | Bin_op (op, arg1, arg2) -> begin
+        match op with
+        | Op_min -> fprintf fmt "min_I_I (%a) (%a)" print arg1 print arg2
+        | Op_max -> fprintf fmt "max_I_I (%a) (%a)" print arg1 print arg2
+        | Op_add -> fprintf fmt "(%a +$ %a)" print arg1 print arg2
+        | Op_sub -> fprintf fmt "(%a -$ %a)" print arg1 print arg2
+        | Op_mul -> fprintf fmt "(%a *$ %a)" print arg1 print arg2
+        | Op_div -> fprintf fmt "(%a /$ %a)" print arg1 print arg2
+        | Op_abs_err -> fprintf fmt "abs_err_I(%a, %a)" print arg1 print arg2
+        | Op_sub2 -> fprintf fmt "sub2_I (%a, %a)" print arg1 print arg2
+        | Op_nat_pow -> begin
+            match arg2 with
+            | Const (Const.Rat n) when Num.is_integer_num n ->
+               fprintf fmt "pow_I_i (%a) (%s)" print arg1 (Num.string_of_num n)
+            | _ ->
+               failwith "OCamlInterval: Op_nat_pow: non-integer exponent"
+          end
+        | _ -> failwith "OCamlInterval: unknown binary operation"
+      end
+    | Gen_op (op, args) -> begin
+        match (op, args) with
+        | _ -> failwith "OCamlInterval: unknown general operation"
+      end
 end
 
 module Info = Make(InfoPrinter)

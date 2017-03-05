@@ -306,69 +306,6 @@ let ocaml_float_print_env = {
       | _ -> false);
 }
 
-let ocaml_interval_print_env = {
-  env_op_name = (function
-    | Op_neg -> true, "~-$"
-    | Op_add -> true, "+$"
-    | Op_sub -> true, "-$"
-    | Op_mul -> true, "*$"
-    | Op_div -> true, "/$"
-    | Op_abs -> true, "abs_I"
-    | Op_max -> true, "(fun (x, y) -> max_I_I x y)"
-    | Op_min -> true, "(fun (x, y) -> min_I_I x y)"
-    | Op_inv -> true, "inv_I"
-    | Op_sqrt -> true, "sqrt_I"
-    | Op_sin -> true, "sin_I"
-    | Op_cos -> true, "cos_I"
-    | Op_tan -> true, "tan_I"
-    | Op_asin -> true, "asin_I"
-    | Op_acos -> true, "acos_I"
-    | Op_atan -> true, "atan_I"
-    | Op_exp -> true, "exp_I"
-    | Op_log -> true, "log_I"
-    | Op_sinh -> true, "sinh_I"
-    | Op_cosh -> true, "cosh_I"
-    | Op_tanh -> true, "tanh_I"
-    | Op_asinh -> true, "asinh_I"
-    | Op_acosh -> true, "acosh_I"
-    | Op_atanh -> true, "atanh_I"
-    | Op_nat_pow -> true, "**$"
-    | Op_sub2 -> true, "sub2_I"
-    | Op_abs_err -> true, "abs_err_I"
-    | Op_floor_power2 -> true, "floor_power2_I"
-    | _ -> false, "");
-
-  env_op_infix = (function
-    | _ -> false, false);
-
-  env_print = (fun p print e ->
-    match e with
-      | Var name -> let _ = p ("var_" ^ name) in true
-      | Const c ->
-         let v = Const.to_interval c in
-	 let _ = p (Format.sprintf "{low = %.20e; high = %.20e}" v.low v.high) in
-	 true
-      | Bin_op (Op_nat_pow, arg1, arg2) ->
-	begin
-	  match arg2 with
-	  | Const c -> begin
-              let n = try Const.to_num c
-                      with Failure _ -> failwith "Op_nat_pow: interval exponent" in
-	      if is_integer_num n && n >/ Int 0 then
-		let _ =
-		  p "(pow_I_i ";
-	          print arg1;
-		  p (" (" ^ string_of_num n ^ ")");
-		  p ")" in
-		true
-	      else
-		failwith "Op_nat_pow: non-integer exponent"
-            end
-	  | _ -> failwith "Op_nat_pow: non-constant exponent"
-	end
-      | _ -> false);
-}
-
 let racket_interval_env_op_name = function
   | Op_neg -> true, "i-"
   | Op_add -> true, "i+"

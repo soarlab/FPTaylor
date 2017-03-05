@@ -17,6 +17,8 @@ open Lib
 open Expr
 open Opt_common
 
+module Out = ExprOut.Make(ExprOut.OCamlIntervalPrinter)
+       
 let gen_bb_opt_code (pars : Opt_common.opt_pars) max_only fmt =
   let nl = Format.pp_print_newline fmt in
   let p str = Format.pp_print_string fmt str; nl() in
@@ -65,7 +67,7 @@ let gen_bb_opt_code (pars : Opt_common.opt_pars) max_only fmt =
 	  bounds (i + 1) rest in
     let n = length var_bounds in
     let strs = map 
-      (fun b -> Format.sprintf "{low = %.30e; high = %.30e}" b.low b.high) var_bounds in
+      (fun b -> Format.sprintf "{low = %.20e; high = %.20e}" b.low b.high) var_bounds in
     nl();
     p (Format.sprintf "let start_interval = Array.init %d (function" n);
     bounds 0 strs;
@@ -85,7 +87,7 @@ let gen_bb_opt_code (pars : Opt_common.opt_pars) max_only fmt =
     nl();
     p "let f_X input_array = ";
     vars 0 var_names;
-    print_expr_in_env ocaml_interval_print_env fmt e;
+    Out.print_fmt fmt e;
     nl() in
 
   fun (var_bound, e) ->
