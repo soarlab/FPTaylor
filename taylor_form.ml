@@ -91,7 +91,7 @@ let estimate_expr, reset_estimate_cache =
   let reset () = (cache := []) in
   let estimate vars e =
     if Config.get_bool_option "intermediate-opt" then
-      let () = Log.report 4 "Estimating: %s" (print_expr_str e) in
+      let () = Log.report 4 "Estimating: %s" (ExprOut.Info.print_str e) in
       let min, max = Opt.find_min_max Opt_common.default_opt_pars e in
       Log.report 4 "Estimation result: [%f, %f]" min max;
       {low = min; high = max}
@@ -206,7 +206,7 @@ let const_form e =
 	   v0 = e;
 	   v1 = []
          }
-    | _ -> failwith ("const_form: not a constant" ^ print_expr_str e)
+    | _ -> failwith ("const_form: not a constant" ^ ExprOut.Info.print_str e)
 
 (* Constant with rounding *)
 (* TODO: subnormal numbers are incorrectly handled by bin_float_of_num *)
@@ -230,14 +230,14 @@ let precise_const_rnd_form rnd e =
 	   use the same artificial constant (const_0) for indices *)
 	let err = mk_err_var (find_index (mk_rounding rnd const_0)) rnd.eps_exp in
 	Log.report 4 "Inexact constant: %s; err = %s"
-		   (print_expr_str e)
-		   (print_expr_str err_expr);
+		   (ExprOut.Info.print_str e)
+		   (ExprOut.Info.print_str err_expr);
 	{
 	  form_index = form_index;
 	  v0 = e;
 	  v1 = [err_expr, err]
 	}
-    | _ -> failwith ("precise_const_rnd_form: not a constant: " ^ print_expr_str e)
+    | _ -> failwith ("precise_const_rnd_form: not a constant: " ^ ExprOut.Info.print_str e)
 	
 
 (* constant with rounding *)
@@ -268,8 +268,8 @@ let const_rnd_form rnd e =
 	let err_expr = mk_float_const m2 in
 	let err = mk_err_var (find_index (mk_rounding rnd e)) rnd.eps_exp in
 	Log.report 4 "Inexact constant: %s; err = %s" 
-		   (print_expr_str e) 
-		   (print_expr_str err_expr);
+		   (ExprOut.Info.print_str e) 
+		   (ExprOut.Info.print_str err_expr);
 	let _ = 
 	  Proof.add_rnd_bin_const_step form_index (Const.to_num c) 
 	    (mk_proof_rnd_info rnd) p2_exp m2 err.proof_index in
@@ -278,7 +278,7 @@ let const_rnd_form rnd e =
 	  v0 = e;
 	  v1 = [err_expr, err]
 	}
-    | _ -> failwith ("const_rnd_form: not a constant: " ^ print_expr_str e)
+    | _ -> failwith ("const_rnd_form: not a constant: " ^ ExprOut.Info.print_str e)
 
 let get_var_uncertainty eps_exp var_name =
   let v = Environment.find_variable var_name in
@@ -300,7 +300,7 @@ let var_form e =
       (* FIXME: what is the right value of eps_exp here? *)
 	v1 = if Config.get_bool_option "uncertainty" then get_var_uncertainty (-53) v else [];
       }
-    | _ -> failwith ("var_form: not a variable" ^ print_expr_str e)
+    | _ -> failwith ("var_form: not a variable" ^ ExprOut.Info.print_str e)
 
 (* variable with rounding *)
 let var_rnd_form rnd e =
@@ -352,7 +352,7 @@ let var_rnd_form rnd e =
 	  v0 = e;
 	  v1 = v1_uncertainty @ v1_rnd;
 	}
-    | _ -> failwith ("var_rnd_form: not a variable" ^ print_expr_str e)
+    | _ -> failwith ("var_rnd_form: not a variable" ^ ExprOut.Info.print_str e)
 
 (* rounding *)
 let rounded_form vars original_expr rnd f =

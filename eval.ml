@@ -24,7 +24,7 @@ let eval_float_expr vars =
     | Const c -> Const.to_float c
     | Var v -> vars v
     | Rounding _ as expr -> failwith ("eval_float_expr: Rounding is not supported: " ^
-					 print_expr_str expr)
+					 ExprOut.Info.print_str expr)
     | U_op (op, arg) ->
       begin
 	let x = eval arg in
@@ -141,7 +141,7 @@ let eval_interval_expr vars =
     | Const c -> Const.to_interval c
     | Var v -> vars v
     | Rounding _ as expr -> failwith ("eval_interval_expr: Rounding is not supported: " ^
-					 print_expr_str expr)
+					ExprOut.Info.print_str expr)
     | U_op (op, arg) ->
       begin
 	let x = eval arg in
@@ -205,7 +205,7 @@ let eval_interval_const_expr =
 
 
 let eval_const_expr e = 
-  Log.report 4 "eval_const_expr: %s" (print_expr_str e);
+  Log.report 4 "eval_const_expr: %s" (ExprOut.Info.print_str e);
   let n = eval_num_const_expr e in
   Log.report 4 "result: %s" (string_of_num n);
   Const.of_num n

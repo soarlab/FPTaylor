@@ -117,16 +117,16 @@ let exprs () = env.expressions
 let var_bound_float name = variable_interval name
 
 let print_form level f =
-  Log.report level "v0 = %s" (print_expr_str f.v0);
+  Log.report level "v0 = %s" (ExprOut.Info.print_str f.v0);
   iter (fun (e, err) -> 
       Log.report level "%d (%d): exp = %d: %s" 
-	         err.index err.proof_index err.exp (print_expr_str e)) f.v1;
+	         err.index err.proof_index err.exp (ExprOut.Info.print_str e)) f.v1;
   Log.report level "\nCorresponding original subexpressions:";
   iter (fun (_, err) ->
       let i = err.index in
       if i > 0 then
         let expr = expr_for_index i in
-        Log.report level "%d: %s" i (print_expr_str expr)) f.v1
+        Log.report level "%d: %s" i (ExprOut.Info.print_str expr)) f.v1
 
 let bound_info bound =
   if bound.low > neg_infinity then
@@ -363,7 +363,7 @@ let safety_check e =
   with Rounding_simpl.Exceptional_operation (e0, str) ->
     let msg =
       Format.sprintf "\nPotential exception detected: %s at:\n%s"
-	             str (print_expr_str e0) in
+	             str (ExprOut.Info.print_str e0) in
     if Config.fail_on_exception then
       failwith msg
     else
@@ -371,7 +371,7 @@ let safety_check e =
 
 let compute_form pi e =
   Log.report 2 "\n*************************************";
-  Log.report 2 "Taylor form for: %s" (print_expr_str e);
+  Log.report 2 "Taylor form for: %s" (ExprOut.Info.print_str e);
   if Config.proof_flag then Proof.new_proof ();
   let start = Unix.gettimeofday() in
   let pi, tform = 
@@ -379,7 +379,7 @@ let compute_form pi e =
       let bound0 = safety_check e in
       Log.report 2 "\nConservative bound: %s" (sprintf_I "%f" bound0);
       let e = Rounding_simpl.simplify_rounding e in
-      Log.report 2 "\nSimplified rounding: %s" (print_expr_str e);
+      Log.report 2 "\nSimplified rounding: %s" (ExprOut.Info.print_str e);
       let vars = var_bound_float in
       Log.report 1 "Building Taylor forms...";
       let form' = build_form vars e in

@@ -19,6 +19,7 @@ SRC=	version.mli\
 	const.mli\
 	const.ml\
 	expr.ml\
+	exprOut.ml\
 	eval.ml\
 	environment.ml\
 	input_parser.mli\
