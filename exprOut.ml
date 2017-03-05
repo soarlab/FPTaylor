@@ -17,6 +17,13 @@ module type PrinterType =
     val print : Format.formatter -> Expr.expr -> unit
   end
 
+module type P =
+  sig
+    val print_fmt : Format.formatter -> Expr.expr -> unit
+    val print_std : Expr.expr -> unit
+    val print_str : Expr.expr -> string
+  end
+
 module Make(Printer : PrinterType) = struct
   let print_fmt = Printer.print
   let print_std = print_fmt Format.std_formatter

@@ -19,6 +19,7 @@ SRC=	version.mli\
 	const.mli\
 	const.ml\
 	expr.ml\
+	exprOut.mli\
 	exprOut.ml\
 	eval.ml\
 	environment.ml\
