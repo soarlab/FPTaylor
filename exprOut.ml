@@ -22,7 +22,8 @@ module Make(Printer : PrinterType) = struct
   let print_std = print_fmt Format.std_formatter
   let print_str = Lib.write_to_string print_fmt
 end
-        
+
+                                       
 module InfoPrinter : PrinterType = struct
   open Expr
   open Format
@@ -32,7 +33,7 @@ module InfoPrinter : PrinterType = struct
     | Const c -> begin
         match c with
         | Const.Rat n ->
-           fprintf fmt "(%s)" (Num.string_of_num (Const.to_num c))
+           fprintf fmt "(%s)" (Num.string_of_num n)
         | Const.Interval v ->
            fprintf fmt "interval(%.20e, %.20e)" v.low v.high
       end
@@ -80,6 +81,7 @@ module InfoPrinter : PrinterType = struct
         | _ -> failwith "Info: unknown general operation"
       end
 end
+
 
 module OCamlIntervalPrinter : PrinterType = struct
   open Expr
@@ -139,5 +141,68 @@ module OCamlIntervalPrinter : PrinterType = struct
         | _ -> failwith "OCamlInterval: unknown general operation"
       end
 end
+
+
+module RacketPrinter : PrinterType = struct
+  open Expr
+  open Format
+  
+  let rec print fmt expr =
+    match expr with
+    | Const c -> begin
+        match c with
+        | Const.Rat n ->
+           fprintf fmt "(make-interval %s)" (Num.string_of_num n)
+        | Const.Interval v ->
+           let a = Num.string_of_num (More_num.num_of_float v.low) and
+               b = Num.string_of_num (More_num.num_of_float v.high) in
+           fprintf fmt "(make-interval %s %s)" a b
+      end
+    | Var v -> fprintf fmt "%s-var" v
+    | Rounding (rnd, arg) ->
+       let rnd_str = Rounding.rounding_to_string rnd in
+       failwith ("Racket: rounding is not allowed: " ^ rnd_str)
+    | U_op (op, arg) -> begin
+        match op with
+        | Op_neg -> fprintf fmt "(i- %a)" print arg
+        | Op_abs -> fprintf fmt "(iabs %a)" print arg
+        | Op_inv -> fprintf fmt "(i/ %a)" print arg
+        | Op_sqrt -> fprintf fmt "(isqrt %a)" print arg
+        | Op_exp -> fprintf fmt "(iexp %a)" print arg
+        | Op_log -> fprintf fmt "(ilog %a)" print arg
+        | Op_sin -> fprintf fmt "(isin %a)" print arg
+        | Op_cos -> fprintf fmt "(icos %a)" print arg
+        | Op_tan -> fprintf fmt "(itan %a)" print arg
+        | Op_asin -> fprintf fmt "(iasin %a)" print arg
+        | Op_acos -> fprintf fmt "(iacos %a)" print arg
+        | Op_atan -> fprintf fmt "(iatan %a)" print arg
+        | Op_sinh -> fprintf fmt "(isinh %a)" print arg
+        | Op_cosh -> fprintf fmt "(icosh %a)" print arg
+        | Op_tanh -> fprintf fmt "(itanh %a)" print arg                       
+        | Op_asinh -> fprintf fmt "(iasinh %a)" print arg
+        | Op_acosh -> fprintf fmt "(iacosh %a)" print arg
+        | Op_atanh -> fprintf fmt "(iatanh %a)" print arg
+        | Op_floor_power2 -> fprintf fmt "(ifloor-pow2 %a)" print arg
+      end
+    | Bin_op (op, arg1, arg2) -> begin
+        match op with
+        | Op_min -> fprintf fmt "(imin %a %a)" print arg1 print arg2
+        | Op_max -> fprintf fmt "(imax %a %a)" print arg1 print arg2
+        | Op_add -> fprintf fmt "(i+ %a %a)" print arg1 print arg2
+        | Op_sub -> fprintf fmt "(i- %a %a)" print arg1 print arg2
+        | Op_mul -> fprintf fmt "(i* %a %a)" print arg1 print arg2
+        | Op_div -> fprintf fmt "(i/ %a %a)" print arg1 print arg2
+        | Op_nat_pow -> fprintf fmt "(iexpt %a %a)" print arg1 print arg2
+        | Op_abs_err -> fprintf fmt "(iabs-err %a %a)" print arg1 print arg2
+        | Op_sub2 -> fprintf fmt "(isub2 %a %a)" print arg1 print arg2
+      end
+    | Gen_op (op, args) -> begin
+        match (op, args) with
+        | Op_fma, [a1; a2; a3] ->
+           fprintf fmt "(ifma %a %a %a)" print a1 print a2 print a3
+        | _ -> failwith "Info: unknown general operation"
+      end
+end
+
 
 module Info = Make(InfoPrinter)

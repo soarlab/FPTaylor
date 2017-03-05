@@ -14,6 +14,8 @@ open List
 open Lib
 open Expr
 
+module Out = ExprOut.Make(ExprOut.RacketPrinter)
+       
 let gen_racket_function fmt (name, total2, exp, e) =
   let nl = Format.pp_print_newline fmt in
   let p str = Format.pp_print_string fmt str; nl() in 
@@ -25,7 +27,7 @@ let gen_racket_function fmt (name, total2, exp, e) =
   p' (Format.sprintf "(define (%s " name);
   print_list p' (fun () -> p' " ") vars;
   p' ")\n\t";
-  (*  print_expr_in_env racket_interval_print_env fmt e; *)
+  Out.print_fmt fmt e;
   p' ")"
 
 let create_racket_file fname name total2 exp expr =
