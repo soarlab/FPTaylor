@@ -13,6 +13,7 @@ SRC=	version.mli\
 	log.ml\
 	config.mli\
 	config.ml\
+	more_num.mli\
 	more_num.ml\
 	rounding.ml\
 	binary_float.ml\
