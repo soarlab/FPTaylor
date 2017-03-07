@@ -285,36 +285,6 @@ let z3py_print_env = { def_print_env with
     | _ -> false);
 }
 
-let ocaml_float_print_env = { def_print_env with
-  env_u_op_name = (function
-    | Op_neg -> true, "-."
-    | Op_abs -> true, "abs_float"
-    | Op_floor_power2 -> true, "floor_power2"
-    | _ -> false, "");
-
-  env_bin_op_name = (function
-    | Op_add -> true, "+."
-    | Op_sub -> true, "-."
-    | Op_mul -> true, "*."
-    | Op_div -> true, "/."
-    | Op_max -> true, "(fun (x, y) -> max x y)"
-    | Op_min -> true, "(fun (x, y) -> min x y)"
-    | Op_nat_pow -> true, "**"
-    | Op_sub2 -> true, "sub2"
-    | Op_abs_err -> true, "abs_err");
-  
-  env_op_infix = (function
-    | _ -> false, false);
-
-  env_print = (fun p _ e ->
-    match e with
-      | Var v -> let _ = p ("var_" ^ v) in true
-      | Const c -> 
-	let _ = p ("(" ^ string_of_float (Const.to_float c) ^ ")") in
-	true
-      | _ -> false);
-}
-
 let print_expr_in_env env fmt =
   let p = Format.pp_print_string fmt in
   let rec print e =

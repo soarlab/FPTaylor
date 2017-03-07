@@ -18,6 +18,7 @@ open Expr
 open Opt_common
 
 module Out = ExprOut.Make(ExprOut.OCamlIntervalPrinter)
+(* module OutFloat = ExprOut.Make(ExprOut.OCamlFloatPrinter) *)
        
 let gen_bb_opt_code (pars : Opt_common.opt_pars) max_only fmt =
   let nl = Format.pp_print_newline fmt in
@@ -81,10 +82,10 @@ let gen_bb_opt_code (pars : Opt_common.opt_pars) max_only fmt =
 	| v :: rest ->
 	  p (Format.sprintf "  let var_%s = input_array.(%d) in" v i);
 	  vars (i + 1) rest in
-    p "let f_x input_array = ";
+(*    p "let f_x input_array = ";
     vars 0 var_names;
-    print_expr_in_env ocaml_float_print_env fmt e;
-    nl();
+    OutFloat.print_fmt fmt e;
+    nl(); *)
     p "let f_X input_array = ";
     vars 0 var_names;
     Out.print_fmt fmt e;

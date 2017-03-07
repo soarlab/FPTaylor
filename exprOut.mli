@@ -26,5 +26,7 @@ module OCamlIntervalPrinter : PrinterType
 module RacketPrinter : PrinterType
 
 module CPrinter : PrinterType
+
+module OCamlFloatPrinter : PrinterType
                          
 module Info : P
