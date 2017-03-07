@@ -16,6 +16,8 @@ open Lib
 open Expr
 open Opt_common
 
+module Out = ExprOut.Make(ExprOut.GelpiaPrinter)
+       
 (* GELPIA parameters *)
 (*
 type gelpia_pars = {
@@ -42,7 +44,7 @@ let gen_gelpia_code fmt =
 
   let func expr = 
     p' "-f \"";
-    print_expr_in_env gelpia_print_env fmt expr;
+    Out.print_fmt fmt expr;
     p "\"" in
 
   let input names bounds =
@@ -59,7 +61,7 @@ let gen_gelpia_code fmt =
     let x_tol = domain_size *. pars.x_rel_tol +. pars.x_abs_tol in
     parameters pars x_tol;
     func expr;
-    input var_names var_bounds
+    input (map (fun name -> "var_" ^ name) var_names) var_bounds
 
 
 let name_counter = ref 0

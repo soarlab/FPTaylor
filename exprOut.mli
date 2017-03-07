@@ -28,5 +28,9 @@ module RacketPrinter : PrinterType
 module CPrinter : PrinterType
 
 module OCamlFloatPrinter : PrinterType
+
+module Z3PythonPrinter : PrinterType
+
+module GelpiaPrinter : PrinterType
                          
 module Info : P

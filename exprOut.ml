@@ -319,4 +319,112 @@ module OCamlFloatPrinter : PrinterType = struct
 end
 
 
+module Z3PythonPrinter : PrinterType = struct
+  open Expr
+  open Format
+  
+  let rec print fmt expr =
+    match expr with
+    | Const c -> begin
+        match c with
+        | Const.Rat n ->
+           let ns = Big_int.string_of_big_int (More_num.numerator n) and
+               ds = Big_int.string_of_big_int (More_num.denominator n) in
+           fprintf fmt "Q(%s, %s)" ns ds
+        | Const.Interval v ->
+           failwith "Z3Python: interval constants are not supported"
+      end
+    | Var v -> fprintf fmt "var_%s" v
+    | Rounding (rnd, arg) ->
+       let rnd_str = Rounding.rounding_to_string rnd in
+       failwith ("Z3Python: rounding is not allowed: " ^ rnd_str)
+    | U_op (op, arg) -> begin
+        match op with
+        | Op_neg -> fprintf fmt "(-(%a))" print arg
+        | Op_abs -> fprintf fmt "z3_abs(%a)" print arg
+        | Op_inv -> fprintf fmt "inv(%a)" print arg
+        | Op_sqrt -> fprintf fmt "sqrt(%a)" print arg
+        | _ -> failwith ("Z3Python: unknown unary operation: " ^ u_op_name op)
+      end
+    | Bin_op (op, arg1, arg2) -> begin
+        match op with
+        | Op_min -> fprintf fmt "z3_min(%a, %a)" print arg1 print arg2
+        | Op_max -> fprintf fmt "z3_max(%a, %a)" print arg1 print arg2
+        | Op_add -> fprintf fmt "(%a + %a)" print arg1 print arg2
+        | Op_sub -> fprintf fmt "(%a - %a)" print arg1 print arg2
+        | Op_mul -> fprintf fmt "(%a * %a)" print arg1 print arg2
+        | Op_div -> fprintf fmt "(%a / %a)" print arg1 print arg2
+        | Op_nat_pow -> fprintf fmt "(%a ** %a)" print arg1 print arg2
+        | _ -> failwith ("Z3Python: unknown binary operation: " ^ bin_op_name op)
+      end
+    | Gen_op (op, args) -> begin
+        match (op, args) with
+        | Op_fma, [a1; a2; a3] ->
+           fprintf fmt "(%a * %a + %a)" print a1 print a2 print a3
+        | _ -> failwith ("Z3Python: unknown general operation: " ^ gen_op_name op)
+      end
+end
+
+
+module GelpiaPrinter : PrinterType = struct
+  open Expr
+  open Format
+  
+  let rec print fmt expr =
+    match expr with
+    | Const c ->
+        let v = Const.to_interval c in
+        fprintf fmt "interval(%.20e, %.20e)" v.low v.high
+    | Var v -> fprintf fmt "var_%s" v
+    | Rounding (rnd, arg) ->
+       let rnd_str = Rounding.rounding_to_string rnd in
+       failwith ("Gelpia: rounding is not allowed: " ^ rnd_str)
+    | U_op (op, arg) -> begin
+        match op with
+        | Op_neg -> fprintf fmt "(-(%a))" print arg
+        | Op_abs -> fprintf fmt "abs(%a)" print arg
+        | Op_inv -> fprintf fmt "inv(%a)" print arg
+        | Op_sqrt -> fprintf fmt "sqrt(%a)" print arg
+        | Op_exp -> fprintf fmt "exp(%a)" print arg
+        | Op_log -> fprintf fmt "log(%a)" print arg
+        | Op_sin -> fprintf fmt "sin(%a)" print arg
+        | Op_cos -> fprintf fmt "cos(%a)" print arg
+        | Op_tan -> fprintf fmt "tan(%a)" print arg
+        | Op_asin -> fprintf fmt "asin(%a)" print arg
+        | Op_acos -> fprintf fmt "acos(%a)" print arg
+        | Op_atan -> fprintf fmt "atan(%a)" print arg
+        | Op_sinh -> fprintf fmt "sinh(%a)" print arg
+        | Op_cosh -> fprintf fmt "cosh(%a)" print arg
+        | Op_tanh -> fprintf fmt "tanh(%a)" print arg                       
+        | Op_asinh -> fprintf fmt "asinh(%a)" print arg
+        | Op_acosh -> fprintf fmt "acosh(%a)" print arg
+        | Op_atanh -> fprintf fmt "atanh(%a)" print arg
+        | Op_floor_power2 -> fprintf fmt "floor_power2(%a)" print arg
+      end
+    | Bin_op (op, arg1, arg2) -> begin
+        match op with
+        | Op_min -> fprintf fmt "min(%a, %a)" print arg1 print arg2
+        | Op_max -> fprintf fmt "max(%a, %a)" print arg1 print arg2
+        | Op_add -> fprintf fmt "(%a + %a)" print arg1 print arg2
+        | Op_sub -> fprintf fmt "(%a - %a)" print arg1 print arg2
+        | Op_mul -> fprintf fmt "(%a * %a)" print arg1 print arg2
+        | Op_div -> fprintf fmt "(%a / %a)" print arg1 print arg2
+        | Op_abs_err -> fprintf fmt "abs_err(%a, %a)" print arg1 print arg2
+        | Op_sub2 -> fprintf fmt "sub2(%a, %a)" print arg1 print arg2
+        | Op_nat_pow -> begin
+            match arg2 with
+            | Const (Const.Rat n) when Num.is_integer_num n ->
+               fprintf fmt "pow(%a, %s)" print arg1 (Num.string_of_num n)
+            | _ ->
+               failwith "Gelpia: Op_nat_pow: non-integer exponent"
+          end
+      end
+    | Gen_op (op, args) -> begin
+        match (op, args) with
+        | _ ->
+           failwith ("Gelpia: unknown general operation: " ^ gen_op_name op)
+      end
+end
+
+
 module Info = Make(InfoPrinter)

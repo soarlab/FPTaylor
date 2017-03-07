@@ -16,6 +16,8 @@ open Lib
 open Expr
 open Opt_common
 
+module Out = ExprOut.Make(ExprOut.Z3PythonPrinter)
+       
 let gen_z3py_opt_code (pars : Opt_common.opt_pars) fmt =
   let nl = Format.pp_print_newline fmt in
   let p str = Format.pp_print_string fmt str; nl() in
@@ -29,10 +31,11 @@ let gen_z3py_opt_code (pars : Opt_common.opt_pars) fmt =
   let tail () =
     p "";
     p (Format.sprintf "fTol = %f" pars.f_abs_tol);
-    p (Format.sprintf "l, u = find_bounds(f, var_constraints + constraints, fTol, %d)"
-	 (Config.get_int_option "z3-timeout"));
-    p "print '%.25f' % l";
-    p "print '%.25f' % u" in
+    p (Format.sprintf
+         "l, u = find_bounds(f, var_constraints + constraints, fTol, %d)"
+	 pars.timeout);
+    p "print('{0:.20e}'.format(l))";
+    p "print('{0:.20e}'.format(u))" in
 
   let num_to_z3 n =
     let s = Big_int.string_of_big_int in
@@ -47,11 +50,11 @@ let gen_z3py_opt_code (pars : Opt_common.opt_pars) fmt =
 
   let print_constraint c =
     match c with
-      | Le (e, Const c) ->
-	print_expr_in_env z3py_print_env fmt e;
-	p' " < ";
-	p' (const_to_z3 c)
-      | _ -> failwith "z3opt: print_constraint(): unsupported constraint" in
+    | Le (e, Const c) ->
+       Out.print_fmt fmt e;
+       p' " < ";
+       p' (const_to_z3 c)
+    | _ -> failwith "z3opt: print_constraint(): unsupported constraint" in
 
   let constraint_vars (name, c) =
     match c with
@@ -104,7 +107,7 @@ let gen_z3py_opt_code (pars : Opt_common.opt_pars) fmt =
 
   let expr e = 
     p' "f = ";
-    print_expr_in_env z3py_print_env fmt e in
+    Out.print_fmt fmt e in
 
   fun (var_bound, e) ->
     let cs = Environment.get_active_constraints() in
@@ -112,7 +115,7 @@ let gen_z3py_opt_code (pars : Opt_common.opt_pars) fmt =
     let var_names = unions (vars_in_expr e :: vars_cs) in
     let var_bounds = map var_bound var_names in
     head ();
-    vars var_names var_bounds;
+    vars (map (fun name -> "var_" ^ name) var_names) var_bounds;
     constraints cs;
     expr e;
     tail ()

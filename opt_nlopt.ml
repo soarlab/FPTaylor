@@ -62,7 +62,7 @@ let gen_nlopt_code (pars : nlopt_pars) fmt =
       match vs with
 	| [] -> ()
 	| h :: t ->
-	  p (Format.sprintf "  double %s = _x[%d];" h n);
+	  p (Format.sprintf "  double var_%s = _x[%d];" h n);
 	  init_vars t (n + 1) in
     p "double f(unsigned _n, const double *_x, double *_grad, void *_f_data) {";
     init_vars vars 0;

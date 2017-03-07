@@ -14,6 +14,8 @@ open Interval
 open List
 open Expr
 
+module Out = ExprOut.Make(ExprOut.GelpiaPrinter)
+       
 let gen_test_code fmt =
   let nl = Format.pp_print_newline fmt in
   let p str = Format.pp_print_string fmt str; nl () in
@@ -29,7 +31,7 @@ let gen_test_code fmt =
   let goal expr = 
     p "Maximize";
     p' "  goal = ";
-    print_expr_in_env gelpia_print_env fmt expr;
+    Out.print_fmt fmt expr;
     p ";"
   in
   fun (var_bound, expr) ->
