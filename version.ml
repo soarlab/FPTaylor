@@ -6,4 +6,4 @@
 (*      This file is distributed under the terms of the MIT license           *)
 (* ========================================================================== *)
 
-let version = "0.9"
+let version = "0.9.1+dev"
