@@ -26,11 +26,11 @@ let of_interval v =
   else if v.low < v.high && neg_infinity < v.high && v.low < infinity then Interval v
   else failwith ("Const.of_interval: bad argument: " ^ sprintf_I "%.20e" v)
 
-let is_rat_const = function
+let is_rat = function
   | Rat _ -> true
   | Interval _ -> false
 
-let is_interval_const = function
+let is_interval = function
   | Rat _ -> false
   | Interval _ -> true
                 

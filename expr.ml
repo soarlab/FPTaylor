@@ -175,17 +175,3 @@ let rec vars_in_expr e =
       let vs = map vars_in_expr args in
       itlist union vs []
     | _ -> []
-
-(* 
-* Returns true if the given constant value can be reprsented exactly
-* with a floating point number 
-*)
-let is_fp_exact eps c =
-  let v = Const.to_interval c in
-  if v.low <> v.high then
-    false
-  else
-    let () = if eps <> 2.0 ** (-53.0) then
-               Log.warning 0 "is_fp_exact: possible inexact result for eps <> eps64" in
-    true
-	  

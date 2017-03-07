@@ -102,5 +102,11 @@ let bin_float_of_num p rnd r =
       neg_bin_float (bin_float_of_pos_num rnd (minus_num r));;
   
 let round_num rnd n =
+  (* TODO: subnormal numbers and infinities *)
   let f = bin_float_of_num (-rnd.eps_exp) rnd.rnd_type n in
   num_of_bin_float f
+
+(* TODO: subnormal numbers and infinities *)
+let is_exact_fp_const rnd n = round_num rnd n =/ n
+
+

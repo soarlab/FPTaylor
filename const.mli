@@ -25,9 +25,9 @@ val of_interval : interval -> t
 
 val to_interval : t -> interval
 
-val is_rat_const : t -> bool
+val is_rat : t -> bool
 
-val is_interval_const : t -> bool
+val is_interval : t -> bool
 
 val to_num : t -> num
 

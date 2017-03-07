@@ -24,14 +24,14 @@ exception Exceptional_operation of expr * string
 
 let is_power_of_2_or_0 e =
   match e with
-    | Const c when Const.is_rat_const c -> 
+    | Const c when Const.is_rat c -> 
       let n = Const.to_num c in
       n =/ Int 0 || More_num.is_power_of_two n
     | _ -> false
 
 let is_neg_power_of_2 e =
   match e with
-    | Const c when Const.is_rat_const c ->
+    | Const c when Const.is_rat c ->
       let n = Const.to_num c in
       if n <>/ Int 0 then
 	More_num.is_power_of_two (Int 1 // n)
@@ -42,18 +42,15 @@ let is_neg_power_of_2 e =
 let rec get_type e =
   match e with
   | Const c ->
-     if Const.is_rat_const c then
-       let n = Const.to_num c in
-       (* TODO: a universal procedure is required *)
-       let rnd = string_to_rounding "rnd32" in
-       if round_num rnd n =/ n then
-	 rnd.fp_type
-       else
-	 let rnd = string_to_rounding "rnd64" in
-	 if round_num rnd n =/ n then
-	   rnd.fp_type
-	 else
-	   real_type
+     if Const.is_rat c then begin
+         let n = Const.to_num c in
+         (* TODO: a universal procedure is required *)
+         let rnd32 = string_to_rounding "rnd32" and
+             rnd64 = string_to_rounding "rnd64" in
+         if is_exact_fp_const rnd32 n then rnd32.fp_type
+         else if is_exact_fp_const rnd64 n then rnd64.fp_type
+         else real_type
+       end
      else
        real_type
     | Var name -> Env.get_var_type name
@@ -110,8 +107,8 @@ let simplify_rounding =
 	  else
 	    match arg with
 	      (* Const *)
-	      | Const c ->
-		if is_fp_exact (get_eps rnd.eps_exp) c then 
+	      | Const c when Const.is_rat c ->
+		if is_exact_fp_const rnd (Const.to_num c) then 
 		  arg 
 		else
 		  Rounding (rnd, arg)

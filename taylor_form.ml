@@ -214,7 +214,7 @@ let precise_const_rnd_form rnd e =
   Log.report 3 "precise_const_rnd_form";
   match e with
     | Const c ->
-      assert (Const.is_rat_const c);
+      assert (Const.is_rat c);
       let cn = Const.to_num c in 
       let x = bin_float_of_num (-rnd.eps_exp) rnd.rnd_type cn in
       let rc = num_of_bin_float x in
@@ -248,8 +248,8 @@ let const_rnd_form rnd e =
   else
   match e with
     | Const c ->
-      assert (Const.is_rat_const c);
-      if is_fp_exact (get_eps rnd.eps_exp) c then 
+      assert (Const.is_rat c);
+      if is_exact_fp_const rnd (Const.to_num c) then 
 	const_form e
       else
 	let form_index = next_form_index() in
@@ -1119,7 +1119,7 @@ let build_form vars =
     match e with
       | Const _ -> const_form e
       | Var _ -> var_form e
-      | Rounding (rnd, Const c) when Const.is_rat_const c 
+      | Rounding (rnd, Const c) when Const.is_rat c 
 	  (* when not Config.proof_flag *) -> const_rnd_form rnd (Const c)
       | Rounding (rnd, Var v) 
 	  (* when not Config.proof_flag *) -> var_rnd_form rnd (Var v)

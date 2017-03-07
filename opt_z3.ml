@@ -45,7 +45,7 @@ let gen_z3py_opt_code (pars : Opt_common.opt_pars) fmt =
     "Q(" ^ ns ^ "," ^ ds ^ ")" in
 
   let const_to_z3 c =
-    if Const.is_rat_const c then num_to_z3 (Const.to_num c)
+    if Const.is_rat c then num_to_z3 (Const.to_num c)
     else failwith "gen_z3py_opt_code: interval constant" in
 
   let print_constraint c =
