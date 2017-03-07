@@ -10,12 +10,6 @@
 (* Symbolic expressions                                                       *)
 (* -------------------------------------------------------------------------- *)
 
-open Num
-open List
-open Lib
-open Interval
-open Rounding
-
 (* Operations *)
 type u_op_type = 
   | Op_neg
@@ -56,7 +50,7 @@ type gen_op_type =
 type expr =
   | Const of Const.t
   | Var of string
-  | Rounding of rnd_info * expr
+  | Rounding of Rounding.rnd_info * expr
   | U_op of u_op_type * expr
   | Bin_op of bin_op_type * expr * expr
   | Gen_op of gen_op_type * expr list
@@ -159,7 +153,7 @@ let rec eq_expr e1 e2 =
     | (Bin_op (t1, a1, b1), Bin_op (t2, a2, b2)) when t1 = t2 ->
       eq_expr a1 a2 && eq_expr b1 b2
     | (Gen_op (t1, as1), Gen_op (t2, as2)) when t1 = t2 ->
-      itlist (fun (a1, a2) x -> eq_expr a1 a2 && x) (zip as1 as2) true
+      Lib.itlist (fun (a1, a2) x -> eq_expr a1 a2 && x) (Lib.zip as1 as2) true
     | _ -> false
 
 let rec vars_in_expr e =
@@ -170,8 +164,8 @@ let rec vars_in_expr e =
     | U_op (_, a1) -> 
       vars_in_expr a1
     | Bin_op (_, a1, a2) ->
-      union (vars_in_expr a1) (vars_in_expr a2)
+      Lib.union (vars_in_expr a1) (vars_in_expr a2)
     | Gen_op (_, args) ->
-      let vs = map vars_in_expr args in
-      itlist union vs []
+      let vs = List.map vars_in_expr args in
+      Lib.itlist Lib.union vs []
     | _ -> []

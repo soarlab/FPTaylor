@@ -18,6 +18,7 @@ SRC=	version.mli\
 	binary_float.ml\
 	const.mli\
 	const.ml\
+	expr.mli\
 	expr.ml\
 	exprOut.mli\
 	exprOut.ml\
