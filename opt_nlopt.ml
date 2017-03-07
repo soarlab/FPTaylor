@@ -37,6 +37,8 @@ let nlopt_default = {
 };;
  *)
 
+module Out = ExprOut.Make(ExprOut.CPrinter)
+       
 type nlopt_pars = {
   opt : Opt_common.opt_pars;
   nl_alg : int;
@@ -65,7 +67,7 @@ let gen_nlopt_code (pars : nlopt_pars) fmt =
     p "double f(unsigned _n, const double *_x, double *_grad, void *_f_data) {";
     init_vars vars 0;
     p "  double _result = ";
-    print_expr_in_env c_print_env fmt expr;
+    Out.print_fmt fmt expr;
     p ";";
     p "  if (_grad) {";
     grad();

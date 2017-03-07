@@ -85,7 +85,7 @@ module InfoPrinter : PrinterType = struct
         match (op, args) with
         | Op_fma, [a1; a2; a3] ->
            fprintf fmt "fma(%a, %a, %a)" print a1 print a2 print a3
-        | _ -> failwith "Info: unknown general operation"
+        | _ -> failwith ("Info: unknown general operation: " ^ gen_op_name op)
       end
 end
 
@@ -145,7 +145,8 @@ module OCamlIntervalPrinter : PrinterType = struct
       end
     | Gen_op (op, args) -> begin
         match (op, args) with
-        | _ -> failwith "OCamlInterval: unknown general operation"
+        | _ ->
+           failwith ("OCamlInterval: unknown general operation: " ^ gen_op_name op)
       end
 end
 
@@ -207,7 +208,60 @@ module RacketPrinter : PrinterType = struct
         match (op, args) with
         | Op_fma, [a1; a2; a3] ->
            fprintf fmt "(ifma %a %a %a)" print a1 print a2 print a3
-        | _ -> failwith "Info: unknown general operation"
+        | _ -> failwith ("Racket: unknown general operation: " ^ gen_op_name op)
+      end
+end
+
+
+module CPrinter : PrinterType = struct
+  open Expr
+  open Format
+  
+  let rec print fmt expr =
+    match expr with
+    | Const c -> fprintf fmt "(%.20e)" (Const.to_float c)
+    | Var v -> fprintf fmt "%s" v
+    | Rounding (rnd, arg) ->
+       fprintf fmt "%s(%a)" (Rounding.rounding_to_string rnd) print arg
+    | U_op (op, arg) -> begin
+        match op with
+        | Op_neg -> fprintf fmt "(-(%a))" print arg
+        | Op_abs -> fprintf fmt "fabs(%a)" print arg
+        | Op_inv -> fprintf fmt "inv(%a)" print arg
+        | Op_sqrt -> fprintf fmt "sqrt(%a)" print arg
+        | Op_exp -> fprintf fmt "exp(%a)" print arg
+        | Op_log -> fprintf fmt "log(%a)" print arg
+        | Op_sin -> fprintf fmt "sin(%a)" print arg
+        | Op_cos -> fprintf fmt "cos(%a)" print arg
+        | Op_tan -> fprintf fmt "tan(%a)" print arg
+        | Op_asin -> fprintf fmt "asin(%a)" print arg
+        | Op_acos -> fprintf fmt "acos(%a)" print arg
+        | Op_atan -> fprintf fmt "atan(%a)" print arg
+        | Op_sinh -> fprintf fmt "sinh(%a)" print arg
+        | Op_cosh -> fprintf fmt "cosh(%a)" print arg
+        | Op_tanh -> fprintf fmt "tanh(%a)" print arg                       
+        | Op_asinh -> fprintf fmt "asinh(%a)" print arg
+        | Op_acosh -> fprintf fmt "acosh(%a)" print arg
+        | Op_atanh -> fprintf fmt "atanh(%a)" print arg
+        | Op_floor_power2 -> fprintf fmt "floor_power2(%a)" print arg
+      end
+    | Bin_op (op, arg1, arg2) -> begin
+        match op with
+        | Op_min -> fprintf fmt "fmin(%a, %a)" print arg1 print arg2
+        | Op_max -> fprintf fmt "fmax(%a, %a)" print arg1 print arg2
+        | Op_add -> fprintf fmt "(%a + %a)" print arg1 print arg2
+        | Op_sub -> fprintf fmt "(%a - %a)" print arg1 print arg2
+        | Op_mul -> fprintf fmt "(%a * %a)" print arg1 print arg2
+        | Op_div -> fprintf fmt "(%a / %a)" print arg1 print arg2
+        | Op_nat_pow -> fprintf fmt "pow(%a, %a)" print arg1 print arg2
+        | Op_abs_err -> fprintf fmt "abs_err(%a, %a)" print arg1 print arg2
+        | Op_sub2 -> fprintf fmt "sub2(%a, %a)" print arg1 print arg2
+      end
+    | Gen_op (op, args) -> begin
+        match (op, args) with
+        | Op_fma, [a1; a2; a3] ->
+           fprintf fmt "fma(%a, %a, %a)" print a1 print a2 print a3
+        | _ -> failwith ("C: unknown general operation: " ^ gen_op_name op)
       end
 end
 

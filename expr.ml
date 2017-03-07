@@ -213,27 +213,6 @@ let is_infix_in_env env op =
 
 let is_infix = is_infix_in_env def_print_env
 
-let c_print_env = { def_print_env with
-  env_u_op_name = (function
-    | Op_abs -> true, "fabs"
-    | _ -> false, "");
-
-  env_bin_op_name = (function
-    | Op_nat_pow -> true, "pow"
-    | _ -> false, "");
-
-  env_op_infix = (function
-    | Op_nat_pow -> true, false
-    | _ -> false, false);
-
-  env_print = (fun p _ e ->
-    match e with
-      | Const c -> 
-	let _ = p ("(" ^ string_of_float (Const.to_float c) ^ ")") in
-	true
-      | _ -> false);
-}
-
 let gelpia_print_env = { def_print_env with
   env_bin_op_name = (function
     | Op_nat_pow -> true, "pow"
