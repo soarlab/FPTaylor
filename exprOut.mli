@@ -14,9 +14,9 @@ module type PrinterType
 
 module type P =
   sig
-    val print_fmt : Format.formatter -> Expr.expr -> unit
-    val print_std : Expr.expr -> unit
-    val print_str : Expr.expr -> string
+    val print_fmt : ?margin:int -> Format.formatter -> Expr.expr -> unit
+    val print_std : ?margin:int -> Expr.expr -> unit
+    val print_str : ?margin:int -> Expr.expr -> string
   end
 
 module Make (Printer : PrinterType) : P

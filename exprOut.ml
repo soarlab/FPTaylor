@@ -19,34 +19,48 @@ module type PrinterType =
 
 module type P =
   sig
-    val print_fmt : Format.formatter -> Expr.expr -> unit
-    val print_std : Expr.expr -> unit
-    val print_str : Expr.expr -> string
+    val print_fmt : ?margin:int -> Format.formatter -> Expr.expr -> unit
+    val print_std : ?margin:int -> Expr.expr -> unit
+    val print_str : ?margin:int -> Expr.expr -> string
   end
 
 module Make(Printer : PrinterType) = struct
-  let print_fmt = Printer.print
-  let print_std = print_fmt Format.std_formatter
-  let print_str = Lib.write_to_string print_fmt
+  open Format
+  
+  let print_fmt ?(margin = max_int) fmt expr =
+    let m = pp_get_margin fmt () in
+    pp_set_margin fmt margin;
+    Printer.print fmt expr;
+    pp_print_flush fmt ();
+    pp_set_margin fmt m
+      
+  let print_std ?margin expr =
+    print_fmt ?margin Format.std_formatter expr
+                            
+  let print_str ?margin expr =
+    Lib.write_to_string (print_fmt ?margin) expr
 end
 
                                        
 module InfoPrinter : PrinterType = struct
   open Expr
   open Format
-  
+
   let rec print fmt expr =
     match expr with
     | Const c -> begin
         match c with
         | Const.Rat n ->
-           fprintf fmt "(%s)" (Num.string_of_num n)
+           if Num.is_integer_num n && Num.sign_num n >= 0 then
+             fprintf fmt "%s" (Num.string_of_num n)
+           else
+             fprintf fmt "(%s)" (Num.string_of_num n)
         | Const.Interval v ->
            fprintf fmt "interval(%.20e, %.20e)" v.low v.high
       end
     | Var v -> fprintf fmt "%s" v
     | Rounding (rnd, arg) ->
-       fprintf fmt "%s(%a)" (Rounding.rounding_to_string rnd) print arg
+       fprintf fmt "@[%s(@,%a)@]" (Rounding.rounding_to_string rnd) print arg
     | U_op (op, arg) -> begin
         match op with
         | Op_neg -> fprintf fmt "(-(%a))" print arg
@@ -73,10 +87,10 @@ module InfoPrinter : PrinterType = struct
         match op with
         | Op_min -> fprintf fmt "min(%a, %a)" print arg1 print arg2
         | Op_max -> fprintf fmt "max(%a, %a)" print arg1 print arg2
-        | Op_add -> fprintf fmt "(%a + %a)" print arg1 print arg2
-        | Op_sub -> fprintf fmt "(%a - %a)" print arg1 print arg2
-        | Op_mul -> fprintf fmt "(%a * %a)" print arg1 print arg2
-        | Op_div -> fprintf fmt "(%a / %a)" print arg1 print arg2
+        | Op_add -> fprintf fmt "@[(%a +@ %a)@]" print arg1 print arg2
+        | Op_sub -> fprintf fmt "@[(%a -@ %a)@]" print arg1 print arg2
+        | Op_mul -> fprintf fmt "@[(%a *@ %a)@]" print arg1 print arg2
+        | Op_div -> fprintf fmt "@[(%a /@ %a)@]" print arg1 print arg2
         | Op_nat_pow -> fprintf fmt "(%a ^ %a)" print arg1 print arg2
         | Op_abs_err -> fprintf fmt "abs_err(%a, %a)" print arg1 print arg2
         | Op_sub2 -> fprintf fmt "sub2(%a, %a)" print arg1 print arg2
@@ -164,7 +178,7 @@ module RacketPrinter : PrinterType = struct
         | Const.Interval v ->
            let a = Num.string_of_num (More_num.num_of_float v.low) and
                b = Num.string_of_num (More_num.num_of_float v.high) in
-           fprintf fmt "(make-interval %s %s)" a b
+           fprintf fmt "@[<15>(make-interval %s@ %s)@]" a b
       end
     | Var v -> fprintf fmt "%s-var" v
     | Rounding (rnd, arg) ->
@@ -194,15 +208,15 @@ module RacketPrinter : PrinterType = struct
       end
     | Bin_op (op, arg1, arg2) -> begin
         match op with
-        | Op_min -> fprintf fmt "(imin %a %a)" print arg1 print arg2
-        | Op_max -> fprintf fmt "(imax %a %a)" print arg1 print arg2
-        | Op_add -> fprintf fmt "(i+ %a %a)" print arg1 print arg2
-        | Op_sub -> fprintf fmt "(i- %a %a)" print arg1 print arg2
-        | Op_mul -> fprintf fmt "(i* %a %a)" print arg1 print arg2
-        | Op_div -> fprintf fmt "(i/ %a %a)" print arg1 print arg2
-        | Op_nat_pow -> fprintf fmt "(iexpt %a %a)" print arg1 print arg2
-        | Op_abs_err -> fprintf fmt "(iabs-err %a %a)" print arg1 print arg2
-        | Op_sub2 -> fprintf fmt "(isub2 %a %a)" print arg1 print arg2
+        | Op_min -> fprintf fmt "@[<6>(imin %a@ %a)@]" print arg1 print arg2
+        | Op_max -> fprintf fmt "@[<6>(imax %a@ %a)@]" print arg1 print arg2
+        | Op_add -> fprintf fmt "@[<4>(i+ %a@ %a)@]" print arg1 print arg2
+        | Op_sub -> fprintf fmt "@[<4>(i- %a@ %a)@]" print arg1 print arg2
+        | Op_mul -> fprintf fmt "@[<4>(i* %a@ %a)@]" print arg1 print arg2
+        | Op_div -> fprintf fmt "@[<4>(i/ %a@ %a)@]" print arg1 print arg2
+        | Op_nat_pow -> fprintf fmt "@[<7>(iexpt %a@ %a)@]" print arg1 print arg2
+        | Op_abs_err -> fprintf fmt "@[<10>(iabs-err %a@ %a)@]" print arg1 print arg2
+        | Op_sub2 -> fprintf fmt "@[<7>(isub2 %a@ %a)@]" print arg1 print arg2
       end
     | Gen_op (op, args) -> begin
         match (op, args) with
