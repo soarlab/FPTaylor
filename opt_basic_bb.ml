@@ -105,7 +105,7 @@ let counter = ref 0
 
 let min_max_expr (pars : Opt_common.opt_pars) max_only var_bound e =
   if Config.debug then
-    Log.report 4 "bb_opt: x_abs_tol = %e, f_rel_tol = %e, f_abs_tol = %e, iters = %d"
+    Log.report `Debug "bb_opt: x_abs_tol = %e, f_rel_tol = %e, f_abs_tol = %e, iters = %d"
 	       pars.x_abs_tol pars.f_rel_tol pars.f_abs_tol pars.max_iters;
   let base = Config.base_dir in
   let tmp = Lib.get_tmp_dir () in
@@ -148,10 +148,10 @@ let min_max_expr (pars : Opt_common.opt_pars) max_only var_bound e =
 	  abs_float fmin, abs_float (fmin -. lower_min)
         else
 	  abs_float fmax, abs_float (fmax -. lower_max) in
-      Log.report 4 "iterations(min = %d, max = %d): %d" 
+      Log.report `Debug "iterations(min = %d, max = %d): %d" 
 	         iter_min iter_max (max iter_max iter_min);
-      Log.report 4 "min = %e (lower_min = %e)" fmin lower_min;
-      Log.report 4 "max = %e (lower_max = %e)" fmax lower_max;
-      Log.report 4 "subopt = %e (%.1f%%)" subopt (subopt /. opt *. 100.0)
+      Log.report `Debug "min = %e (lower_min = %e)" fmin lower_min;
+      Log.report `Debug "max = %e (lower_max = %e)" fmax lower_max;
+      Log.report `Debug "subopt = %e (%.1f%%)" subopt (subopt /. opt *. 100.0)
     end;
   rmin, rmax

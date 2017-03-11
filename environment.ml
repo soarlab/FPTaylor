@@ -244,7 +244,7 @@ let add_variable_with_uncertainty var_type name lo hi uncertainty =
         hi_bound = eval_const_expr hi_expr in
     if var_type = real_type && is_same_bounds lo_bound hi_bound then
       begin
-        Log.report 2 "Variable %s is a constant" name;
+        Log.report `Info "Variable %s is a constant" name;
         add_constant name lo
       end
     else

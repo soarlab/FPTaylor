@@ -182,5 +182,5 @@ let fail_on_exception = get_bool_option "fail-on-exception"
 let () =
   let verbosity = get_int_option "verbosity" in
   if verbosity < 0 then
-    Log.warning 0 "verbosity < 0: %d" verbosity;
-  Log.set_log_level (max 0 verbosity)
+    Log.warning "verbosity < 0: %d" verbosity;
+  Log.set_log_level (Log.level_of_int verbosity)

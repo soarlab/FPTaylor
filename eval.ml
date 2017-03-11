@@ -197,7 +197,7 @@ let eval_interval_const_expr =
 
 
 let eval_const_expr e = 
-  Log.report 4 "eval_const_expr: %s" (ExprOut.Info.print_str e);
+  Log.report `Debug "eval_const_expr: %s" (ExprOut.Info.print_str e);
   let n = eval_num_const_expr e in
-  Log.report 4 "result: %s" (string_of_num n);
+  Log.report `Debug "result: %s" (string_of_num n);
   Const.of_num n

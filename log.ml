@@ -11,10 +11,12 @@
 (* -------------------------------------------------------------------------- *)
 
 open Format
-
+       
+type level = [`Main | `Important | `Info | `Debug]
+       
 let log_out = ref None
 let log_fmt = ref None
-let log_level = ref 10
+let log_level = ref `Debug
        
 let close () =
   match !log_out with
@@ -49,29 +51,40 @@ let open_log ?(base_dir = "log") fname =
 
 let formatter () = !log_fmt
 
+let level_of_int n =
+  match n with
+  | n when n <= 0 -> `Main
+  | 1 -> `Important
+  | 2 -> `Info
+  | _ -> `Debug
+
+let int_of_level (level : level) =
+  match level with
+  | `Main -> 0
+  | `Important -> 1
+  | `Info -> 2
+  | `Debug -> 3
+
+let cmp_levels l1 l2 =
+  compare (int_of_level l1) (int_of_level l2)
+                    
 let set_log_level level = log_level := level
 
 let report_str level str =
   append str;
-  if level <= !log_level then
+  if cmp_levels level !log_level <= 0 then
     let fmt = std_formatter in
     pp_print_string fmt str; 
     pp_print_newline fmt ()
   else
     ()
 
-let warning_str level str =
+let warning_str str =
   let str = "**WARNING**: " ^ str in
   append str;
-  if level <= !log_level then
-    let fmt = err_formatter in
-    pp_print_string fmt str;
-    pp_print_newline fmt ()
-  else
-    ()
-
-let issue_warning_str p str =
-  if p then warning_str 0 str else ()
+  let fmt = err_formatter in
+  pp_print_string fmt str;
+  pp_print_newline fmt ()
 
 let error_str str =
   let str = "**ERROR**: " ^ str in
@@ -82,8 +95,6 @@ let error_str str =
 
 let report level fmt = Format.ksprintf (report_str level) fmt
                    
-let warning level fmt = Format.ksprintf (warning_str level) fmt
+let warning fmt = Format.ksprintf warning_str fmt
 
 let error fmt = Format.ksprintf error_str fmt
-
-let issue_warning p fmt = Format.ksprintf (issue_warning_str p) fmt

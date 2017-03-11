@@ -91,9 +91,9 @@ let estimate_expr, reset_estimate_cache =
   let reset () = (cache := []) in
   let estimate vars e =
     if Config.get_bool_option "intermediate-opt" then
-      let () = Log.report 4 "Estimating: %s" (ExprOut.Info.print_str e) in
+      let () = Log.report `Debug "Estimating: %s" (ExprOut.Info.print_str e) in
       let min, max = Opt.find_min_max Opt_common.default_opt_pars e in
-      Log.report 4 "Estimation result: [%f, %f]" min max;
+      Log.report `Debug "Estimation result: [%f, %f]" min max;
       {low = min; high = max}
     else
       Eval.eval_interval_expr vars e in
@@ -195,12 +195,12 @@ let find_index, expr_for_index, reset_index_counter, current_index =
 
 (* constant *)
 let const_form e = 
-  Log.report 3 "const_form";
+  Log.report `Debug "const_form";
   match e with
     | Const c -> 
        let i = next_form_index() in
        let n = try Const.to_num c
-               with Failure _ -> (Log.warning 0 "const_form: interval constant"; Int 0) in
+               with Failure _ -> (Log.warning "const_form: interval constant"; Int 0) in
        let _ = Proof.add_const_step i n in {
 	   form_index = i;
 	   v0 = e;
@@ -211,7 +211,7 @@ let const_form e =
 (* Constant with rounding *)
 (* TODO: subnormal numbers are incorrectly handled by bin_float_of_num *)
 let precise_const_rnd_form rnd e =
-  Log.report 3 "precise_const_rnd_form";
+  Log.report `Debug "precise_const_rnd_form";
   match e with
     | Const c ->
       assert (Const.is_rat c);
@@ -229,7 +229,7 @@ let precise_const_rnd_form rnd e =
 	(* Exact errors for constants can cancel each other: 
 	   use the same artificial constant (const_0) for indices *)
 	let err = mk_err_var (find_index (mk_rounding rnd const_0)) rnd.eps_exp in
-	Log.report 4 "Inexact constant: %s; err = %s"
+	Log.report `Debug "Inexact constant: %s; err = %s"
 		   (ExprOut.Info.print_str e)
 		   (ExprOut.Info.print_str err_expr);
 	{
@@ -242,7 +242,7 @@ let precise_const_rnd_form rnd e =
 
 (* constant with rounding *)
 let const_rnd_form rnd e =
-  Log.report 3 "const_rnd_form";
+  Log.report `Debug "const_rnd_form";
   if Config.get_bool_option "fp-power2-model" then
     precise_const_rnd_form rnd e
   else
@@ -267,7 +267,7 @@ let const_rnd_form rnd e =
 	let m2 = rnd.coefficient *^ m2' in
 	let err_expr = mk_float_const m2 in
 	let err = mk_err_var (find_index (mk_rounding rnd e)) rnd.eps_exp in
-	Log.report 4 "Inexact constant: %s; err = %s" 
+	Log.report `Debug "Inexact constant: %s; err = %s" 
 		   (ExprOut.Info.print_str e) 
 		   (ExprOut.Info.print_str err_expr);
 	let _ = 
@@ -290,7 +290,7 @@ let get_var_uncertainty eps_exp var_name =
 
 (* variable *)
 let var_form e =
-  Log.report 3 "var_form";
+  Log.report `Debug "var_form";
   match e with
     | Var v -> 
       let i = next_form_index() in
@@ -304,7 +304,7 @@ let var_form e =
 
 (* variable with rounding *)
 let var_rnd_form rnd e =
-  Log.report 3 "var_rnd_form";
+  Log.report `Debug "var_rnd_form";
   match e with
     | Var v -> 
       if Config.proof_flag then
@@ -356,7 +356,7 @@ let var_rnd_form rnd e =
 
 (* rounding *)
 let rounded_form vars original_expr rnd f =
-  Log.report 3 "rounded_form";
+  Log.report `Debug "rounded_form";
   if rnd.eps_exp = 0 then {
     form_index = next_form_index();
     v0 = f.v0;
@@ -393,7 +393,7 @@ let rounded_form vars original_expr rnd f =
 
 (* negation *)
 let neg_form f = 
-  Log.report 3 "neg_form";
+  Log.report `Debug "neg_form";
   let i = next_form_index() in
   let _ = Proof.add_neg_step i f.form_index in {
     form_index = i;
@@ -403,7 +403,7 @@ let neg_form f =
 
 (* addition *)
 let add_form f1 f2 = 
-  Log.report 3 "add_form";
+  Log.report `Debug "add_form";
   let i = next_form_index() in
   let _ = Proof.add_add_step i f1.form_index f2.form_index in {
     form_index = i;
@@ -413,7 +413,7 @@ let add_form f1 f2 =
 
 (* subtraction *)
 let sub_form f1 f2 =
-  Log.report 3 "sub_form";
+  Log.report `Debug "sub_form";
   let i = next_form_index() in
   let _ = Proof.add_sub_step i f1.form_index f2.form_index in {
     form_index = i;
@@ -423,7 +423,7 @@ let sub_form f1 f2 =
 
 (* rounded subtraction *)
 let rounded_sub_form vars original_expr rnd f1 f2 =
-  Log.report 3 "rounded_sub_form";
+  Log.report `Debug "rounded_sub_form";
   let i = find_index original_expr in
   let s1', exp1 = sum_high (abs_eval_v1 vars f1.v1) in
   let s2', exp2 = sum_high (abs_eval_v1 vars f2.v1) in
@@ -446,7 +446,7 @@ let rounded_sub_form vars original_expr rnd f1 f2 =
   
 (* rounded addition *)
 let rounded_add_form vars original_expr rnd f1 f2 =
-  Log.report 3 "rounded_add_form";
+  Log.report `Debug "rounded_add_form";
   rounded_sub_form vars original_expr rnd f1 (neg_form f2)
 
 
@@ -454,7 +454,7 @@ let rounded_add_form vars original_expr rnd f1 f2 =
 let mul_form =
   let mul1 x = map (fun (e, err) -> mk_mul x e, err) in
   fun vars f1 f2 -> 
-    Log.report 3 "mul_form";
+    Log.report `Debug "mul_form";
     let x1 = abs_eval_v1 vars f1.v1 and
 	y1 = abs_eval_v1 vars f2.v1 in
     let m2, m2_exp = sum2_high x1 y1 in
@@ -471,7 +471,7 @@ let mul_form =
 
 (* reciprocal *)
 let inv_form vars f = 
-  Log.report 3 "inv_form";
+  Log.report `Debug "inv_form";
   let x0_int = estimate_expr vars f.v0 in
   let x1 = abs_eval_v1 vars f.v1 in
   let s1 = itlist (fun (x,x_exp) s -> 
@@ -490,7 +490,7 @@ let inv_form vars f =
       if Config.fail_on_exception then
 	failwith msg
       else
-	Log.warning_str 0 msg
+	Log.warning_str msg
     else () in
   let b_high = (abs_I (inv_I d)).high in
   let b_high = make_stronger b_high in
@@ -511,12 +511,12 @@ let inv_form vars f =
 
 (* division *)
 let div_form vars f1 f2 =  
-  Log.report 3 "div_form";
+  Log.report `Debug "div_form";
   mul_form vars f1 (inv_form vars f2)
 
 (* square root *)
 let sqrt_form vars f = 
-  Log.report 3 "sqrt_form";
+  Log.report `Debug "sqrt_form";
   let x0_int = estimate_expr vars f.v0 in
   let x1 = abs_eval_v1 vars f.v1 in
   let s1 = itlist (fun (x,x_exp) s -> 
@@ -550,7 +550,7 @@ let sqrt_form vars f =
 
 (* sine *)
 let sin_form vars f =
-  Log.report 3 "sin_form";
+  Log.report `Debug "sin_form";
   let x0_int = estimate_expr vars f.v0 in
   let x1 = abs_eval_v1 vars f.v1 in
   let s1 = itlist (fun (x,x_exp) s -> 
@@ -583,7 +583,7 @@ let sin_form vars f =
 
 (* cosine *)
 let cos_form vars f =
-  Log.report 3 "cos_form";
+  Log.report `Debug "cos_form";
   let x0_int = estimate_expr vars f.v0 in
   let x1 = abs_eval_v1 vars f.v1 in
   let s1 = itlist (fun (x,x_exp) s -> 
@@ -617,7 +617,7 @@ let cos_form vars f =
 (* tangent *)
 (* TODO: proof support *)
 let tan_form vars f =
-  Log.report 3 "tan_form";
+  Log.report `Debug "tan_form";
   let x0_int = estimate_expr vars f.v0 in
   let x1 = abs_eval_v1 vars f.v1 in
   let s1 = itlist (fun (x,x_exp) s -> 
@@ -640,7 +640,7 @@ let tan_form vars f =
 (* arcsine *)
 (* TODO: proof support *)
 let asin_form vars f =
-  Log.report 3 "asin_form";
+  Log.report `Debug "asin_form";
   let x0_int = estimate_expr vars f.v0 in
   let x1 = abs_eval_v1 vars f.v1 in
   let s1 = itlist (fun (x,x_exp) s -> 
@@ -675,7 +675,7 @@ let asin_form vars f =
 (* arccosine *)
 (* TODO: proof support *)
 let acos_form vars f =
-  Log.report 3 "acos_form";
+  Log.report `Debug "acos_form";
   let x0_int = estimate_expr vars f.v0 in
   let x1 = abs_eval_v1 vars f.v1 in
   let s1 = itlist (fun (x,x_exp) s -> 
@@ -709,7 +709,7 @@ let acos_form vars f =
 
 (* arctangent *)
 let atan_form vars f =
-  Log.report 3 "atan_form";
+  Log.report `Debug "atan_form";
   let x0_int = estimate_expr vars f.v0 in
   let x1 = abs_eval_v1 vars f.v1 in
   let s1 = itlist (fun (x,x_exp) s -> 
@@ -743,7 +743,7 @@ let atan_form vars f =
 
 (* exp *)
 let exp_form vars f =
-  Log.report 3 "exp_form";
+  Log.report `Debug "exp_form";
   let x0_int = estimate_expr vars f.v0 in
   let x1 = abs_eval_v1 vars f.v1 in
   let s1 = itlist (fun (x,x_exp) s -> 
@@ -775,7 +775,7 @@ let exp_form vars f =
 
 (* log *)
 let log_form vars f =
-  Log.report 3 "log_form";
+  Log.report `Debug "log_form";
   let x0_int = estimate_expr vars f.v0 in
   let x1 = abs_eval_v1 vars f.v1 in
   let s1 = itlist (fun (x,x_exp) s -> 
@@ -808,7 +808,7 @@ let log_form vars f =
 (* sinh *)
 (* TODO: proof support *)
 let sinh_form vars f =
-  Log.report 3 "sinh_form";
+  Log.report `Debug "sinh_form";
   let x0_int = estimate_expr vars f.v0 in
   let x1 = abs_eval_v1 vars f.v1 in
   let s1 = itlist (fun (x,x_exp) s -> 
@@ -843,7 +843,7 @@ let sinh_form vars f =
 (* cosh *)
 (* TODO: proof support *)
 let cosh_form vars f =
-  Log.report 3 "cosh_form";
+  Log.report `Debug "cosh_form";
   let x0_int = estimate_expr vars f.v0 in
   let x1 = abs_eval_v1 vars f.v1 in
   let s1 = itlist (fun (x,x_exp) s -> 
@@ -878,7 +878,7 @@ let cosh_form vars f =
 (* tanh *)
 (* TODO: proof support *)
 let tanh_form vars f =
-  Log.report 3 "tanh_form";
+  Log.report `Debug "tanh_form";
   let x0_int = estimate_expr vars f.v0 in
   let x1 = abs_eval_v1 vars f.v1 in
   let s1 = itlist (fun (x,x_exp) s -> 
@@ -914,7 +914,7 @@ let tanh_form vars f =
 (* arsinh *)
 (* TODO: proof support *)
 let asinh_form vars f =
-  Log.report 3 "asinh_form";
+  Log.report `Debug "asinh_form";
   let x0_int = estimate_expr vars f.v0 in
   let x1 = abs_eval_v1 vars f.v1 in
   let s1 = itlist (fun (x,x_exp) s -> 
@@ -949,7 +949,7 @@ let asinh_form vars f =
 (* arcosh *)
 (* TODO: proof support *)
 let acosh_form vars f =
-  Log.report 3 "acosh_form";
+  Log.report `Debug "acosh_form";
   let x0_int = estimate_expr vars f.v0 in
   let x1 = abs_eval_v1 vars f.v1 in
   let s1 = itlist (fun (x,x_exp) s -> 
@@ -984,7 +984,7 @@ let acosh_form vars f =
 (* artanh *)
 (* TODO: proof support *)
 let atanh_form vars f =
-  Log.report 3 "atanh_form";
+  Log.report `Debug "atanh_form";
   let x0_int = estimate_expr vars f.v0 in
   let x1 = abs_eval_v1 vars f.v1 in
   let s1 = itlist (fun (x,x_exp) s -> 
@@ -1039,7 +1039,7 @@ let atanh_form vars f =
    We prefer the explicit definition of Abs_err since it is slightly more accurate.
  *)
 let abs_form vars f =
-  Log.report 3 "abs_form";
+  Log.report `Debug "abs_form";
   let i = next_form_index() in
   let t =
     let s, e = sum_high (abs_eval_v1 vars f.v1) in
@@ -1066,7 +1066,7 @@ let abs_form vars f =
    where t is an upper bound of |e1 - e2| (or |e1| + |e2| >= |e1 - e2|).
  *) 
 let max_form vars f1 f2 =
-  Log.report 3 "max_form";
+  Log.report `Debug "max_form";
   let i = next_form_index() in
   let t1 =
     let s, e = sum_high (abs_eval_v1 vars f1.v1) in
@@ -1094,7 +1094,7 @@ let max_form vars f1 f2 =
    where t is an upper bound of |e1 - e2|.
 *)
 let min_form vars f1 f2 =
-  Log.report 3 "min_form";
+  Log.report `Debug "min_form";
   let i = next_form_index() in
   let t1 =
     let s, e = sum_high (abs_eval_v1 vars f1.v1) in

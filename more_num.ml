@@ -95,7 +95,7 @@ let num_of_float x =
      if Config.fail_on_exception then
        failwith msg
      else
-       (Log.warning 0 "%s" msg; Int 0)
+       (Log.warning_str msg; Int 0)
   | FP_zero -> Int 0
   | FP_normal | FP_subnormal ->
      let m, e = frexp x in
