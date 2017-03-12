@@ -38,7 +38,6 @@ type constant_def = {
 type var_def = {
   var_type : value_type;
   var_name : string;
-  var_index : int;
   lo_bound : Const.t;
   hi_bound : Const.t;
   uncertainty : Const.t;
@@ -209,10 +208,6 @@ let transform_raw_formula = function
   | Raw_lt (r1, r2) -> Lt (transform_raw_expr r1, transform_raw_expr r2)
   | Raw_eq (r1, r2) -> Eq (transform_raw_expr r1, transform_raw_expr r2)
 
-(* Returns the maximal index of all defined variables *)
-let max_var_index () =
-  Hashtbl.fold (fun _ v i -> max v.var_index i) env.variables (-1)
-
 (* Adds a constant to the environment *)
 let add_constant name raw =
   if Hashtbl.mem env.constants name then
@@ -251,7 +246,6 @@ let add_variable_with_uncertainty var_type name lo hi uncertainty =
       let v = {
           var_type = var_type;
           var_name = name;
-          var_index = max_var_index () + 1;
           lo_bound = eval_const_expr lo_expr;
           hi_bound = eval_const_expr hi_expr;
           uncertainty = eval_const_expr u_expr;
