@@ -80,6 +80,8 @@ val print_list : ('a -> unit) -> (unit -> 'b) -> 'a list -> unit
 
 val starts_with : string -> prefix:string -> bool
 
+val concat_env_paths : string list -> string
+
 (* -------------------------------------------------------------------------- *)
 (* IO operations.                                                             *)
 (* -------------------------------------------------------------------------- *)

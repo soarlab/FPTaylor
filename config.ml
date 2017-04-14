@@ -63,21 +63,22 @@ let parse_config_file ?(init = false) fname =
     else
       ()
   in
+  let add_option param value short doc =
+    let param = String.trim param in
+    let value = String.trim value in
+    set_option ~init ~short:short param value;
+    let doc_str =
+      let doc' = if short <> "" then "(-" ^ short ^ ")" else "" in
+      doc' ^ doc in
+    arg_list := ("--" ^ param, Arg.String (set_option param), doc_str) :: !arg_list;
+    if short <> "" then
+      arg_list := ("-" ^ short, Arg.String (set_option param), "") :: !arg_list 
+  in
   let parse_option c short doc line =
     let strs = Str.bounded_split split_regexp line 2 in 
     match strs with 
-    | [param; value] ->
-       let param = String.trim param in
-       let value = String.trim value in
-       set_option ~init ~short:short param value;
-       let doc_str =
-         let doc' = if short <> "" then "(-" ^ short ^ ")" else "" in
-         doc' ^ doc in
-       arg_list := ("--" ^ param, Arg.String (set_option param), doc_str)
-                   :: !arg_list;
-       if short <> "" then
-         arg_list := ("-" ^ short, Arg.String (set_option param), "")
-                     :: !arg_list
+    | [param; value] -> add_option param value short doc
+    | [param] -> add_option param "" short doc
     | _ -> 
        Log.error "[File %s, line %d] Parameter parsing error: %s" fname c line;
        failwith ("Error while parsing a configuration file: " ^ fname)
@@ -92,11 +93,11 @@ let parse_config_file ?(init = false) fname =
              doc_comment := String.sub line 2 (String.length line - 2)
          end
        else if Lib.starts_with line ~prefix:"[" then
-	 parse_short_name line
+         parse_short_name line
        else begin
-	   parse_option c !short_name !doc_comment line;
-           short_name := "";
-           doc_comment := "";
+         parse_option c !short_name !doc_comment line;
+         short_name := "";
+         doc_comment := "";
          end;
        parse_lines (c + 1) rest
     | [] -> ()

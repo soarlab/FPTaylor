@@ -1,0 +1,106 @@
+./bound --scale=uniform -n 40,40 -s 1000000 -a -100.0,-100.0 -b 100.0,100.0 -o data/pid1.txt pid1
+random_test_32_2d: testing from [-100.000000, -100.000000] to [100.000000, 100.000000]...
+  segments = 40, 40
+  samples = 1000000
+  uniform scale
+1600/1600         done
+
+max_abs = 6.765089e-04 (0x1.62af7c2p-11)	 at (-9.668933e+01, 8.886837e+01)
+max_rel = 4.272746e-06 (0x1.1ebd359126531p-18)	 at (1.053582e-39, 1.053429e-39)
+max_ulp = 2.255254e+00 (0x1.20ac2ce4p+1)	 at (-9.857783e+01, 5.572023e+01)
+
+
+./bound --scale=uniform -n 40,40 -s 1000000 -a -100.0,-100.0 -b 100.0,100.0 -o data/pid2.txt pid2
+random_test_32_2d: testing from [-100.000000, -100.000000] to [100.000000, 100.000000]...
+  segments = 40, 40
+  samples = 1000000
+  uniform scale
+1600/1600         done
+
+max_abs = 6.787831e-04 (0x1.63e0b808p-11)	 at (-9.867378e+01, 8.934943e+01)
+max_rel = 4.272746e-06 (0x1.1ebd359126531p-18)	 at (1.053582e-39, 1.053429e-39)
+max_ulp = 1.776575e+00 (0x1.c6cda4dp+0)	 at (-9.733132e+01, 6.464453e+01)
+
+PID1
+
+-------------------------------------------------------------------------------
+Problem: iter1
+
+Optimization lower bounds for error models:
+The absolute error model (exact): 1.340458e-05 (suboptimality = 0.8%)
+
+Bounds (without rounding): [-1.007443e+02, 1.007443e+02]
+Bounds (floating-point): [-1.00744276385477164126e+02, 1.00744276385477164126e+02]
+
+Absolute error (exact): 1.351048e-05
+
+Elapsed time: 1.06
+
+-------------------------------------------------------------------------------
+Problem: iter2
+
+Optimization lower bounds for error models:
+The absolute error model (exact): 1.571751e-05 (suboptimality = 0.8%)
+
+Bounds (without rounding): [-1.006841e+02, 1.006841e+02]
+Bounds (floating-point): [-1.00684150727319803309e+02, 1.00684150727319803309e+02]
+
+Absolute error (exact): 1.583973e-05
+
+Elapsed time: 1.90
+
+-------------------------------------------------------------------------------
+Problem: iter3
+
+Optimization lower bounds for error models:
+The absolute error model (exact): 1.955464e-05 (suboptimality = 0.3%)
+
+Bounds (without rounding): [-1.009807e+02, 1.009807e+02]
+Bounds (floating-point): [-1.00980701614733021643e+02, 1.00980701614733021643e+02]
+
+Absolute error (exact): 1.961983e-05
+
+Elapsed time: 14.49
+
+****************************************
+
+PID2
+
+-------------------------------------------------------------------------------
+Problem: pid2_iter1
+
+Optimization lower bounds for error models:
+The absolute error model (exact): 1.629485e-05 (suboptimality = 0.6%)
+
+Bounds (without rounding): [-1.007443e+02, 1.007443e+02]
+Bounds (floating-point): [-1.00744279267628499497e+02, 1.00744279267628499497e+02]
+
+Absolute error (exact): 1.639263e-05
+
+Elapsed time: 1.09
+
+-------------------------------------------------------------------------------
+Problem: pid2_iter2
+
+Optimization lower bounds for error models:
+The absolute error model (exact): 2.058335e-05 (suboptimality = 0.8%)
+
+Bounds (without rounding): [-1.006841e+02, 1.006841e+02]
+Bounds (floating-point): [-1.00684155637159946650e+02, 1.00684155637159946650e+02]
+
+Absolute error (exact): 2.074957e-05
+
+Elapsed time: 1.74
+
+-------------------------------------------------------------------------------
+Problem: pid3_iter3
+
+Optimization lower bounds for error models:
+The absolute error model (exact): 2.660485e-05 (suboptimality = 1.0%)
+
+Bounds (without rounding): [-1.009807e+02, 1.009807e+02]
+Bounds (floating-point): [-1.00980708863250811191e+02, 1.00980708863250811191e+02]
+
+Absolute error (exact): 2.686835e-05
+
+Elapsed time: 7.02

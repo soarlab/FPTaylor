@@ -11,8 +11,6 @@
 (* -------------------------------------------------------------------------- *)
 
 open Num
-open List
-open Lib
 open Expr
 open Opt_common
 
@@ -21,7 +19,9 @@ module Out = ExprOut.Make(ExprOut.Z3PythonPrinter)
 let gen_z3py_opt_code (pars : Opt_common.opt_pars) fmt =
   let nl = Format.pp_print_newline fmt in
   let p str = Format.pp_print_string fmt str; nl() in
-  let p' = Format.pp_print_string fmt in
+  let p' str = 
+    Format.pp_print_string fmt str; 
+    Format.pp_print_flush fmt () in
 
   let head () = 
     p "from z3 import *";
@@ -66,33 +66,33 @@ let gen_z3py_opt_code (pars : Opt_common.opt_pars) fmt =
       p "constraints = []"
     else
       let _ = p' "constraints = [" in
-      let _ = map (fun (name, c) -> print_constraint c; p' ", ") cs in
+      let _ = List.map (fun (name, c) -> print_constraint c; p' ", ") cs in
       p "]" in
 
   let vars var_names var_bounds =
     if var_names = [] then 
       p "var_constraints = []"
     else
-      let eq_vars, neq_vars = partition
-	(fun (name, (low, high)) -> low =/ high)
-	(zip var_names var_bounds) in
+      let eq_vars, neq_vars = List.partition
+          (fun (name, (low, high)) -> low =/ high)
+          (Lib.zip var_names var_bounds) in
 
-      let eqs = map
-	(fun (name, (low, high)) ->
-	  Format.sprintf "%s = %s" name (num_to_z3 low))
-	eq_vars in
-      let constraints = map
-	(fun (name, (low, high)) ->
-	  if low =/ high then
-	    Format.sprintf "%s >= %s, %s <= %s" name (num_to_z3 low) name (num_to_z3 high)
-	  else
-	    Format.sprintf "%s > %s, %s < %s" name (num_to_z3 low) name (num_to_z3 high))
-	neq_vars in
+      let eqs = List.map
+          (fun (name, (low, high)) ->
+             Format.sprintf "%s = %s" name (num_to_z3 low))
+          eq_vars in
+      let constraints = List.map
+          (fun (name, (low, high)) ->
+             if low =/ high then
+               Format.sprintf "%s >= %s, %s <= %s" name (num_to_z3 low) name (num_to_z3 high)
+             else
+               Format.sprintf "%s > %s, %s < %s" name (num_to_z3 low) name (num_to_z3 high))
+          neq_vars in
       let names =  String.concat ", " var_names in
       p (Format.sprintf "[%s] = Reals('%s')" names names);
       p (String.concat "\n" eqs);
       p (Format.sprintf "var_constraints = [%s]" (String.concat ", " constraints)) in
-	
+
 
 (*
       let low, high = unzip var_bounds in
@@ -111,11 +111,11 @@ let gen_z3py_opt_code (pars : Opt_common.opt_pars) fmt =
 
   fun (var_bound, e) ->
     let cs = Environment.get_active_constraints() in
-    let vars_cs = map constraint_vars cs in
-    let var_names = unions (vars_in_expr e :: vars_cs) in
-    let var_bounds = map var_bound var_names in
+    let vars_cs = List.map constraint_vars cs in
+    let var_names = Lib.unions (vars_in_expr e :: vars_cs) in
+    let var_bounds = List.map var_bound var_names in
     head ();
-    vars (map (fun name -> "var_" ^ name) var_names) var_bounds;
+    vars (List.map (fun name -> "var_" ^ name) var_names) var_bounds;
     constraints cs;
     expr e;
     tail ()
@@ -131,15 +131,24 @@ let min_max_expr (pars : Opt_common.opt_pars) var_bound e =
     let tmp = Lib.get_tmp_dir () in
     let _ = incr name_counter in
     let py_name = Filename.concat tmp 
-      (Format.sprintf "min_max_%d.py" !name_counter) in
+        (Format.sprintf "min_max_%d.py" !name_counter) in
     let gen = gen_z3py_opt_code pars in
-    let _ = write_to_file py_name gen (var_bound, e) in
-    let cmd = Format.sprintf "PYTHONPATH=\"%s\" python %s"
-      Config.base_dir py_name in
-    let ss = run_cmd cmd in
-    let n = length ss in
-    let v_min = float_of_string (nth ss (n - 2)) and
-	v_max = float_of_string (nth ss (n - 1)) in
+    let _ = Lib.write_to_file py_name gen (var_bound, e) in
+    let python_path =
+      let path = try Unix.getenv "PYTHONPATH" with Not_found -> "" in
+      let z3path = Config.get_string_option "z3-python-lib" in
+      Lib.concat_env_paths [path; Config.base_dir; z3path] in
+    let lib_path =
+      let path = try Unix.getenv "LD_LIBRARY_PATH" with Not_found -> "" in
+      let z3path = Config.get_string_option "z3-bin" in
+      Lib.concat_env_paths [path; z3path] in
+    let z3python = Config.get_string_option "z3-python-cmd" in
+    let cmd = Format.sprintf "LD_LIBRARY_PATH=\"%s\" PYTHONPATH=\"%s\" %s \"%s\""
+        lib_path python_path z3python py_name in
+    let ss = Lib.run_cmd cmd in
+    let n = List.length ss in
+    let v_min = float_of_string (List.nth ss (n - 2)) and
+      v_max = float_of_string (List.nth ss (n - 1)) in
     (* Do not add the tolerance: min and max are verified bounds *)
     (v_min, v_max)
 

@@ -1,0 +1,38 @@
+Variables
+  float32 c in [-100,100];
+  float32 m in [-100,100];
+	
+Definitions
+  kp = 9.4514;
+  ki = 0.69006;
+  kd = 2.8454;
+  invdt =  5.0;
+  dt = 0.2;
+  eold = 0;
+  i0 = 0;
+
+  e_1 rnd32= c - m;
+  p_1 rnd32= kp * e_1;
+  i_1 rnd32= i0 + ki * dt * e_1;
+  d_1 rnd32= kd * invdt * (e_1 - eold);
+  r_1 rnd32= p_1 + i_1 + d_1;  
+  m_1 rnd32= m + 0.01 * r_1;
+
+  e_2 rnd32= c - m_1;
+  p_2 rnd32= kp * e_2;
+  i_2 rnd32= i_1 + ki * dt * e_2;
+  d_2 rnd32= kd * invdt * (e_2 - e_1);
+  r_2 rnd32= p_2 + i_2 + d_2;  
+  m_2 rnd32= m_1 + 0.01 * r_2;
+
+  e_3 rnd32= c - m_2;
+  p_3 rnd32= kp * e_3;
+  i_3 rnd32= i_2 + ki * dt * e_3;
+  d_3 rnd32= kd * invdt * (e_3 - e_2);
+  r_3 rnd32= p_3 + i_3 + d_3;  
+  m_3 rnd32= m_2 + 0.01 * r_3;
+
+Expressions
+  pid1_iter1 = m_1;
+  pid1_iter2 = m_2;
+  pid1_iter3 = m_3;

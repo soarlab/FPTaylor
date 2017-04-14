@@ -160,6 +160,14 @@ let starts_with str ~prefix =
   else
     String.sub str 0 n = prefix
 
+let rec concat_env_paths paths =
+  match paths with
+  | [] -> ""
+  | path :: rest -> 
+    let path = String.trim path in
+    if path = "" then concat_env_paths rest
+    else path ^ ":" ^ concat_env_paths rest
+
 (* -------------------------------------------------------------------------- *)
 (* IO operations.                                                             *)
 (* -------------------------------------------------------------------------- *)

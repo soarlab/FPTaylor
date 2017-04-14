@@ -1,0 +1,19 @@
+Variables
+  float32 c in [-100,100];
+  float32 m in [-100,100];
+	
+Definitions
+  kp = 9.4514;
+  ki = 0.69006;
+  kd = 2.8454;
+  invdt =  5.0;
+  dt = 0.2;
+  eold = 0;
+  i0 = 0;
+  e rnd32= c - m,
+  p rnd32= kp * e,
+  i rnd32= i0 + ki * dt * e,
+  d rnd32= kd * invdt * (e - eold);
+  
+Expressions
+  r rnd32= p + i + d;
