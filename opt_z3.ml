@@ -24,8 +24,8 @@ let gen_z3py_opt_code (pars : Opt_common.opt_pars) fmt =
     Format.pp_print_flush fmt () in
 
   let head () = 
-    p "from z3 import *";
     p "from z3opt import *";
+    p "from z3 import *";
     p "" in
 
   let tail () =
@@ -33,9 +33,9 @@ let gen_z3py_opt_code (pars : Opt_common.opt_pars) fmt =
     p (Format.sprintf "fTol = %f" pars.f_abs_tol);
     p (Format.sprintf
          "l, u = find_bounds(f, var_constraints + constraints, fTol, %d)"
-	 pars.timeout);
-    p "print('{0:.20e}'.format(l))";
-    p "print('{0:.20e}'.format(u))" in
+         pars.timeout);
+    p "print('min = {0:.20e}'.format(l))";
+    p "print('max = {0:.20e}'.format(u))" in
 
   let num_to_z3 n =
     let s = Big_int.string_of_big_int in
@@ -136,8 +136,9 @@ let min_max_expr (pars : Opt_common.opt_pars) var_bound e =
     let _ = Lib.write_to_file py_name gen (var_bound, e) in
     let python_path =
       let path = try Unix.getenv "PYTHONPATH" with Not_found -> "" in
+      let base = Filename.concat Config.base_dir "z3opt" in
       let z3path = Config.get_string_option "z3-python-lib" in
-      Lib.concat_env_paths [path; Config.base_dir; z3path] in
+      Lib.concat_env_paths [path; base; z3path] in
     let lib_path =
       let path = try Unix.getenv "LD_LIBRARY_PATH" with Not_found -> "" in
       let z3path = Config.get_string_option "z3-bin" in
@@ -145,10 +146,7 @@ let min_max_expr (pars : Opt_common.opt_pars) var_bound e =
     let z3python = Config.get_string_option "z3-python-cmd" in
     let cmd = Format.sprintf "LD_LIBRARY_PATH=\"%s\" PYTHONPATH=\"%s\" %s \"%s\""
         lib_path python_path z3python py_name in
-    let ss = Lib.run_cmd cmd in
-    let n = List.length ss in
-    let v_min = float_of_string (List.nth ss (n - 2)) and
-      v_max = float_of_string (List.nth ss (n - 1)) in
-    (* Do not add the tolerance: min and max are verified bounds *)
-    (v_min, v_max)
-
+    let out = Lib.run_cmd cmd in
+    let fmin = Opt_common.get_float out "min = " and
+        fmax = Opt_common.get_float out "max = " in
+    (fmin, fmax)

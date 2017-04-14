@@ -1,4 +1,15 @@
-from z3 import *
+try:
+    from z3 import *
+except ImportError as e:
+    msg = """Python: no module named z3. 
+             Provide this path with the --z3-python-lib option:
+
+             ./fptaylor --z3-python-lib="path to Z3 python" ...
+
+             (Note: use a full home directory path instead of ~)
+
+             Or add this path to the PYTHONPATH environment variable."""
+    raise ImportError(msg)
 
 def z3_abs(x):
     return If(x >= 0, x, -x)
@@ -29,7 +40,6 @@ def find_upper_bound(f, constraints, u, timeout):
         else:
             return u
 
-  
 def maximize(f, constraints, lb, ub, tol, timeout):
     s = Solver()
     if timeout > 0:

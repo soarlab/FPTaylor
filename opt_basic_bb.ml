@@ -23,7 +23,6 @@ module Out = ExprOut.Make(ExprOut.OCamlIntervalPrinter)
 let gen_bb_opt_code (pars : Opt_common.opt_pars) max_only fmt =
   let nl = Format.pp_print_newline fmt in
   let p str = Format.pp_print_string fmt str; nl() in
-(*  let p' = Format.pp_print_string fmt in*)
 
   let head () = 
     p "open Interval";

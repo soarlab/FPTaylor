@@ -7,6 +7,7 @@
 *.cmx
 *.cmxs
 *.cmxa
+*.pyc
 input_parser.ml
 input_lexer.ml
 input_parser.mli
