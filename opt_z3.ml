@@ -17,6 +17,7 @@ open Opt_common
 module Out = ExprOut.Make(ExprOut.Z3PythonPrinter)
        
 let gen_z3py_opt_code (pars : Opt_common.opt_pars) fmt =
+  let z3_seed = Config.get_int_option "z3-seed" in
   let nl = Format.pp_print_newline fmt in
   let p str = Format.pp_print_string fmt str; nl() in
   let p' str = 
@@ -32,8 +33,8 @@ let gen_z3py_opt_code (pars : Opt_common.opt_pars) fmt =
     p "";
     p (Format.sprintf "fTol = %f" pars.f_abs_tol);
     p (Format.sprintf
-         "l, u = find_bounds(f, var_constraints + constraints, fTol, %d)"
-         pars.timeout);
+         "l, u = find_bounds(f, var_constraints + constraints, fTol, %d, %d)"
+         pars.timeout z3_seed);
     p "print('min = {0:.20e}'.format(l))";
     p "print('max = {0:.20e}'.format(u))" in
 
