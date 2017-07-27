@@ -39,9 +39,9 @@ following command
 
 If several configuration files are provided, options in the second
 configuration file will override options in the first file, and so
-on. The default configuration file `default.cfg` is always loaded
-first. See the section *Options* for a description of FPTaylor
-options.
+on. The default configuration file [`default.cfg`](default.cfg) is
+always loaded first. See the section *Options* for a description of
+FPTaylor options.
 
 
 ## Input file format
@@ -358,8 +358,8 @@ This example is equivalent to
 
 Options are specified in configuration files. All options and their
 default values are defined in the main configuration file
-`default.cfg`. A configuration file `config.cfg` can be loaded with
-the following command
+[`default.cfg`](default.cfg). A configuration file `config.cfg` can be
+loaded with the following command
 
     fptaylor -c config.cfg input_file1 [input_file2 ...]
 
@@ -385,7 +385,8 @@ Empty lines and lines starting with `#` (or `*`) are ignored. Example:
 
     rel-error = false
 
-Some important options are described below. Other options can be found in `default.cfg`.
+Some important options are described below. Other options can be found
+in [`default.cfg`](default.cfg).
 
 ### `abs-error`
 
@@ -411,6 +412,19 @@ model yields better error estimation results but it also produces
 harder problems for optimization backends to solve. It may be not
 supported by some optimization backends.
 
+### `const-approx-real-vars`
+
+Possible values: `true`, `false`.
+
+If true, then rounding errors for real variables are computed from
+their interval bounds. This error approximation may yield better
+results when `fp-power2-model = false` and it does not introduce any
+difficulties for optimization backends.
+
+If `fp-power2-model = false`, then it is recommended to run
+experiments with `const-approx-real-vars = true` and
+`const-approx-real-vars = false` and select best results.
+
 ### `opt-approx`
 
 Possible values: `true`, `false`.
@@ -429,7 +443,6 @@ optimization backends. These exact problems are harder than
 approximate optimization problems. Some optimization backends may not
 support exact optimization problems.
 
-
 ### `opt`
 
 Possible values: `bb`, `z3`, `gelpia`, and `nlopt`
@@ -438,30 +451,42 @@ Specifies the optimization backend of FPTaylor.
 
 - `bb` is the default optimization backend implemented in FPTaylor. It
   supports all FPTaylor operations and the improved rounding
-  model. [OCaml](http://ocaml.org) compiler must be installed in order
-  to use this optimization backend.
+  model. Constraints are not supported. [OCaml](http://ocaml.org)
+  compiler must be installed in order to use this optimization
+  backend.
 
-- `z3` is the optimization backend based on [Z3 SMT
-  solver](https://github.com/Z3Prover/z3). Z3 must be installed and its Python
-  binding must work. This optimization backend does not support
-  transcendental functions, exact optimization problems, and the
-  improved rounding model.
+- `z3` is the optimization backend based on
+  [Z3 SMT solver](https://github.com/Z3Prover/z3). Z3 must be
+  installed and its Python binding must work. This optimization
+  backend does not support transcendental functions and the improved
+  rounding model. Constraints are supported.
 
 - `gelpia` is the optimization backend based on
-  [Gelpia](https://github.com/keram88/gelpia).  Gelpia must be
+  [Gelpia](https://github.com/keram88/gelpia). Gelpia must be
   installed and the environment variable `GELPIA_PATH` should point to
   the Gelpia base directory. Alternatively, Gelpia can be copied
   directly to the FPTaylor base directory. This optimization backend
-  supports the improved rounding model and it is generally faster than
+  supports all FPTaylor operations and the improved rounding
+  model. Constraints are not supported. It is generally faster than
   the default optimization backend `bb`.
 
-- `nlopt` is the optimization backend based on the [NLOpt optimization
-  library](http://ab-initio.mit.edu/wiki/index.php/NLopt). This
+- `nlopt` is the optimization backend based on the
+  [NLOpt optimization library](http://ab-initio.mit.edu/wiki/index.php/NLopt). This
   optimization backend may yield unsound results but it is fast and is
   a good choice for getting solid preliminary results. This
   optimization backend does not support the improved rounding model
-  (will be corrected in future releases of FPTaylor).
+  and constraints.
+  
+### `opt-f-rel-tol`, `opt-f-abs-tol`, `opt-x-rel-tol`, `opt-x-abs-tol`.
 
+These options specify the desired accuracy of optimization
+results. See [`default.cfg`](default.cfg) for additional info.
+
+### `opt-max-iters`, `opt-timeout`.
+
+These options bound the number of iterations and time of global
+optimization backends. See [`default.cfg`](default.cfg) for additional
+info.
 
 ### `proof-record`
 
