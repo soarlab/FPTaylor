@@ -38,7 +38,6 @@ let gen_z3py_opt_code (pars : Opt_common.opt_pars) max_only bounds fmt =
       else
         "None" in
     p "";
-    p (Format.sprintf "fTol = %f" pars.f_abs_tol);
     p (Format.sprintf
          "l, u = find_bounds(f, var_constraints + constraints, \
           f_abs_tol=%e, f_rel_tol=%e, \
