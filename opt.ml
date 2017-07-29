@@ -25,19 +25,23 @@ let optimize_expr (pars : Opt_common.opt_pars) max_only expr =
   let rmin, rmax =
     match Config.get_string_option "opt" with
     | "z3" -> 
-       let fmin, fmax = Opt_z3.min_max_expr pars var_bound_rat expr in
-       {empty_result with result = fmin; lower_bound = infinity},
-       {empty_result with result = fmax; lower_bound = neg_infinity}
+      let bounds = 
+        try Eval.eval_interval_expr var_bound_float expr
+        with _ -> {Interval.low = neg_infinity; Interval.high = infinity} in
+      Log.report `Debug "Interval bounds for Z3: %s" (Interval.sprintf_I "%.5e" bounds);
+      let fmin, fmax = Opt_z3.min_max_expr pars max_only var_bound_rat bounds expr in
+      {empty_result with result = fmin; lower_bound = infinity},
+      {empty_result with result = fmax; lower_bound = neg_infinity}
     | "bb" -> 
-       Opt_basic_bb.min_max_expr pars max_only var_bound_float expr
+      Opt_basic_bb.min_max_expr pars max_only var_bound_float expr
     | "nlopt" -> 
-       let fmin, fmax = Opt_nlopt.min_max_expr pars var_bound_float expr in
-       {empty_result with result = fmin; lower_bound = infinity},
-       {empty_result with result = fmax; lower_bound = neg_infinity}
+      let fmin, fmax = Opt_nlopt.min_max_expr pars var_bound_float expr in
+      {empty_result with result = fmin; lower_bound = infinity},
+      {empty_result with result = fmax; lower_bound = neg_infinity}
     | "gelpia" -> 
-       let fmin, fmax = Opt_gelpia.min_max_expr pars max_only var_bound_float expr in
-       {empty_result with result = fmin; lower_bound = infinity},
-       {empty_result with result = fmax; lower_bound = neg_infinity}
+      let fmin, fmax = Opt_gelpia.min_max_expr pars max_only var_bound_float expr in
+      {empty_result with result = fmin; lower_bound = infinity},
+      {empty_result with result = fmax; lower_bound = neg_infinity}
     | s -> failwith ("Unsupported optimization backend: " ^ s) in
   rmin, rmax
 

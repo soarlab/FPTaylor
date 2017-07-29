@@ -12,11 +12,12 @@
 
 open Num
 open Expr
+open Interval
 open Opt_common
 
 module Out = ExprOut.Make(ExprOut.Z3PythonPrinter)
-       
-let gen_z3py_opt_code (pars : Opt_common.opt_pars) fmt =
+
+let gen_z3py_opt_code (pars : Opt_common.opt_pars) max_only bounds fmt =
   let z3_seed = Config.get_int_option "z3-seed" in
   let nl = Format.pp_print_newline fmt in
   let p str = Format.pp_print_string fmt str; nl() in
@@ -30,19 +31,28 @@ let gen_z3py_opt_code (pars : Opt_common.opt_pars) fmt =
     p "" in
 
   let tail () =
+    let max_str = if max_only then "True" else "False" in
+    let bounds_str = 
+      if Config.get_bool_option "z3-interval-bounds" && More_num.check_interval bounds = "" then
+        Format.sprintf "(%.20e, %.20e)" bounds.low bounds.high
+      else
+        "None" in
     p "";
     p (Format.sprintf "fTol = %f" pars.f_abs_tol);
     p (Format.sprintf
-         "l, u = find_bounds(f, var_constraints + constraints, fTol, %d, %d)"
-         pars.timeout z3_seed);
+         "l, u = find_bounds(f, var_constraints + constraints, \
+          f_abs_tol=%e, f_rel_tol=%e, \
+          timeout=%d, seed=%d, max_only=%s, bounds=%s)"
+         pars.f_abs_tol pars.f_rel_tol
+         pars.timeout z3_seed max_str bounds_str);
     p "print('min = {0:.20e}'.format(l))";
     p "print('max = {0:.20e}'.format(u))" in
 
   let num_to_z3 n =
     let s = Big_int.string_of_big_int in
     let ns = s (More_num.numerator n) and
-	ds = s (More_num.denominator n) in
-(*    "\"" ^ ns ^ "/" ^ ds ^ "\"" in*)
+      ds = s (More_num.denominator n) in
+    (*    "\"" ^ ns ^ "/" ^ ds ^ "\"" in*)
     "Q(" ^ ns ^ "," ^ ds ^ ")" in
 
   let const_to_z3 c =
@@ -52,15 +62,15 @@ let gen_z3py_opt_code (pars : Opt_common.opt_pars) fmt =
   let print_constraint c =
     match c with
     | Le (e, Const c) ->
-       Out.print_fmt fmt e;
-       p' " < ";
-       p' (const_to_z3 c)
+      Out.print_fmt fmt e;
+      p' " < ";
+      p' (const_to_z3 c)
     | _ -> failwith "z3opt: print_constraint(): unsupported constraint" in
 
   let constraint_vars (name, c) =
     match c with
-      | Le (e, Const _) -> vars_in_expr e
-      | _ -> failwith "z3opt: constraint_vars(): unsupported constraint" in
+    | Le (e, Const _) -> vars_in_expr e
+    | _ -> failwith "z3opt: constraint_vars(): unsupported constraint" in
 
   let constraints cs =
     if cs = [] then
@@ -87,7 +97,7 @@ let gen_z3py_opt_code (pars : Opt_common.opt_pars) fmt =
              if low =/ high then
                Format.sprintf "%s >= %s, %s <= %s" name (num_to_z3 low) name (num_to_z3 high)
              else
-               Format.sprintf "%s > %s, %s < %s" name (num_to_z3 low) name (num_to_z3 high))
+               Format.sprintf "%s >= %s, %s <= %s" name (num_to_z3 low) name (num_to_z3 high))
           neq_vars in
       let names =  String.concat ", " var_names in
       p (Format.sprintf "[%s] = Reals('%s')" names names);
@@ -98,9 +108,9 @@ let gen_z3py_opt_code (pars : Opt_common.opt_pars) fmt =
 (*
       let low, high = unzip var_bounds in
       let low_str = String.concat ", " (map2 (Format.sprintf "%s > %s") 
-					  var_names (map num_to_z3 low)) in
+var_names (map num_to_z3 low)) in
       let high_str = String.concat ", " (map2 (Format.sprintf "%s < %s") 
-					   var_names (map num_to_z3 high)) in
+var_names (map num_to_z3 high)) in
       let names =  String.concat ", " var_names in
       p (Format.sprintf "[%s] = Reals('%s')" names names);
       p (Format.sprintf "var_constraints = [%s, %s]" low_str high_str) in
@@ -123,17 +133,17 @@ let gen_z3py_opt_code (pars : Opt_common.opt_pars) fmt =
 
 let name_counter = ref 0;;
 
-let min_max_expr (pars : Opt_common.opt_pars) var_bound e =
+let min_max_expr (pars : Opt_common.opt_pars) max_only var_bound bounds e =
   if vars_in_expr e = [] then
     let n = Eval.eval_num_const_expr e in
     let t = More_num.interval_of_num n in
-    (t.Interval.low, t.Interval.high)
+    (t.low, t.high)
   else
     let tmp = Lib.get_tmp_dir () in
     let _ = incr name_counter in
     let py_name = Filename.concat tmp 
         (Format.sprintf "min_max_%d.py" !name_counter) in
-    let gen = gen_z3py_opt_code pars in
+    let gen = gen_z3py_opt_code pars max_only bounds in
     let _ = Lib.write_to_file py_name gen (var_bound, e) in
     let python_path =
       let path = try Unix.getenv "PYTHONPATH" with Not_found -> "" in
@@ -149,5 +159,5 @@ let min_max_expr (pars : Opt_common.opt_pars) var_bound e =
         lib_path python_path z3python py_name in
     let out = Lib.run_cmd cmd in
     let fmin = Opt_common.get_float out "min = " and
-        fmax = Opt_common.get_float out "max = " in
+      fmax = Opt_common.get_float out "max = " in
     (fmin, fmax)

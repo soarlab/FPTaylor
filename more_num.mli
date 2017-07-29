@@ -29,3 +29,5 @@ val float_of_num_hi : Num.num -> float
 
 val interval_of_num : Num.num -> Interval.interval
 val interval_of_string : string -> Interval.interval
+
+val check_interval : Interval.interval -> string

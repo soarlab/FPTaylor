@@ -172,16 +172,6 @@ let rnd_I rnd x =
     high = over (x.high +^ extra x.high);
   }
 
-let check_float v =
-  match (classify_float v) with
-    | FP_infinite -> "Overflow"
-    | FP_nan -> "NaN"
-    | _ -> ""
-
-let check_interval x =
-  let c1 = check_float x.high in
-  if c1 = "" then check_float x.low else c1
-    
 (* A conservative safety check procedure *)
 let check_expr vars =
   let rec eval e =
@@ -279,7 +269,7 @@ let check_expr vars =
 			     ^ gen_op_name op)
 	end
     in
-    let c = check_interval r in
+    let c = More_num.check_interval r in
     if c <> "" then
       raise (Exceptional_operation (e, c))
     else

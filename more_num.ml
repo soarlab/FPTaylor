@@ -225,3 +225,13 @@ let interval_of_num n = {
 let interval_of_string str =
   let n = num_of_float_string str in
   interval_of_num n
+
+let check_float v =
+  match (classify_float v) with
+    | FP_infinite -> "Overflow"
+    | FP_nan -> "NaN"
+    | _ -> ""
+
+let check_interval x =
+  let c1 = check_float x.high in
+  if c1 = "" then check_float x.low else c1
