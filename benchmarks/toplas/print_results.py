@@ -48,20 +48,25 @@ class Problem:
 
 def problem_from_file(fname):
     name = None
-    err = None
+    err_abs = None
+    err_rel = None
     time = None
     with open(fname, 'r') as f:
         for line in f:
             if line.startswith("Problem: "):
                 name = line[len("Problem: "):].strip()
             elif line.startswith("Absolute error (exact): "):
-                err = line[len("Absolute error (exact): "):].strip()
+                err_abs = line[len("Absolute error (exact): "):].strip()
             elif line.startswith("Absolute error (approximate): "):
-                err = line[len("Absolute error (approximate): "):].strip()
+                err_abs = line[len("Absolute error (approximate): "):].strip()
+            elif line.startswith("Relative error (exact): "):
+                err_rel = line[len("Relative error (exact): "):].strip()
+            elif line.startswith("Relative error (approximate): "):
+                err_rel = line[len("Relative error (approximate): "):].strip()
             elif line.startswith("Elapsed time: "):
                 time = float(line[len("Elapsed time: "):].strip())
-    if name and err and time:
-        return Problem(name, err, time)
+    if name and (err_abs or err_rel) and time:
+        return Problem(name, err_abs if err_abs else err_rel, time)
     else:
         return None
 

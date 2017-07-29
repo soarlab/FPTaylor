@@ -16,6 +16,12 @@ FPTAYLOR_Z3=$(FPTAYLOR) -c FPTaylor/config-z3.cfg
 FPTAYLOR_GELPIA=$(FPTAYLOR) -c FPTaylor/config-c.cfg --opt gelpia --opt-timeout 60000
 FPTAYLOR_GELPIA_TOL=$(FPTAYLOR) -c FPTaylor/config-c-tol.cfg --opt gelpia --opt-timeout 60000
 
+FPTAYLOR_REL_B=$(FPTAYLOR_B) -abs false -rel true
+FPTAYLOR_REL_B_VARS=$(FPTAYLOR_B_VARS) -abs false -rel true
+FPTAYLOR_REL_C=$(FPTAYLOR_C) -abs false -rel true
+FPTAYLOR_REL_C_TOL=$(FPTAYLOR_C_TOL) -abs false -rel true
+FPTAYLOR_REL_Z3=$(FPTAYLOR_Z3) -abs false -rel true
+
 ROSA=$(ROSA_HOME)/rosa --real --z3Timeout=1000
 ROSA_OPT=$(ROSA_OPT_HOME)/rosa --real --z3Timeout=1000
 
@@ -258,6 +264,86 @@ taylor-gelpia-tol:
 	time $(FPTAYLOR_GELPIA_TOL) FPTaylor/logexp.txt
 	time $(FPTAYLOR_GELPIA_TOL) FPTaylor/sphere.txt
 	#find log -name "*.log" -exec awk '/---/,0' '{}' \;
+
+rel-taylor-b:
+	rm -rf log tmp
+	# Non-Transcendental alphabetically
+	time $(FPTAYLOR_REL_B) FPTaylor/carbonGas.txt
+	time $(FPTAYLOR_REL_B) FPTaylor/doppler1.txt
+	time $(FPTAYLOR_REL_B) FPTaylor/doppler2.txt
+	time $(FPTAYLOR_REL_B) FPTaylor/doppler3.txt
+	time $(FPTAYLOR_REL_B) FPTaylor/predatorPrey.txt
+	time $(FPTAYLOR_REL_B) FPTaylor/sqroot.txt
+	time $(FPTAYLOR_REL_B) FPTaylor/turbine1.txt
+	time $(FPTAYLOR_REL_B) FPTaylor/turbine3.txt
+	time $(FPTAYLOR_REL_B) FPTaylor/verhulst.txt
+	time $(FPTAYLOR_REL_B) FPTaylor/kepler0.txt
+	time $(FPTAYLOR_REL_B) FPTaylor/kepler1.txt
+	time $(FPTAYLOR_REL_B) FPTaylor/kepler2.txt
+
+rel-taylor-b-vars:
+	rm -rf log tmp
+	# Non-Transcendental alphabetically
+	time $(FPTAYLOR_REL_B_VARS) FPTaylor/carbonGas.txt
+	time $(FPTAYLOR_REL_B_VARS) FPTaylor/doppler1.txt
+	time $(FPTAYLOR_REL_B_VARS) FPTaylor/doppler2.txt
+	time $(FPTAYLOR_REL_B_VARS) FPTaylor/doppler3.txt
+	time $(FPTAYLOR_REL_B_VARS) FPTaylor/predatorPrey.txt
+	time $(FPTAYLOR_REL_B_VARS) FPTaylor/sqroot.txt
+	time $(FPTAYLOR_REL_B_VARS) FPTaylor/turbine1.txt
+	time $(FPTAYLOR_REL_B_VARS) FPTaylor/turbine3.txt
+	time $(FPTAYLOR_REL_B_VARS) FPTaylor/verhulst.txt
+	time $(FPTAYLOR_REL_B_VARS) FPTaylor/kepler0.txt
+	time $(FPTAYLOR_REL_B_VARS) FPTaylor/kepler1.txt
+	time $(FPTAYLOR_REL_B_VARS) FPTaylor/kepler2.txt
+
+rel-taylor-c:
+	rm -rf log tmp
+	# Non-Transcendental alphabetically
+	time $(FPTAYLOR_REL_C) FPTaylor/carbonGas.txt
+	time $(FPTAYLOR_REL_C) FPTaylor/doppler1.txt
+	time $(FPTAYLOR_REL_C) FPTaylor/doppler2.txt
+	time $(FPTAYLOR_REL_C) FPTaylor/doppler3.txt
+	time $(FPTAYLOR_REL_C) FPTaylor/predatorPrey.txt
+	time $(FPTAYLOR_REL_C) FPTaylor/sqroot.txt
+	time $(FPTAYLOR_REL_C) FPTaylor/turbine1.txt
+	time $(FPTAYLOR_REL_C) FPTaylor/turbine3.txt
+	time $(FPTAYLOR_REL_C) FPTaylor/verhulst.txt
+	time $(FPTAYLOR_REL_C) FPTaylor/kepler0.txt
+	time $(FPTAYLOR_REL_C) FPTaylor/kepler1.txt
+	time $(FPTAYLOR_REL_C) FPTaylor/kepler2.txt
+
+rel-taylor-c-tol:
+	rm -rf log tmp
+	# Non-Transcendental alphabetically
+	time $(FPTAYLOR_REL_C_TOL) FPTaylor/carbonGas.txt
+	time $(FPTAYLOR_REL_C_TOL) FPTaylor/doppler1.txt
+	time $(FPTAYLOR_REL_C_TOL) FPTaylor/doppler2.txt
+	time $(FPTAYLOR_REL_C_TOL) FPTaylor/doppler3.txt
+	time $(FPTAYLOR_REL_C_TOL) FPTaylor/predatorPrey.txt
+	time $(FPTAYLOR_REL_C_TOL) FPTaylor/sqroot.txt
+	time $(FPTAYLOR_REL_C_TOL) FPTaylor/turbine1.txt
+	time $(FPTAYLOR_REL_C_TOL) FPTaylor/turbine3.txt
+	time $(FPTAYLOR_REL_C_TOL) FPTaylor/verhulst.txt
+	time $(FPTAYLOR_REL_C_TOL) FPTaylor/kepler0.txt
+	time $(FPTAYLOR_REL_C_TOL) FPTaylor/kepler1.txt
+	time $(FPTAYLOR_REL_C_TOL) FPTaylor/kepler2.txt
+
+rel-taylor-z3:
+	rm -rf log tmp
+	# Non-Transcendental alphabetically
+	time $(FPTAYLOR_REL_Z3) FPTaylor/carbonGas.txt
+	time $(FPTAYLOR_REL_Z3) FPTaylor/doppler1.txt
+	time $(FPTAYLOR_REL_Z3) FPTaylor/doppler2.txt
+	time $(FPTAYLOR_REL_Z3) FPTaylor/doppler3.txt
+	time $(FPTAYLOR_REL_Z3) FPTaylor/predatorPrey.txt
+	time $(FPTAYLOR_REL_Z3) FPTaylor/sqroot.txt
+	time $(FPTAYLOR_REL_Z3) FPTaylor/turbine1.txt
+	time $(FPTAYLOR_REL_Z3) FPTaylor/turbine3.txt
+	time $(FPTAYLOR_REL_Z3) FPTaylor/verhulst.txt
+	time $(FPTAYLOR_REL_Z3) FPTaylor/kepler0.txt
+	time $(FPTAYLOR_REL_Z3) FPTaylor/kepler1.txt
+	time $(FPTAYLOR_REL_Z3) FPTaylor/kepler2.txt
 
 extra-taylor-a:
 	rm -rf log tmp
