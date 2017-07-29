@@ -30,7 +30,10 @@ benchmark_list = [
     "kepler2",
     "himmilbeau",
     "hartman3",
-    "hartman6"
+    "hartman6",
+    "floudas1",
+    "floudas2",
+    "floudas3"
 ]
 
 class Problem:

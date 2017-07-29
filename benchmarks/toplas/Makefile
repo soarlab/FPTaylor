@@ -8,9 +8,11 @@ FLUCTUAT_HOME=~/TOPLAS/FLUCTUAT/fluctuat_v3.1376
 FPTAYLOR=$(FPTAYLOR_HOME)/fptaylor
 FPTAYLOR_A=$(FPTAYLOR) -c FPTaylor/config-a.cfg
 FPTAYLOR_B=$(FPTAYLOR) -c FPTaylor/config-b.cfg
+FPTAYLOR_B_VARS=$(FPTAYLOR) -c FPTaylor/config-b.cfg --const-approx-real-vars false
 FPTAYLOR_B_PROOF=$(FPTAYLOR) -c FPTaylor/config-b.cfg --proof-record true --proof-dir FPTaylor/proofs
 FPTAYLOR_C=$(FPTAYLOR) -c FPTaylor/config-c.cfg
 FPTAYLOR_C_TOL=$(FPTAYLOR) -c FPTaylor/config-c-tol.cfg
+FPTAYLOR_Z3=$(FPTAYLOR) -c FPTaylor/config-z3.cfg
 FPTAYLOR_GELPIA=$(FPTAYLOR) -c FPTaylor/config-c.cfg --opt gelpia --opt-timeout 60000
 FPTAYLOR_GELPIA_TOL=$(FPTAYLOR) -c FPTaylor/config-c-tol.cfg --opt gelpia --opt-timeout 60000
 
@@ -98,6 +100,31 @@ taylor-b-formal:
 	time $(FPTAYLOR_B_PROOF) FPTaylor/sphere.txt
 	#find log -name "*.log" -exec awk '/---/,0' '{}' \;
 
+taylor-b-vars:
+	rm -rf log tmp
+	# Non-Transcendental alphabetically
+	time $(FPTAYLOR_B_VARS) FPTaylor/carbonGas.txt
+	time $(FPTAYLOR_B_VARS) FPTaylor/doppler1.txt
+	time $(FPTAYLOR_B_VARS) FPTaylor/doppler2.txt
+	time $(FPTAYLOR_B_VARS) FPTaylor/doppler3.txt
+	time $(FPTAYLOR_B_VARS) FPTaylor/jet.txt
+	time $(FPTAYLOR_B_VARS) FPTaylor/predatorPrey.txt
+	time $(FPTAYLOR_B_VARS) FPTaylor/rigidBody1.txt
+	time $(FPTAYLOR_B_VARS) FPTaylor/rigidBody2.txt
+	time $(FPTAYLOR_B_VARS) FPTaylor/sine.txt
+	time $(FPTAYLOR_B_VARS) FPTaylor/sineOrder3.txt
+	time $(FPTAYLOR_B_VARS) FPTaylor/sqroot.txt
+	time $(FPTAYLOR_B_VARS) FPTaylor/t_div_t1.txt
+	time $(FPTAYLOR_B_VARS) FPTaylor/turbine1.txt
+	time $(FPTAYLOR_B_VARS) FPTaylor/turbine2.txt
+	time $(FPTAYLOR_B_VARS) FPTaylor/turbine3.txt
+	time $(FPTAYLOR_B_VARS) FPTaylor/verhulst.txt
+	# Transcendental alphabetically
+	time $(FPTAYLOR_B_VARS) FPTaylor/azimuth.txt
+	time $(FPTAYLOR_B_VARS) FPTaylor/logexp.txt
+	time $(FPTAYLOR_B_VARS) FPTaylor/sphere.txt
+	#find log -name "*.log" -exec awk '/---/,0' '{}' \;
+	
 taylor-c:
 	rm -rf log tmp
 	# Non-Transcendental alphabetically
@@ -146,6 +173,36 @@ taylor-c-tol:
 	time $(FPTAYLOR_C_TOL) FPTaylor/azimuth.txt
 	time $(FPTAYLOR_C_TOL) FPTaylor/logexp.txt
 	time $(FPTAYLOR_C_TOL) FPTaylor/sphere.txt
+	#find log -name "*.log" -exec awk '/---/,0' '{}' \;
+
+taylor-z3:
+	rm -rf log tmp
+	# Non-Transcendental alphabetically
+	time $(FPTAYLOR_Z3) FPTaylor/carbonGas.txt
+	time $(FPTAYLOR_Z3) FPTaylor/doppler1.txt
+	time $(FPTAYLOR_Z3) FPTaylor/doppler2.txt
+	time $(FPTAYLOR_Z3) FPTaylor/doppler3.txt
+	time $(FPTAYLOR_Z3) FPTaylor/jet.txt
+	time $(FPTAYLOR_Z3) FPTaylor/predatorPrey.txt
+	time $(FPTAYLOR_Z3) FPTaylor/rigidBody1.txt
+	time $(FPTAYLOR_Z3) FPTaylor/rigidBody2.txt
+	time $(FPTAYLOR_Z3) FPTaylor/sine.txt
+	time $(FPTAYLOR_Z3) FPTaylor/sineOrder3.txt
+	time $(FPTAYLOR_Z3) FPTaylor/sqroot.txt
+	time $(FPTAYLOR_Z3) FPTaylor/t_div_t1.txt
+	time $(FPTAYLOR_Z3) FPTaylor/turbine1.txt
+	time $(FPTAYLOR_Z3) FPTaylor/turbine2.txt
+	time $(FPTAYLOR_Z3) FPTaylor/turbine3.txt
+	time $(FPTAYLOR_Z3) FPTaylor/verhulst.txt
+	# extra
+	time $(FPTAYLOR_Z3) FPTaylor/himmilbeau.txt
+	time $(FPTAYLOR_Z3) FPTaylor/kepler0.txt
+	time $(FPTAYLOR_Z3) FPTaylor/kepler1.txt
+	time $(FPTAYLOR_Z3) FPTaylor/kepler2.txt
+	# floudas
+	time $(FPTAYLOR_Z3) FPTaylor/floudas1.txt
+	time $(FPTAYLOR_Z3) FPTaylor/floudas2.txt
+	time $(FPTAYLOR_Z3) FPTaylor/floudas3.txt
 	#find log -name "*.log" -exec awk '/---/,0' '{}' \;
 
 taylor-gelpia:
@@ -224,6 +281,17 @@ extra-taylor-b:
 	time $(FPTAYLOR_B) FPTaylor/hartman3.txt
 	#find log -name "*.log" -exec awk '/---/,0' '{}' \;
 
+extra-taylor-b-vars:
+	rm -rf log tmp
+	# Non-Transcendental alphabetically
+	time $(FPTAYLOR_B_VARS) FPTaylor/himmilbeau.txt
+	time $(FPTAYLOR_B_VARS) FPTaylor/kepler0.txt
+	time $(FPTAYLOR_B_VARS) FPTaylor/kepler1.txt
+	time $(FPTAYLOR_B_VARS) FPTaylor/kepler2.txt
+	# Transcendental alphabetically
+	time $(FPTAYLOR_B_VARS) FPTaylor/hartman3.txt
+	#find log -name "*.log" -exec awk '/---/,0' '{}' \;
+
 extra-taylor-b-formal:
 	rm -rf log tmp
 	# Non-Transcendental alphabetically
@@ -282,6 +350,20 @@ extra-taylor-gelpia-tol:
 	# Non-Transcendental alphabetically
 	time $(FPTAYLOR_GELPIA_TOL) FPTaylor/hartman3.txt
 	#find log -name "*.log" -exec awk '/---/,0' '{}' \;
+
+floudas-taylor-b:
+	rm -rf log tmp
+	time $(FPTAYLOR_B) FPTaylor/floudas1.txt
+	time $(FPTAYLOR_B) FPTaylor/floudas2.txt
+	time $(FPTAYLOR_B) FPTaylor/floudas3.txt
+	#find log -name "*.log" -exec awk '/---/,0' '{}' \;	
+
+floudas-taylor-b-vars:
+	rm -rf log tmp
+	time $(FPTAYLOR_B_VARS) FPTaylor/floudas1.txt
+	time $(FPTAYLOR_B_VARS) FPTaylor/floudas2.txt
+	time $(FPTAYLOR_B_VARS) FPTaylor/floudas3.txt
+	#find log -name "*.log" -exec awk '/---/,0' '{}' \;	
 
 gappa:
 	# Non-Transcendental alphabetically

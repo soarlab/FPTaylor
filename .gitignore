@@ -15,6 +15,7 @@ b_and_b/compile.sh
 ref.html
 vm_instructions.html
 fptaylor
+!FPTaylor/
 proof_to_text
 ocamlfpu
 *~
