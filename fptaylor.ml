@@ -45,7 +45,7 @@ let default_problem_info = {
 let get_problem_absolute_error pi =
   let entire = {low = neg_infinity; high = infinity} in
   let e1 = option_default ~default:entire pi.abs_error_approx and
-      e2 = option_default ~default:entire pi.abs_error_exact in
+    e2 = option_default ~default:entire pi.abs_error_exact in
   min e1.high e2.high
 
 let print_problem_info pi =
@@ -55,12 +55,12 @@ let print_problem_info pi =
   let print_lower_bound width str = function
     | None -> ()
     | Some v ->
-       if v.low > neg_infinity then
-         let subopt = v.high -. v.low in
-         Log.report `Main "%-*s %e (suboptimality = %.1f%%)"
-                    width str v.low (subopt /. v.high *. 100.)
-       else
-         Log.report `Main "%-*s %e" width str v.low in
+      if v.low > neg_infinity then
+        let subopt = v.high -. v.low in
+        Log.report `Main "%-*s %e (suboptimality = %.1f%%)"
+          width str v.low (subopt /. v.high *. 100.)
+      else
+        Log.report `Main "%-*s %e" width str v.low in
   let print_bounds pi =
     if pi.real_bounds.low > neg_infinity || pi.real_bounds.high < infinity then
       begin
@@ -77,25 +77,25 @@ let print_problem_info pi =
     | (s, Some _) :: rest -> max (String.length s) (max_length rest)
   in
   Log.report `Main
-             "-------------------------------------------------------------------------------";
+    "-------------------------------------------------------------------------------";
   Log.report `Main "Problem: %s\n" pi.name;
   if Config.get_bool_option "print-opt-lower-bounds" then begin
-      let abs_approx_str = "The absolute error model (approximate):" in
-      let abs_exact_str = "The absolute error model (exact):" in
-      let rel_approx_str = "The relative error model (approximate):" in
-      let rel_exact_str = "The relative error model (exact):" in
-      let w = max_length [abs_approx_str, pi.abs_error_approx;
-                          abs_exact_str, pi.abs_error_exact;
-                          rel_approx_str, pi.rel_error_approx;
-                          rel_exact_str, pi.rel_error_exact] in
-      if w > 0 then
-        Log.report `Main "Optimization lower bounds for error models:";
-      print_lower_bound w abs_approx_str pi.abs_error_approx;
-      print_lower_bound w abs_exact_str pi.abs_error_exact;
-      print_lower_bound w rel_approx_str pi.rel_error_approx;
-      print_lower_bound w rel_exact_str pi.rel_error_exact;
-      Log.report `Main "";
-    end;
+    let abs_approx_str = "The absolute error model (approximate):" in
+    let abs_exact_str = "The absolute error model (exact):" in
+    let rel_approx_str = "The relative error model (approximate):" in
+    let rel_exact_str = "The relative error model (exact):" in
+    let w = max_length [abs_approx_str, pi.abs_error_approx;
+                        abs_exact_str, pi.abs_error_exact;
+                        rel_approx_str, pi.rel_error_approx;
+                        rel_exact_str, pi.rel_error_exact] in
+    if w > 0 then
+      Log.report `Main "Optimization lower bounds for error models:";
+    print_lower_bound w abs_approx_str pi.abs_error_approx;
+    print_lower_bound w abs_exact_str pi.abs_error_exact;
+    print_lower_bound w rel_approx_str pi.rel_error_approx;
+    print_lower_bound w rel_exact_str pi.rel_error_exact;
+    Log.report `Main "";
+  end;
   Log.report `Main "Bounds (without rounding): %s" (sprintf_I "%e" pi.real_bounds);
   print_bounds pi;
   Log.report `Main "";
@@ -112,7 +112,7 @@ let print_problem_info pi =
   print_upper_bound w rel_approx_str pi.rel_error_approx;
   print_upper_bound w rel_exact_str pi.rel_error_exact;
   Log.report `Main "\nElapsed time: %.2f\n" pi.elapsed_time
-  
+
 let exprs () = env.expressions
 
 let var_bound_float name = variable_interval name
@@ -121,7 +121,7 @@ let print_form level f =
   Log.report level "v0 = %s" (ExprOut.Info.print_str f.v0);
   iter (fun (e, err) -> 
       Log.report level "%d (%d): exp = %d: %s" 
-	         err.index err.proof_index err.exp (ExprOut.Info.print_str e)) f.v1;
+        err.index err.proof_index err.exp (ExprOut.Info.print_str e)) f.v1;
   Log.report level "\nCorresponding original subexpressions:";
   iter (fun (_, err) ->
       let i = err.index in
@@ -133,7 +133,7 @@ let bound_info bound =
   if bound.low > neg_infinity then
     let subopt = (bound.high -. bound.low) /. bound.high *. 100. in
     Format.sprintf "%e (low = %e, subopt = %.1f%%)"
-                   bound.high bound.low subopt
+      bound.high bound.low subopt
   else
     Format.sprintf "%e (low = %e)" bound.high bound.low
 
@@ -163,15 +163,15 @@ let rec split_error_terms err_terms =
   match err_terms with
   | [] -> [], []
   | (e, err) :: rest ->
-     let es1, es2 = split_error_terms rest in
-     if err.index < 0 then
-       es1, (e, err) :: es2
-     else
-       (e, err) :: es1, es2
+    let es1, es2 = split_error_terms rest in
+    if err.index < 0 then
+      es1, (e, err) :: es2
+    else
+      (e, err) :: es1, es2
 
 let sum_err_bounds bounds =
   let high = map (fun (v, exp) -> v.high, exp) bounds and
-      low = map (fun (v, exp) -> -.v.low, exp) bounds in
+  low = map (fun (v, exp) -> -.v.low, exp) bounds in
   let s_high, exp = sum_high high in
   let s_low, exp' =
     let s, e = sum_high low in
@@ -183,11 +183,11 @@ let sum_err_bounds bounds =
 (* Issue a warning if the second-order error term is too large *)
 let error2_warning ?(eps = 1e-2) err1 err2 =
   if abs_float err1 > 0. && abs_float err2 >= eps *. abs_float err1 then begin
-      Log.warning "Large second-order error: %e (first-order = %e)" err2 err1;
-      Log.warning "Try intermediate-opt = true or \
-                   manually split intervals of input variables.";
-    end
-            
+    Log.warning "Large second-order error: %e (first-order = %e)" err2 err1;
+    Log.warning "Try intermediate-opt = true or \
+                 manually split intervals of input variables.";
+  end
+
 let absolute_errors tf =
   Log.report `Important "\nComputing absolute errors";
   let v1, v2 = split_error_terms tf.v1 in
@@ -199,64 +199,64 @@ let absolute_errors tf =
     if not (Config.get_bool_option "opt-approx") then None
     else
       begin
-	      Log.report `Important "\nSolving the approximate optimization problem";
-	      Log.report `Important "\nAbsolute errors:";
+        Log.report `Important "\nSolving the approximate optimization problem";
+        Log.report `Important "\nAbsolute errors:";
         let bounds1 =
-	        let bounds1' = map compute_bound v1 in
-	        map (fun (e, exp) -> make_stronger_i e, exp) bounds1' in
+          let bounds1' = map compute_bound v1 in
+          map (fun (e, exp) -> make_stronger_i e, exp) bounds1' in
         let total1_i = sum_err_bounds bounds1 in
-	      let total_i = make_stronger_i (total1_i +$ total2_i) in
+        let total_i = make_stronger_i (total1_i +$ total2_i) in
         let () =
-	      let all_bounds = map (fun (v, _) -> v.high) bounds1
-                          @ map (fun (v, _) -> v.high) bounds2 in
-	      let all_indices = map (fun (_, err) -> err.proof_index) v1 
-	                        @ map (fun (_, err) -> err.proof_index) v2 in
-	      Proof.add_opt_approx all_indices all_bounds total_i.high in
-	      Log.report `Important "total1: %s" (bound_info total1_i);
+          let all_bounds = map (fun (v, _) -> v.high) bounds1
+                           @ map (fun (v, _) -> v.high) bounds2 in
+          let all_indices = map (fun (_, err) -> err.proof_index) v1 
+                            @ map (fun (_, err) -> err.proof_index) v2 in
+          Proof.add_opt_approx all_indices all_bounds total_i.high in
+        Log.report `Important "total1: %s" (bound_info total1_i);
         Log.report `Important "total2: %s" (bound_info total2_i);
         Log.report `Important "total: %s" (bound_info total_i);
         error2_warning total1_i.high total2_i.high;
-	      Some total_i
+        Some total_i
       end
   in
   let err_exact =
     if not (Config.get_bool_option "opt-exact") then None
     else
       begin
-	      Log.report `Important "\nSolving the exact optimization problem";
-	      let abs_exprs = map (fun (e, err) -> mk_abs e, err.exp) v1 in
+        Log.report `Important "\nSolving the exact optimization problem";
+        let abs_exprs = map (fun (e, err) -> mk_abs e, err.exp) v1 in
         let full_expr, exp =
-	        let full_expr', exp = sum_symbolic abs_exprs in
-	        if Config.get_bool_option "maxima-simplification" then
+          let full_expr', exp = sum_symbolic abs_exprs in
+          if Config.get_bool_option "maxima-simplification" then
             Maxima.simplify full_expr', exp
           else
             full_expr', exp in
 
-	      let _ = 
-	        Out_racket.create_racket_file "abs_exact" 
-	                                      "fptaylor-abs" total2_i.high exp full_expr;
-	        Out_test.create_test_file "test_abs_exact.txt" full_expr in
+        let _ = 
+          Out_racket.create_racket_file "abs_exact" 
+            "fptaylor-abs" total2_i.high exp full_expr;
+          Out_test.create_test_file "test_abs_exact.txt" full_expr in
 
-	      let bound =
+        let bound =
           let r = Opt.find_max Opt_common.default_opt_pars full_expr in
           {low = r.Opt_common.lower_bound; high = r.Opt_common.result} in
         let total1_i = get_eps exp *.$ bound in
-	      let total_i = 
-	        if Config.proof_flag then begin
-	          let e' = get_eps exp in
-	          let e = if e' = 0.0 then 1.0 else e' in
-	          let bound = make_stronger_i (bound +$ total2_i /$. e) in
-	          let total_i = e *.$ bound in
-	          Proof.add_opt_exact bound.high exp total_i.high;
-	          total_i
+        let total_i = 
+          if Config.proof_flag then begin
+            let e' = get_eps exp in
+            let e = if e' = 0.0 then 1.0 else e' in
+            let bound = make_stronger_i (bound +$ total2_i /$. e) in
+            let total_i = e *.$ bound in
+            Proof.add_opt_exact bound.high exp total_i.high;
+            total_i
           end
-	        else
-	          total1_i +$ total2_i in
-	      Log.report `Important "exact bound (exp = %d): %s" exp (bound_info bound);
+          else
+            total1_i +$ total2_i in
+        Log.report `Important "exact bound (exp = %d): %s" exp (bound_info bound);
         Log.report `Important "total2: %s" (bound_info total2_i);
         Log.report `Important "exact total: %s" (bound_info total_i);
         error2_warning total1_i.high total2_i.high;
-	      Some total_i
+        Some total_i
       end
   in
   err_approx, err_exact
@@ -266,10 +266,10 @@ let relative_errors tf (f_min, f_max) =
   let f_int = {low = f_min; high = f_max} in
   let rel_tol = Config.get_float_option "rel-error-threshold" in
   if (abs_I f_int).low < rel_tol then begin
-      Log.warning "\nCannot compute the relative error: \
-                   values of the function are close to zero";
-      None, None
-    end
+    Log.warning "\nCannot compute the relative error: \
+                 values of the function are close to zero";
+    None, None
+  end
   else
     let v1, v2 = split_error_terms tf.v1 in
     let bounds2 = map compute_bound v2 in
@@ -285,47 +285,47 @@ let relative_errors tf (f_min, f_max) =
               map (fun (e, err) -> Maxima.simplify e, err) v1_rel
             else
               v1_rel in
-	        Log.report `Important "\nSolving the approximate optimization probelm";
-	        Log.report `Important "\nRelative errors:";
-	        let bounds1 = map compute_bound v1_rel in
+          Log.report `Important "\nSolving the approximate optimization probelm";
+          Log.report `Important "\nRelative errors:";
+          let bounds1 = map compute_bound v1_rel in
           let total1_i = sum_err_bounds bounds1 in
-	        let total_i = total1_i +$ b2_i in
-	        Log.report `Important "rel-total1: %s" (bound_info total1_i);
+          let total_i = total1_i +$ b2_i in
+          Log.report `Important "rel-total1: %s" (bound_info total1_i);
           Log.report `Important "rel-total2: %s" (bound_info b2_i);
           Log.report `Important "rel-total: %s" (bound_info total_i);
           error2_warning total1_i.high b2_i.high;
-	        Some total_i          
+          Some total_i          
         end
     in
     let err_exact =
       if not (Config.get_bool_option "opt-exact") then None
       else
         begin
-	        Log.report `Important "\nSolving the exact optimization problem";
+          Log.report `Important "\nSolving the exact optimization problem";
           let full_expr, exp =
-  	        let abs_exprs = map (fun (e, err) -> mk_abs e, err.exp) v1 in
+            let abs_exprs = map (fun (e, err) -> mk_abs e, err.exp) v1 in
             let sum_expr, exp = sum_symbolic abs_exprs in
             let full_expr' = mk_div sum_expr (mk_abs tf.v0) in
-	          if Config.get_bool_option "maxima-simplification" then
+            if Config.get_bool_option "maxima-simplification" then
               Maxima.simplify full_expr', exp
             else
               full_expr', exp in
 
-	        let _ = 
-	          Out_racket.create_racket_file "rel_exact" 
-	                                        "fptaylor-rel" b2_i.high exp full_expr;
-	          Out_test.create_test_file "test_rel_exact.txt" full_expr in
-          
-	        let bound =
+          let _ = 
+            Out_racket.create_racket_file "rel_exact" 
+              "fptaylor-rel" b2_i.high exp full_expr;
+            Out_test.create_test_file "test_rel_exact.txt" full_expr in
+
+          let bound =
             let r = Opt.find_max Opt_common.default_opt_pars full_expr in
-              {low = r.Opt_common.lower_bound; high = r.Opt_common.result} in
+            {low = r.Opt_common.lower_bound; high = r.Opt_common.result} in
           let total1_i = get_eps exp *.$ bound in
-	        let total_i = total1_i +$ b2_i in
-	        Log.report `Important "exact bound-rel (exp = %d): %s" exp (bound_info bound);
+          let total_i = total1_i +$ b2_i in
+          Log.report `Important "exact bound-rel (exp = %d): %s" exp (bound_info bound);
           Log.report `Important "total2: %s" (bound_info b2_i);
           Log.report `Important "exact total-rel: %s" (bound_info total_i);
           error2_warning total1_i.high b2_i.high;
-	        Some total_i
+          Some total_i
         end
     in
     err_approx, err_exact
@@ -341,20 +341,20 @@ let errors pi tform =
   let pi =
     if Config.get_bool_option "opt-approx" || Config.get_bool_option "opt-exact" then
       let abs_approx, abs_exact = 
-	if Config.get_bool_option "abs-error" then
+        if Config.get_bool_option "abs-error" then
           absolute_errors tform
         else
           None, None in
       let rel_approx, rel_exact = 
-	if Config.get_bool_option "rel-error" then
+        if Config.get_bool_option "rel-error" then
           relative_errors tform (f_min, f_max)
         else
           None, None in
       {pi with
-	abs_error_approx = abs_approx;
-	abs_error_exact = abs_exact;
-	rel_error_approx = rel_approx;
-	rel_error_exact = rel_exact
+       abs_error_approx = abs_approx;
+       abs_error_exact = abs_exact;
+       rel_error_approx = rel_approx;
+       rel_error_exact = rel_exact
       }
     else
       pi in
@@ -367,7 +367,7 @@ let safety_check e =
   with Rounding_simpl.Exceptional_operation (e0, str) ->
     let msg =
       Format.sprintf "\nPotential exception detected: %s at:\n%s"
-	             str (ExprOut.Info.print_str e0) in
+        str (ExprOut.Info.print_str e0) in
     if Config.fail_on_exception then
       failwith msg
     else
@@ -391,13 +391,13 @@ let compute_form pi e =
       let form = simplify_form vars form' in
       Log.report `Important "success";
       let form = 
-	if Config.get_bool_option "maxima-simplification" then {
-	  form_index = form.form_index;
-	  v0 = Maxima.simplify form.v0;
-	  v1 = map (fun (e, err) -> (if err.index < 0 then e else Maxima.simplify e), err) form.v1;
-	}
-	else
-	  form in
+        if Config.get_bool_option "maxima-simplification" then {
+          form_index = form.form_index;
+          v0 = Maxima.simplify form.v0;
+          v1 = map (fun (e, err) -> (if err.index < 0 then e else Maxima.simplify e), err) form.v1;
+        }
+        else
+          form in
       print_form `Info form;
       Log.report `Info "";
       let pi = errors pi form in
@@ -421,9 +421,9 @@ let compute_form pi e =
 let approximate_constraint pi c =
   let e = 
     match c with
-      | Le (a, b) -> mk_sub a b
-      | Lt (a, b) -> mk_sub a b
-      | Eq (a, b) -> failwith "approximate_constraint: Eq is not supported" in
+    | Le (a, b) -> mk_sub a b
+    | Lt (a, b) -> mk_sub a b
+    | Eq (a, b) -> failwith "approximate_constraint: Eq is not supported" in
   Log.report `Important "Constraint form";
   let r, tform = compute_form pi e in
   let err = get_problem_absolute_error r in
@@ -435,8 +435,8 @@ let process_input fname =
   let date_str =
     let time = Unix.localtime (Unix.time ()) in
     Format.sprintf "%d-%02d-%02d-%02d%02d%02d"
-                   (time.Unix.tm_year + 1900) (time.Unix.tm_mon + 1) time.Unix.tm_mday
-                   time.Unix.tm_hour time.Unix.tm_min time.Unix.tm_sec in
+      (time.Unix.tm_year + 1900) (time.Unix.tm_mon + 1) time.Unix.tm_mday
+      time.Unix.tm_hour time.Unix.tm_min time.Unix.tm_sec in
   let () =
     let log_dir = Config.get_string_option "log-base-dir" in
     let log_name =
@@ -451,9 +451,9 @@ let process_input fname =
   let () =
     let tmp_base_dir = Config.get_string_option "tmp-base-dir" in
     let tmp_dir = if Config.get_bool_option "tmp-date" then
-                    Filename.concat tmp_base_dir date_str
-                  else
-                    tmp_base_dir in
+        Filename.concat tmp_base_dir date_str
+      else
+        tmp_base_dir in
     Lib.set_tmp_dir tmp_dir in
   Config.print_options `Debug;
   let _ = parse_file fname in
@@ -463,9 +463,9 @@ let process_input fname =
   let constraints0 = map (fun name -> {default_problem_info with name = name}) cnames in
   let constraints = 
     if cs = [] then [] else begin
-        Log.report `Important "\n****** Approximating constraints *******\n";
-        map2 approximate_constraint constraints0 cs
-      end in
+      Log.report `Important "\n****** Approximating constraints *******\n";
+      map2 approximate_constraint constraints0 cs
+    end in
   let _ = set_active_constraints (zip cnames constraints) in
   let problems = map2 compute_form problems0 es in
   Log.report `Info "*************************************\n";
@@ -500,7 +500,7 @@ let validate_options () =
     validate_simplification ();
     validate_proof_record ();
   end
-         
+
 let main () =
   Log.report `Main "FPTaylor, version %s" Version.version;
   if Config.input_files = [] then

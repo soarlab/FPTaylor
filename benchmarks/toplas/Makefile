@@ -5,7 +5,7 @@ GAPPA_HOME=~/TOPLAS/GAPPA/gappa-1.3.0/src
 GELPIA_HOME=~/TOPLAS/FPTAYLOR/FPTaylor/gelpia
 FLUCTUAT_HOME=~/TOPLAS/FLUCTUAT/fluctuat_v3.1376
 
-FPTAYLOR=$(FPTAYLOR_HOME)/fptaylor
+FPTAYLOR=$(FPTAYLOR_HOME)/fptaylor -v 1
 FPTAYLOR_A=$(FPTAYLOR) -c FPTaylor/config-a.cfg
 FPTAYLOR_B=$(FPTAYLOR) -c FPTaylor/config-b.cfg
 FPTAYLOR_B_VARS=$(FPTAYLOR) -c FPTaylor/config-b.cfg --const-approx-real-vars false
@@ -18,6 +18,7 @@ FPTAYLOR_GELPIA_TOL=$(FPTAYLOR) -c FPTaylor/config-c-tol.cfg --opt gelpia --opt-
 
 FPTAYLOR_REL_B=$(FPTAYLOR_B) -abs false -rel true
 FPTAYLOR_REL_B_VARS=$(FPTAYLOR_B_VARS) -abs false -rel true
+FPTAYLOR_REL_B_ITERS=$(FPTAYLOR_B) --opt-max-iters 1000000 -abs false -rel true
 FPTAYLOR_REL_C=$(FPTAYLOR_C) -abs false -rel true
 FPTAYLOR_REL_C_TOL=$(FPTAYLOR_C_TOL) -abs false -rel true
 FPTAYLOR_REL_Z3=$(FPTAYLOR_Z3) -abs false -rel true
@@ -280,6 +281,22 @@ rel-taylor-b:
 	time $(FPTAYLOR_REL_B) FPTaylor/kepler0.txt
 	time $(FPTAYLOR_REL_B) FPTaylor/kepler1.txt
 	time $(FPTAYLOR_REL_B) FPTaylor/kepler2.txt
+
+rel-taylor-b-iters:
+	rm -rf log tmp
+	# Non-Transcendental alphabetically
+	time $(FPTAYLOR_REL_B_ITERS) FPTaylor/carbonGas.txt
+	time $(FPTAYLOR_REL_B_ITERS) FPTaylor/doppler1.txt
+	time $(FPTAYLOR_REL_B_ITERS) FPTaylor/doppler2.txt
+	time $(FPTAYLOR_REL_B_ITERS) FPTaylor/doppler3.txt
+	time $(FPTAYLOR_REL_B_ITERS) FPTaylor/predatorPrey.txt
+	time $(FPTAYLOR_REL_B_ITERS) FPTaylor/sqroot.txt
+	time $(FPTAYLOR_REL_B_ITERS) FPTaylor/turbine1.txt
+	time $(FPTAYLOR_REL_B_ITERS) FPTaylor/turbine3.txt
+	time $(FPTAYLOR_REL_B_ITERS) FPTaylor/verhulst.txt
+	time $(FPTAYLOR_REL_B_ITERS) FPTaylor/kepler0.txt
+	time $(FPTAYLOR_REL_B_ITERS) FPTaylor/kepler1.txt
+	time $(FPTAYLOR_REL_B_ITERS) FPTaylor/kepler2.txt
 
 rel-taylor-b-vars:
 	rm -rf log tmp
