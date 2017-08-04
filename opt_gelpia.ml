@@ -32,7 +32,9 @@ type gelpia_pars = {
 let gen_gelpia_code fmt =
   let nl = Format.pp_print_newline fmt in
   let p str = Format.pp_print_string fmt str; nl () in
-  let p' str = Format.pp_print_string fmt str in
+  let p' str = 
+    Format.pp_print_string fmt str; 
+    Format.pp_print_flush fmt () in
 
   let parameters pars x_tol =
     let timeout = max (pars.timeout / 1000) 1 in

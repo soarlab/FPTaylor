@@ -19,6 +19,7 @@ val num_of_float : float -> Num.num
 val is_power_of_two : Num.num -> bool
 
 val is_nan : float -> bool
+val is_infinity : float -> bool
 val next_float : float -> float
 val prev_float : float -> float
 

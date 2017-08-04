@@ -87,6 +87,8 @@ let num_of_float_string str =
   num_of_gen_float (decode_num_str str)
 
 let is_nan x = (compare x nan = 0)
+
+let is_infinity x = (classify_float x = FP_infinite)
                   
 let num_of_float x =
   match classify_float x with

@@ -170,8 +170,8 @@ let rec split_error_terms err_terms =
       (e, err) :: es1, es2
 
 let sum_err_bounds bounds =
-  let high = map (fun (v, exp) -> v.high, exp) bounds and
-  low = map (fun (v, exp) -> -.v.low, exp) bounds in
+  let high = map (fun (v, exp) -> v.high, exp) bounds in
+  let low = map (fun (v, exp) -> -.v.low, exp) bounds in
   let s_high, exp = sum_high high in
   let s_low, exp' =
     let s, e = sum_high low in

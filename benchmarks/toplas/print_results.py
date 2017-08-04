@@ -4,47 +4,109 @@ import sys
 import os
 import glob
 import decimal
+import argparse
 
-benchmark_list = [
-    "t_div_t1",
-    "sine",
-    "sqroot",
-    "sineOrder3",
-    "carbon_gas",
-    "verhulst",
-    "predatorPrey",
-    "rigidBody1",
-    "rigidBody2",
-    "doppler1",
-    "doppler2",
-    "doppler3",
-    "turbine1",
-    "turbine2",
-    "turbine3",
-    "jet",
-    "logexp",
-    "sphere",
-    "azimuth",
-    "kepler0",
-    "kepler1",
-    "kepler2",
-    "himmilbeau",
-    "hartman3",
-    "hartman6",
-    "floudas1",
-    "floudas2",
-    "floudas3"
-]
+parser = argparse.ArgumentParser(
+    description="Prints out results of FPTaylor experiments (from the log directory)")
+
+parser.add_argument('--prec', type=int, default=2,
+                    help="precision of printed results")
+
+parser.add_argument('--alt-order', action='store_true',
+                    help="alternative order of printed results")
+
+parser.add_argument('--no-name', action='store_true',
+                    help="do not print names of benchmarks")
+
+parser.add_argument('--no-time', action='store_true',
+                    help="do not print times of benchmarks")
+
+parser.add_argument('--log-dir', default="log",
+                    help="the log directory")
+
+args = parser.parse_args()
+
+if args.alt_order:
+    benchmark_list = [
+        "carbon_gas",
+        "doppler1",
+        "doppler2",
+        "doppler3",
+        "jet",
+        "predatorPrey",
+        "rigidBody1",
+        "rigidBody2",
+        "sine",
+        "sineOrder3",
+        "sqroot",
+        "t_div_t1",
+        "turbine1",
+        "turbine2",
+        "turbine3",
+        "verhulst",
+        "azimuth",
+        "logexp",
+        "sphere",
+        "kepler0",
+        "kepler1",
+        "kepler2",
+        "himmilbeau",
+        "hartman3",
+        "hartman6",
+        "floudas1",
+        "floudas2",
+        "floudas3"
+    ]
+else:
+    benchmark_list = [
+        "t_div_t1",
+        "sine",
+        "sqroot",
+        "sineOrder3",
+        "carbon_gas",
+        "verhulst",
+        "predatorPrey",
+        "rigidBody1",
+        "rigidBody2",
+        "doppler1",
+        "doppler2",
+        "doppler3",
+        "turbine1",
+        "turbine2",
+        "turbine3",
+        "jet",
+        "logexp",
+        "sphere",
+        "azimuth",
+        "kepler0",
+        "kepler1",
+        "kepler2",
+        "himmilbeau",
+        "hartman3",
+        "hartman6",
+        "floudas1",
+        "floudas2",
+        "floudas3"
+    ]
+
 
 class Problem:
+
     def __init__(self, name, error, time):
         self.name = name
-        self.error_str = "{0:.2e}".format(
-            decimal.Context(prec=3, rounding=decimal.ROUND_UP).create_decimal(error))
+        self.error_str = "{0:.{prec}e}".format(
+            decimal.Context(prec=args.prec + 1, rounding=decimal.ROUND_UP).create_decimal(error),
+            prec=args.prec)
         self.time_str = "{0:.1f}".format(time)
 
     def __str__(self):
-        return "{0}, {1}, {2}".format(self.name, self.error_str, self.time_str)
+        out = ""
+        if not args.no_name:
+            out += self.name + ", "
+        out += self.error_str
+        if not args.no_time:
+            out += ", " + self.time_str
+        return out
 
 def problem_from_file(fname):
     name = None
@@ -70,12 +132,9 @@ def problem_from_file(fname):
     else:
         return None
 
-base_dir = "log"
-if len(sys.argv) == 2:
-    base_dir = sys.argv[1]
-
+base_dir = args.log_dir
 results = {}
-    
+
 for fname in glob.glob(os.path.join(base_dir, "*.log")):
     result = problem_from_file(fname)
     if result:
@@ -87,7 +146,6 @@ for name in benchmark_list:
         del results[name]
 
 if len(results) > 0:
-    print("\nUnsorted results:")    
+    print("\nUnsorted results:")
     for _, result in results.iteritems():
         print(result)
-    

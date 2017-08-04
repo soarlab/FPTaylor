@@ -48,7 +48,6 @@ type nlopt_pars = {
 let gen_nlopt_code (pars : nlopt_pars) fmt =
   let nl = Format.pp_print_newline fmt in
   let p str = Format.pp_print_string fmt str; nl () in
-(*  let p' str = Format.pp_print_string fmt str in*)
 
   let head () = 
     p "#include <stdio.h>";

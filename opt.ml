@@ -55,9 +55,16 @@ let find_max pars expr =
 
 let find_max_abs pars expr =
   let rmin, rmax = optimize_expr pars false expr in
-  let r =
-    if abs_float rmax.result >= abs_float rmin.result then rmax else rmin in
-  if r.result >= 0. then r
-  else
-    {r with result = abs_float r.result; lower_bound = -.r.lower_bound}
-
+  Log.report `Debug "rmin(result = %e, lower = %e), rmax(result = %e, lower = %e)"
+    rmin.result rmin.lower_bound rmax.result rmax.lower_bound;
+  let r = if abs_float rmax.result >= abs_float rmin.result then rmax else rmin in
+  { r with
+    result = abs_float r.result;
+    lower_bound =
+      if More_num.is_infinity r.lower_bound then 
+        neg_infinity
+      else if r.result >= 0. then
+        max 0. r.lower_bound
+      else
+        max 0. (-.r.lower_bound)
+  }
