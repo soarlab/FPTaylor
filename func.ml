@@ -21,8 +21,8 @@ let acosh_I x =
     low =
       (if x.low <= 1.0 then 0.0
        else
-	  let sqrt = Fpu.fsqrt_low (Fpu.fsub_low (Fpu.fmul_low x.low x.low) 1.0) in
-	  Fpu.flog_low (Fpu.fadd_low x.low sqrt));
+         let sqrt = Fpu.fsqrt_low (Fpu.fsub_low (Fpu.fmul_low x.low x.low) 1.0) in
+         Fpu.flog_low (Fpu.fadd_low x.low sqrt));
     high = 
       (let sqrt = Fpu.fsqrt_high (Fpu.fsub_high (Fpu.fmul_high x.high x.high) 1.0) in
        Fpu.flog_high (Fpu.fadd_high x.high sqrt));
@@ -34,13 +34,13 @@ let atanh_I x =
     low = 
       (if x.low <= -1.0 then neg_infinity
        else
-	  let t = Fpu.fdiv_low (Fpu.fadd_low 1.0 x.low) (Fpu.fsub_high 1.0 x.low) in
-	  Fpu.fmul_low 0.5 (Fpu.flog_low t));
+         let t = Fpu.fdiv_low (Fpu.fadd_low 1.0 x.low) (Fpu.fsub_high 1.0 x.low) in
+         Fpu.fmul_low 0.5 (Fpu.flog_low t));
     high =
       (if x.high >= 1.0 then infinity
        else
-	  let t = Fpu.fdiv_high (Fpu.fadd_high 1.0 x.high) (Fpu.fsub_low 1.0 x.high) in
-	  Fpu.fmul_high 0.5 (Fpu.flog_high t));
+         let t = Fpu.fdiv_high (Fpu.fadd_high 1.0 x.high) (Fpu.fsub_low 1.0 x.high) in
+         Fpu.fmul_high 0.5 (Fpu.flog_high t));
   }	
 
 (* For a given positive floating-point number f,
@@ -56,11 +56,11 @@ let floor_power2 =
       ldexp 1.0 (q - 1) in
   fun f ->
     match (classify_float f) with
-      | FP_zero -> f
-      | FP_infinite -> f
-      | FP_nan -> f
-      | FP_normal | FP_subnormal -> 
-	if f < 0.0 then -.p2 (-.f) else p2 f
+    | FP_zero -> f
+    | FP_infinite -> f
+    | FP_nan -> f
+    | FP_normal | FP_subnormal -> 
+      if f < 0.0 then -.p2 (-.f) else p2 f
 
 let floor_power2_I x = {
   low = floor_power2 x.low;
@@ -68,11 +68,20 @@ let floor_power2_I x = {
 }
 
 let sub2 (x, y) = 
-  if (0.5 *. x <= y && y <= 2.0 *. x) then 0.0 else x -. y
+  if (0.5 *. x <= y && y <= 2.0 *. x) || 
+     (2.0 *. x <= y && y <= 0.5 *. x) 
+  then 0.0 
+  else x -. y
 
 let sub2_I (x, y) = {
-    low = if (0.5 *. x.low <= y.high && y.high <= 2.0 *. x.low) then 0.0 else Fpu.fsub_low x.low y.high;
-    high = if (0.5 *. x.high <= y.low && y.low <= 2.0 *. x.high) then 0.0 else Fpu.fsub_high x.high y.low;
+  low = if (0.5 *. x.low <= y.high && y.high <= 2.0 *. x.low) ||
+           (2.0 *. x.low <= y.high && y.high <= 0.5 *. x.low) 
+        then 0.0 
+        else Fpu.fsub_low x.low y.high;
+  high = if (0.5 *. x.high <= y.low && y.low <= 2.0 *. x.high) ||
+            (2.0 *. x.high <= y.low && y.low <= 0.5 *. x.high)
+         then 0.0 
+         else Fpu.fsub_high x.high y.low;
 }
 
 let abs_err (t, x) =
@@ -83,10 +92,10 @@ let abs_err (t, x) =
 
 let neg_one_I = {low = -1.; high = -1.}
 let neg_one_one_I = {low = -1.; high = 1.}
-    
+
 let abs_err_I (t, x) =
   if x.low >= t.high then one_I
   else if x.high <= t.low then neg_one_I
   else neg_one_one_I
-    
-         
+
+
