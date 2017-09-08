@@ -1,50 +1,5 @@
 open Num
-
-(* BEGIN: Environment *)
-
-type raw_expr =
-  | Identifier of string
-  | Numeral of num
-  | Raw_rounding of Rounding.rnd_info * raw_expr
-  | Raw_u_op of string * raw_expr
-  | Raw_bin_op of string * raw_expr * raw_expr
-  | Raw_gen_op of string * raw_expr list
-
-type raw_formula =
-  | Raw_le of raw_expr * raw_expr
-  | Raw_lt of raw_expr * raw_expr
-  | Raw_eq of raw_expr * raw_expr
-
-  (* Prints a raw expression *)
-let print_raw_expr fmt =
-  let p = Format.pp_print_string fmt in
-  let rec print = function
-    | Identifier name -> p name
-    | Numeral n -> p (string_of_num n)
-    | Raw_rounding (rnd, e) ->
-      p (Rounding.rounding_to_string rnd); p "("; print e; p ")";
-    | Raw_u_op (op, e) -> 
-      p op; p "("; print e; p ")";
-    | Raw_bin_op (op, e1, e2) ->
-      p op; p "("; print e1; p ","; print e2; p ")";
-    | Raw_gen_op (op, es) ->
-      p op; p "("; Lib.print_list print (fun () -> p ",") es; p ")";
-  in
-  print
-
-let print_raw_expr_std = print_raw_expr Format.std_formatter
-
-(* END: Environment *)
-
-let print_raw_formula fmt = function
-  | Raw_le (e1, e2) -> 
-    Format.fprintf fmt "%a <= %a\n" print_raw_expr e1 print_raw_expr e2
-  | Raw_lt (e1, e2) -> 
-    Format.fprintf fmt "%a < %a\n" print_raw_expr e1 print_raw_expr e2
-  | Raw_eq (e1, e2) -> 
-    Format.fprintf fmt "%a == %a\n" print_raw_expr e1 print_raw_expr e2
-
-let print_raw_formula_std = print_raw_formula Format.std_formatter
+open Environment
 
 let dest_formula = function
   | Raw_le (e1, e2) -> "<=", e1, e2
@@ -132,8 +87,6 @@ let mk_cmp_ops op args =
 
 type token =
   | EOF
-  | COLON
-  | SEMICOLON
   | LPAREN
   | RPAREN
   | LBRACKET
@@ -144,8 +97,6 @@ type token =
 
 let string_of_token = function
 | EOF -> "EOF"
-| COLON -> ":"
-| SEMICOLON -> ";"
 | LPAREN -> "("
 | RPAREN -> ")"
 | LBRACKET -> "["
@@ -154,43 +105,7 @@ let string_of_token = function
 | SYMBOL str -> str
 | STRING str -> str
 
-exception Expected of string
-
-exception Noparse of string
-
-type parser_state = {
-  tok : Lexing.lexbuf -> token;
-  lexbuf : Lexing.lexbuf;
-  mutable token : token option
-}
-
-let mk_state tok lexbuf = {
-  tok = tok;
-  lexbuf = lexbuf;
-  token = None;
-}
-
-let next_token state =
-  match state.token with
-  | Some token -> 
-    state.token <- None; 
-    token
-  | None ->
-    let token = state.tok state.lexbuf in
-    token
-
-let peek_token state =
-  match state.token with
-  | Some token -> token
-  | None -> 
-    let token = state.tok state.lexbuf in
-    state.token <- Some token;
-    token
-
-let pushback_token token state =
-  match state.token with
-  | None -> state.token <- Some token
-  | _ -> failwith "pushback_token: state is not empty"
+exception SyntaxError of string
 
 type s_expr = 
   | Number of Num.num 
@@ -204,27 +119,24 @@ let rec print_s_expr = function
   | String str -> Printf.printf "\"%s\" " str
   | List l -> Printf.printf "("; List.iter print_s_expr l; Printf.printf ") "
 
-let rec parse_s_expr state =
-  let token = next_token state in
+let rec parse_s_expr ?first_tok tok lexbuf =
+  let token = match first_tok with None -> tok lexbuf | Some token -> token in
   match token with
+  | EOF -> raise End_of_file
   | NUMBER str -> Number (More_num.num_of_float_string str)
   | SYMBOL sym -> Symbol sym
   | STRING str -> String str
-  | LPAREN | LBRACKET -> pushback_token token state; parse_s_expr_list state
-  | _ -> raise (Expected "NUMBER or SYMBOL or STRING or LIST")
-and parse_s_expr_list state =
-  let first_token = next_token state in
-  if first_token <> LPAREN && first_token <> LBRACKET then raise (Expected "( or [");
+  | LPAREN | LBRACKET -> parse_s_expr_list token tok lexbuf
+  | _ -> raise (SyntaxError "Expected: NUMBER or SYMBOL or STRING or LIST")
+and parse_s_expr_list first_token tok lexbuf =
   let result = ref [] in
   let flag = ref true in
   while !flag do
-    let token = peek_token state in
+    let token = tok lexbuf in
     match token with
-    | RBRACKET when first_token = LBRACKET -> 
-      ignore (next_token state); flag := false
-    | RPAREN when first_token = LPAREN -> 
-      ignore (next_token state); flag := false
-    | _ -> result := parse_s_expr state :: !result
+    | RBRACKET when first_token = LBRACKET -> flag := false
+    | RPAREN when first_token = LPAREN -> flag := false
+    | _ -> result := parse_s_expr ~first_tok:token tok lexbuf :: !result
   done;
   List (List.rev !result)
 
@@ -422,7 +334,17 @@ let translate_fpcore s_expr =
     let env = List.map (fun v -> v, Identifier v) var_names in
     let data, rest = translate_properties data env rest in begin
       match rest with
-      | [s_expr] -> { data with expr = translate_expr data env s_expr }
+      | [s_expr] -> 
+        let expr = translate_expr data env s_expr in
+        let expr_vars = get_vars expr in
+        let unused_vars = Lib.subtract var_names expr_vars in
+        if unused_vars <> [] then begin
+          let vars = Lib.end_itlist (fun v str -> v ^ ", " ^ str) unused_vars in
+          Log.warning "Unused vars: %s in %s" vars data.name
+        end;
+        let new_vars =
+          List.fold_right (fun var vars -> List.remove_assoc var vars) unused_vars data.vars in
+        { data with expr = expr; vars = new_vars }
       | _ -> failwith "EXPR expected"
     end
   | _ -> failwith "FPCore expected"

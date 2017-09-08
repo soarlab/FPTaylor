@@ -28,6 +28,9 @@ SRC=	version.mli\
 	input_parser.mli\
 	input_parser.ml\
 	input_lexer.ml\
+	fpbench_parser.mli\
+	fpbench_parser.ml\
+	fpbench_lexer.ml\
 	parser.ml\
 	proof_base.ml\
 	proof.ml\
@@ -65,19 +68,15 @@ TEST = $(addprefix $(TEST_DIR)/,$(TESTS))
 
 .PHONY: clean clean-tmp clean-interval clean-simple-interval compile-interval compile-simple-interval
 
-fpbench_lexer.ml: fpbench_lexer.mll
-	ocamllex fpbench_lexer.mll
-
-fpbench_parser.ml fpbench_parser.mli: fpbench_parser.mly
-	ocamlyacc fpbench_parser.mly
-
-
-fpbench: lib.ml fpbench_lexer.ml fpbench_parser2.ml fpbench_test.ml
+fpbench: fpbench_lexer.ml fpbench_parser.ml fpbench_test.ml
 	$(ML) -o fpbench -I $(SIMPLE_INTERVAL_DIR) \
 					 unix.cma nums.cma str.cma \
 					 $(SIMPLE_INTERVAL_DIR)/interval.cma \
-					 lib.mli lib.ml log.mli log.ml config.mli config.ml more_num.mli more_num.ml rounding.ml \
-					 fpbench_parser2.ml fpbench_lexer.ml \
+					 lib.mli lib.ml func.ml log.mli log.ml config.mli config.ml \
+					 more_num.mli more_num.ml rounding.ml \
+					 binary_float.ml const.mli const.ml expr.mli expr.ml \
+					 exprOut.mli exprOut.ml eval.ml environment.ml \
+					 fpbench_parser.mli fpbench_parser.ml fpbench_lexer.ml \
 					 fpbench_test.ml
 
 all: fptaylor-interval
@@ -132,6 +131,9 @@ compile-byte: $(OBJ_BYTE)
 
 compile-native: $(OBJ_NATIVE)
 	@echo "FPTaylor compiled (native)"
+
+fpbench_lexer.ml: fpbench_lexer.mll
+	ocamllex fpbench_lexer.mll
 
 input_lexer.ml: input_lexer.mll
 	ocamllex input_lexer.mll > /dev/null

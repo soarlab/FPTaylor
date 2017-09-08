@@ -301,3 +301,13 @@ let print_raw_expr fmt =
   print
 
 let print_raw_expr_std = print_raw_expr Format.std_formatter
+
+let print_raw_formula fmt = function
+| Raw_le (e1, e2) -> 
+  Format.fprintf fmt "%a <= %a\n" print_raw_expr e1 print_raw_expr e2
+| Raw_lt (e1, e2) -> 
+  Format.fprintf fmt "%a < %a\n" print_raw_expr e1 print_raw_expr e2
+| Raw_eq (e1, e2) -> 
+  Format.fprintf fmt "%a == %a\n" print_raw_expr e1 print_raw_expr e2
+
+let print_raw_formula_std = print_raw_formula Format.std_formatter

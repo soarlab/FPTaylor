@@ -13,7 +13,6 @@
 open Interval
 open Lib
 open List
-open Parser
 open Rounding
 open Expr
 open Environment
@@ -456,7 +455,11 @@ let process_input fname =
         tmp_base_dir in
     Lib.set_tmp_dir tmp_dir in
   Config.print_options `Debug;
-  let _ = parse_file fname in
+  if Config.is_option_defined "fpbench" then
+    let bench_name = Config.get_string_option "fpbench" in
+    Parser.parse_fpbench_file fname bench_name
+  else
+    Parser.parse_file fname;
   let names, es = unzip (exprs ()) in
   let cnames, cs = unzip (all_constraints ()) in
   let problems0 = map (fun name -> {default_problem_info with name = name}) names in

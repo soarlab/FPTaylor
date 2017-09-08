@@ -16,6 +16,8 @@ val get_bool_option : string -> bool
 val get_int_option : string -> int
 val get_float_option : string -> float
 
+val is_option_defined : string -> bool
+
 val debug : bool
 val fail_on_exception : bool
 val proof_flag : bool

@@ -1,8 +1,6 @@
 {
-  open Fpbench_parser2
+  open Fpbench_parser
   open Lexing
-
-  exception SyntaxError of string
 
   let incr_lineno lexbuf =
     let pos = lexbuf.lex_curr_p in
@@ -20,7 +18,7 @@ let special = ['_' '~' '!' '@' '$' '%' '^' '&' '*' '-' '+' '=' '<' '>' '.' '?' '
 
 let symbol = (alpha | special) (alpha | special | digit)*
 
-let number = ['-' '+']? digit+ ('.' digit+ ('e' ['-' '+']? digit+)?)?
+let number = ['-' '+']? digit+ ('.' digit*)? ('e' ['-' '+']? digit+)?
 
 rule token = parse
   | white { token lexbuf }
@@ -32,7 +30,6 @@ rule token = parse
   | ']' { RBRACKET }
   | '"' { read_string (Buffer.create 50) lexbuf } 
   | number as str { NUMBER str }
-  | ':' { COLON }
   | symbol as str { SYMBOL str }
 (*  | _ { token lexbuf } *)
   | _ { raise (SyntaxError ("Unexpected character: " ^ Lexing.lexeme lexbuf)) }
@@ -41,6 +38,7 @@ and read_string buf = parse
   | '"' { STRING (Buffer.contents buf) }
   | '\\' '\\' { Buffer.add_char buf '/'; read_string buf lexbuf }
   | '\\' '"' { Buffer.add_char buf '"'; read_string buf lexbuf }
+  | '\\' 'n' { Buffer.add_char buf '\n'; read_string buf lexbuf }
   | [^ '"' '\\']+ as chars { Buffer.add_string buf chars; read_string buf lexbuf }
   | _ { raise (SyntaxError ("Illegal string character: " ^ Lexing.lexeme lexbuf)) }
   | eof { raise (SyntaxError ("String is not terminated")) }

@@ -121,8 +121,11 @@ let input_files =
   let parse_config_arg name = ignore (parse_config_file ~init:false name) in
   let main_cfg = Filename.concat base_dir "default.cfg" in
   try
-    let c_arg = ("-c", Arg.String parse_config_arg, "filename Load options from a file.") in 
-    let args = c_arg :: parse_config_file main_cfg ~init:true in
+    let c_arg = ("-c", Arg.String parse_config_arg, 
+                 "filename Load options from a file.") in 
+    let fpbench_arg = ("--fpbench", Arg.String (set_option ~init:true "fpbench"), 
+                       "bench_name Load FPBench file.") in
+    let args = fpbench_arg :: c_arg :: parse_config_file main_cfg ~init:true in
     let args = Arg.align ~limit:20 args in
     Arg.parse args add_file usage_msg;
     List.rev !files
@@ -174,6 +177,9 @@ let get_bool_option name = stob ~name (find_option name)
 let get_int_option name = stoi ~name (find_option name)
 
 let get_float_option name = stof ~name (find_option name)
+
+let is_option_defined name =
+  try ignore (find_option name); true with Failure _ -> false
   
   (* General paramaters *)
 let debug = get_bool_option "debug"
