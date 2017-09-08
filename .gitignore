@@ -11,6 +11,8 @@
 input_parser.ml
 input_lexer.ml
 input_parser.mli
+fpbench_lexer.ml
+fpbench_lexer.mli
 b_and_b/compile.sh
 ref.html
 vm_instructions.html

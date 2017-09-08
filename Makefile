@@ -65,6 +65,21 @@ TEST = $(addprefix $(TEST_DIR)/,$(TESTS))
 
 .PHONY: clean clean-tmp clean-interval clean-simple-interval compile-interval compile-simple-interval
 
+fpbench_lexer.ml: fpbench_lexer.mll
+	ocamllex fpbench_lexer.mll
+
+fpbench_parser.ml fpbench_parser.mli: fpbench_parser.mly
+	ocamlyacc fpbench_parser.mly
+
+
+fpbench: lib.ml fpbench_lexer.ml fpbench_parser2.ml fpbench_test.ml
+	$(ML) -o fpbench -I $(SIMPLE_INTERVAL_DIR) \
+					 unix.cma nums.cma str.cma \
+					 $(SIMPLE_INTERVAL_DIR)/interval.cma \
+					 lib.mli lib.ml log.mli log.ml config.mli config.ml more_num.mli more_num.ml rounding.ml \
+					 fpbench_parser2.ml fpbench_lexer.ml \
+					 fpbench_test.ml
+
 all: fptaylor-interval
 
 proof-tool: $(OBJ_PROOF_SRC)
