@@ -32,6 +32,6 @@ let tform_10 = rule_simpl_add dom 10 6 3.08224463670439817342e-09 (-53) [11] tfo
 let tform_11 = rule_simpl_add dom 11 8 3.08348546006023457794e-09 (-53) [12] tform_10;;
 
 (* Verification of inequalities *)
-let result = verify_bounds prec
+let result = verify_bounds_approx prec
   [1.92520885567797939153e+00; 1.47425325008508689706e+00; 1.20005031095593466262e+01; 3.08348546006023499153e-09]
   1.70973959639008091441e-15 [2; 4; 7; 12] var_names tform_11;;

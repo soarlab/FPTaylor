@@ -120,7 +120,7 @@ let hide_e1s, reset_index, get_err_def =
     let rec path str tm =
       if is_binary "CONS" tm then
 	let tm1 = follow_path path1 tm in
-	  if is_var tm1 or is_binary "HIDDEN" tm1 then
+	  if is_var tm1 || is_binary "HIDDEN" tm1 then
 	    path (str ^ "r") (rand tm)
 	  else
 	    (str ^ "lrrlr") :: path (str ^ "r") (rand tm)
