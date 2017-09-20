@@ -123,7 +123,7 @@ let input_files =
   try
     let c_arg = ("-c", Arg.String parse_config_arg, "filename Load options from a file.") in 
     let args = c_arg :: parse_config_file main_cfg ~init:true in
-    let args = Arg.align ~limit:20 args in
+    let args = Arg.align args in
     Arg.parse args add_file usage_msg;
     List.rev !files
   with
