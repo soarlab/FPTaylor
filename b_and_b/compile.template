@@ -22,6 +22,7 @@ b_and_b_dir="$base_dir/b_and_b"
 compile_native_with_INTERVAL()
 {
     interval_dir="$base_dir/INTERVAL"
+    rm -f "$out_file"
     ocamlopt -o "$out_file" -I "$interval_dir" -I "$b_and_b_dir"\
 	     "$interval_dir/libinterval.a" "$interval_dir/interval.cmxa"\
 	     "$b_and_b_dir/opt_func.ml" "$b_and_b_dir/opt0.ml"\
@@ -31,6 +32,7 @@ compile_native_with_INTERVAL()
 compile_byte_with_INTERVAL()
 {
     interval_dir="$base_dir/INTERVAL"
+    rm -f "$out_file"
     ocamlc -o "$out_file" -I "$interval_dir" -I "$b_and_b_dir"\
 	   "$interval_dir/chcw.o" "$interval_dir/interval.cma"\
 	   "$b_and_b_dir/opt_func.ml" "$b_and_b_dir/opt0.ml"\
@@ -40,6 +42,7 @@ compile_byte_with_INTERVAL()
 compile_native_with_simple_interval()
 {
     interval_dir="$base_dir/simple_interval/fast_interval"
+    rm -f "$out_file"
     ocamlopt -o "$out_file" -I "$interval_dir" -I "$b_and_b_dir"\
 	     "$interval_dir/fast_interval.cmxa"\
 	     "$b_and_b_dir/opt_func.ml" "$b_and_b_dir/opt0.ml"\
@@ -49,6 +52,7 @@ compile_native_with_simple_interval()
 compile_byte_with_simple_interval()
 {
     interval_dir="$base_dir/simple_interval/fast_interval"
+    rm -f "$out_file"
     ocamlc -o "$out_file" -I "$interval_dir" -I "$b_and_b_dir"\
 	   "$interval_dir/fast_interval.cma"\
 	   "$b_and_b_dir/opt_func.ml" "$b_and_b_dir/opt0.ml"\
@@ -58,6 +62,7 @@ compile_byte_with_simple_interval()
 compile_native_with_simple_interval2()
 {
     interval_dir="$base_dir/simple_interval"
+    rm -f "$out_file"
     ocamlopt -o "$out_file" -I "$interval_dir" -I "$b_and_b_dir"\
 	     nums.cmxa "$interval_dir/interval.cmxa"\
 	     "$b_and_b_dir/opt_func.ml" "$b_and_b_dir/opt0.ml"\

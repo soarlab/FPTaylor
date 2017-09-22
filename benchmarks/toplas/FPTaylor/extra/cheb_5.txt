@@ -1,0 +1,13 @@
+Variables
+  x in [-1, 1];
+
+Definitions
+  T0 rnd64= 1;
+  T1 rnd64= x;
+  T2 rnd64= 2 * x * T1 - T0;
+  T3 rnd64= 2 * x * T2 - T1;
+  T4 rnd64= 2 * x * T3 - T2;
+  T5 rnd64= 2 * x * T4 - T3;
+  
+Expressions
+  cheb5 = T5;

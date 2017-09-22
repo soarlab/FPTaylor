@@ -1,0 +1,7 @@
+Variables
+  x1 in [-100, 100];
+  x2 in [-100, 100];
+
+Expressions
+  trid2 rnd64= (x1 - 1) * (x1 - 1) +
+  	       x2 * x1 - (x2 - 1) * (x2 - 1);

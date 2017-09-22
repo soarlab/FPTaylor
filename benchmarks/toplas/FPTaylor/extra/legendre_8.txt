@@ -1,0 +1,16 @@
+Variables
+  x in [-1, 1];
+
+Definitions
+  P0 rnd64= 1;
+  P1 rnd64= x;
+  P2 rnd64= (3 * x * P1 - P0) / 2;
+  P3 rnd64= (5 * x * P2 - 2 * P1) / 3;
+  P4 rnd64= (7 * x * P3 - 3 * P2) / 4;
+  P5 rnd64= (9 * x * P4 - 4 * P3) / 5;
+  P6 rnd64= (11 * x * P5 - 5 * P4) / 6;
+  P7 rnd64= (13 * x * P6 - 6 * P5) / 7;
+  P8 rnd64= (15 * x * P7 - 7 * P6) / 8;
+
+Expressions
+  legendre8 = P8;
