@@ -52,6 +52,7 @@ let is_spaces str =
   String.trim str = ""
 
 let parse_config_file ?(init = false) fname =
+  Log.report `Main "Loading configuration file: %s" fname;
   let arg_list = ref [] in
   let doc_comment = ref "" in
   let short_name = ref "" in
@@ -110,7 +111,10 @@ let parse_config_file ?(init = false) fname =
 
 (* Set the base directory *)
 let base_dir =
-  try Sys.getenv "FPTAYLOR_BASE"
+  try 
+    let base = Sys.getenv "FPTAYLOR_BASE" in
+    Log.report `Main "***** The environment variable FPTAYLOR_BASE is defined = '%s'" base;
+    base
   with Not_found ->
     Filename.dirname Sys.executable_name
 
