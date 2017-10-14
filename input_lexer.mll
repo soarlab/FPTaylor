@@ -96,7 +96,7 @@
 
 let digit = ['0'-'9']
 let hex_digit = ['0'-'9' 'a'-'f' 'A'-'F']
-let alpha = ['a'-'z' 'A'-'Z' '_']
+let alpha = ['a'-'z' 'A'-'Z' '_' '$']
 let id = alpha (alpha | digit)*
 let numeral = (("0x" (hex_digit+ ('.' hex_digit*)?)) |
                (digit+ ('.' digit*)?)) 

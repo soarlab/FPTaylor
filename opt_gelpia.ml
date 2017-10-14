@@ -51,7 +51,7 @@ let gen_gelpia_code fmt =
 
   let input names bounds =
     let dict = List.map2 (fun name b ->
-      Format.sprintf "'%s' : (%.20e, %.20e)" name b.low b.high) 
+      Format.sprintf "'%s' : (%.20e, %.20e)" (ExprOut.fix_name name) b.low b.high) 
       names bounds in
     p ("-i \"{" ^ String.concat ", " dict ^ "}\"") in
 

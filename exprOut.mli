@@ -12,6 +12,8 @@
 
 module type PrinterType
 
+val fix_name : string -> string
+
 module type P =
   sig
     val print_fmt : ?margin:int -> Format.formatter -> Expr.expr -> unit

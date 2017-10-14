@@ -12,6 +12,21 @@
 
 open Interval
 
+let fix_name =
+  let bad_chars = Str.regexp "[^a-zA-Z0-9]+" in
+  let subst sep str =
+    let str = Str.matched_string str in
+    let n = String.length str in
+    let buf = Buffer.create (5 * n) in
+    for i = 0 to n - 1 do
+      Buffer.add_string buf sep;
+      Buffer.add_string buf (string_of_int (int_of_char str.[i]));
+      Buffer.add_string buf sep
+    done;
+    Buffer.contents buf in
+  fun name ->
+      Str.global_substitute bad_chars (subst "_") name
+
 module type PrinterType =
   sig
     val print : Format.formatter -> Expr.expr -> unit
@@ -113,7 +128,7 @@ module OCamlIntervalPrinter : PrinterType = struct
     | Const c ->
         let v = Const.to_interval c in
         fprintf fmt "{low = %.20e; high = %.20e}" v.low v.high
-    | Var v -> fprintf fmt "var_%s" v
+    | Var v -> fprintf fmt "var_%s" (fix_name v)
     | Rounding (rnd, arg) ->
        let rnd_str = Rounding.rounding_to_string rnd in
        failwith ("OCamlInterval: rounding is not allowed: " ^ rnd_str)
@@ -234,7 +249,7 @@ module CPrinter : PrinterType = struct
   let rec print fmt expr =
     match expr with
     | Const c -> fprintf fmt "(%.20e)" (Const.to_float c)
-    | Var v -> fprintf fmt "var_%s" v
+    | Var v -> fprintf fmt "var_%s" (fix_name v)
     | Rounding (rnd, arg) ->
        fprintf fmt "%s(%a)" (Rounding.rounding_to_string rnd) print arg
     | U_op (op, arg) -> begin
@@ -287,7 +302,7 @@ module OCamlFloatPrinter : PrinterType = struct
   let rec print fmt expr =
     match expr with
     | Const c -> fprintf fmt "(%.20e)" (Const.to_float c)
-    | Var v -> fprintf fmt "var_%s" v
+    | Var v -> fprintf fmt "var_%s" (fix_name v)
     | Rounding (rnd, arg) ->
        let rnd_str = Rounding.rounding_to_string rnd in
        failwith ("OCamlFloat: rounding is not allowed: " ^ rnd_str)
@@ -348,7 +363,7 @@ module Z3PythonPrinter : PrinterType = struct
         | Const.Interval v ->
            failwith "Z3Python: interval constants are not supported"
       end
-    | Var v -> fprintf fmt "var_%s" v
+    | Var v -> fprintf fmt "var_%s" (fix_name v)
     | Rounding (rnd, arg) ->
        let rnd_str = Rounding.rounding_to_string rnd in
        failwith ("Z3Python: rounding is not allowed: " ^ rnd_str)
@@ -389,7 +404,7 @@ module GelpiaPrinter : PrinterType = struct
     | Const c ->
         let v = Const.to_interval c in
         fprintf fmt "interval(%.20e, %.20e)" v.low v.high
-    | Var v -> fprintf fmt "var_%s" v
+    | Var v -> fprintf fmt "var_%s" (fix_name v)
     | Rounding (rnd, arg) ->
        let rnd_str = Rounding.rounding_to_string rnd in
        failwith ("Gelpia: rounding is not allowed: " ^ rnd_str)

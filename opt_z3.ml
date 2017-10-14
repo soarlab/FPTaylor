@@ -125,7 +125,7 @@ var_names (map num_to_z3 high)) in
     let var_names = Lib.unions (vars_in_expr e :: vars_cs) in
     let var_bounds = List.map var_bound var_names in
     head ();
-    vars (List.map (fun name -> "var_" ^ name) var_names) var_bounds;
+    vars (List.map (fun name -> "var_" ^ (ExprOut.fix_name name)) var_names) var_bounds;
     constraints cs;
     expr e;
     tail ()

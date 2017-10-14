@@ -38,7 +38,7 @@ let nlopt_default = {
  *)
 
 module Out = ExprOut.Make(ExprOut.CPrinter)
-       
+
 type nlopt_pars = {
   opt : Opt_common.opt_pars;
   nl_alg : int;
@@ -59,10 +59,10 @@ let gen_nlopt_code (pars : nlopt_pars) fmt =
     let grad() = () in
     let rec init_vars vs n = 
       match vs with
-	| [] -> ()
-	| h :: t ->
-	  p (Format.sprintf "  double var_%s = _x[%d];" h n);
-	  init_vars t (n + 1) in
+      | [] -> ()
+      | h :: t ->
+        p (Format.sprintf "  double var_%s = _x[%d];" (ExprOut.fix_name h) n);
+        init_vars t (n + 1) in
     p "double f(unsigned _n, const double *_x, double *_grad, void *_f_data) {";
     init_vars vars 0;
     p "  double _result = ";
@@ -94,7 +94,7 @@ let gen_nlopt_code (pars : nlopt_pars) fmt =
   let main var_names var_bounds =
     p "int main() {";
     p (Format.sprintf "  nlopt_opt opt = nlopt_create(%d, %d);" 
-	 pars.nl_alg (length var_names));
+         pars.nl_alg (length var_names));
     options var_bounds;
     p "  double f_min = 0.0, f_max = 0.0;";
     p "  // min";
@@ -117,7 +117,7 @@ let gen_nlopt_code (pars : nlopt_pars) fmt =
     gen_nlopt_func var_names expr;
     main var_names var_bounds
 
-    
+
 let min_max_expr (pars : Opt_common.opt_pars) var_bound expr =
   let tmp = Lib.get_tmp_dir () in
   let c_name = Filename.concat tmp "nlopt-f.c" in
@@ -134,6 +134,6 @@ let min_max_expr (pars : Opt_common.opt_pars) var_bound expr =
   else
     let out = run_cmd exe_name in
     let min = get_float out "min: " and
-	max = get_float out "max: " in
+      max = get_float out "max: " in
     min, max
 

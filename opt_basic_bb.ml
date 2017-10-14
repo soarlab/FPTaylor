@@ -79,7 +79,7 @@ let gen_bb_opt_code (pars : Opt_common.opt_pars) max_only fmt =
       match vs with
 	| [] -> ()
 	| v :: rest ->
-	  p (Format.sprintf "  let var_%s = input_array.(%d) in" v i);
+	  p (Format.sprintf "  let var_%s = input_array.(%d) in" (ExprOut.fix_name v) i);
 	  vars (i + 1) rest in
 (*    p "let f_x input_array = ";
     vars 0 var_names;
