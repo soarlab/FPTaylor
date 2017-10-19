@@ -43,6 +43,7 @@ module Make(Printer : PrinterType) = struct
   open Format
   
   let print_fmt ?(margin = max_int) fmt expr =
+    pp_print_flush fmt ();
     let m = pp_get_margin fmt () in
     pp_set_margin fmt margin;
     Printer.print fmt expr;
@@ -176,6 +177,68 @@ module OCamlIntervalPrinter : PrinterType = struct
         match (op, args) with
         | _ ->
            failwith ("OCamlInterval: unknown general operation: " ^ gen_op_name op)
+      end
+end
+
+
+module FPCorePrinter : PrinterType = struct
+  open Expr
+  open Format
+  
+  let rec print fmt expr =
+    match expr with
+    | Const c -> begin
+        match c with
+        | Const.Rat n -> fprintf fmt "%s" (Num.string_of_num n)
+        | Const.Interval v ->
+           let a = Num.string_of_num (More_num.num_of_float v.low) and
+               b = Num.string_of_num (More_num.num_of_float v.high) in
+           fprintf fmt "(interval %s %s)" a b
+      end
+    | Var v -> fprintf fmt "%s" v
+    | Rounding (rnd, arg) ->
+       let rnd_str = Rounding.rounding_to_string rnd in
+       (* Non-standrad FPCore extension: rounding operations *)
+       fprintf fmt "(%s %a)" rnd_str print arg
+    | U_op (op, arg) -> begin
+        match op with
+        | Op_neg -> fprintf fmt "(- %a)" print arg
+        | Op_abs -> fprintf fmt "(fabs %a)" print arg
+        | Op_inv -> fprintf fmt "(/ 1 %a)" print arg
+        | Op_sqrt -> fprintf fmt "(sqrt %a)" print arg
+        | Op_exp -> fprintf fmt "(exp %a)" print arg
+        | Op_log -> fprintf fmt "(log %a)" print arg
+        | Op_sin -> fprintf fmt "(sin %a)" print arg
+        | Op_cos -> fprintf fmt "(cos %a)" print arg
+        | Op_tan -> fprintf fmt "(tan %a)" print arg
+        | Op_asin -> fprintf fmt "(asin %a)" print arg
+        | Op_acos -> fprintf fmt "(acos %a)" print arg
+        | Op_atan -> fprintf fmt "(atan %a)" print arg
+        | Op_sinh -> fprintf fmt "(sinh %a)" print arg
+        | Op_cosh -> fprintf fmt "(cosh %a)" print arg
+        | Op_tanh -> fprintf fmt "(tanh %a)" print arg                       
+        | Op_asinh -> fprintf fmt "(asinh %a)" print arg
+        | Op_acosh -> fprintf fmt "(acosh %a)" print arg
+        | Op_atanh -> fprintf fmt "(atanh %a)" print arg
+        (* Non-standard FPCore extension: p2 *)
+        | Op_floor_power2 -> fprintf fmt "(p2 %a)" print arg
+      end
+    | Bin_op (op, arg1, arg2) -> begin
+        match op with
+        | Op_min -> fprintf fmt "@[<6>(fmin %a@ %a)@]" print arg1 print arg2
+        | Op_max -> fprintf fmt "@[<6>(fmax %a@ %a)@]" print arg1 print arg2
+        | Op_add -> fprintf fmt "@[<3>(+ %a@ %a)@]" print arg1 print arg2
+        | Op_sub -> fprintf fmt "@[<3>(- %a@ %a)@]" print arg1 print arg2
+        | Op_mul -> fprintf fmt "@[<3>(* %a@ %a)@]" print arg1 print arg2
+        | Op_div -> fprintf fmt "@[<3>(/ %a@ %a)@]" print arg1 print arg2
+        | Op_nat_pow -> fprintf fmt "@[<5>(pow %a@ %a)@]" print arg1 print arg2
+        | _ -> failwith ("FPCore: unknown binary operation: " ^ bin_op_name op)
+      end
+    | Gen_op (op, args) -> begin
+        match (op, args) with
+        | Op_fma, [a1; a2; a3] ->
+           fprintf fmt "(fma %a %a %a)" print a1 print a2 print a3
+        | _ -> failwith ("FPCore: unknown general operation: " ^ gen_op_name op)
       end
 end
 

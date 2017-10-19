@@ -25,6 +25,8 @@ module Make (Printer : PrinterType) : P
 
 module OCamlIntervalPrinter : PrinterType
 
+module FPCorePrinter : PrinterType
+
 module RacketPrinter : PrinterType
 
 module CPrinter : PrinterType
