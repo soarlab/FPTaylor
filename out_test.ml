@@ -11,7 +11,6 @@
 (* -------------------------------------------------------------------------- *)
 
 open Interval
-open List
 open Expr
 
 module Out = ExprOut.Make(ExprOut.GelpiaPrinter)
@@ -36,7 +35,7 @@ let gen_test_code fmt =
   in
   fun (cs, expr) ->
     let var_names = vars_in_expr expr in
-    let var_bounds = map cs.var_interval var_names in
+    let var_bounds = List.map cs.var_interval var_names in
     variables var_names var_bounds;
     p "";
     goal expr

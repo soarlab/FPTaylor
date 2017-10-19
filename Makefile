@@ -23,6 +23,7 @@ SRC=	version.mli\
 	expr.ml\
 	exprOut.mli\
 	exprOut.ml\
+	eval.mli\
 	eval.ml\
 	task.mli\
 	task.ml\
@@ -32,18 +33,28 @@ SRC=	version.mli\
 	input_lexer.ml\
 	parser.mli\
 	parser.ml\
+	proof_base.mli\
 	proof_base.ml\
 	proof.ml\
+	maxima.mli\
 	maxima.ml\
+	opt_common.mli\
 	opt_common.ml\
+	opt_basic_bb.mli\
 	opt_basic_bb.ml\
+	opt_gelpia.mli\
 	opt_gelpia.ml\
+	opt_z3.mli\
 	opt_z3.ml\
+	opt_nlopt.mli\
 	opt_nlopt.ml\
+	opt.mli\
 	opt.ml\
-	out_racket.ml \
-	out_test.ml \
+	out_racket.ml\
+	out_test.ml\
+	rounding_simpl.mli\
 	rounding_simpl.ml\
+	taylor_form.mli\
 	taylor_form.ml\
 	fptaylor.ml
 
@@ -122,7 +133,7 @@ compile-native: $(OBJ_NATIVE)
 	@echo "FPTaylor compiled (native)"
 
 input_lexer.ml: input_lexer.mll
-	ocamllex input_lexer.mll > /dev/null
+	ocamllex input_lexer.mll
 
 input_parser.ml input_parser.mli: input_parser.mly
 	ocamlyacc input_parser.mly

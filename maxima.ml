@@ -10,8 +10,6 @@
 (* Interface to Maxima                                                        *)
 (* -------------------------------------------------------------------------- *)
 
-open List
-open Lib
 open Expr
 
 (* From HOL Light tutorial *)
@@ -72,11 +70,11 @@ let taylor_coeff v k e =
 
 (* Returns a list of linear Taylor coefficients in the expansion of e with respect to vs around 0 *)
 let taylor_coeff1 vs e =
-  let substs = map (fun v -> Format.sprintf "%s = 0" v) vs in
+  let substs = List.map (fun v -> Format.sprintf "%s = 0" v) vs in
   let subst = String.concat ", " substs in
   let e_str = ExprOut.Info.print_str e in
   let coeff v =
     let str = Format.sprintf "at (diff(%s, %s), [%s])" e_str v subst in
     maxima str in
-  map coeff vs
+  List.map coeff vs
 

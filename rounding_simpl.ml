@@ -11,7 +11,6 @@
 (* -------------------------------------------------------------------------- *)
 
 
-open List
 open Num
 open Rounding
 open Expr
@@ -91,7 +90,7 @@ let simplify_rounding var_type =
 	    e2 = simplify arg2 in
 	Bin_op (op, e1, e2)
       | Gen_op (op, args) ->
-	let es = map simplify args in
+	let es = List.map simplify args in
 	Gen_op (op, es)
       | Rounding (rnd, arg) ->
 	begin
@@ -261,7 +260,7 @@ let check_expr vars =
 	end
       | Gen_op (op, args) ->
 	begin
-	  let xs = map eval args in
+	  let xs = List.map eval args in
 	  match (op, xs) with
 	    | (Op_fma, [a;b;c]) -> (a *$ b) +$ c
 	    | _ -> failwith ("check_expr: Unsupported general operation: " 
