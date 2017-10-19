@@ -6,7 +6,7 @@
 
 %token EOF
 %token COLON SEMICOLON COMMA
-%token LPAREN RPAREN LBRACKET RBRACKET
+%token LPAREN RPAREN LBRACKET RBRACKET LBRACE RBRACE
 %token PLUS MINUS MULT DIVIDE POW
 %token EQ LE GE LT GT IN PLUS_MINUS
 
@@ -32,8 +32,8 @@
 %left NEG
 %right POW
 
-%start first
-%type <unit> first
+%start tasks
+%type <Task.task list> tasks
 
 %start expr
 %type <Input_parser_env.raw_expr> expr
@@ -43,8 +43,22 @@
 
 %%
 
-first:
-  | section_list {}
+tasks:
+  | task { $1 }
+  | LBRACE task RBRACE more_tasks { $2 @ $4 }
+;
+
+more_tasks:
+  | { [] }
+  | LBRACE task RBRACE more_tasks { $2 @ $4 }
+;
+
+task:
+  | section_list { 
+    let tasks = env_to_tasks () in
+    reset();
+    tasks
+  }
 ;
 
 section_list:

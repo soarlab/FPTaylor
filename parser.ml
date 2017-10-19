@@ -21,8 +21,7 @@ let parse_expr str =
 let parse_string str =
   Input_parser_env.reset();
   let lexbuf = Lexing.from_string str in
-  Input_parser.first Input_lexer.token lexbuf;
-  Input_parser_env.env_to_tasks ()
+  Input_parser.tasks Input_lexer.token lexbuf
 
 let parse_file fname =
   let lines = Lib.load_file fname in

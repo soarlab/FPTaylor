@@ -62,6 +62,21 @@ Comments in **FPTaylor** input files have the form
 
     // this is a comment
 
+It is also possible to combine several input files into one file.
+Sections of separate files (tasks) must be inside curly braces:
+
+```
+{
+    // first task
+}
+{
+    // second task
+}
+```
+
+Different tasks do not share any information (i.e., constants, 
+variables, definitions, and expressions).
+
 ### Constants
 
 The section with constants has the following syntax

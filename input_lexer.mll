@@ -115,6 +115,8 @@ rule token = parse
   | ')' { RPAREN }
   | '[' { LBRACKET }
   | ']' { RBRACKET }
+  | '{' { LBRACE }
+  | '}' { RBRACE }
   | ';' { SEMICOLON }
   | ':' { COLON }
   | ',' { COMMA }
