@@ -430,7 +430,8 @@ let approximate_constraint problem (name, c) =
   Log.report `Important "\n%s error: %e\n" r.name err;
   name, Le (tform.v0, mk_float_const err)
 
-let process_problem problem =
+let process_problem (problem : problem) =
+  Log.report `Main "Processing: %s" problem.name;
   let approx_constraints =
     if problem.constraints = [] then [] else begin
       Log.report `Important "\n****** Approximating constraints *******\n";
@@ -465,6 +466,7 @@ let process_input fname =
     Lib.set_tmp_dir tmp_dir in
   Config.print_options `Debug;
   let problems = parse_file fname in
+  Log.report `Debug "|problems| = %d" (List.length problems);
   let results = List.map process_problem problems in
   Log.report `Info "*************************************\n";
   List.iter (fun (r, tf) -> print_result r) results;

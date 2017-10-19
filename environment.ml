@@ -87,7 +87,7 @@ let env_to_problems () =
          } :: vs) 
       env.variables [] in
   let rec loop acc = function
-    | [] -> []
+    | [] -> acc
     | (name, e) :: es ->
       let p = {
         name = name;
