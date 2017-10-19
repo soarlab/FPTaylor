@@ -30,6 +30,7 @@ SRC=	version.mli\
 	input_parser.mli\
 	input_parser.ml\
 	input_lexer.ml\
+	parser.mli\
 	parser.ml\
 	proof_base.ml\
 	proof.ml\

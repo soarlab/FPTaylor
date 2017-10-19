@@ -10,7 +10,6 @@
 (* Data structures for loaded variables, definitions, and expressions         *)
 (* -------------------------------------------------------------------------- *)
 
-open List
 open Expr
 open Rounding
 open Eval
@@ -55,7 +54,6 @@ type env = {
   definitions : (string, definition) Hashtbl.t;
   mutable constraints : (string * formula) list;
   mutable expressions : (string * expr) list;
-  mutable active_constraints : (string * formula) list;
 }
 
 let env = {
@@ -64,7 +62,6 @@ let env = {
   definitions = Hashtbl.create 10;
   constraints = [];
   expressions = [];
-  active_constraints = [];
 }
 
 let reset () =
@@ -73,8 +70,7 @@ let reset () =
   clear env.variables;
   clear env.definitions;
   env.constraints <- [];
-  env.expressions <- [];
-  env.active_constraints <- []
+  env.expressions <- []
 
 let env_to_tasks () =
   let vars = Hashtbl.fold 
@@ -113,17 +109,11 @@ let all_variables () =
 let all_constraints () =
   env.constraints
 
-let set_active_constraints cs =
-  env.active_constraints <- cs 
-
-let get_active_constraints () =
-  env.active_constraints
-
 let variable_interval name =
   let var = find_variable name in {
-      low = (Const.to_interval var.lo_bound).low;
-      high = (Const.to_interval var.hi_bound).high;
-    }
+    low = (Const.to_interval var.lo_bound).low;
+    high = (Const.to_interval var.hi_bound).high;
+  }
 
 let get_low_bound name =
   let v = find_variable name in
@@ -140,30 +130,30 @@ let get_var_type name =
 (* Applies a given rounding operation recursively *)
 let rec apply_raw_rounding rnd expr =
   match expr with
-    | Identifier _ -> Raw_rounding (rnd, expr)
-    | Numeral _ -> Raw_rounding (rnd, expr)
-      (* Do not apply the rounding inside another rounding and
-         do not round twice *)
-    | Raw_rounding _ -> expr
-    | Raw_u_op (op, arg) -> 
-      let e1 = apply_raw_rounding rnd arg in
-      Raw_rounding (rnd, Raw_u_op (op, e1))
-    | Raw_bin_op (op, arg1, arg2) ->
-      let e1 = apply_raw_rounding rnd arg1 and
-	  e2 = apply_raw_rounding rnd arg2 in
-      Raw_rounding (rnd, Raw_bin_op (op, e1, e2))
-    | Raw_gen_op (op, args) ->
-      let es = map (apply_raw_rounding rnd) args in
-      Raw_rounding (rnd, Raw_gen_op (op, es))
+  | Identifier _ -> Raw_rounding (rnd, expr)
+  | Numeral _ -> Raw_rounding (rnd, expr)
+  (* Do not apply the rounding inside another rounding and
+     do not round twice *)
+  | Raw_rounding _ -> expr
+  | Raw_u_op (op, arg) -> 
+    let e1 = apply_raw_rounding rnd arg in
+    Raw_rounding (rnd, Raw_u_op (op, e1))
+  | Raw_bin_op (op, arg1, arg2) ->
+    let e1 = apply_raw_rounding rnd arg1 and
+    e2 = apply_raw_rounding rnd arg2 in
+    Raw_rounding (rnd, Raw_bin_op (op, e1, e2))
+  | Raw_gen_op (op, args) ->
+    let es = List.map (apply_raw_rounding rnd) args in
+    Raw_rounding (rnd, Raw_gen_op (op, es))
 
 let apply_raw_rounding_to_formula rnd f =
   match f with
-    | Raw_le (e1, e2) ->
-      Raw_le (apply_raw_rounding rnd e1, apply_raw_rounding rnd e2)
-    | Raw_lt (e1, e2) ->
-      Raw_lt (apply_raw_rounding rnd e1, apply_raw_rounding rnd e2)
-    | Raw_eq (e1, e2) ->
-      Raw_eq (apply_raw_rounding rnd e1, apply_raw_rounding rnd e2)
+  | Raw_le (e1, e2) ->
+    Raw_le (apply_raw_rounding rnd e1, apply_raw_rounding rnd e2)
+  | Raw_lt (e1, e2) ->
+    Raw_lt (apply_raw_rounding rnd e1, apply_raw_rounding rnd e2)
+  | Raw_eq (e1, e2) ->
+    Raw_eq (apply_raw_rounding rnd e1, apply_raw_rounding rnd e2)
 
 (* Builds an expression from a raw expression *)
 let rec transform_raw_expr = function
@@ -174,56 +164,56 @@ let rec transform_raw_expr = function
     let e1 = transform_raw_expr arg in
     begin
       match str with
-	| "-" -> U_op (Op_neg, e1)
-	| "abs" -> U_op (Op_abs, e1)
-	| "inv" -> U_op (Op_inv, e1)
-	| "sqrt" -> U_op (Op_sqrt, e1)
-	| "sin" -> U_op (Op_sin, e1)
-	| "cos" -> U_op (Op_cos, e1)
-	| "tan" -> U_op (Op_tan, e1)
-	| "asin" -> U_op (Op_asin, e1)
-	| "acos" -> U_op (Op_acos, e1)
-	| "atan" -> U_op (Op_atan, e1)
-	| "exp" -> U_op (Op_exp, e1)
-	| "log" -> U_op (Op_log, e1)
-	| "sinh" -> U_op (Op_sinh, e1)
-	| "cosh" -> U_op (Op_cosh, e1)
-	| "tanh" -> U_op (Op_tanh, e1)
-	| "asinh" -> U_op (Op_asinh, e1)
-	| "acosh" -> U_op (Op_acosh, e1)
-	| "atanh" -> U_op (Op_atanh, e1)
-	| "floor_power2" -> U_op (Op_floor_power2, e1)
-	| _ -> failwith ("transform_raw_expr: Unknown unary operation: " ^ str)
+      | "-" -> U_op (Op_neg, e1)
+      | "abs" -> U_op (Op_abs, e1)
+      | "inv" -> U_op (Op_inv, e1)
+      | "sqrt" -> U_op (Op_sqrt, e1)
+      | "sin" -> U_op (Op_sin, e1)
+      | "cos" -> U_op (Op_cos, e1)
+      | "tan" -> U_op (Op_tan, e1)
+      | "asin" -> U_op (Op_asin, e1)
+      | "acos" -> U_op (Op_acos, e1)
+      | "atan" -> U_op (Op_atan, e1)
+      | "exp" -> U_op (Op_exp, e1)
+      | "log" -> U_op (Op_log, e1)
+      | "sinh" -> U_op (Op_sinh, e1)
+      | "cosh" -> U_op (Op_cosh, e1)
+      | "tanh" -> U_op (Op_tanh, e1)
+      | "asinh" -> U_op (Op_asinh, e1)
+      | "acosh" -> U_op (Op_acosh, e1)
+      | "atanh" -> U_op (Op_atanh, e1)
+      | "floor_power2" -> U_op (Op_floor_power2, e1)
+      | _ -> failwith ("transform_raw_expr: Unknown unary operation: " ^ str)
     end
   | Raw_bin_op (str, arg1, arg2) -> 
     let e1 = transform_raw_expr arg1 and
-	e2 = transform_raw_expr arg2 in
+    e2 = transform_raw_expr arg2 in
     begin
       match str with
-	| "+" -> Bin_op (Op_add, e1, e2)
-	| "-" -> Bin_op (Op_sub, e1, e2)
-	| "*" -> Bin_op (Op_mul, e1, e2)
-	| "/" -> Bin_op (Op_div, e1, e2)
-        | "max" -> Bin_op (Op_max, e1, e2)
-        | "min" -> Bin_op (Op_min, e1, e2)
-	| "^" -> Bin_op (Op_nat_pow, e1, e2)
-	| "sub2" -> Bin_op (Op_sub2, e1, e2)
-	| _ -> failwith ("transform_raw_expr: Unknown binary operation: " ^ str)
+      | "+" -> Bin_op (Op_add, e1, e2)
+      | "-" -> Bin_op (Op_sub, e1, e2)
+      | "*" -> Bin_op (Op_mul, e1, e2)
+      | "/" -> Bin_op (Op_div, e1, e2)
+      | "max" -> Bin_op (Op_max, e1, e2)
+      | "min" -> Bin_op (Op_min, e1, e2)
+      | "^" -> Bin_op (Op_nat_pow, e1, e2)
+      | "sub2" -> Bin_op (Op_sub2, e1, e2)
+      | _ -> failwith ("transform_raw_expr: Unknown binary operation: " ^ str)
     end
   | Raw_gen_op (str, args) ->
-    let es = map transform_raw_expr args in
+    let es = List.map transform_raw_expr args in
     begin
       match str with
-	| "fma" -> Gen_op (Op_fma, es)
-	| _ -> failwith ("transform_raw_expr: Unknown operation: " ^ str)
+      | "fma" -> Gen_op (Op_fma, es)
+      | _ -> failwith ("transform_raw_expr: Unknown operation: " ^ str)
     end
   | Numeral n -> mk_num_const n
   | Identifier name ->
     try let def = find_definition name in def.def_expr
     with Not_found ->
-      try let var = find_variable name in Var var.var_name
-      with Not_found ->
-	let c = find_constant name in Const c.value
+    try let var = find_variable name in Var var.var_name
+    with Not_found ->
+      let c = find_constant name in Const c.value
 
 (* Builds a formula from a raw formula *)
 let transform_raw_formula = function
@@ -246,7 +236,7 @@ let add_constant name raw =
 let is_same_bounds lo hi =
   try
     let a = Const.to_num lo and
-        b = Const.to_num hi in
+    b = Const.to_num hi in
     a =/ b
   with _ -> false
 
@@ -256,10 +246,10 @@ let add_variable_with_uncertainty var_type name lo hi uncertainty =
     failwith ("Variable " ^ name ^ " is already defined")
   else
     let lo_expr = transform_raw_expr lo and
-	hi_expr = transform_raw_expr hi and
-	u_expr = transform_raw_expr uncertainty in
+    hi_expr = transform_raw_expr hi and
+    u_expr = transform_raw_expr uncertainty in
     let lo_bound = eval_const_expr lo_expr and
-        hi_bound = eval_const_expr hi_expr in
+      hi_bound = eval_const_expr hi_expr in
     if var_type = real_type && is_same_bounds lo_bound hi_bound then
       begin
         Log.report `Info "Variable %s is a constant" name;
@@ -267,12 +257,12 @@ let add_variable_with_uncertainty var_type name lo hi uncertainty =
       end
     else
       let v = {
-          var_type = var_type;
-          var_name = name;
-          lo_bound = eval_const_expr lo_expr;
-          hi_bound = eval_const_expr hi_expr;
-          uncertainty = eval_const_expr u_expr;
-        } in
+        var_type = var_type;
+        var_name = name;
+        lo_bound = eval_const_expr lo_expr;
+        hi_bound = eval_const_expr hi_expr;
+        uncertainty = eval_const_expr u_expr;
+      } in
       Hashtbl.add env.variables name v
 
 let add_variable var_type name lo hi =
@@ -303,24 +293,34 @@ let add_expression_with_name name raw =
 
 (* Adds an expression to the environment *)
 let add_expression raw =
-  let name = "Expression " ^ string_of_int (length env.expressions + 1) in
+  let name = "Expression " ^ string_of_int (List.length env.expressions + 1) in
   add_expression_with_name name raw
 
 (* Prints a raw expression *)
 let print_raw_expr fmt =
   let p = Format.pp_print_string fmt in
-  let rec print = function
+  let rec print fmt = function
     | Identifier name -> p name
     | Numeral n -> p (string_of_num n)
     | Raw_rounding (rnd, e) ->
-      p (rounding_to_string rnd); p "("; print e; p ")";
+      Format.fprintf fmt "%s(%a)" (rounding_to_string rnd) print e;
     | Raw_u_op (op, e) -> 
-      p op; p "("; print e; p ")";
+      Format.fprintf fmt "%s(%a)" op print e;
     | Raw_bin_op (op, e1, e2) ->
-      p op; p "("; print e1; p ","; print e2; p ")";
+      Format.fprintf fmt "%s(%a,%a)" op print e1 print e2;
     | Raw_gen_op (op, es) ->
-      p op; p "("; Lib.print_list print (fun () -> p ",") es; p ")";
+      p op; p "("; Lib.print_list (print fmt) (fun () -> p ",") es; p ")";
   in
-  print
+  print fmt
 
 let print_raw_expr_std = print_raw_expr Format.std_formatter
+
+let print_raw_formula fmt = function
+  | Raw_le (e1, e2) -> 
+    Format.fprintf fmt "%a <= %a\n" print_raw_expr e1 print_raw_expr e2
+  | Raw_lt (e1, e2) -> 
+    Format.fprintf fmt "%a < %a\n" print_raw_expr e1 print_raw_expr e2
+  | Raw_eq (e1, e2) -> 
+    Format.fprintf fmt "%a == %a\n" print_raw_expr e1 print_raw_expr e2
+
+let print_raw_formula_std = print_raw_formula Format.std_formatter

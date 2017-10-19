@@ -178,8 +178,11 @@ let get_bool_option name = stob ~name (find_option name)
 let get_int_option name = stoi ~name (find_option name)
 
 let get_float_option name = stof ~name (find_option name)
+
+let is_option_defined name =
+  try ignore (find_option name); true with Failure _ -> false  
   
-  (* General paramaters *)
+(* General paramaters *)
 let debug = get_bool_option "debug"
 let proof_flag = get_bool_option "proof-record"
 let fail_on_exception = get_bool_option "fail-on-exception"
