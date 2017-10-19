@@ -22,33 +22,33 @@ type var_info = {
   uncertainty : Const.t;
 }
 
-type problem = {
+type task = {
   name : string;
   expression : expr;
   variables : var_info list;
   constraints : (string * formula) list;
 }
 
-let find_variable p name =
-  List.find (fun v -> v.var_name = name) p.variables
+let find_variable t name =
+  List.find (fun v -> v.var_name = name) t.variables
 
-let variable_type p name =
-  (find_variable p name).var_type
+let variable_type t name =
+  (find_variable t name).var_type
 
-let variable_interval p name =
-  let var = find_variable p name in {
+let variable_interval t name =
+  let var = find_variable t name in {
     low = (Const.to_interval var.lo_bound).low;
     high = (Const.to_interval var.hi_bound).high;
   }
 
-let variable_num_interval p name =
-  let var = find_variable p name in
+let variable_num_interval t name =
+  let var = find_variable t name in
   let low = Const.low_bound_to_num var.lo_bound in
   let high = Const.high_bound_to_num var.hi_bound in
   (low, high)
 
-let constraints_of_problem p = {
-  var_interval = variable_interval p;
-  var_rat_bounds = variable_num_interval p;
-  constraints = List.map snd p.constraints;
+let constraints_of_task t = {
+  var_interval = variable_interval t;
+  var_rat_bounds = variable_num_interval t;
+  constraints = List.map snd t.constraints;
 }

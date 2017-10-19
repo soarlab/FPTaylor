@@ -22,7 +22,7 @@ let parse_string str =
   let _ = Environment.reset() in
   let lexbuf = Lexing.from_string str in
   Input_parser.first Input_lexer.token lexbuf;
-  Environment.env_to_problems ()
+  Environment.env_to_tasks ()
 
 let parse_file fname =
   let lines = Lib.load_file fname in

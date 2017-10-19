@@ -24,8 +24,8 @@ SRC=	version.mli\
 	exprOut.mli\
 	exprOut.ml\
 	eval.ml\
-	problem.mli\
-	problem.ml\
+	task.mli\
+	task.ml\
 	environment.ml\
 	input_parser.mli\
 	input_parser.ml\

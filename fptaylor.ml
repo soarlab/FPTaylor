@@ -14,7 +14,7 @@ open Interval
 open Parser
 open Rounding
 open Expr
-open Problem
+open Task
 open Taylor_form
 
 type result = {
@@ -355,9 +355,9 @@ let errors cs tform =
   Log.report `Important "";
   result
 
-let safety_check problem =
+let safety_check task =
   try
-    Rounding_simpl.check_expr (variable_interval problem) problem.expression
+    Rounding_simpl.check_expr (variable_interval task) task.expression
   with Rounding_simpl.Exceptional_operation (e0, str) ->
     let msg =
       Format.sprintf "\nPotential exception detected: %s at:\n%s"
@@ -367,18 +367,18 @@ let safety_check problem =
     else
       (Log.warning_str msg; zero_I)
 
-let compute_form problem =
+let compute_form task =
   Log.report `Info "\n*************************************";
-  Log.report `Info "Taylor form for: %s" (ExprOut.Info.print_str problem.expression);
+  Log.report `Info "Taylor form for: %s" (ExprOut.Info.print_str task.expression);
   if Config.proof_flag then Proof.new_proof ();
   let start = Unix.gettimeofday() in
   let result, tform = 
     try
-      let bound0 = safety_check problem in
+      let bound0 = safety_check task in
       Log.report `Info "\nConservative bound: %s" (sprintf_I "%f" bound0);
-      let e = Rounding_simpl.simplify_rounding problem.expression in
+      let e = Rounding_simpl.simplify_rounding task.expression in
       Log.report `Info "\nSimplified rounding: %s" (ExprOut.Info.print_str e);
-      let cs = constraints_of_problem problem in
+      let cs = constraints_of_task task in
       Log.report `Important "Building Taylor forms...";
       let form' = build_form cs e in
       Log.report `Important "Simplifying Taylor forms...";
@@ -395,10 +395,10 @@ let compute_form problem =
       print_form `Info form;
       Log.report `Info "";
       let result = errors cs form in
-      { result with name = problem.name }, form
+      { result with name = task.name }, form
     with Failure msg ->
       Log.error_str msg;
-      { default_result with name = problem.name }, dummy_tform
+      { default_result with name = task.name }, dummy_tform
   in
   let stop = Unix.gettimeofday() in
   Log.report `Info "Elapsed time: %.5f" (stop -. start);
@@ -412,32 +412,32 @@ let compute_form problem =
   in
   { result with elapsed_time = stop -. start }, tform
 
-let approximate_constraint problem (name, c) =
+let approximate_constraint task (name, c) =
   let e = 
     match c with
     | Le (a, b) -> mk_sub a b
     | Lt (a, b) -> mk_sub a b
     | Eq (a, b) -> failwith "approximate_constraint: Eq is not supported" in
-  let cp = {
+  let c_task = {
     name = name;
     expression = e;
-    variables = problem.variables;
+    variables = task.variables;
     constraints = [];
   } in
   Log.report `Important "Constraint form";
-  let r, tform = compute_form cp in
+  let r, tform = compute_form c_task in
   let err = get_problem_absolute_error r in
   Log.report `Important "\n%s error: %e\n" r.name err;
   name, Le (tform.v0, mk_float_const err)
 
-let process_problem (problem : problem) =
-  Log.report `Main "Processing: %s" problem.name;
+let process_task (task : task) =
+  Log.report `Main "Processing: %s" task.name;
   let approx_constraints =
-    if problem.constraints = [] then [] else begin
+    if task.constraints = [] then [] else begin
       Log.report `Important "\n****** Approximating constraints *******\n";
-      List.map (approximate_constraint problem) problem.constraints
+      List.map (approximate_constraint task) task.constraints
     end in
-  compute_form { problem with constraints = approx_constraints }
+  compute_form { task with constraints = approx_constraints }
 
 let process_input fname =
   Log.report `Main "Loading: %s" fname;
@@ -465,9 +465,9 @@ let process_input fname =
         tmp_base_dir in
     Lib.set_tmp_dir tmp_dir in
   Config.print_options `Debug;
-  let problems = parse_file fname in
-  Log.report `Debug "|problems| = %d" (List.length problems);
-  let results = List.map process_problem problems in
+  let tasks = parse_file fname in
+  Log.report `Debug "|takss| = %d" (List.length tasks);
+  let results = List.map process_task tasks in
   Log.report `Info "*************************************\n";
   List.iter (fun (r, tf) -> print_result r) results;
   Log.close ();
