@@ -34,16 +34,16 @@ let gen_test_code fmt =
     Out.print_fmt fmt expr;
     p ";"
   in
-  fun (var_bound, expr) ->
+  fun (cs, expr) ->
     let var_names = vars_in_expr expr in
-    let var_bounds = map var_bound var_names in
+    let var_bounds = map cs.var_interval var_names in
     variables var_names var_bounds;
     p "";
     goal expr
 
-let create_test_file fname expr =
+let create_test_file fname cs expr =
   let tmp = Lib.get_tmp_dir () in
   let out_name = Filename.concat tmp fname in
-  let _ = Lib.write_to_file out_name gen_test_code (Opt.var_bound_float, expr) in
+  let _ = Lib.write_to_file out_name gen_test_code (cs, expr) in
   ()
 

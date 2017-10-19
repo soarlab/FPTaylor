@@ -11,50 +11,42 @@
 (* -------------------------------------------------------------------------- *)
 
 open Expr
-open Environment
 open Opt_common
 
-let var_bound_float name = 
-  variable_interval name
-
-let var_bound_rat name =
-  let v = find_variable name in
-  Const.low_bound_to_num v.lo_bound, Const.high_bound_to_num v.hi_bound
-
-let optimize_expr (pars : Opt_common.opt_pars) max_only expr =
+let optimize_expr (pars : Opt_common.opt_pars) max_only (cs : constraints) expr =
   let rmin, rmax =
     match Config.get_string_option "opt" with
     | "z3" -> 
       let bounds = 
-        try Eval.eval_interval_expr var_bound_float expr
+        try Eval.eval_interval_expr cs.var_interval expr
         with _ -> {Interval.low = neg_infinity; Interval.high = infinity} in
       Log.report `Debug "Interval bounds for Z3: %s" (Interval.sprintf_I "%.5e" bounds);
-      let fmin, fmax = Opt_z3.min_max_expr pars max_only var_bound_rat bounds expr in
+      let fmin, fmax = Opt_z3.min_max_expr pars max_only cs bounds expr in
       {empty_result with result = fmin; lower_bound = infinity},
       {empty_result with result = fmax; lower_bound = neg_infinity}
     | "bb" -> 
-      Opt_basic_bb.min_max_expr pars max_only var_bound_float expr
+      Opt_basic_bb.min_max_expr pars max_only cs expr
     | "nlopt" -> 
-      let fmin, fmax = Opt_nlopt.min_max_expr pars var_bound_float expr in
+      let fmin, fmax = Opt_nlopt.min_max_expr pars cs expr in
       {empty_result with result = fmin; lower_bound = infinity},
       {empty_result with result = fmax; lower_bound = neg_infinity}
     | "gelpia" -> 
-      let fmin, fmax = Opt_gelpia.min_max_expr pars max_only var_bound_float expr in
+      let fmin, fmax = Opt_gelpia.min_max_expr pars max_only cs expr in
       {empty_result with result = fmin; lower_bound = infinity},
       {empty_result with result = fmax; lower_bound = neg_infinity}
     | s -> failwith ("Unsupported optimization backend: " ^ s) in
   rmin, rmax
 
-let find_min_max pars expr =
-  let rmin, rmax = optimize_expr pars false expr in
+let find_min_max pars cs expr =
+  let rmin, rmax = optimize_expr pars false cs expr in
   rmin.result, rmax.result
 
-let find_max pars expr =
-  let _, rmax = optimize_expr pars true expr in
+let find_max pars cs expr =
+  let _, rmax = optimize_expr pars true cs expr in
   rmax
 
-let find_max_abs pars expr =
-  let rmin, rmax = optimize_expr pars false expr in
+let find_max_abs pars cs expr =
+  let rmin, rmax = optimize_expr pars false cs expr in
   Log.report `Debug "rmin(result = %e, lower = %e), rmax(result = %e, lower = %e)"
     rmin.result rmin.lower_bound rmax.result rmax.lower_bound;
   let r = if abs_float rmax.result >= abs_float rmin.result then rmax else rmin in

@@ -11,8 +11,6 @@
 (* -------------------------------------------------------------------------- *)
 
 open Interval
-open List
-open Lib
 open Expr
 open Opt_common
 
@@ -55,15 +53,15 @@ let gen_gelpia_code fmt =
       names bounds in
     p ("-i \"{" ^ String.concat ", " dict ^ "}\"") in
 
-  fun (pars, var_bound, expr) ->
+  fun (pars, cs, expr) ->
     let var_names = vars_in_expr expr in
-    let var_bounds = map var_bound var_names in
+    let var_bounds = List.map cs.var_interval var_names in
     let domain_size = Lib.itlist (fun b r -> max r (abs_float (b.high -. b.low)))
                                  var_bounds 0.0 in
     let x_tol = domain_size *. pars.x_rel_tol +. pars.x_abs_tol in
     parameters pars x_tol;
     func expr;
-    input (map (fun name -> "var_" ^ name) var_names) var_bounds
+    input (List.map (fun name -> "var_" ^ name) var_names) var_bounds
 
 
 let name_counter = ref 0
@@ -82,7 +80,7 @@ let get_gelpia_cmd max_only =
     failwith (cmd ^ " not found.\n" ^
 	      "Set the GELPIA_PATH variable or copy GELPIA to the FPTaylor root directory.")
 
-let min_max_expr (pars : Opt_common.opt_pars) max_only var_bound expr =
+let min_max_expr (pars : Opt_common.opt_pars) max_only (cs : constraints) expr =
 (*
   let pars = {
     input_epsilon  = tol_x;
@@ -93,14 +91,14 @@ let min_max_expr (pars : Opt_common.opt_pars) max_only var_bound expr =
  *)
   let tmp = Lib.get_tmp_dir () in
   let gelpia_name = 
-    let _ = incr name_counter in
+    incr name_counter;
     Filename.concat tmp 
       (Format.sprintf "gelpia_%d.txt" !name_counter) in
   let gen = gen_gelpia_code in
   let abs_expr = expr in
-  let _ = write_to_file gelpia_name gen (pars, var_bound, abs_expr) in
+  let _ = Lib.write_to_file gelpia_name gen (pars, cs, abs_expr) in
   let cmd = Format.sprintf "%s -T -z %@%s" (get_gelpia_cmd max_only) gelpia_name in
-  let out = run_cmd cmd in
+  let out = Lib.run_cmd cmd in
   try
     let min = if max_only then 0.0 else get_float out "Minimum: " in
     let max = get_float out "Maximum: " in

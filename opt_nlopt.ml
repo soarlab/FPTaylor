@@ -11,8 +11,6 @@
 (* -------------------------------------------------------------------------- *)
 
 open Interval
-open List
-open Lib
 open Expr
 open Opt_common
 
@@ -75,12 +73,12 @@ let gen_nlopt_code (pars : nlopt_pars) fmt =
     p "}" in
 
   let str_of_array vs =
-    let ss = map string_of_float vs in
+    let ss = List.map string_of_float vs in
     "{" ^ String.concat "," ss ^ "}" in
 
   let options var_bounds =
-    let ls, us = unzip (map (fun b -> b.low, b.high) var_bounds) in
-    let ms = map2 (fun l u -> (l +. u) /. 2.0) ls us in
+    let ls, us = Lib.unzip (List.map (fun b -> b.low, b.high) var_bounds) in
+    let ms = List.map2 (fun l u -> (l +. u) /. 2.0) ls us in
     p "  // Bounds";
     p (Format.sprintf "  nlopt_set_lower_bounds(opt, (double[])%s);" (str_of_array ls));
     p (Format.sprintf "  nlopt_set_upper_bounds(opt, (double[])%s);" (str_of_array us));
@@ -94,7 +92,7 @@ let gen_nlopt_code (pars : nlopt_pars) fmt =
   let main var_names var_bounds =
     p "int main() {";
     p (Format.sprintf "  nlopt_opt opt = nlopt_create(%d, %d);" 
-         pars.nl_alg (length var_names));
+         pars.nl_alg (List.length var_names));
     options var_bounds;
     p "  double f_min = 0.0, f_max = 0.0;";
     p "  // min";
@@ -110,29 +108,29 @@ let gen_nlopt_code (pars : nlopt_pars) fmt =
     p "  return 0;";
     p "}" in
 
-  fun (var_bound, expr) ->
+  fun (cs, expr) ->
     let var_names = vars_in_expr expr in
-    let var_bounds = map var_bound var_names in
+    let var_bounds = List.map cs.var_interval var_names in
     head();
     gen_nlopt_func var_names expr;
     main var_names var_bounds
 
 
-let min_max_expr (pars : Opt_common.opt_pars) var_bound expr =
+let min_max_expr (pars : Opt_common.opt_pars) (cs : constraints) expr =
   let tmp = Lib.get_tmp_dir () in
   let c_name = Filename.concat tmp "nlopt-f.c" in
   let exe_name = Filename.concat tmp "nlopt-f" in
   let gen = gen_nlopt_code {opt = pars; nl_alg = 0} in
-  let _ = write_to_file c_name gen (var_bound, expr) in
+  let _ = Lib.write_to_file c_name gen (cs, expr) in
   let cc = Config.get_string_option "nlopt-cc" in
   let cc_lib = Config.get_string_option "nlopt-lib" in
   let cmd = Format.sprintf "%s -o %s %s %s" cc exe_name c_name cc_lib in
-  let out = run_cmd cmd in
+  let out = Lib.run_cmd cmd in
   if out <> [] then
     let str = "Compilation ERROR: " ^ String.concat "\n" (cmd :: out) in
     failwith str
   else
-    let out = run_cmd exe_name in
+    let out = Lib.run_cmd exe_name in
     let min = get_float out "min: " and
       max = get_float out "max: " in
     min, max

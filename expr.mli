@@ -58,6 +58,12 @@ type formula =
   | Lt of expr * expr
   | Eq of expr * expr
 
+type constraints = {
+  var_interval : string -> Interval.interval;
+  var_rat_bounds : string -> Num.num * Num.num;
+  constraints : formula list;
+}
+
 val mk_const : Const.t -> expr
 val mk_var : string -> expr
 val mk_rounding : Rounding.rnd_info -> expr -> expr

@@ -12,8 +12,6 @@
 (* -------------------------------------------------------------------------- *)
 
 open Interval
-open List
-open Lib
 open Expr
 open Opt_common
 
@@ -65,8 +63,8 @@ let gen_bb_opt_code (pars : Opt_common.opt_pars) max_only fmt =
 	| str :: rest ->
 	  p (Format.sprintf "| %d -> %s" i str);
 	  bounds (i + 1) rest in
-    let n = length var_bounds in
-    let strs = map 
+    let n = List.length var_bounds in
+    let strs = List.map 
       (fun b -> Format.sprintf "{low = %.20e; high = %.20e}" b.low b.high) var_bounds in
     nl();
     p (Format.sprintf "let start_interval = Array.init %d (function" n);
@@ -90,9 +88,9 @@ let gen_bb_opt_code (pars : Opt_common.opt_pars) max_only fmt =
     Out.print_fmt fmt e;
     nl() in
 
-  fun (var_bound, e) ->
+  fun (cs, e) ->
     let var_names = vars_in_expr e in
-    let var_bounds = map var_bound var_names in
+    let var_bounds = List.map cs.var_interval var_names in
     head();
     start_interval var_bounds;
     expr var_names e;
@@ -102,7 +100,7 @@ let gen_bb_opt_code (pars : Opt_common.opt_pars) max_only fmt =
  
 let counter = ref 0
 
-let min_max_expr (pars : Opt_common.opt_pars) max_only var_bound e =
+let min_max_expr (pars : Opt_common.opt_pars) max_only (cs : constraints) e =
   if Config.debug then
     Log.report `Debug "bb_opt: x_abs_tol = %e, f_rel_tol = %e, f_abs_tol = %e, iters = %d"
 	       pars.x_abs_tol pars.f_rel_tol pars.f_abs_tol pars.max_iters;
@@ -113,7 +111,7 @@ let min_max_expr (pars : Opt_common.opt_pars) max_only var_bound e =
     Filename.concat tmp name in
   let out_name = Filename.concat tmp "bb" in
   let gen = gen_bb_opt_code pars max_only in
-  let () = write_to_file in_name gen (var_bound, e) in
+  let () = Lib.write_to_file in_name gen (cs, e) in
   let cmd =
     let quote s = "\"" ^ s ^ "\"" in
     let str = Config.get_string_option "bb-compile" in
@@ -121,8 +119,8 @@ let min_max_expr (pars : Opt_common.opt_pars) max_only var_bound e =
     let str = Str.global_replace (Str.regexp "{out}") (quote out_name) str in
     let str = Str.global_replace (Str.regexp "{input}") (quote in_name) str in
     str in
-  let _ = run_cmd cmd in
-  let out = run_cmd out_name in
+  let _ = Lib.run_cmd cmd in
+  let out = Lib.run_cmd out_name in
   let fmin = Opt_common.get_float out "min = " and
       fmax = Opt_common.get_float out "max = " and
       iter_max = truncate (Opt_common.get_float out ~default:0. "iter_max = ") and

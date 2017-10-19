@@ -66,7 +66,7 @@ let gen_z3py_opt_code (pars : Opt_common.opt_pars) max_only bounds fmt =
       p' (const_to_z3 c)
     | _ -> failwith "z3opt: print_constraint(): unsupported constraint" in
 
-  let constraint_vars (name, c) =
+  let constraint_vars c =
     match c with
     | Le (e, Const _) -> vars_in_expr e
     | _ -> failwith "z3opt: constraint_vars(): unsupported constraint" in
@@ -76,7 +76,7 @@ let gen_z3py_opt_code (pars : Opt_common.opt_pars) max_only bounds fmt =
       p "constraints = []"
     else
       let _ = p' "constraints = [" in
-      let _ = List.map (fun (name, c) -> print_constraint c; p' ", ") cs in
+      let _ = List.map (fun c -> print_constraint c; p' ", ") cs in
       p "]" in
 
   let vars var_names var_bounds =
@@ -119,31 +119,30 @@ var_names (map num_to_z3 high)) in
     p' "f = ";
     Out.print_fmt fmt e in
 
-  fun (var_bound, e) ->
-    let cs = Environment.get_active_constraints() in
-    let vars_cs = List.map constraint_vars cs in
+  fun (cs, e) ->
+    let vars_cs = List.map constraint_vars cs.constraints in
     let var_names = Lib.unions (vars_in_expr e :: vars_cs) in
-    let var_bounds = List.map var_bound var_names in
+    let var_bounds = List.map cs.var_rat_bounds var_names in
     head ();
     vars (List.map (fun name -> "var_" ^ (ExprOut.fix_name name)) var_names) var_bounds;
-    constraints cs;
+    constraints cs.constraints;
     expr e;
     tail ()
 
 let name_counter = ref 0;;
 
-let min_max_expr (pars : Opt_common.opt_pars) max_only var_bound bounds e =
+let min_max_expr (pars : Opt_common.opt_pars) max_only (cs : constraints) bounds e =
   if vars_in_expr e = [] then
     let n = Eval.eval_num_const_expr e in
     let t = More_num.interval_of_num n in
     (t.low, t.high)
   else
     let tmp = Lib.get_tmp_dir () in
-    let _ = incr name_counter in
+    incr name_counter;
     let py_name = Filename.concat tmp 
         (Format.sprintf "min_max_%d.py" !name_counter) in
     let gen = gen_z3py_opt_code pars max_only bounds in
-    let _ = Lib.write_to_file py_name gen (var_bound, e) in
+    let _ = Lib.write_to_file py_name gen (cs, e) in
     let python_path =
       let path = try Unix.getenv "PYTHONPATH" with Not_found -> "" in
       let base = Filename.concat Config.base_dir "z3opt" in

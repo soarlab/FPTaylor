@@ -12,8 +12,6 @@
 
 open Interval
 open Num
-open List
-open Lib
 open Rounding
 open Binary_float
 open Expr
@@ -89,19 +87,19 @@ let make_stronger_i v =
 let estimate_expr, reset_estimate_cache =
   let cache = ref [] in
   let reset () = (cache := []) in
-  let estimate vars e =
+  let estimate (cs : constraints) e =
     if Config.get_bool_option "intermediate-opt" then
       let () = Log.report `Debug "Estimating: %s" (ExprOut.Info.print_str e) in
-      let min, max = Opt.find_min_max Opt_common.default_opt_pars e in
+      let min, max = Opt.find_min_max Opt_common.default_opt_pars cs e in
       Log.report `Debug "Estimation result: [%f, %f]" min max;
       {low = min; high = max}
     else
-      Eval.eval_interval_expr vars e in
-  let estimate_and_cache vars e =
+      Eval.eval_interval_expr cs.var_interval e in
+  let estimate_and_cache cs e =
     try
-      assoc_eq eq_expr e !cache
+      Lib.assoc_eq eq_expr e !cache
     with Failure _ ->
-      let interval = estimate vars e in
+      let interval = estimate cs e in
       let _ = (cache := (e, interval) :: !cache) in
       interval
   in
@@ -121,39 +119,39 @@ let add2 (x1, e1) (x2, e2) =
     let eps = get_eps (e1 - e2) in
     ((x1 *^ eps) +^ x2, e2)
 
-let sum_high s = itlist add2 s (0., 0)
+let sum_high s = Lib.itlist add2 s (0., 0)
 
-let sum2_high s1 s2 = itlist 
+let sum2_high s1 s2 = Lib.itlist 
     (fun (x,x_exp) s ->
-       let s0 = sum_high (map (fun (y,y_exp) -> x *^ y, x_exp + y_exp) s2) in
+       let s0 = sum_high (List.map (fun (y,y_exp) -> x *^ y, x_exp + y_exp) s2) in
        add2 s s0) 
     s1 (0.0, 0)
 
-(* TODO: call (simplify_form f) before sum_i (eval_v1_i vars f.v1) *)
+(* TODO: call (simplify_form f) before sum_i (eval_v1_i cs f.v1) *)
 (* A better solution: insert new error terms in such a way that the form is always simplified *)
 let sum_i s =
   let mul (x, e) =
     let eps = get_eps e in
     x *$ {low = -.eps; high = eps} in
-  let vs = map mul s in
-  itlist (+$) vs zero_I
+  let vs = List.map mul s in
+  Lib.itlist (+$) vs zero_I
 
-let abs_eval vars ex = 
-  (*  let v = Eval.eval_interval_expr vars ex in *)
-  let v = estimate_expr vars ex in
+let abs_eval cs ex = 
+  (*  let v = Eval.eval_interval_expr cs ex in *)
+  let v = estimate_expr cs ex in
   (abs_I v).high
 
-let abs_eval_v1 vars = map (fun (ex, err) -> abs_eval vars ex, err.exp)
+let abs_eval_v1 cs = List.map (fun (ex, err) -> abs_eval cs ex, err.exp)
 
-let eval_v1_i vars v1 =
-  map (fun (e, err) -> estimate_expr vars e, err.exp) v1
+let eval_v1_i cs v1 =
+  List.map (fun (e, err) -> estimate_expr cs e, err.exp) v1
 
-let simplify_form vars f =
+let simplify_form cs f =
   let rec add_adjacent arg_index s =
     match s with
     | (ex1, err1) :: (ex2, err2) :: t when err1.index = -1 && err2.index = -1 ->
-      let f1, exp1 = abs_eval vars ex1, err1.exp and
-      f2, exp2 = abs_eval vars ex2, err2.exp in
+      let f1, exp1 = abs_eval cs ex1, err1.exp and
+      f2, exp2 = abs_eval cs ex2, err2.exp in
       let f, exp = add2 (f1, exp1) (f2, exp2) in
       let f = make_stronger f in
       let i = next_form_index() in
@@ -173,7 +171,7 @@ let simplify_form vars f =
         let index, s = add_adjacent arg_index ((e2, err2) :: t) in
         index, (e1, err1) :: s
     | _ -> arg_index, s in
-  let v1 = sort (fun (_, err1) (_, err2) -> compare err1.index err2.index) f.v1 in
+  let v1 = List.sort (fun (_, err1) (_, err2) -> compare err1.index err2.index) f.v1 in
   let i, v1_new = add_adjacent f.form_index v1 in
   {f with form_index = i; v1 = v1_new}
 
@@ -182,12 +180,12 @@ let find_index, expr_for_index, reset_index_counter, current_index =
   let exprs = ref [] in
   let find_index expr =
     let unique_flag = Config.get_bool_option "unique-indices" in
-    let i = assocd_eq eq_expr (-1) expr !exprs in
+    let i = Lib.assocd_eq eq_expr (-1) expr !exprs in
     if i > 0 && (not unique_flag) then i else
       let _ = counter := !counter + 1 in
       let _ = exprs := (expr, !counter) :: !exprs in
       !counter 
-  and expr_for_index i = rev_assoc i !exprs
+  and expr_for_index i = Lib.rev_assoc i !exprs
   and reset_index_counter () = exprs := []; counter := 0
   and current_index () = !counter
   in
@@ -355,7 +353,7 @@ let var_rnd_form rnd e =
   | _ -> failwith ("var_rnd_form: not a variable" ^ ExprOut.Info.print_str e)
 
 (* rounding *)
-let rounded_form vars original_expr rnd f =
+let rounded_form cs original_expr rnd f =
   Log.report `Debug "rounded_form";
   if rnd.eps_exp = 0 then {
     form_index = next_form_index();
@@ -364,7 +362,7 @@ let rounded_form vars original_expr rnd f =
   }
   else
     let i = find_index original_expr in
-    let s1', exp1 = sum_high (abs_eval_v1 vars f.v1) in
+    let s1', exp1 = sum_high (abs_eval_v1 cs f.v1) in
     let s1 = make_stronger (get_eps exp1 *^ s1') in
     let r', m2' =
       if Config.get_bool_option "fp-power2-model" then
@@ -398,7 +396,7 @@ let neg_form f =
   let _ = Proof.add_neg_step i f.form_index in {
     form_index = i;
     v0 = mk_neg f.v0;
-    v1 = map (fun (e, err) -> mk_neg e, err) f.v1;
+    v1 = List.map (fun (e, err) -> mk_neg e, err) f.v1;
   }
 
 (* addition *)
@@ -418,15 +416,15 @@ let sub_form f1 f2 =
   let _ = Proof.add_sub_step i f1.form_index f2.form_index in {
     form_index = i;
     v0 = mk_sub f1.v0 f2.v0;
-    v1 = f1.v1 @ map (fun (e, err) -> mk_neg e, err) f2.v1;
+    v1 = f1.v1 @ List.map (fun (e, err) -> mk_neg e, err) f2.v1;
   }
 
 (* rounded subtraction *)
-let rounded_sub_form vars original_expr rnd f1 f2 =
+let rounded_sub_form cs original_expr rnd f1 f2 =
   Log.report `Debug "rounded_sub_form";
   let i = find_index original_expr in
-  let s1', exp1 = sum_high (abs_eval_v1 vars f1.v1) in
-  let s2', exp2 = sum_high (abs_eval_v1 vars f2.v1) in
+  let s1', exp1 = sum_high (abs_eval_v1 cs f1.v1) in
+  let s2', exp2 = sum_high (abs_eval_v1 cs f2.v1) in
   let s1 = make_stronger (get_eps exp1 *^ s1') in
   let s2 = make_stronger (get_eps exp2 *^ s2') in
   let r' = mk_floor_sub2 (mk_add f1.v0 (mk_sym_interval_const s1))
@@ -441,22 +439,22 @@ let rounded_sub_form vars original_expr rnd f1 f2 =
   {
     form_index = form_index;
     v0 = mk_sub f1.v0 f2.v0;
-    v1 = (r, r_err) :: (f1.v1 @ map (fun (e, err) -> mk_neg e, err) f2.v1);
+    v1 = (r, r_err) :: (f1.v1 @ List.map (fun (e, err) -> mk_neg e, err) f2.v1);
   }
 
 (* rounded addition *)
-let rounded_add_form vars original_expr rnd f1 f2 =
+let rounded_add_form cs original_expr rnd f1 f2 =
   Log.report `Debug "rounded_add_form";
-  rounded_sub_form vars original_expr rnd f1 (neg_form f2)
+  rounded_sub_form cs original_expr rnd f1 (neg_form f2)
 
 
 (* multiplication *)
 let mul_form =
-  let mul1 x = map (fun (e, err) -> mk_mul x e, err) in
-  fun vars f1 f2 -> 
+  let mul1 x = List.map (fun (e, err) -> mk_mul x e, err) in
+  fun cs f1 f2 -> 
     Log.report `Debug "mul_form";
-    let x1 = abs_eval_v1 vars f1.v1 and
-      y1 = abs_eval_v1 vars f2.v1 in
+    let x1 = abs_eval_v1 cs f1.v1 and
+      y1 = abs_eval_v1 cs f2.v1 in
     let m2, m2_exp = sum2_high x1 y1 in
     let m2 = make_stronger m2 in
     let form_index = next_form_index() in
@@ -470,11 +468,11 @@ let mul_form =
     }
 
 (* reciprocal *)
-let inv_form vars f = 
+let inv_form cs f = 
   Log.report `Debug "inv_form";
-  let x0_int = estimate_expr vars f.v0 in
-  let x1 = abs_eval_v1 vars f.v1 in
-  let s1 = itlist (fun (x,x_exp) s -> 
+  let x0_int = estimate_expr cs f.v0 in
+  let x1 = abs_eval_v1 cs f.v1 in
+  let s1 = Lib.itlist (fun (x,x_exp) s -> 
       let eps = get_eps x_exp in
       let xi = {low = -. eps; high = eps} in
       (xi *$. x) +$ s) x1 zero_I in
@@ -505,21 +503,21 @@ let inv_form vars f =
   {
     form_index = form_index;
     v0 = mk_div const_1 f.v0;
-    v1 = map (fun (e, err) -> mk_neg (mk_div e (mk_mul f.v0 f.v0)), err) f.v1
+    v1 = List.map (fun (e, err) -> mk_neg (mk_div e (mk_mul f.v0 f.v0)), err) f.v1
          @ [mk_float_const m3, m3_err];
   }
 
 (* division *)
-let div_form vars f1 f2 =  
+let div_form cs f1 f2 =  
   Log.report `Debug "div_form";
-  mul_form vars f1 (inv_form vars f2)
+  mul_form cs f1 (inv_form cs f2)
 
 (* square root *)
-let sqrt_form vars f = 
+let sqrt_form cs f = 
   Log.report `Debug "sqrt_form";
-  let x0_int = estimate_expr vars f.v0 in
-  let x1 = abs_eval_v1 vars f.v1 in
-  let s1 = itlist (fun (x,x_exp) s -> 
+  let x0_int = estimate_expr cs f.v0 in
+  let x1 = abs_eval_v1 cs f.v1 in
+  let s1 = Lib.itlist (fun (x,x_exp) s -> 
       let eps = get_eps x_exp in
       let xi = {low = -. eps; high = eps} in
       (xi *$. x) +$ s) x1 zero_I in
@@ -544,16 +542,16 @@ let sqrt_form vars f =
   {
     form_index = form_index;
     v0 = sqrt_v0;
-    v1 = map (fun (e, err) -> mk_div e (mk_mul const_2 sqrt_v0), err) f.v1
+    v1 = List.map (fun (e, err) -> mk_div e (mk_mul const_2 sqrt_v0), err) f.v1
          @ [mk_float_const m3, m3_err];
   }
 
 (* sine *)
-let sin_form vars f =
+let sin_form cs f =
   Log.report `Debug "sin_form";
-  let x0_int = estimate_expr vars f.v0 in
-  let x1 = abs_eval_v1 vars f.v1 in
-  let s1 = itlist (fun (x,x_exp) s -> 
+  let x0_int = estimate_expr cs f.v0 in
+  let x1 = abs_eval_v1 cs f.v1 in
+  let s1 = Lib.itlist (fun (x,x_exp) s -> 
       let eps = get_eps x_exp in
       let xi = {low = -. eps; high = eps} in
       (xi *$. x) +$ s) x1 zero_I in
@@ -577,16 +575,16 @@ let sin_form vars f =
   {
     form_index = form_index;
     v0 = sin_v0;
-    v1 = map (fun (e, err) -> mk_mul cos_v0 e, err) f.v1
+    v1 = List.map (fun (e, err) -> mk_mul cos_v0 e, err) f.v1
          @ [mk_float_const m3, m3_err];
   }
 
 (* cosine *)
-let cos_form vars f =
+let cos_form cs f =
   Log.report `Debug "cos_form";
-  let x0_int = estimate_expr vars f.v0 in
-  let x1 = abs_eval_v1 vars f.v1 in
-  let s1 = itlist (fun (x,x_exp) s -> 
+  let x0_int = estimate_expr cs f.v0 in
+  let x1 = abs_eval_v1 cs f.v1 in
+  let s1 = Lib.itlist (fun (x,x_exp) s -> 
       let eps = get_eps x_exp in
       let xi = {low = -. eps; high = eps} in
       (xi *$. x) +$ s) x1 zero_I in
@@ -610,17 +608,17 @@ let cos_form vars f =
   {
     form_index = form_index;
     v0 = cos_v0;
-    v1 = map (fun (e, err) -> mk_neg (mk_mul sin_v0 e), err) f.v1
+    v1 = List.map (fun (e, err) -> mk_neg (mk_mul sin_v0 e), err) f.v1
          @ [mk_float_const m3, m3_err];
   }
 
 (* tangent *)
 (* TODO: proof support *)
-let tan_form vars f =
+let tan_form cs f =
   Log.report `Debug "tan_form";
-  let x0_int = estimate_expr vars f.v0 in
-  let x1 = abs_eval_v1 vars f.v1 in
-  let s1 = itlist (fun (x,x_exp) s -> 
+  let x0_int = estimate_expr cs f.v0 in
+  let x1 = abs_eval_v1 cs f.v1 in
+  let s1 = Lib.itlist (fun (x,x_exp) s -> 
       let eps = get_eps x_exp in
       let xi = {low = -. eps; high = eps} in
       (xi *$. x) +$ s) x1 zero_I in
@@ -633,17 +631,17 @@ let tan_form vars f =
   {
     form_index = next_form_index();
     v0 = mk_tan f.v0;
-    v1 = map (fun (e, err) -> mk_div e v1_0, err) f.v1
+    v1 = List.map (fun (e, err) -> mk_div e v1_0, err) f.v1
          @ [mk_float_const m2, mk_err_var (-1) m2_exp];
   }
 
 (* arcsine *)
 (* TODO: proof support *)
-let asin_form vars f =
+let asin_form cs f =
   Log.report `Debug "asin_form";
-  let x0_int = estimate_expr vars f.v0 in
-  let x1 = abs_eval_v1 vars f.v1 in
-  let s1 = itlist (fun (x,x_exp) s -> 
+  let x0_int = estimate_expr cs f.v0 in
+  let x1 = abs_eval_v1 cs f.v1 in
+  let s1 = Lib.itlist (fun (x,x_exp) s -> 
       let eps = get_eps x_exp in
       let xi = {low = -. eps; high = eps} in
       (xi *$. x) +$ s) x1 zero_I in
@@ -668,17 +666,17 @@ let asin_form vars f =
   {
     form_index = form_index;
     v0 = mk_asin f.v0;
-    v1 = map (fun (e, err) -> mk_div e v1_0, err) f.v1
+    v1 = List.map (fun (e, err) -> mk_div e v1_0, err) f.v1
          @ [mk_float_const m3, m3_err];
   }
 
 (* arccosine *)
 (* TODO: proof support *)
-let acos_form vars f =
+let acos_form cs f =
   Log.report `Debug "acos_form";
-  let x0_int = estimate_expr vars f.v0 in
-  let x1 = abs_eval_v1 vars f.v1 in
-  let s1 = itlist (fun (x,x_exp) s -> 
+  let x0_int = estimate_expr cs f.v0 in
+  let x1 = abs_eval_v1 cs f.v1 in
+  let s1 = Lib.itlist (fun (x,x_exp) s -> 
       let eps = get_eps x_exp in
       let xi = {low = -. eps; high = eps} in
       (xi *$. x) +$ s) x1 zero_I in
@@ -703,16 +701,16 @@ let acos_form vars f =
   {
     form_index = form_index;
     v0 = mk_acos f.v0;
-    v1 = map (fun (e, err) -> mk_neg (mk_div e v1_0), err) f.v1
+    v1 = List.map (fun (e, err) -> mk_neg (mk_div e v1_0), err) f.v1
          @ [mk_float_const m3, m3_err];
   }
 
 (* arctangent *)
-let atan_form vars f =
+let atan_form cs f =
   Log.report `Debug "atan_form";
-  let x0_int = estimate_expr vars f.v0 in
-  let x1 = abs_eval_v1 vars f.v1 in
-  let s1 = itlist (fun (x,x_exp) s -> 
+  let x0_int = estimate_expr cs f.v0 in
+  let x1 = abs_eval_v1 cs f.v1 in
+  let s1 = Lib.itlist (fun (x,x_exp) s -> 
       let eps = get_eps x_exp in
       let xi = {low = -. eps; high = eps} in
       (xi *$. x) +$ s) x1 zero_I in
@@ -737,16 +735,16 @@ let atan_form vars f =
   {
     form_index = form_index;
     v0 = mk_atan f.v0;
-    v1 = map (fun (e, err) -> mk_div e v1_0, err) f.v1
+    v1 = List.map (fun (e, err) -> mk_div e v1_0, err) f.v1
          @ [mk_float_const m3, m3_err];
   }
 
 (* exp *)
-let exp_form vars f =
+let exp_form cs f =
   Log.report `Debug "exp_form";
-  let x0_int = estimate_expr vars f.v0 in
-  let x1 = abs_eval_v1 vars f.v1 in
-  let s1 = itlist (fun (x,x_exp) s -> 
+  let x0_int = estimate_expr cs f.v0 in
+  let x1 = abs_eval_v1 cs f.v1 in
+  let s1 = Lib.itlist (fun (x,x_exp) s -> 
       let eps = get_eps x_exp in
       let xi = {low = -. eps; high = eps} in
       (xi *$. x) +$ s) x1 zero_I in
@@ -769,16 +767,16 @@ let exp_form vars f =
   {
     form_index = form_index;
     v0 = exp_v0;
-    v1 = map (fun (e, err) -> mk_mul exp_v0 e, err) f.v1
+    v1 = List.map (fun (e, err) -> mk_mul exp_v0 e, err) f.v1
          @ [mk_float_const m3, m3_err];
   }
 
 (* log *)
-let log_form vars f =
+let log_form cs f =
   Log.report `Debug "log_form";
-  let x0_int = estimate_expr vars f.v0 in
-  let x1 = abs_eval_v1 vars f.v1 in
-  let s1 = itlist (fun (x,x_exp) s -> 
+  let x0_int = estimate_expr cs f.v0 in
+  let x1 = abs_eval_v1 cs f.v1 in
+  let s1 = Lib.itlist (fun (x,x_exp) s -> 
       let eps = get_eps x_exp in
       let xi = {low = -. eps; high = eps} in
       (xi *$. x) +$ s) x1 zero_I in
@@ -801,17 +799,17 @@ let log_form vars f =
   {
     form_index = form_index;
     v0 = log_v0;
-    v1 = map (fun (e, err) -> mk_div e f.v0, err) f.v1
+    v1 = List.map (fun (e, err) -> mk_div e f.v0, err) f.v1
          @ [mk_float_const m3, m3_err];
   }
 
 (* sinh *)
 (* TODO: proof support *)
-let sinh_form vars f =
+let sinh_form cs f =
   Log.report `Debug "sinh_form";
-  let x0_int = estimate_expr vars f.v0 in
-  let x1 = abs_eval_v1 vars f.v1 in
-  let s1 = itlist (fun (x,x_exp) s -> 
+  let x0_int = estimate_expr cs f.v0 in
+  let x1 = abs_eval_v1 cs f.v1 in
+  let s1 = Lib.itlist (fun (x,x_exp) s -> 
       let eps = get_eps x_exp in
       let xi = {low = -. eps; high = eps} in
       (xi *$. x) +$ s) x1 zero_I in
@@ -836,17 +834,17 @@ let sinh_form vars f =
   {
     form_index = form_index;
     v0 = mk_sinh f.v0;
-    v1 = map (fun (e, err) -> mk_mul v1_0 e, err) f.v1
+    v1 = List.map (fun (e, err) -> mk_mul v1_0 e, err) f.v1
          @ [mk_float_const m3, m3_err];
   }
 
 (* cosh *)
 (* TODO: proof support *)
-let cosh_form vars f =
+let cosh_form cs f =
   Log.report `Debug "cosh_form";
-  let x0_int = estimate_expr vars f.v0 in
-  let x1 = abs_eval_v1 vars f.v1 in
-  let s1 = itlist (fun (x,x_exp) s -> 
+  let x0_int = estimate_expr cs f.v0 in
+  let x1 = abs_eval_v1 cs f.v1 in
+  let s1 = Lib.itlist (fun (x,x_exp) s -> 
       let eps = get_eps x_exp in
       let xi = {low = -. eps; high = eps} in
       (xi *$. x) +$ s) x1 zero_I in
@@ -871,17 +869,17 @@ let cosh_form vars f =
   {
     form_index = form_index;
     v0 = mk_cosh f.v0;
-    v1 = map (fun (e, err) -> mk_mul v1_0 e, err) f.v1
+    v1 = List.map (fun (e, err) -> mk_mul v1_0 e, err) f.v1
          @ [mk_float_const m3, m3_err];
   }
 
 (* tanh *)
 (* TODO: proof support *)
-let tanh_form vars f =
+let tanh_form cs f =
   Log.report `Debug "tanh_form";
-  let x0_int = estimate_expr vars f.v0 in
-  let x1 = abs_eval_v1 vars f.v1 in
-  let s1 = itlist (fun (x,x_exp) s -> 
+  let x0_int = estimate_expr cs f.v0 in
+  let x1 = abs_eval_v1 cs f.v1 in
+  let s1 = Lib.itlist (fun (x,x_exp) s -> 
       let eps = get_eps x_exp in
       let xi = {low = -. eps; high = eps} in
       (xi *$. x) +$ s) x1 zero_I in
@@ -906,18 +904,18 @@ let tanh_form vars f =
   {
     form_index = form_index;
     v0 = mk_tanh f.v0;
-    v1 = map (fun (e, err) -> mk_div e v1_0, err) f.v1
+    v1 = List.map (fun (e, err) -> mk_div e v1_0, err) f.v1
          @ [mk_float_const m3, m3_err];
   }
 
 
 (* arsinh *)
 (* TODO: proof support *)
-let asinh_form vars f =
+let asinh_form cs f =
   Log.report `Debug "asinh_form";
-  let x0_int = estimate_expr vars f.v0 in
-  let x1 = abs_eval_v1 vars f.v1 in
-  let s1 = itlist (fun (x,x_exp) s -> 
+  let x0_int = estimate_expr cs f.v0 in
+  let x1 = abs_eval_v1 cs f.v1 in
+  let s1 = Lib.itlist (fun (x,x_exp) s -> 
       let eps = get_eps x_exp in
       let xi = {low = -. eps; high = eps} in
       (xi *$. x) +$ s) x1 zero_I in
@@ -942,17 +940,17 @@ let asinh_form vars f =
   {
     form_index = form_index;
     v0 = mk_asinh f.v0;
-    v1 = map (fun (e, err) -> mk_div e v1_0, err) f.v1
+    v1 = List.map (fun (e, err) -> mk_div e v1_0, err) f.v1
          @ [mk_float_const m3, m3_err];
   }
 
 (* arcosh *)
 (* TODO: proof support *)
-let acosh_form vars f =
+let acosh_form cs f =
   Log.report `Debug "acosh_form";
-  let x0_int = estimate_expr vars f.v0 in
-  let x1 = abs_eval_v1 vars f.v1 in
-  let s1 = itlist (fun (x,x_exp) s -> 
+  let x0_int = estimate_expr cs f.v0 in
+  let x1 = abs_eval_v1 cs f.v1 in
+  let s1 = Lib.itlist (fun (x,x_exp) s -> 
       let eps = get_eps x_exp in
       let xi = {low = -. eps; high = eps} in
       (xi *$. x) +$ s) x1 zero_I in
@@ -977,17 +975,17 @@ let acosh_form vars f =
   {
     form_index = form_index;
     v0 = mk_acosh f.v0;
-    v1 = map (fun (e, err) -> mk_div e v1_0, err) f.v1
+    v1 = List.map (fun (e, err) -> mk_div e v1_0, err) f.v1
          @ [mk_float_const m3, m3_err];
   }
 
 (* artanh *)
 (* TODO: proof support *)
-let atanh_form vars f =
+let atanh_form cs f =
   Log.report `Debug "atanh_form";
-  let x0_int = estimate_expr vars f.v0 in
-  let x1 = abs_eval_v1 vars f.v1 in
-  let s1 = itlist (fun (x,x_exp) s -> 
+  let x0_int = estimate_expr cs f.v0 in
+  let x1 = abs_eval_v1 cs f.v1 in
+  let s1 = Lib.itlist (fun (x,x_exp) s -> 
       let eps = get_eps x_exp in
       let xi = {low = -. eps; high = eps} in
       (xi *$. x) +$ s) x1 zero_I in
@@ -1012,7 +1010,7 @@ let atanh_form vars f =
   {
     form_index = form_index;
     v0 = mk_atanh f.v0;
-    v1 = map (fun (e, err) -> mk_div e v1_0, err) f.v1
+    v1 = List.map (fun (e, err) -> mk_div e v1_0, err) f.v1
          @ [mk_float_const m3, m3_err];
   }
 
@@ -1038,17 +1036,17 @@ let atanh_form vars f =
    Abs_err(sym_interval(t), [a, b]) = Abs_diff([a, b] + sym_interval(t)).
    We prefer the explicit definition of Abs_err since it is slightly more accurate.
 *)
-let abs_form vars f =
+let abs_form cs f =
   Log.report `Debug "abs_form";
   let i = next_form_index() in
   let t =
-    let s, e = sum_high (abs_eval_v1 vars f.v1) in
+    let s, e = sum_high (abs_eval_v1 cs f.v1) in
     make_stronger (get_eps e *^ s) in
   let abs_err = mk_abs_err (mk_sym_interval_const t) f.v0 in
   {
     form_index = i;
     v0 = mk_abs f.v0;
-    v1 = map (fun (e, err) -> mk_mul abs_err e, err) f.v1;
+    v1 = List.map (fun (e, err) -> mk_mul abs_err e, err) f.v1;
   }
 
 (* maximum of two values *)
@@ -1065,14 +1063,14 @@ let abs_form vars f =
 
    where t is an upper bound of |e1 - e2| (or |e1| + |e2| >= |e1 - e2|).
 *) 
-let max_form vars f1 f2 =
+let max_form cs f1 f2 =
   Log.report `Debug "max_form";
   let i = next_form_index() in
   let t1 =
-    let s, e = sum_high (abs_eval_v1 vars f1.v1) in
+    let s, e = sum_high (abs_eval_v1 cs f1.v1) in
     make_stronger (get_eps e *^ s) in
   let t2 =
-    let s, e = sum_high (abs_eval_v1 vars f2.v1) in
+    let s, e = sum_high (abs_eval_v1 cs f2.v1) in
     make_stronger (get_eps e *^ s) in
   let x_sub_y = mk_sub f1.v0 f2.v0 in
   let t = mk_sym_interval_const (t1 +^ t2) in
@@ -1081,8 +1079,8 @@ let max_form vars f1 f2 =
   {
     form_index = i;
     v0 = mk_max f1.v0 f2.v0;
-    v1 = map (fun (e, err) -> mk_mul err1 e, err) f1.v1
-         @ map (fun (e, err) -> mk_mul err2 e, err) f2.v1;
+    v1 = List.map (fun (e, err) -> mk_mul err1 e, err) f1.v1
+         @ List.map (fun (e, err) -> mk_mul err2 e, err) f2.v1;
   }
 
 (* minimum of two values *)
@@ -1093,14 +1091,14 @@ let max_form vars f1 f2 =
 
    where t is an upper bound of |e1 - e2|.
 *)
-let min_form vars f1 f2 =
+let min_form cs f1 f2 =
   Log.report `Debug "min_form";
   let i = next_form_index() in
   let t1 =
-    let s, e = sum_high (abs_eval_v1 vars f1.v1) in
+    let s, e = sum_high (abs_eval_v1 cs f1.v1) in
     make_stronger (get_eps e *^ s) in
   let t2 =
-    let s, e = sum_high (abs_eval_v1 vars f2.v1) in
+    let s, e = sum_high (abs_eval_v1 cs f2.v1) in
     make_stronger (get_eps e *^ s) in
   let x_sub_y = mk_sub f1.v0 f2.v0 in
   let t = mk_sym_interval_const (t1 +^ t2) in
@@ -1109,12 +1107,12 @@ let min_form vars f1 f2 =
   {
     form_index = i;
     v0 = mk_min f1.v0 f2.v0;
-    v1 = map (fun (e, err) -> mk_mul err1 e, err) f1.v1
-         @ map (fun (e, err) -> mk_mul err2 e, err) f2.v1;
+    v1 = List.map (fun (e, err) -> mk_mul err1 e, err) f1.v1
+         @ List.map (fun (e, err) -> mk_mul err2 e, err) f2.v1;
   }
 
 (* Builds a Taylor form *)
-let build_form vars =
+let build_form (cs : constraints) =
   let rec build e = 
     match e with
     | Const _ -> const_form e
@@ -1127,37 +1125,37 @@ let build_form vars =
       when rnd.special_flag 
         && Config.get_bool_option "fp-power2-model" 
         && Config.get_bool_option "develop" ->
-      rounded_add_form vars e rnd (build arg1) (build arg2)
+      rounded_add_form cs e rnd (build arg1) (build arg2)
     | Rounding (rnd, Bin_op (Op_sub, arg1, arg2))
       when rnd.special_flag 
         && Config.get_bool_option "fp-power2-model" 
         && Config.get_bool_option "develop" ->
-      rounded_sub_form vars e rnd (build arg1) (build arg2)
+      rounded_sub_form cs e rnd (build arg1) (build arg2)
     | Rounding (rnd, arg) -> 
       let arg_form = build arg in
-      rounded_form vars e rnd arg_form
+      rounded_form cs e rnd arg_form
     | U_op (op, arg) ->
       begin
         let arg_form = build arg in
         match op with
         | Op_neg -> neg_form arg_form
-        | Op_abs -> abs_form vars arg_form
-        | Op_inv -> inv_form vars arg_form
-        | Op_sqrt -> sqrt_form vars arg_form
-        | Op_sin -> sin_form vars arg_form
-        | Op_cos -> cos_form vars arg_form
-        | Op_tan -> tan_form vars arg_form
-        | Op_asin -> asin_form vars arg_form
-        | Op_acos -> acos_form vars arg_form
-        | Op_atan -> atan_form vars arg_form
-        | Op_exp -> exp_form vars arg_form
-        | Op_log -> log_form vars arg_form
-        | Op_sinh -> sinh_form vars arg_form
-        | Op_cosh -> cosh_form vars arg_form
-        | Op_tanh -> tanh_form vars arg_form
-        | Op_asinh -> asinh_form vars arg_form
-        | Op_acosh -> acosh_form vars arg_form
-        | Op_atanh -> atanh_form vars arg_form
+        | Op_abs -> abs_form cs arg_form
+        | Op_inv -> inv_form cs arg_form
+        | Op_sqrt -> sqrt_form cs arg_form
+        | Op_sin -> sin_form cs arg_form
+        | Op_cos -> cos_form cs arg_form
+        | Op_tan -> tan_form cs arg_form
+        | Op_asin -> asin_form cs arg_form
+        | Op_acos -> acos_form cs arg_form
+        | Op_atan -> atan_form cs arg_form
+        | Op_exp -> exp_form cs arg_form
+        | Op_log -> log_form cs arg_form
+        | Op_sinh -> sinh_form cs arg_form
+        | Op_cosh -> cosh_form cs arg_form
+        | Op_tanh -> tanh_form cs arg_form
+        | Op_asinh -> asinh_form cs arg_form
+        | Op_acosh -> acosh_form cs arg_form
+        | Op_atanh -> atanh_form cs arg_form
         | _ -> failwith 
                  ("build_form: unsupported unary operation " ^ u_op_name op)
       end
@@ -1168,18 +1166,18 @@ let build_form vars =
         match op with
         | Op_add -> add_form arg1_form arg2_form
         | Op_sub -> sub_form arg1_form arg2_form
-        | Op_mul -> mul_form vars arg1_form arg2_form
-        | Op_div -> div_form vars arg1_form arg2_form
-        | Op_max -> max_form vars arg1_form arg2_form
-        | Op_min -> min_form vars arg1_form arg2_form
+        | Op_mul -> mul_form cs arg1_form arg2_form
+        | Op_div -> div_form cs arg1_form arg2_form
+        | Op_max -> max_form cs arg1_form arg2_form
+        | Op_min -> min_form cs arg1_form arg2_form
         | _ -> failwith
                  ("build_form: unsupported binary operation " ^ bin_op_name op)
       end
     | Gen_op (op, args) ->
       begin
-        let arg_forms = map build args in
+        let arg_forms = List.map build args in
         match (op, arg_forms) with
-        | (Op_fma, [a;b;c]) -> add_form (mul_form vars a b) c
+        | (Op_fma, [a;b;c]) -> add_form (mul_form cs a b) c
         | _ -> failwith
                  ("build_form: unsupported general operation " ^ gen_op_name op)
       end
@@ -1223,7 +1221,7 @@ let build_test_expr fp err_var =
 	else
 	  add_rel expr
       | Gen_op (op, flags, args) ->
-	let expr = Gen_op (op, flags, map build args) in
+	let expr = Gen_op (op, flags, List.map build args) in
 	if flags.op_exact then
 	  expr
 	else

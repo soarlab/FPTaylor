@@ -16,7 +16,7 @@ open List
 open Parser
 open Rounding
 open Expr
-open Environment
+open Problem
 open Taylor_form
 
 type problem_info = {
@@ -112,10 +112,6 @@ let print_problem_info pi =
   print_upper_bound w rel_approx_str pi.rel_error_approx;
   print_upper_bound w rel_exact_str pi.rel_error_exact;
   Log.report `Main "\nElapsed time: %.2f\n" pi.elapsed_time
-
-let exprs () = env.expressions
-
-let var_bound_float name = variable_interval name
 
 let print_form level f =
   Log.report level "v0 = %s" (ExprOut.Info.print_str f.v0);
@@ -330,15 +326,15 @@ let relative_errors tf (f_min, f_max) =
     in
     err_approx, err_exact
 
-let errors pi tform =
+let errors result tform =
   let f_min, f_max = 
     if Config.get_bool_option "rel-error" || Config.get_bool_option "find-bounds" then
       Opt.find_min_max Opt_common.default_opt_pars tform.v0
     else
       neg_infinity, infinity in
   Log.report `Important "bounds: [%e, %e]" f_min f_max;
-  let pi = {pi with real_bounds = {low = f_min; high = f_max}} in
-  let pi =
+  let result = {result with real_bounds = {low = f_min; high = f_max}} in
+  let result =
     if Config.get_bool_option "opt-approx" || Config.get_bool_option "opt-exact" then
       let abs_approx, abs_exact = 
         if Config.get_bool_option "abs-error" then
@@ -350,20 +346,20 @@ let errors pi tform =
           relative_errors tform (f_min, f_max)
         else
           None, None in
-      {pi with
+      {result with
        abs_error_approx = abs_approx;
        abs_error_exact = abs_exact;
        rel_error_approx = rel_approx;
        rel_error_exact = rel_exact
       }
     else
-      pi in
+      result in
   Log.report `Important "";
-  pi
+  result
 
-let safety_check e =
+let safety_check problem =
   try
-    Rounding_simpl.check_expr var_bound_float e
+    Rounding_simpl.check_expr (variable_interval problem) problem.expression
   with Rounding_simpl.Exceptional_operation (e0, str) ->
     let msg =
       Format.sprintf "\nPotential exception detected: %s at:\n%s"
@@ -373,18 +369,19 @@ let safety_check e =
     else
       (Log.warning_str msg; zero_I)
 
-let compute_form pi e =
+let compute_form problem =
   Log.report `Info "\n*************************************";
-  Log.report `Info "Taylor form for: %s" (ExprOut.Info.print_str e);
+  Log.report `Info "Taylor form for: %s" (ExprOut.Info.print_str problem.expression);
   if Config.proof_flag then Proof.new_proof ();
+  let result = { default_problem_info with name = problem.name } in
   let start = Unix.gettimeofday() in
-  let pi, tform = 
+  let result, tform = 
     try
-      let bound0 = safety_check e in
+      let bound0 = safety_check problem in
       Log.report `Info "\nConservative bound: %s" (sprintf_I "%f" bound0);
-      let e = Rounding_simpl.simplify_rounding e in
+      let e = Rounding_simpl.simplify_rounding problem.expression in
       Log.report `Info "\nSimplified rounding: %s" (ExprOut.Info.print_str e);
-      let vars = var_bound_float in
+      let vars = variable_interval problem in
       Log.report `Important "Building Taylor forms...";
       let form' = build_form vars e in
       Log.report `Important "Simplifying Taylor forms...";
@@ -400,11 +397,11 @@ let compute_form pi e =
           form in
       print_form `Info form;
       Log.report `Info "";
-      let pi = errors pi form in
-      pi, form
+      let result = errors result form in
+      result, form
     with Failure msg ->
       Log.error_str msg;
-      pi, dummy_tform
+      result, dummy_tform
   in
   let stop = Unix.gettimeofday() in
   Log.report `Info "Elapsed time: %.5f" (stop -. start);
@@ -412,13 +409,13 @@ let compute_form pi e =
     if Config.proof_flag then
       begin
         let proof_dir = Config.get_string_option "proof-dir" in
-        Log.report `Important "Saving a proof certificate for %s (in %s)" pi.name proof_dir;
-        Proof.save_proof proof_dir (pi.name ^ ".proof")
+        Log.report `Important "Saving a proof certificate for %s (in %s)" result.name proof_dir;
+        Proof.save_proof proof_dir (result.name ^ ".proof")
       end
   in
-  {pi with elapsed_time = stop -. start}, tform
+  { result with elapsed_time = stop -. start }, tform
 
-let approximate_constraint pi c =
+let approximate_constraint name c =
   let e = 
     match c with
     | Le (a, b) -> mk_sub a b
@@ -456,10 +453,10 @@ let process_input fname =
         tmp_base_dir in
     Lib.set_tmp_dir tmp_dir in
   Config.print_options `Debug;
-  let _ = parse_file fname in
-  let names, es = unzip (exprs ()) in
+  let problems0 = parse_file fname in
+  let problems = map approximate_constraints problems0 in
+  let names = map (fun p -> p.name) problems in
   let cnames, cs = unzip (all_constraints ()) in
-  let problems0 = map (fun name -> {default_problem_info with name = name}) names in
   let constraints0 = map (fun name -> {default_problem_info with name = name}) cnames in
   let constraints = 
     if cs = [] then [] else begin
@@ -467,7 +464,7 @@ let process_input fname =
       map2 approximate_constraint constraints0 cs
     end in
   let _ = set_active_constraints (zip cnames constraints) in
-  let problems = map2 compute_form problems0 es in
+  let results = map compute_form problems in
   Log.report `Info "*************************************\n";
   iter (fun (p, _) -> print_problem_info p) problems;
   Log.close ();

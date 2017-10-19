@@ -15,6 +15,7 @@ open Expr
 open Rounding
 open Eval
 open Num
+open Problem
 open Interval
 
 type raw_expr =
@@ -74,6 +75,28 @@ let reset () =
   env.constraints <- [];
   env.expressions <- [];
   env.active_constraints <- []
+
+let env_to_problems () =
+  let vars = Hashtbl.fold 
+      (fun _ v vs -> {
+           Problem.var_name = v.var_name;
+           var_type = v.var_type;
+           lo_bound = v.lo_bound;
+           hi_bound = v.hi_bound;
+           uncertainty = v.uncertainty;
+         } :: vs) 
+      env.variables [] in
+  let rec loop acc = function
+    | [] -> []
+    | (name, e) :: es ->
+      let p = {
+        name = name;
+        expression = e;
+        variables = vars;
+        constraints = env.constraints;
+      } in
+      loop (p :: acc) es in
+  List.rev (loop [] env.expressions)
 
 let find_constant name =
   Hashtbl.find env.constants name
