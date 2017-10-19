@@ -278,16 +278,16 @@ let const_rnd_form rnd e =
         }
     | _ -> failwith ("const_rnd_form: not a constant: " ^ ExprOut.Info.print_str e)
 
-let get_var_uncertainty eps_exp var_name =
-  let v = Environment.find_variable var_name in
-  let u = (Const.to_num v.Environment.uncertainty) // More_num.num_of_float (get_eps eps_exp) in
+let get_var_uncertainty cs eps_exp var_name =
+  let v = cs.var_uncertainty var_name in
+  let u = (Const.to_num v) // More_num.num_of_float (get_eps eps_exp) in
   if not (u =/ Int 0) then
     [mk_num_const u, mk_err_var (find_index (mk_var (var_name ^ "$uncertainty"))) eps_exp]
   else 
     []
 
 (* variable *)
-let var_form e =
+let var_form cs e =
   Log.report `Debug "var_form";
   match e with
   | Var v -> 
@@ -296,18 +296,18 @@ let var_form e =
       form_index = i;
       v0 = e;
       (* FIXME: what is the right value of eps_exp here? *)
-      v1 = if Config.get_bool_option "uncertainty" then get_var_uncertainty (-53) v else [];
+      v1 = if Config.get_bool_option "uncertainty" then get_var_uncertainty cs (-53) v else [];
     }
   | _ -> failwith ("var_form: not a variable" ^ ExprOut.Info.print_str e)
 
 (* variable with rounding *)
-let var_rnd_form rnd e =
+let var_rnd_form cs rnd e =
   Log.report `Debug "var_rnd_form";
   match e with
   | Var v -> 
     if Config.proof_flag then
       let form_index = next_form_index() in
-      let bound = (abs_I (Environment.variable_interval v)).high in
+      let bound = (abs_I (cs.var_interval v)).high in
       let p2 = Func.floor_power2 bound in
       let _, p2_exp = frexp p2 in
       let m2' =
@@ -327,11 +327,11 @@ let var_rnd_form rnd e =
       }
     else
       let v1_uncertainty = 
-        if Config.get_bool_option "uncertainty" then get_var_uncertainty rnd.eps_exp v else [] in
+        if Config.get_bool_option "uncertainty" then get_var_uncertainty cs rnd.eps_exp v else [] in
       let v1_rnd =
         let err_expr0 = 
           if Config.get_bool_option "const-approx-real-vars" then
-            let bound = (abs_I (Environment.variable_interval v)).high in
+            let bound = (abs_I (cs.var_interval v)).high in
             let err = Func.floor_power2 bound in
             mk_float_const err
           else if Config.get_bool_option "fp-power2-model" then
@@ -1116,11 +1116,11 @@ let build_form (cs : constraints) =
   let rec build e = 
     match e with
     | Const _ -> const_form e
-    | Var _ -> var_form e
+    | Var _ -> var_form cs e
     | Rounding (rnd, Const c) when Const.is_rat c 
       (* when not Config.proof_flag *) -> const_rnd_form rnd (Const c)
     | Rounding (rnd, Var v) 
-      (* when not Config.proof_flag *) -> var_rnd_form rnd (Var v)
+      (* when not Config.proof_flag *) -> var_rnd_form cs rnd (Var v)
     | Rounding (rnd, Bin_op (Op_add, arg1, arg2)) 
       when rnd.special_flag 
         && Config.get_bool_option "fp-power2-model" 

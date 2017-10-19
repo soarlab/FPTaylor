@@ -12,7 +12,7 @@
 
 open List
 open Num
-open Environment
+open Task
 
 include Proof_base
 
@@ -45,13 +45,12 @@ let add_proof_step i op args =
 let add_proof_opt opt =
   proof.proof_opts <- proof.proof_opts @ [opt]
 
-let new_proof () =
-  let vars0 = all_variables () in
+let new_proof task =
   let vars = map (fun v -> {
     name = v.var_name;
     low = Const.low_bound_to_num v.lo_bound;
     high = Const.high_bound_to_num v.hi_bound;
-  }) vars0 in
+  }) task.variables in
   proof.proof_vars <- vars;
   proof.proof_steps <- [];
   proof.proof_opts <- []

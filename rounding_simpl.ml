@@ -17,7 +17,6 @@ open Rounding
 open Expr
 open Interval
 open Binary_float
-module Env = Environment
 
 exception Exceptional_operation of expr * string
 
@@ -39,7 +38,7 @@ let is_neg_power_of_2 e =
 	false
     | _ -> false
 
-let rec get_type e =
+let rec get_type var_type e =
   match e with
   | Const c ->
      if Const.is_rat c then begin
@@ -53,25 +52,25 @@ let rec get_type e =
        end
      else
        real_type
-    | Var name -> Env.get_var_type name
+    | Var name -> var_type name
     | U_op (op, arg) ->
       begin
-	let arg_type = get_type arg in
+	let arg_type = get_type var_type arg in
 	match op with
 	  | Op_neg | Op_abs -> arg_type
 	  | _ -> real_type
       end
     | Bin_op (Op_min, arg1, arg2) | Bin_op (Op_max, arg1, arg2) ->
-       let ty1 = get_type arg1 and
-           ty2 = get_type arg2 in
+       let ty1 = get_type var_type arg1 and
+           ty2 = get_type var_type arg2 in
        if is_subtype ty1 ty2 then ty2
        else if is_subtype ty2 ty1 then ty1
        else real_type
     | Bin_op (Op_mul, arg1, arg2) ->
       if is_power_of_2_or_0 arg1 then 
-	get_type arg2
+	get_type var_type arg2
       else if is_power_of_2_or_0 arg2 then
-	get_type arg1
+	get_type var_type arg1
       else
 	real_type
     | Bin_op (op, arg1, arg2) -> real_type
@@ -79,7 +78,7 @@ let rec get_type e =
     | Rounding (rnd, _) -> rnd.fp_type
 
 
-let simplify_rounding =
+let simplify_rounding var_type =
   let rec simplify e =
     match e with
       | Const _ -> e
@@ -97,7 +96,7 @@ let simplify_rounding =
       | Rounding (rnd, arg) ->
 	begin
 	  let arg = simplify arg in
-	  let ty = get_type arg in
+	  let ty = get_type var_type arg in
 	  if rnd.fp_type.bits = 0 then
 	    (* No rounding *)
 	    arg
@@ -114,8 +113,8 @@ let simplify_rounding =
 		  Rounding (rnd, arg)
 	      (* Plus or minus *)
 	      | Bin_op (Op_add, e1, e2) | Bin_op (Op_sub, e1, e2) ->
-		if (is_subtype (get_type e1) rnd.fp_type && 
-		      is_subtype (get_type e2) rnd.fp_type &&
+		if (is_subtype (get_type var_type e1) rnd.fp_type && 
+		      is_subtype (get_type var_type e2) rnd.fp_type &&
 		      not Config.proof_flag) then
 		(* delta = 0 *)
 		  Rounding ({rnd with delta_exp = 0; special_flag = true;}, arg)
@@ -123,12 +122,12 @@ let simplify_rounding =
 		  Rounding (rnd, arg)
 	      (* Multiplication *)
 	      | Bin_op (Op_mul, e1, e2) when 
-		  (is_power_of_2_or_0 e1 && is_subtype (get_type e2) rnd.fp_type) 
-		  || (is_power_of_2_or_0 e2 && is_subtype (get_type e1) rnd.fp_type) ->
+		  (is_power_of_2_or_0 e1 && is_subtype (get_type var_type e2) rnd.fp_type) 
+		  || (is_power_of_2_or_0 e2 && is_subtype (get_type var_type e1) rnd.fp_type) ->
 		arg
 	      | Bin_op (Op_mul, e1, e2) when 
-		  (is_neg_power_of_2 e1 && is_subtype (get_type e2) rnd.fp_type) 
-		  || (is_neg_power_of_2 e2 && is_subtype (get_type e1) rnd.fp_type) ->
+		  (is_neg_power_of_2 e1 && is_subtype (get_type var_type e2) rnd.fp_type) 
+		  || (is_neg_power_of_2 e2 && is_subtype (get_type var_type e1) rnd.fp_type) ->
 		if Config.proof_flag then
 		  (* FIXME: this is not the correct step but the formalization
 		     does not define the required rounding operation *)
@@ -138,12 +137,12 @@ let simplify_rounding =
 	      (* Division *)
 	      | Bin_op (Op_div, e1, e2) when
 		  is_power_of_2_or_0 e2 && 
-		    is_subtype (get_type e1) rnd.fp_type &&
+		    is_subtype (get_type var_type e1) rnd.fp_type &&
 		    not Config.proof_flag ->
 		(* eps = 0 *)
 		Rounding ({rnd with eps_exp = 0}, arg)
 	      | Bin_op (Op_div, e1, e2) when
-		  is_neg_power_of_2 e2 && is_subtype (get_type e1) rnd.fp_type ->
+		  is_neg_power_of_2 e2 && is_subtype (get_type var_type e1) rnd.fp_type ->
 		arg
 	      (* Square root *)
 	      | U_op (Op_sqrt, e1) ->

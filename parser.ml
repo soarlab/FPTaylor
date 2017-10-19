@@ -16,13 +16,13 @@ let parse_raw_expr str =
 
 let parse_expr str =
   let raw = parse_raw_expr str in
-  Environment.transform_raw_expr raw
+  Input_parser_env.transform_raw_expr raw
 
 let parse_string str =
-  let _ = Environment.reset() in
+  Input_parser_env.reset();
   let lexbuf = Lexing.from_string str in
   Input_parser.first Input_lexer.token lexbuf;
-  Environment.env_to_tasks ()
+  Input_parser_env.env_to_tasks ()
 
 let parse_file fname =
   let lines = Lib.load_file fname in

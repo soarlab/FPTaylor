@@ -63,6 +63,7 @@ type formula =
 type constraints = {
   var_interval : string -> Interval.interval;
   var_rat_bounds : string -> Num.num * Num.num;
+  var_uncertainty : string -> Const.t;
   constraints : formula list;
 }
 

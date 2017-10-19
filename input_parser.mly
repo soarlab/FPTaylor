@@ -1,5 +1,5 @@
 %{
-  open Environment
+  open Input_parser_env
   open Rounding
   exception TODO
 %}
@@ -36,9 +36,9 @@
 %type <unit> first
 
 %start expr
-%type <Environment.raw_expr> expr
+%type <Input_parser_env.raw_expr> expr
 
-%type <Environment.raw_formula> raw_constr
+%type <Input_parser_env.raw_formula> raw_constr
 %type <Rounding.rnd_info> rnd
 
 %%

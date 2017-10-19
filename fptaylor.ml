@@ -370,13 +370,13 @@ let safety_check task =
 let compute_form task =
   Log.report `Info "\n*************************************";
   Log.report `Info "Taylor form for: %s" (ExprOut.Info.print_str task.expression);
-  if Config.proof_flag then Proof.new_proof ();
+  if Config.proof_flag then Proof.new_proof task;
   let start = Unix.gettimeofday() in
   let result, tform = 
     try
       let bound0 = safety_check task in
       Log.report `Info "\nConservative bound: %s" (sprintf_I "%f" bound0);
-      let e = Rounding_simpl.simplify_rounding task.expression in
+      let e = Rounding_simpl.simplify_rounding (variable_type task) task.expression in
       Log.report `Info "\nSimplified rounding: %s" (ExprOut.Info.print_str e);
       let cs = constraints_of_task task in
       Log.report `Important "Building Taylor forms...";
