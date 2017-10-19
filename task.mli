@@ -1,3 +1,15 @@
+(* ========================================================================== *)
+(*      FPTaylor: A Tool for Rigorous Estimation of Round-off Errors          *)
+(*                                                                            *)
+(*      Author: Alexey Solovyev, University of Utah                           *)
+(*                                                                            *)
+(*      This file is distributed under the terms of the MIT license           *)
+(* ========================================================================== *)
+
+(* -------------------------------------------------------------------------- *)
+(* FPTaylor input task                                                        *)
+(* -------------------------------------------------------------------------- *)
+
 type var_info = {
   var_name : string;
   var_type : Rounding.value_type;
