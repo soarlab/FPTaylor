@@ -1,6 +1,8 @@
 FPTaylor 0.9.1 (working version)
 ----------------
 
+- [FEATURE] Exporting to the FPCore format.
+
 - [FEATURE] Several tasks in one files (inside curly braces).
 
 - [FIX] Correct rounding of constants which are representable as `float64`.

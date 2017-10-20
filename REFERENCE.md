@@ -43,6 +43,20 @@ on. The default configuration file [`default.cfg`](default.cfg) is
 always loaded first. See the section *Options* for a description of
 FPTaylor options.
 
+## Creating FPCore Benchmarks
+
+**FPTaylor** can create [FPCore](http://fpbench.org/) benchmarks with the command
+line option `--fpcore-out file_name`. Here, `file_name` specifies a file name
+where all translated FPCore benchmarks are saved. If this option is given then 
+**FPTaylor** will not produce any error estimation results.
+
+Example:
+```
+fptaylor --fpcore-out test.fpcore input_file1 input_file2
+```
+
+Not all features of FPTaylor are supported by the FPCore format. For instance,
+mixed precision computations cannot be translated into FPCore.
 
 ## Input file format
 

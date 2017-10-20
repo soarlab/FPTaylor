@@ -72,6 +72,15 @@ Benchmarks and Examples
 
 Benchmarks and examples are in the [benchmarks](benchmarks) directory.
 
+FPBench Support
+---------------
+
+[FPBench](http://fpbench.org/) is a benchmark suite and a collection of tools for
+the floating-point research community. FPBench supports FPTaylor and it has a tool
+for converting FPCore benchmarks into FPTaylor input files. This works in the other 
+direction as well: FPTaylor can translate its input files into FPCore benchmarks 
+(see FPTaylor's reference manual).
+
 Reference
 ---------
 
