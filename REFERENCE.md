@@ -45,10 +45,10 @@ FPTaylor options.
 
 ## Creating FPCore Benchmarks
 
-**FPTaylor** can create [FPCore](http://fpbench.org/) benchmarks with the command
-line option `--fpcore-out file_name`. Here, `file_name` specifies a file name
+FPTaylor can create [FPCore](http://fpbench.org/) benchmarks with the command
+line option `--fpcore-out file_name`. Here, `file_name` specifies a file
 where all translated FPCore benchmarks are saved. If this option is given then 
-**FPTaylor** will not produce any error estimation results.
+FPTaylor will not produce any error estimation results.
 
 Example:
 ```
