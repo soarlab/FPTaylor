@@ -125,18 +125,21 @@ let input_files =
   let parse_config_arg name = ignore (parse_config_file ~init:false name) in
   let main_cfg = Filename.concat base_dir "default.cfg" in
   try
-    let c_arg = ("-c", Arg.String parse_config_arg, "filename Load options from a file.") in 
-    let args = c_arg :: parse_config_file main_cfg ~init:true in
+    let c_arg = ("-c", Arg.String parse_config_arg, 
+                 "filename Load options from a file.") in 
+    let fpcore_arg = ("--fpcore-out", Arg.String (set_option ~init:true "fpcore-out"), 
+                      "filename Exports tasks to the FPCore format") in
+    let args = c_arg :: fpcore_arg :: parse_config_file main_cfg ~init:true in
     let args = Arg.align args in
     Arg.parse args add_file usage_msg;
     List.rev !files
   with
   | Failure msg | Sys_error msg ->
-     Log.error_str msg;
-     exit 2
+    Log.error_str msg;
+    exit 2
   | _ ->
-     Log.error "Cannot open default.cfg: %s" main_cfg;
-     exit 2
+    Log.error "Cannot open default.cfg: %s" main_cfg;
+    exit 2
 
 let print_options ~level:level =
   let print name value =

@@ -41,16 +41,16 @@ let select_precision expr =
     let v = 
       try Hashtbl.find table bits with Not_found -> 0 in
     Hashtbl.replace table bits (v + 1) in
-  let rec select = function
+  let rec count = function
     | Const c -> ()
     | Var v -> ()
-    | U_op (_, arg) -> select arg
-    | Bin_op (_, arg1, arg2) -> select arg1; select arg2
-    | Gen_op (_, args) -> List.iter select args
+    | U_op (_, arg) -> count arg
+    | Bin_op (_, arg1, arg2) -> count arg1; count arg2
+    | Gen_op (_, args) -> List.iter count args
     | Rounding (rnd, arg) ->
       incr rnd.fp_type.bits;
-      select arg in
-  select expr;
+      count arg in
+  count expr;
   let bits, _ = Hashtbl.fold
       (fun bits v ((_, v_max) as r) ->
          if v >= v_max then (bits, v) else r) 
@@ -62,6 +62,7 @@ let cmp_rnd r1 r2 =
 
 (* Removes all rounding operations corresponding to the given rounding. *)
 (* FIXME: this function is not correct for mixed precision computations. *)
+(* FIXME: real-valued results are not preserved. *)
 let remove_rnd base_rnd expr =
   let rec remove expr =
     match expr with
@@ -105,4 +106,4 @@ let generate_fpcore fmt task =
     fprintf fmt "  :pre (and %a %a)@."
       var_bounds_to_pre task constraints_to_pre task;
   let expr = remove_rnd prec_rnd task.expression in
-  fprintf fmt "  %a)@." (Out.print_fmt ~margin:max_int) expr
+  fprintf fmt "  %a)@.@." (Out.print_fmt ~margin:max_int) expr

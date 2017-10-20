@@ -40,6 +40,24 @@ let default_result = {
   elapsed_time = 0.0;
 }
 
+let open_file, close_file, close_all, get_file_formatter =
+  let files = Hashtbl.create 5 in
+  let open_file id fname =
+    if Hashtbl.mem files id then
+      failwith ("File with the same id is already open: " ^ id)
+    else
+      Hashtbl.add files id (open_out fname) in
+  let close_file id =
+    close_out (Hashtbl.find files id);
+    Hashtbl.remove files id in
+  let close_all () =
+    Hashtbl.iter (fun _ oc -> close_out oc) files;
+    Hashtbl.clear files in
+  let get_fmt id = 
+    let oc = Hashtbl.find files id in
+    Format.make_formatter (output oc) (fun () -> flush oc) in
+  open_file, close_file, close_all, get_fmt
+
 let get_problem_absolute_error result =
   let entire = {low = neg_infinity; high = infinity} in
   let e1 = Lib.option_default ~default:entire result.abs_error_approx and
@@ -466,10 +484,17 @@ let process_input fname =
     Lib.set_tmp_dir tmp_dir in
   Config.print_options `Debug;
   let tasks = parse_file fname in
-  Log.report `Debug "|takss| = %d" (List.length tasks);
-  let results = List.map process_task tasks in
-  Log.report `Info "*************************************\n";
-  List.iter (fun (r, tf) -> print_result r) results;
+  Log.report `Debug "|tasks| = %d" (List.length tasks);
+  if Config.is_option_defined "fpcore-out" then begin
+    Log.report `Main "Exporting to the FPCore format";
+    let fmt = get_file_formatter "fpcore-out" in
+    List.iter (Out_fpcore.generate_fpcore fmt) tasks
+  end 
+  else begin
+    let results = List.map process_task tasks in
+    Log.report `Info "*************************************\n";
+    List.iter (fun (r, tf) -> print_result r) results
+  end;
   Log.close ();
   Log.report `Main ""
 
@@ -516,8 +541,12 @@ let main () =
   else
     begin
       validate_options ();
+      if Config.is_option_defined "fpcore-out" then begin
+        open_file "fpcore-out" (Config.get_string_option "fpcore-out")
+      end;
       Log.report `Main "";
       List.iter process_input Config.input_files;
+      close_all ();
       exit 0
     end
 
