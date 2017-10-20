@@ -29,6 +29,9 @@ type task = {
   constraints : (string * formula) list;
 }
 
+let all_variables t =
+  List.map (fun v -> v.var_name) t.variables
+
 let find_variable t name =
   List.find (fun v -> v.var_name = name) t.variables
 
