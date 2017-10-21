@@ -54,5 +54,5 @@ let constraints_of_task t = {
   var_interval = variable_interval t;
   var_rat_bounds = variable_num_interval t;
   var_uncertainty = (fun name -> (find_variable t name).uncertainty);
-  constraints = List.map snd t.constraints;
+  Expr.constraints = List.map snd t.constraints;
 }

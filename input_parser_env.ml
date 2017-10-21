@@ -86,7 +86,7 @@ let env_to_tasks () =
     | [] -> acc
     | (name, e) :: es ->
       let t = {
-        name = name;
+        Task.name = name;
         expression = e;
         variables = vars;
         constraints = env.constraints;

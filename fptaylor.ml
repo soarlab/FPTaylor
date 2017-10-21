@@ -413,10 +413,10 @@ let compute_form task =
       print_form `Info form;
       Log.report `Info "";
       let result = errors cs form in
-      { result with name = task.name }, form
+      { result with name = task.Task.name }, form
     with Failure msg ->
       Log.error_str msg;
-      { default_result with name = task.name }, dummy_tform
+      { default_result with name = task.Task.name }, dummy_tform
   in
   let stop = Unix.gettimeofday() in
   Log.report `Info "Elapsed time: %.5f" (stop -. start);
@@ -437,7 +437,7 @@ let approximate_constraint task (name, c) =
     | Lt (a, b) -> mk_sub a b
     | Eq (a, b) -> failwith "approximate_constraint: Eq is not supported" in
   let c_task = {
-    name = name;
+    Task.name = name;
     expression = e;
     variables = task.variables;
     constraints = [];
@@ -449,7 +449,7 @@ let approximate_constraint task (name, c) =
   name, Le (tform.v0, mk_float_const err)
 
 let process_task (task : task) =
-  Log.report `Main "Processing: %s" task.name;
+  Log.report `Main "Processing: %s" task.Task.name;
   let approx_constraints =
     if task.constraints = [] then [] else begin
       Log.report `Important "\n****** Approximating constraints *******\n";
