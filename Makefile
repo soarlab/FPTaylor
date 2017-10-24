@@ -86,7 +86,7 @@ all: fptaylor-interval
 proof-tool: $(OBJ_PROOF_SRC)
 	$(ML) -o proof_to_text unix.cma str.cma nums.cma $(OBJ_PROOF_SRC)
 
-tests:
+test:
 	./fptaylor $(TEST)
 
 fptaylor-interval: INCLUDE=$(INTERVAL_DIR)

@@ -133,6 +133,7 @@ raw_constr:
   | expr LT expr { Raw_lt ($1, $3) }
   | expr GE expr { Raw_le ($3, $1) }
   | expr GT expr { Raw_lt ($3, $1) }
+  | LPAREN raw_constr RPAREN { $2 }
 ;
 
 expressions_list:
