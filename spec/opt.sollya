@@ -1,0 +1,60 @@
+roundingwarnings = on!;
+
+if (length(__argv) == 1) then {
+    print("Loading:", __argv[0]);
+    execute(__argv[0]);
+}
+else {
+    print("Error: no input file is given");
+    quit;
+};
+
+if (!(isbound(f) && isbound(p) && isbound(I))) then {
+    print("Error: f, p, or I is not defined");
+    quit;
+};
+
+if (!isbound(tol)) then {
+    tol = 1b-100;
+    print("Warning: tol is not defined; the default value is used:", tol);
+};
+
+if (!isbound(q)) then {
+    q = 1;
+};
+
+procedure approx_poly(p, I) {
+    var ap, i, err;
+    ap = composepolynomials(p, _x_);
+    i = 0;
+    err = [0];
+    for r in ap.radii do {
+        err = err + r * I^i;
+        i = i + 1;
+    };
+    ap.err = err;
+    return ap;
+};
+
+ap = approx_poly(p, I);
+aq = approx_poly(q, I);
+
+err_rat = (p(I) / (q(I) * aq.poly(I))) * aq.err + (q(I) / aq.poly(I)) * ap.err;
+print("err_rat =", err_rat);
+
+err = supnorm(ap.poly, aq.poly * f, I, relative, tol);
+
+if (err_rat == [0]) then {
+    print("exact");
+    err_approx = [0];
+}
+else {
+    f_bound = supnorm(0, 1 / f, I, absolute, 1b-10);
+    err_approx = abs(err_rat) * f_bound;
+};
+
+err_total = err_approx + err;
+print("err_approx =", err_approx);
+print("err        =", err);
+print("err_total  =", err_total);
+print("bound =", sup(err_total));

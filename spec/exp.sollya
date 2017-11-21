@@ -1,0 +1,14 @@
+f = exp(x);
+I = [-0.34658, 0.34658];
+tol = 1b-100;
+
+P1   = 0x3FC555555555553E;
+P2   = 0xBF66C16C16BEBD93;
+P3   = 0x3F11566AAF25DE2C;
+P4   = 0xBEBBBD41C5D26BF1;
+P5   = 0x3E66376972BEA4D0;
+
+t = x * x;
+c = x - t * (P1 + t * (P2 + t * (P3 + t * (P4 + t * P5))));
+p = (1 + x) * (c - 2) - x * c;
+q = c - 2;
