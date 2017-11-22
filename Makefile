@@ -58,6 +58,8 @@ SRC=	version.mli\
 	out_fpcore.ml\
 	taylor_form.mli\
 	taylor_form.ml\
+	spec.mli\
+	spec.ml\
 	fptaylor.ml
 
 PROOF_SRC= lib.ml\

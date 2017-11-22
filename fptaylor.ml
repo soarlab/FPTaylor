@@ -27,6 +27,7 @@ type result = {
   abs_error_exact : interval option;
   rel_error_approx : interval option;
   rel_error_exact : interval option;
+  spec_error : float option;
   elapsed_time : float;
 }
 
@@ -37,6 +38,7 @@ let default_result = {
   abs_error_exact = None;
   rel_error_approx = None;
   rel_error_exact = None;
+  spec_error = None;
   elapsed_time = 0.0;
 }
 
@@ -65,6 +67,12 @@ let get_problem_absolute_error result =
   min e1.high e2.high
 
 let print_result result =
+  let print_total_error width str = function
+    | Some rel_err, Some spec_err ->
+      let total_err = Fpu.fadd_high rel_err.high spec_err in
+      Log.report `Main "%-*s %e" width "Specification error:" spec_err;
+      Log.report `Main "%-*s %e" width str total_err
+    | _ -> () in
   let print_upper_bound width str = function
     | None -> ()
     | Some v -> Log.report `Main "%-*s %e" width str v.high in
@@ -127,6 +135,8 @@ let print_result result =
   print_upper_bound w abs_exact_str result.abs_error_exact;
   print_upper_bound w rel_approx_str result.rel_error_approx;
   print_upper_bound w rel_exact_str result.rel_error_exact;
+  print_total_error w "Total rel error (approximate):" (result.rel_error_approx, result.spec_error);
+  print_total_error w "Total rel error (exact):" (result.rel_error_exact, result.spec_error);
   Log.report `Main "\nElapsed time: %.2f\n" result.elapsed_time
 
 let print_form level f =
@@ -273,7 +283,7 @@ let absolute_errors cs tf =
   in
   err_approx, err_exact
 
-let relative_errors cs tf (f_min, f_max) =
+let relative_errors cs tf spec (f_min, f_max) =
   Log.report `Important "\nComputing relative errors";
   let f_int = {low = f_min; high = f_max} in
   let rel_tol = Config.get_float_option "rel-error-threshold" in
@@ -291,7 +301,7 @@ let relative_errors cs tf (f_min, f_max) =
       if not (Config.get_bool_option "opt-approx") then None
       else
         begin
-          let v1_rel = List.map (fun (e, err) -> mk_div e tf.v0, err) v1 in
+          let v1_rel = List.map (fun (e, err) -> mk_div e spec, err) v1 in
           let v1_rel = 
             if Config.get_bool_option "maxima-simplification" then
             List.map (fun (e, err) -> Maxima.simplify e, err) v1_rel
@@ -317,7 +327,7 @@ let relative_errors cs tf (f_min, f_max) =
           let full_expr, exp =
             let abs_exprs = List.map (fun (e, err) -> mk_abs e, err.exp) v1 in
             let sum_expr, exp = sum_symbolic abs_exprs in
-            let full_expr' = mk_div sum_expr (mk_abs tf.v0) in
+            let full_expr' = mk_div sum_expr (mk_abs spec) in
             if Config.get_bool_option "maxima-simplification" then
               Maxima.simplify full_expr', exp
             else
@@ -342,13 +352,13 @@ let relative_errors cs tf (f_min, f_max) =
     in
     err_approx, err_exact
 
-let errors cs tform =
+let errors cs tform spec =
   let f_min, f_max = 
     if Config.get_bool_option "rel-error" || Config.get_bool_option "find-bounds" then
-      Opt.find_min_max Opt_common.default_opt_pars cs tform.v0
+      Opt.find_min_max Opt_common.default_opt_pars cs spec
     else
       neg_infinity, infinity in
-  Log.report `Important "bounds: [%e, %e]" f_min f_max;
+  Log.report `Important "spec bounds: [%e, %e]" f_min f_max;
   let result = { default_result with real_bounds = {low = f_min; high = f_max} } in
   let result =
     if Config.get_bool_option "opt-approx" || Config.get_bool_option "opt-exact" then
@@ -359,7 +369,7 @@ let errors cs tform =
           None, None in
       let rel_approx, rel_exact = 
         if Config.get_bool_option "rel-error" then
-          relative_errors cs tform (f_min, f_max)
+          relative_errors cs tform spec (f_min, f_max)
         else
           None, None in
       {result with
@@ -412,7 +422,17 @@ let compute_form task =
           form in
       print_form `Info form;
       Log.report `Info "";
-      let result = errors cs form in
+      let result = 
+        match task.spec with
+        | None -> errors cs form form.v0
+        | Some spec -> begin
+            Log.report `Important "Computing errors for the specification: %s" 
+              (ExprOut.Info.print_str spec);
+            let errs = errors cs form spec in
+            let spec_err = Spec.compute_spec_rel_error cs form.v0 ~spec:spec in
+            Log.report `Main "Specification error: %e" spec_err;
+            { errs with spec_error = Some spec_err }
+          end in
       { result with name = task.Task.name }, form
     with Failure msg ->
       Log.error_str msg;
