@@ -19,6 +19,7 @@
 %token <int * string> RND_PAR
 %token RND NO_RND
 %token E_CONST
+%token APPROX
 
 %token ABS INV SQRT FMA
 %token MIN MAX 
@@ -142,10 +143,14 @@ expressions_list:
 ;
 
 expression:
-  | ID EQ expr { add_expression_with_name $1 $3 }
-  | ID rnd EQ expr { add_expression_with_name $1 (apply_raw_rounding $2 $4) }
-  | expr { add_expression $1 }
+  | ID EQ expr approx_spec { add_expression_with_name_and_spec $1 $3 $4 }
+  | ID rnd EQ expr approx_spec { add_expression_with_name_and_spec $1 (apply_raw_rounding $2 $4) $5 }
+  | expr approx_spec { add_expression_with_spec $1 $2 }
 ;
+
+approx_spec:
+  | { None }
+  | APPROX expr { Some $2 }
 
 pos_neg_number:
   | NUMBER { $1 }

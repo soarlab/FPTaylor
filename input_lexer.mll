@@ -132,6 +132,7 @@ rule token = parse
   | ">" { GT }
   | "+/-" { PLUS_MINUS }
   | "%e" { E_CONST }
+  | "~" { APPROX }
   | id as str { resolve_id str }
   | _ { token lexbuf }
   | eof { EOF }

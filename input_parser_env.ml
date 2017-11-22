@@ -53,7 +53,8 @@ type env = {
   variables : (string, var_def) Hashtbl.t;
   definitions : (string, definition) Hashtbl.t;
   mutable constraints : (string * formula) list;
-  mutable expressions : (string * expr) list;
+  (* name, expression, optional specification *)
+  mutable expressions : (string * expr * expr option) list;
 }
 
 let env = {
@@ -84,10 +85,11 @@ let env_to_tasks () =
       env.variables [] in
   let rec loop acc = function
     | [] -> acc
-    | (name, e) :: es ->
+    | (name, e, spec) :: es ->
       let t = {
         Task.name = name;
         expression = e;
+        spec = spec;
         variables = vars;
         constraints = env.constraints;
       } in
@@ -287,14 +289,18 @@ let add_constraint name raw =
   env.constraints <- env.constraints @ [name, c]
 
 (* Adds a named expression to the environment. Also creates the corresponding definition. *)
-let add_expression_with_name name raw =
+let add_expression_with_name_and_spec name raw raw_spec =
   let expr = add_definition name raw in
-  env.expressions <- env.expressions @ [(name, expr)]
+  let spec =
+    match raw_spec with
+    | None -> None
+    | Some e -> Some (transform_raw_expr e) in
+  env.expressions <- env.expressions @ [(name, expr, spec)]
 
 (* Adds an expression to the environment *)
-let add_expression raw =
+let add_expression_with_spec raw raw_spec =
   let name = "Expression " ^ string_of_int (List.length env.expressions + 1) in
-  add_expression_with_name name raw
+  add_expression_with_name_and_spec name raw raw_spec
 
 (* Prints a raw expression *)
 let print_raw_expr fmt =

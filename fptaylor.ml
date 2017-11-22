@@ -439,6 +439,7 @@ let approximate_constraint task (name, c) =
   let c_task = {
     Task.name = name;
     expression = e;
+    spec = None;
     variables = task.variables;
     constraints = [];
   } in

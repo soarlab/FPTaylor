@@ -25,6 +25,7 @@ type var_info = {
 type task = {
   name : string;
   expression : expr;
+  spec : expr option;
   variables : var_info list;
   constraints : (string * formula) list;
 }
