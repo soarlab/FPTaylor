@@ -657,7 +657,17 @@ let log_i ({low = a; high = b} as v) =
   }
 
 let sin_i {low = a; high = b} =
-  failwith "sin_i: Not implemented"
+  if a >= -1.57 && b <= 1.57 then {
+    low = fpred (sin a);
+    high = fsucc (sin b);
+  }
+  else
+    failwith "sin_i: Not implemented"
 
 let cos_i {low = a; high = b} =
-  failwith "cos_i: Not implemented"
+  if a >= 0. && b <= 3.14159 then {
+    low = fpred (cos b);
+    high = max (fsucc (cos a)) 1.0;
+  }
+  else
+    failwith "cos_i: Not implemented"
