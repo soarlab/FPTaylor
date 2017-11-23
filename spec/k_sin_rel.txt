@@ -17,7 +17,9 @@ Definitions
   v rnd64= z * x;
   r rnd64= S2 + z * (S3 + z * (S4 + z * (S5 + z * S6)));
   k_sin rnd64= x + v * (S1 + z * r);
+  k_sin1 rnd64= v * (S1 + z * r);
 
 Expressions
   k_sin_rel = k_sin / sin(x);
+  k_sin_harrison_rel = (x + k_sin1) / sin(x);
 }
