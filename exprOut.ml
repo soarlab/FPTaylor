@@ -243,7 +243,7 @@ module FPCorePrinter : PrinterType = struct
 end
 
 
-module RacketPrinter : PrinterType = struct
+module RacketIntervalPrinter : PrinterType = struct
   open Expr
   open Format
   

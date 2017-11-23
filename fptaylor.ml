@@ -246,7 +246,7 @@ let absolute_errors cs tf =
 
         let _ = 
           Out_racket.create_racket_file "abs_exact" 
-            "fptaylor-abs" total2_i.high exp full_expr;
+            cs total2_i.high exp full_expr;
           Out_test.create_test_file "test_abs_exact.txt" cs full_expr in
 
         let bound =
@@ -325,7 +325,7 @@ let relative_errors cs tf (f_min, f_max) =
 
           let _ = 
             Out_racket.create_racket_file "rel_exact" 
-              "fptaylor-rel" b2_i.high exp full_expr;
+              cs b2_i.high exp full_expr;
             Out_test.create_test_file "test_rel_exact.txt" cs full_expr in
 
           let bound =

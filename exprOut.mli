@@ -27,7 +27,7 @@ module OCamlIntervalPrinter : PrinterType
 
 module FPCorePrinter : PrinterType
 
-module RacketPrinter : PrinterType
+module RacketIntervalPrinter : PrinterType
 
 module CPrinter : PrinterType
 
