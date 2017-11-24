@@ -46,16 +46,21 @@ let open_file, close_file, close_all, get_file_formatter =
     if Hashtbl.mem files id then
       failwith ("File with the same id is already open: " ^ id)
     else
-      Hashtbl.add files id (open_out fname) in
+      let oc = open_out fname in
+      let fmt = Format.make_formatter (output oc) (fun () -> flush oc) in
+      Hashtbl.add files id (oc, fmt) in
   let close_file id =
-    close_out (Hashtbl.find files id);
+    let oc, fmt = Hashtbl.find files id in
+    Format.pp_flush_formatter fmt;
+    close_out oc;
     Hashtbl.remove files id in
   let close_all () =
-    Hashtbl.iter (fun _ oc -> close_out oc) files;
+    Hashtbl.iter 
+      (fun _ (oc, fmt) -> Format.pp_flush_formatter fmt; close_out oc) 
+      files;
     Hashtbl.clear files in
   let get_fmt id = 
-    let oc = Hashtbl.find files id in
-    Format.make_formatter (output oc) (fun () -> flush oc) in
+    snd (Hashtbl.find files id) in
   open_file, close_file, close_all, get_fmt
 
 let get_problem_absolute_error result =
@@ -200,8 +205,9 @@ let error2_warning ?(eps = 1e-2) err1 err2 =
                  manually split intervals of input variables.";
   end
 
-let absolute_errors cs tf =
+let absolute_errors task tf =
   Log.report `Important "\nComputing absolute errors";
+  let cs = constraints_of_task task in
   let v1, v2 = split_error_terms tf.v1 in
   let bounds2 =
     let bounds2' = List.map (compute_bound cs) v2 in
@@ -243,12 +249,6 @@ let absolute_errors cs tf =
             Maxima.simplify full_expr', exp
           else
             full_expr', exp in
-
-        let _ = 
-          Out_racket.create_racket_file "abs_exact" 
-            cs total2_i.high exp full_expr;
-          Out_test.create_test_file "test_abs_exact.txt" cs full_expr in
-
         let bound =
           let r = Opt.find_max Opt_common.default_opt_pars cs full_expr in
           {low = r.Opt_common.lower_bound; high = r.Opt_common.result} in
@@ -264,6 +264,12 @@ let absolute_errors cs tf =
           end
           else
             total1_i +$ total2_i in
+
+        let () = try
+          Out_racket.create_racket_file (get_file_formatter "racket")
+            task.Task.name cs total2_i.high exp full_expr (Some total_i.high)
+          with Not_found -> () in
+      
         Log.report `Important "exact bound (exp = %d): %s" exp (bound_info bound);
         Log.report `Important "total2: %s" (bound_info total2_i);
         Log.report `Important "exact total: %s" (bound_info total_i);
@@ -273,8 +279,9 @@ let absolute_errors cs tf =
   in
   err_approx, err_exact
 
-let relative_errors cs tf (f_min, f_max) =
+let relative_errors task tf (f_min, f_max) =
   Log.report `Important "\nComputing relative errors";
+  let cs = constraints_of_task task in
   let f_int = {low = f_min; high = f_max} in
   let rel_tol = Config.get_float_option "rel-error-threshold" in
   if (abs_I f_int).low < rel_tol then begin
@@ -322,17 +329,18 @@ let relative_errors cs tf (f_min, f_max) =
               Maxima.simplify full_expr', exp
             else
               full_expr', exp in
-
-          let _ = 
-            Out_racket.create_racket_file "rel_exact" 
-              cs b2_i.high exp full_expr;
-            Out_test.create_test_file "test_rel_exact.txt" cs full_expr in
-
           let bound =
             let r = Opt.find_max Opt_common.default_opt_pars cs full_expr in
             {low = r.Opt_common.lower_bound; high = r.Opt_common.result} in
           let total1_i = get_eps exp *.$ bound in
           let total_i = total1_i +$ b2_i in
+
+          let () = 
+            try
+              Out_racket.create_racket_file (get_file_formatter "racket")
+                task.Task.name cs b2_i.high exp full_expr (Some total_i.high)
+            with Not_found -> () in
+      
           Log.report `Important "exact bound-rel (exp = %d): %s" exp (bound_info bound);
           Log.report `Important "total2: %s" (bound_info b2_i);
           Log.report `Important "exact total-rel: %s" (bound_info total_i);
@@ -342,7 +350,8 @@ let relative_errors cs tf (f_min, f_max) =
     in
     err_approx, err_exact
 
-let errors cs tform =
+let errors task tform =
+  let cs = constraints_of_task task in
   let f_min, f_max = 
     if Config.get_bool_option "rel-error" || Config.get_bool_option "find-bounds" then
       Opt.find_min_max Opt_common.default_opt_pars cs tform.v0
@@ -354,12 +363,12 @@ let errors cs tform =
     if Config.get_bool_option "opt-approx" || Config.get_bool_option "opt-exact" then
       let abs_approx, abs_exact = 
         if Config.get_bool_option "abs-error" then
-          absolute_errors cs tform
+          absolute_errors task tform
         else
           None, None in
       let rel_approx, rel_exact = 
         if Config.get_bool_option "rel-error" then
-          relative_errors cs tform (f_min, f_max)
+          relative_errors task tform (f_min, f_max)
         else
           None, None in
       {result with
@@ -412,7 +421,7 @@ let compute_form task =
           form in
       print_form `Info form;
       Log.report `Info "";
-      let result = errors cs form in
+      let result = errors task form in
       { result with name = task.Task.name }, form
     with Failure msg ->
       Log.error_str msg;
@@ -454,6 +463,12 @@ let process_task (task : task) =
     if task.constraints = [] then [] else begin
       Log.report `Important "\n****** Approximating constraints *******\n";
       List.map (approximate_constraint task) task.constraints
+    end in
+  let () =
+    let racket_export = Config.get_string_option "export-racket" in
+    if racket_export <> "" then begin
+      Log.report `Important "Racket export: %s" racket_export;
+      open_file "racket" racket_export
     end in
   compute_form { task with constraints = approx_constraints }
 
