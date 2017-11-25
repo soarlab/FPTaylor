@@ -40,6 +40,12 @@ def run(cmd, ignore_return_codes=[]):
         sys.exit(2)
     return ret
 
+
+def remove_all(base, name_pat):
+    for f in glob.glob(os.path.join(base, name_pat)):
+        if os.path.isfile(f):
+            os.remove(f)
+
 # Parse arguments
 
 parser = argparse.ArgumentParser(
@@ -48,7 +54,7 @@ parser = argparse.ArgumentParser(
 parser.add_argument('--debug', action='store_true',
                     help="debug mode")
 
-parser.add_argument('-c', '--config',
+parser.add_argument('-c', '--config', action='append',
                     help="add a configuration file")
 
 parser.add_argument('-v', '--verbosity', type=int, default=1,
@@ -64,6 +70,9 @@ args = parser.parse_args()
 
 if args.debug:
     log.setLevel(logging.DEBUG)
+
+if not args.config:
+    args.config = [None]
 
 log.debug("tmp_dir = {0}".format(plot_tmp))
 log.debug("cache_dir = {0}\n".format(plot_cache))
@@ -90,17 +99,39 @@ for fname in args.input:
         log.error("Input file does not exist: {0}".format(fname))
         sys.exit(1)
     base_fname = os.path.basename(fname)
-    # TODO: the name should be a pattern such that each task is saved
-    # in a separate file
-    racket_file = os.path.join(plot_tmp, base_fname + ".rkt")
-    cmd = [fptaylor, fname, "--export-racket",
-           racket_file] + fptaylor_extra_args
-    run(cmd)
+    racket_files = []
+    remove_all(plot_tmp, base_fname + "*.rkt")
+
+    for cfg_file in args.config:
+        if not cfg_file:
+            # default config
+            cfg_name = ""
+            cfg_args = []
+        else:
+            if not os.path.isfile(cfg_file):
+                log.error(
+                    "Configuration file does not exist: {0}".format(cfg_file))
+                sys.exit(1)
+            cfg_name = os.path.splitext(os.path.basename(cfg_file))[0]
+            cfg_args = ["-c", cfg_file]
+
+        # FPTaylor
+        # TODO: the name should be a pattern such that each task is saved
+        # in a separate file
+        racket_file = os.path.join(
+            plot_tmp, base_fname + "-" + cfg_name + ".rkt")
+        racket_files.append(racket_file)
+        cmd = [
+            fptaylor, fname,
+            "--export-racket", racket_file
+        ] + cfg_args + fptaylor_extra_args
+        run(cmd)
+
+    # plot-fptaylor.rkt
     image_file = os.path.join(output_path, base_fname + ".png")
     cmd = [
         racket, racket_plot,
         "--out", image_file,
-        "--samples", str(args.samples),
-        racket_file
-    ]
+        "--samples", str(args.samples)
+    ] + racket_files
     run(cmd)
