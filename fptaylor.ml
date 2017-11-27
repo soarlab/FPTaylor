@@ -51,12 +51,12 @@ let open_file, close_file, close_all, get_file_formatter =
       Hashtbl.add files id (oc, fmt) in
   let close_file id =
     let oc, fmt = Hashtbl.find files id in
-    Format.pp_flush_formatter fmt;
+    Format.pp_print_flush fmt ();
     close_out oc;
     Hashtbl.remove files id in
   let close_all () =
     Hashtbl.iter 
-      (fun _ (oc, fmt) -> Format.pp_flush_formatter fmt; close_out oc) 
+      (fun _ (oc, fmt) -> Format.pp_print_flush fmt (); close_out oc) 
       files;
     Hashtbl.clear files in
   let get_fmt id = 

@@ -195,7 +195,7 @@ let write_to_file fname writer arg =
   let oc = open_out fname in
   let fmt = Format.make_formatter (output oc) (fun () -> flush oc) in
   let r = writer fmt arg in
-  Format.pp_flush_formatter fmt;
+  Format.pp_print_flush fmt ();
   close_out oc;
   r
 
