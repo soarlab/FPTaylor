@@ -194,23 +194,24 @@ let run_cmd cmd =
 let write_to_file fname writer arg =
   let oc = open_out fname in
   let fmt = Format.make_formatter (output oc) (fun () -> flush oc) in
-  let r = writer fmt arg in
+  let result = writer fmt arg in
   Format.pp_print_flush fmt ();
   close_out oc;
-  r
+  result
 
-(* From hol_light/printer.ml *)
-let write_to_string writer =
-  let sbuff = ref "" in
-  let output s m n = sbuff := !sbuff ^ String.sub s m n and
-      flush () = () in
-  let fmt = Format.make_formatter output flush in
-  ignore (Format.pp_set_max_boxes fmt 100);
-  fun arg -> ignore (writer fmt arg);
-             ignore (Format.pp_print_flush fmt ());
-             let s = !sbuff in
-             let () = sbuff := "" in
-             s
+let write_to_string writer arg =
+  let buf = Buffer.create 100 in
+  let fmt = Format.formatter_of_buffer buf in
+  ignore (writer fmt arg);
+  Format.pp_print_flush fmt ();
+  Buffer.contents buf
+
+let write_to_string_result writer arg =
+  let buf = Buffer.create 100 in
+  let fmt = Format.formatter_of_buffer buf in
+  let result = writer fmt arg in
+  Format.pp_print_flush fmt ();
+  Buffer.contents buf, result
 
 (* Creates all missing directories in a given path *)
 let make_path ?(perm = 0o777) path =

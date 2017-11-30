@@ -96,6 +96,8 @@ val write_to_file : string -> (Format.formatter -> 'a -> 'b) -> 'a -> 'b
 
 val write_to_string : (Format.formatter -> 'a -> 'b) -> 'a -> string
 
+val write_to_string_result : (Format.formatter -> 'a -> 'b) -> 'a -> string * 'b
+
 val make_path : ?perm:Unix.file_perm -> string -> unit
 
 val get_dir : string -> string
