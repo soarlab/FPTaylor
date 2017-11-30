@@ -96,9 +96,8 @@ let estimate_expr, reset_estimate_cache =
     else
       Eval.eval_interval_expr cs.var_interval e in
   let estimate_and_cache cs e =
-    try
-      Lib.assoc_eq eq_expr e !cache
-    with Failure _ ->
+    try Lib.assoc_eq eq_expr e !cache
+    with Not_found ->
       let interval = estimate cs e in
       let _ = (cache := (e, interval) :: !cache) in
       interval

@@ -66,15 +66,15 @@ let subtract l1 l2 = List.filter (fun x -> not (mem x l2)) l1
 
 let rec assoc a = function
   | (k, v) :: t -> if k = a then v else assoc a t
-  | [] -> failwith "assoc: not found"
+  | [] -> raise Not_found
 
 let rec rev_assoc a = function
   | (v, k) :: t -> if k = a then v else rev_assoc a t
-  | [] -> failwith "rev_assoc: not found"
+  | [] -> raise Not_found
 
 let rec assoc_eq eq a = function
   | (k, v) :: t -> if eq k a then v else assoc_eq eq a t
-  | [] -> failwith "assoc_eq: not found"
+  | [] -> raise Not_found
 
 let rec assocd d a = function
   | (k, v) :: t -> if k = a then v else assocd d a t

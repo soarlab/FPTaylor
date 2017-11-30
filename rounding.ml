@@ -10,8 +10,6 @@
 (* Parameters for rounding operations                                         *)
 (* -------------------------------------------------------------------------- *)
 
-open Lib
-
 (* bits = max_int <=> a real number *)
 type value_type = {
   bits : int;
@@ -113,8 +111,8 @@ let rounding_table = [
 ]
 
 let string_to_rounding name =
-  try assoc name rounding_table
-  with Failure _ ->
+  try Lib.assoc name rounding_table
+  with Not_found ->
     failwith ("Rounding mode " ^ name ^ " is not defined")
 
 let rounding_type_to_string rnd_type = 
@@ -125,8 +123,8 @@ let rounding_type_to_string rnd_type =
     | Rnd_0 -> "zero"
 
 let rounding_to_string rnd =
-  try rev_assoc rnd rounding_table 
-  with Failure _ ->
+  try Lib.rev_assoc rnd rounding_table 
+  with Not_found ->
     Printf.sprintf "rnd(%d,%s,%f,%d,%d)" 
       rnd.fp_type.bits (rounding_type_to_string rnd.rnd_type) 
       rnd.coefficient rnd.eps_exp rnd.delta_exp
