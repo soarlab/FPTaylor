@@ -57,6 +57,8 @@ SRC=	version.mli\
 	rounding_simpl.ml\
 	out_fpcore.mli\
 	out_fpcore.ml\
+	out_error_bounds.mli\
+	out_error_bounds.ml\
 	taylor_form.mli\
 	taylor_form.ml\
 	fptaylor.ml

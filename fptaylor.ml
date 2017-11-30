@@ -470,6 +470,15 @@ let process_task (task : task) =
       Log.report `Important "Racket export: %s" racket_export;
       open_file "racket" racket_export
     end in
+  let () =
+    let error_bounds_fname = Config.get_string_option "export-error-bounds" in
+    if error_bounds_fname <> "" then begin
+      Log.report `Important "ErrorBounds export: %s" error_bounds_fname;
+      open_file "error-bounds" error_bounds_fname;
+      let fmt = get_file_formatter "error-bounds" in
+      Out_error_bounds.generate_error_bounds fmt task;
+      close_file "error-bounds"
+    end in
   compute_form { task with constraints = approx_constraints }
 
 let process_input fname =
