@@ -11,7 +11,7 @@ import argparse
 log = logging.getLogger()
 log.setLevel(logging.INFO)
 _handler = logging.StreamHandler()
-_handler.setFormatter(logging.Formatter("%(levelname)s: %(message)s"))
+_handler.setFormatter(logging.Formatter("[%(levelname)s] %(message)s"))
 log.addHandler(_handler)
 
 # Global paths
@@ -46,6 +46,17 @@ def remove_all(base, name_pat):
         if os.path.isfile(f):
             os.remove(f)
 
+
+def remove_files(files):
+    for f in files:
+        if os.path.isfile(f):
+            os.remove(f)
+
+
+def basename(fname):
+    return os.path.splitext(os.path.basename(fname))[0]
+
+
 # Parse arguments
 
 parser = argparse.ArgumentParser(
@@ -57,11 +68,20 @@ parser.add_argument('--debug', action='store_true',
 parser.add_argument('-c', '--config', action='append',
                     help="add a configuration file")
 
+parser.add_argument('-e', '--error', choices=['abs', 'rel', 'ulp'], default='abs',
+                    help="error type (overrides error types defined in configuration files)")
+
 parser.add_argument('-v', '--verbosity', type=int, default=1,
                     help="FPTaylor's verbosity level")
 
 parser.add_argument('-s', '--samples', type=int, default=1000,
-                    help="Number of sample points (intervals) for plots")
+                    help="number of sample points (intervals) for plots")
+
+parser.add_argument('--segments', type=int, default=500,
+                    help="number of segments for ErrorBounds")
+
+parser.add_argument('--err-samples', type=int, default=10000,
+                    help="number of samples for ErrorBounds")
 
 parser.add_argument('input', nargs='+',
                     help="input FPTaylor files")
@@ -84,6 +104,29 @@ if not os.path.isdir(plot_tmp):
 if not os.path.isdir(plot_cache):
     os.makedirs(plot_cache)
 
+
+def run_error_bounds(input_file):
+    exe_file = os.path.join(plot_tmp, "a.out")
+    out_file = os.path.join(plot_tmp, basename(input_file) + "-data.txt")
+    remove_files([exe_file, out_file])
+
+    src_files = [os.path.join(error_bounds_path, f) for f in
+                 ["search_mpfr.c", "search_mpfr_main.c", "search_mpfr_utils.c"]]
+
+    compile_cmd = ["gcc", "-o", exe_file, "-O3",
+                   "-std=c99", "-I" + error_bounds_path]
+    compile_cmd += src_files + [input_file]
+    compile_cmd += ["-lmpfr", "-lgmp"]
+    run(compile_cmd)
+
+    cmd = [exe_file, 
+           "-o", out_file,
+           "-n", str(args.segments), 
+           "-s", str(args.err_samples)]
+    run(cmd)
+    return out_file
+
+
 # Run FPTaylor for each input file
 
 fptaylor_extra_args = [
@@ -94,13 +137,22 @@ fptaylor_extra_args = [
     "--log-append-date", "none"
 ]
 
+if args.error == 'abs':
+    fptaylor_extra_args += ["-abs", "true", "-rel", "false"]
+elif args.error == 'rel':
+    fptaylor_extra_args += ["-abs", "false", "-rel", "true"]
+else:
+    # TODO: ulp error
+    pass
+
 for fname in args.input:
     if not os.path.isfile(fname):
         log.error("Input file does not exist: {0}".format(fname))
         sys.exit(1)
-    base_fname = os.path.basename(fname)
+    base_fname = basename(fname)
     racket_files = []
-    remove_all(plot_tmp, base_fname + "*.rkt")
+    error_bounds_file = None
+    remove_all(plot_tmp, base_fname + "*")
 
     for cfg_file in args.config:
         if not cfg_file:
@@ -118,20 +170,32 @@ for fname in args.input:
         # FPTaylor
         # TODO: the name should be a pattern such that each task is saved
         # in a separate file
-        racket_file = os.path.join(
-            plot_tmp, base_fname + "-" + cfg_name + ".rkt")
+
+        export_args = []
+
+        if not error_bounds_file:
+            error_bounds_file = os.path.join(plot_tmp, base_fname + ".c")
+            export_args += ["--export-error-bounds", error_bounds_file]
+
+        racket_file = os.path.join(plot_tmp, base_fname + "-" + cfg_name + ".rkt")
         racket_files.append(racket_file)
-        cmd = [
-            fptaylor, fname,
-            "--export-racket", racket_file
-        ] + cfg_args + fptaylor_extra_args
+        export_args += ["--export-racket", racket_file]
+
+        cmd = [fptaylor, fname] + cfg_args + export_args + fptaylor_extra_args
         run(cmd)
+
+    # ErrorBounds
+    if error_bounds_file:
+        data_file = run_error_bounds(error_bounds_file)
+    else:
+        data_file = None
 
     # plot-fptaylor.rkt
     image_file = os.path.join(output_path, base_fname + ".png")
-    cmd = [
-        racket, racket_plot,
-        "--out", image_file,
-        "--samples", str(args.samples)
-    ] + racket_files
+    cmd = [racket, racket_plot,
+            "--out", image_file,
+            "--samples", str(args.samples)]
+    if data_file:
+        cmd += ["--data", data_file, "--err-type", args.error]
+    cmd += racket_files
     run(cmd)
