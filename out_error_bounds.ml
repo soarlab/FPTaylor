@@ -250,11 +250,15 @@ let generate_error_bounds fmt task =
   fprintf fmt "#include \"search_mpfr_utils.h\"@.";
   pp_print_newline fmt ();
   if List.length var_bounds > 0 then begin
-    let bound = List.hd var_bounds in
-    fprintf fmt "double low = %.20e;@." bound.Interval.low;
-    fprintf fmt "double high = %.20e;@." bound.Interval.high;
-    pp_print_newline fmt ()
+    let low_str = List.map (fun b -> sprintf "%.20e" b.Interval.low) var_bounds in
+    let high_str = List.map (fun b -> sprintf "%.20e" b.Interval.high) var_bounds in
+    fprintf fmt "double low[] = {%a};@." (print_list ", ") low_str;
+    fprintf fmt "double high[] = {%a};@." (print_list ", ") high_str;
+  end else begin
+    fprintf fmt "double low[] = {0};@.";
+    fprintf fmt "double high[] = {0};@."
   end;
+  pp_print_newline fmt ();
   print_mpfr_and_init_f fmt env expr;
   pp_print_newline fmt ();
   print_double_f fmt env expr;
