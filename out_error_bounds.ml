@@ -242,12 +242,19 @@ let print_single_f fmt env expr =
 
 let generate_error_bounds fmt task =
   let task_vars = all_variables task in
+  let var_bounds = List.map (variable_interval task) task_vars in
   let var_names = List.map (fun s -> "v_" ^ ExprOut.fix_name s) task_vars in
   let env = mk_env (Lib.zip task_vars var_names) in
   let expr = remove_rnd task.expression in
   fprintf fmt "#include \"search_mpfr.h\"@.";
   fprintf fmt "#include \"search_mpfr_utils.h\"@.";
   pp_print_newline fmt ();
+  if List.length var_bounds > 0 then begin
+    let bound = List.hd var_bounds in
+    fprintf fmt "double low = %.20e;@." bound.Interval.low;
+    fprintf fmt "double high = %.20e;@." bound.Interval.high;
+    pp_print_newline fmt ()
+  end;
   print_mpfr_and_init_f fmt env expr;
   pp_print_newline fmt ();
   print_double_f fmt env expr;
