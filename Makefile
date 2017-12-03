@@ -15,6 +15,7 @@ SRC=	version.mli\
 	config.ml\
 	more_num.mli\
 	more_num.ml\
+	rounding.mli\
 	rounding.ml\
 	binary_float.ml\
 	const.mli\

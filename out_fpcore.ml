@@ -48,7 +48,7 @@ let select_precision expr =
     | Bin_op (_, arg1, arg2) -> count arg1; count arg2
     | Gen_op (_, args) -> List.iter count args
     | Rounding (rnd, arg) ->
-      incr rnd.fp_type.bits;
+      incr (get_precision rnd);
       count arg in
   count expr;
   let bits, _ = Hashtbl.fold

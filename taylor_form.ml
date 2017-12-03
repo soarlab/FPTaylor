@@ -58,7 +58,7 @@ let mk_err_var, reset_error_index =
   mk, reset
 
 let mk_proof_rnd_info rnd =
-  Proof.mk_rnd_info rnd.fp_type.bits rnd.coefficient
+  Proof.mk_rnd_info (get_precision rnd) rnd.coefficient
 
 let mk_sym_interval_const f =
   let t = abs_float f in

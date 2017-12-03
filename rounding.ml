@@ -32,9 +32,23 @@ let mk_value_type bits = { bits = bits }
 
 let real_type = mk_value_type max_int
 
+let string_to_value_type str =
+  match str with
+  | "float16" -> mk_value_type 16
+  | "float32" -> mk_value_type 32
+  | "float64" -> mk_value_type 64
+  | "float128" -> mk_value_type 128
+  | "real" -> real_type
+  | _ -> failwith ("Unknown type: " ^ str)
+
 (* Returns true if type1 is a subtype of type2 *)
 let is_subtype type1 type2 =
   type1.bits <= type2.bits
+
+let is_no_rnd rnd =
+  rnd.fp_type.bits = 0
+
+let get_precision rnd = rnd.fp_type.bits
 
 let eps_delta_from_bits bits =
   match bits with
