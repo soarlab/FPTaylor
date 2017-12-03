@@ -2,6 +2,7 @@
 
 import sys
 import os
+import re
 import glob
 import subprocess
 import shutil
@@ -41,6 +42,28 @@ def run(cmd, ignore_return_codes=[]):
     return ret
 
 
+def replace_in_file(fname, pats, out_name=None):
+    """Replaces patterns in a given file."""
+    if not os.path.isfile(fname):
+        log.error("'{0}' does not exist", fname)
+        return
+    with open(fname, 'r') as f:
+        lines = f.readlines()
+
+    def edit_line(line):
+        for (guard, pattern, repl) in pats:
+            if guard == "" or re.search(guard, line):
+                line = re.sub(pattern, repl, line)
+        return line
+    result = []
+    for line in lines:
+        result.append(edit_line(line))
+    if not out_name:
+        out_name = fname
+    with open(out_name, 'w') as f:
+        f.write("".join(result))
+
+
 def remove_all(base, name_pat):
     for f in glob.glob(os.path.join(base, name_pat)):
         if os.path.isfile(f):
@@ -70,6 +93,9 @@ parser.add_argument('-c', '--config', action='append',
 
 parser.add_argument('-e', '--error', choices=['abs', 'rel', 'ulp'], default='abs',
                     help="error type (overrides error types defined in configuration files)")
+
+parser.add_argument('-r', '--range',
+                    help="redefine the range of input variables")
 
 parser.add_argument('-v', '--verbosity', type=int, default=1,
                     help="FPTaylor's verbosity level")
@@ -105,6 +131,23 @@ if not os.path.isdir(plot_cache):
     os.makedirs(plot_cache)
 
 
+def restrict_input_vars(fname, range):
+    ns = [s.strip() for s in range.split(",")]
+    if len(ns) == 1 and ns[0]:
+        repl = r"[{0}, \2]".format(ns[0])
+    elif len(ns) == 2:
+        repl = "["
+        repl += ns[0] if ns[0] else r"\1"
+        repl += ", "
+        repl += ns[1] if ns[1] else r"\2"
+        repl += "]"
+    else:
+        return
+    replace_in_file(fname, [(r"[\w]+[\s]+in[\s]*\[.+,.+\]",
+                             r"\[(.+),(.+)\]",
+                             repl)])
+
+
 def run_error_bounds(input_file):
     exe_file = os.path.join(plot_tmp, "a.out")
     out_file = os.path.join(plot_tmp, basename(input_file) + "-data.txt")
@@ -119,9 +162,9 @@ def run_error_bounds(input_file):
     compile_cmd += ["-lmpfr", "-lgmp"]
     run(compile_cmd)
 
-    cmd = [exe_file, 
+    cmd = [exe_file,
            "-o", out_file,
-           "-n", str(args.segments), 
+           "-n", str(args.segments),
            "-s", str(args.err_samples)]
     run(cmd)
     return out_file
@@ -131,6 +174,8 @@ def run_error_bounds(input_file):
 
 fptaylor_extra_args = [
     "-v", str(args.verbosity),
+    "--opt-approx", "false",
+    "--opt-exact", "true",
     "--tmp-base-dir", fptaylor_tmp,
     "--tmp-date", "false",
     "--log-base-dir", fptaylor_log,
@@ -149,7 +194,12 @@ for fname in args.input:
     if not os.path.isfile(fname):
         log.error("Input file does not exist: {0}".format(fname))
         sys.exit(1)
-    base_fname = basename(fname)
+    shutil.copy(fname, plot_tmp)
+    fname = os.path.join(plot_tmp, os.path.basename(fname))
+    base_fname = basename(fname) + "-" + args.error
+    if args.range:
+        restrict_input_vars(fname, args.range)
+        base_fname += "-range"
     racket_files = []
     error_bounds_file = None
     remove_all(plot_tmp, base_fname + "*")
@@ -157,7 +207,7 @@ for fname in args.input:
     for cfg_file in args.config:
         if not cfg_file:
             # default config
-            cfg_name = ""
+            cfg_name = "default"
             cfg_args = []
         else:
             if not os.path.isfile(cfg_file):
@@ -177,12 +227,17 @@ for fname in args.input:
             error_bounds_file = os.path.join(plot_tmp, base_fname + ".c")
             export_args += ["--export-error-bounds", error_bounds_file]
 
-        racket_file = os.path.join(plot_tmp, base_fname + "-" + cfg_name + ".rkt")
+        racket_file = os.path.join(
+            plot_tmp, base_fname + "-" + cfg_name + ".rkt")
         racket_files.append(racket_file)
         export_args += ["--export-racket", racket_file]
 
         cmd = [fptaylor, fname] + cfg_args + export_args + fptaylor_extra_args
         run(cmd)
+
+        # Adjust the name in the output Racket file
+        replace_in_file(racket_file,
+                        [("\(define name", '"([^"]*)"', r'"\1-{0}"'.format(cfg_name))])
 
     # ErrorBounds
     if error_bounds_file:
@@ -193,8 +248,8 @@ for fname in args.input:
     # plot-fptaylor.rkt
     image_file = os.path.join(output_path, base_fname + ".png")
     cmd = [racket, racket_plot,
-            "--out", image_file,
-            "--samples", str(args.samples)]
+           "--out", image_file,
+           "--samples", str(args.samples)]
     if data_file:
         cmd += ["--data", data_file, "--err-type", args.error]
     cmd += racket_files
