@@ -121,8 +121,8 @@ parser = argparse.ArgumentParser(
 parser.add_argument('--debug', action='store_true',
                     help="debug mode")
 
-parser.add_argument('-c', '--config', action='append',
-                    help="add a configuration file")
+parser.add_argument('-c', '--config', action='append', nargs='+',
+                    help="add a configuration file (or several files)")
 
 parser.add_argument('-e', '--error', choices=['abs', 'rel', 'ulp'], default='abs',
                     help="error type (overrides error types defined in configuration files)")
@@ -135,6 +135,9 @@ parser.add_argument('-v', '--verbosity', type=int, default=1,
 
 parser.add_argument('-s', '--samples', type=int, default=1000,
                     help="number of sample points (intervals) for plots")
+
+parser.add_argument('--approx-plot', action='store_true',
+                    help="produce approximate plots of FPTaylor error models")
 
 parser.add_argument('--segments', type=int, default=500,
                     help="number of segments for ErrorBounds")
@@ -249,18 +252,20 @@ for fname in args.input:
     error_bounds_file = None
     remove_all(plot_tmp, base_fname + "*")
 
-    for cfg_file in args.config:
-        if not cfg_file:
+    for cfg_files in args.config:
+        if not cfg_files:
             # default config
             cfg_name = "default"
             cfg_args = []
         else:
-            if not os.path.isfile(cfg_file):
-                log.error(
-                    "Configuration file does not exist: {0}".format(cfg_file))
-                sys.exit(1)
-            cfg_name = os.path.splitext(os.path.basename(cfg_file))[0]
-            cfg_args = ["-c", cfg_file]
+            cfg_name = "-".join([basename(cfg) for cfg in cfg_files])
+            cfg_args = []
+            for cfg_file in cfg_files:
+                if not os.path.isfile(cfg_file):
+                    log.error(
+                        "Configuration file does not exist: {0}".format(cfg_file))
+                    sys.exit(1)
+                cfg_args += ["-c", cfg_file]
 
         # FPTaylor
         # TODO: the name should be a pattern such that each task is saved
@@ -282,7 +287,7 @@ for fname in args.input:
 
         # Adjust the name in the output Racket file
         replace_in_file(racket_file,
-                        [("\(define name", '"([^"]*)"', r'"\1-{0}"'.format(cfg_name))])
+                        [(r"\(define name", '"([^"]*)"', r'"\1-{0}"'.format(cfg_name))])
 
     # ErrorBounds
     if error_bounds_file:
@@ -291,11 +296,18 @@ for fname in args.input:
         data_file = None
 
     # plot-fptaylor.rkt
-    image_file = os.path.join(output_path, base_fname + ".png")
+    image_name = base_fname
+    if args.approx_plot:
+        image_name += "-approx"
+    image_file = os.path.join(output_path, image_name + ".png")
+
     cmd = [racket, racket_plot,
            "--out", image_file,
            "--samples", str(args.samples)]
+    if args.approx_plot:
+        cmd += ["--approx"]
     if data_file:
         cmd += ["--data", data_file, "--err-type", args.error]
     cmd += racket_files
+
     run(cmd)
