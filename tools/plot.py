@@ -6,6 +6,7 @@ import re
 import glob
 import subprocess
 import shutil
+import hashlib
 import logging
 import argparse
 
@@ -40,6 +41,38 @@ def run(cmd, ignore_return_codes=[]):
         log.error("Return code: {0}".format(ret))
         sys.exit(2)
     return ret
+
+
+def get_hash(input_file, args):
+    if not input_file or not os.path.isfile(input_file):
+        return None
+    args = sorted(args)
+    m = hashlib.md5()
+    with open(input_file, 'r') as f:
+        m.update(f.read())
+    for arg in args:
+        m.update(arg)
+    return m.hexdigest()
+
+
+def find_in_cache(input_file, args):
+    h = get_hash(input_file, args)
+    if not h:
+        return None
+    fname = os.path.join(plot_cache, h)
+    if os.path.isfile(fname):
+        return fname
+    return None
+
+
+def cache_file(fname, input_file, args):
+    if not os.path.isfile(fname):
+        return
+    h = get_hash(input_file, args)
+    if not h:
+        return
+    out = os.path.join(plot_cache, h)
+    shutil.copy(fname, out)
 
 
 def replace_in_file(fname, pats, out_name=None):
@@ -109,6 +142,9 @@ parser.add_argument('--segments', type=int, default=500,
 parser.add_argument('--err-samples', type=int, default=10000,
                     help="number of samples for ErrorBounds")
 
+parser.add_argument('--update-cache', action='store_true',
+                    help="do not use cached files")
+
 parser.add_argument('input', nargs='+',
                     help="input FPTaylor files")
 
@@ -160,13 +196,22 @@ def run_error_bounds(input_file):
                    "-std=c99", "-I" + error_bounds_path]
     compile_cmd += src_files + [input_file]
     compile_cmd += ["-lmpfr", "-lgmp"]
-    run(compile_cmd)
 
     cmd = [exe_file,
            "-o", out_file,
            "-n", str(args.segments),
            "-s", str(args.err_samples)]
+
+    cached_file = find_in_cache(input_file, cmd)
+    if cached_file and not args.update_cache:
+        log.info("A cached ErrorBounds result is found")
+        shutil.copy(cached_file, out_file)
+        return out_file
+
+    run(compile_cmd)
     run(cmd)
+
+    cache_file(out_file, input_file, cmd)
     return out_file
 
 
