@@ -197,18 +197,24 @@ let print_mpfr_and_init_f fmt env expr =
   let args = List.map (fun (_, name) -> "mpfr_t " ^ name) env.vars in
   let body, result_name =
     Lib.write_to_string_result (translate_mpfr env) expr in
-  assert (result_name = "r_op");
   let c_names_mpfr = List.map (fun (_, i) -> sprintf "c_%d" i) env.constants in
   let c_names_double = List.map (fun (_, i) -> sprintf "c_%dd" i) env.constants in
   let c_names_single = List.map (fun (_, i) -> sprintf "c_%df" i) env.constants in
-  fprintf fmt "static mpfr_t %a;@." (print_list ", ") env.tmp_vars;
-  fprintf fmt "static mpfr_t %a;@." (print_list ", ") c_names_mpfr;
-  fprintf fmt "static double %a;@." (print_list ", ") c_names_double;
-  fprintf fmt "static float %a;@." (print_list ", ") c_names_single;
+  let tmp_vars_flag = List.length env.tmp_vars > 0 in
+  let constants_flag = List.length env.constants > 0 in
+  if tmp_vars_flag then
+    fprintf fmt "static mpfr_t %a;@." (print_list ", ") env.tmp_vars;
+  if constants_flag then begin
+    fprintf fmt "static mpfr_t %a;@." (print_list ", ") c_names_mpfr;
+    fprintf fmt "static double %a;@." (print_list ", ") c_names_double;
+    fprintf fmt "static float %a;@." (print_list ", ") c_names_single;
+  end;
   pp_print_newline fmt ();
   fprintf fmt "void f_init()@.{@.";
-  fprintf fmt "  mpfr_inits(%a, NULL);@." (print_list ", ") env.tmp_vars;
-  fprintf fmt "  mpfr_inits(%a, NULL);@." (print_list ", ") c_names_mpfr;
+  if tmp_vars_flag then
+    fprintf fmt "  mpfr_inits(%a, NULL);@." (print_list ", ") env.tmp_vars;
+  if constants_flag then
+    fprintf fmt "  mpfr_inits(%a, NULL);@." (print_list ", ") c_names_mpfr;
   List.iter 
     (fun (n, i) -> 
        fprintf fmt "  init_constants(\"%s\", MPFR_RNDN, &c_%df, &c_%dd, c_%d);@."
@@ -217,12 +223,17 @@ let print_mpfr_and_init_f fmt env expr =
   fprintf fmt "}@.";
   pp_print_newline fmt ();
   fprintf fmt "void f_clear()@.{@.";
-  fprintf fmt "  mpfr_clears(%a, NULL);@." (print_list ", ") env.tmp_vars;
-  fprintf fmt "  mpfr_clears(%a, NULL);@." (print_list ", ") c_names_mpfr;
+  if tmp_vars_flag then
+    fprintf fmt "  mpfr_clears(%a, NULL);@." (print_list ", ") env.tmp_vars;
+  if constants_flag then
+    fprintf fmt "  mpfr_clears(%a, NULL);@." (print_list ", ") c_names_mpfr;
   fprintf fmt "}@.";
   pp_print_newline fmt ();
   fprintf fmt "void f_mpfr(mpfr_t r_op, %a)@.{@." (print_list ", ") args;
-  fprintf fmt "%s}@." body
+  fprintf fmt "%s" body;
+  if result_name <> "r_op" then
+    fprintf fmt "  mpfr_set(r_op, %s, MPFR_RNDN);@." result_name;
+  fprintf fmt "}@."
 
 let print_double_f fmt env expr =
   clear_exprs env;
@@ -241,23 +252,22 @@ let print_single_f fmt env expr =
   fprintf fmt "%s@.  return %s;@.}@." body result_name
 
 let generate_error_bounds fmt task =
-  let task_vars = all_variables task in
-  let var_bounds = List.map (variable_interval task) task_vars in
+  let task_vars, var_bounds = 
+    let vars = all_active_variables task in
+    let bounds = List.map (variable_interval task) vars in
+    match vars with
+    | [] -> ["unused"], [Interval.make_interval 1. 2.]
+    | _ -> vars, bounds in
   let var_names = List.map (fun s -> "v_" ^ ExprOut.fix_name s) task_vars in
   let env = mk_env (Lib.zip task_vars var_names) in
   let expr = remove_rnd task.expression in
   fprintf fmt "#include \"search_mpfr.h\"@.";
   fprintf fmt "#include \"search_mpfr_utils.h\"@.";
   pp_print_newline fmt ();
-  if List.length var_bounds > 0 then begin
-    let low_str = List.map (fun b -> sprintf "%.20e" b.Interval.low) var_bounds in
-    let high_str = List.map (fun b -> sprintf "%.20e" b.Interval.high) var_bounds in
-    fprintf fmt "double low[] = {%a};@." (print_list ", ") low_str;
-    fprintf fmt "double high[] = {%a};@." (print_list ", ") high_str;
-  end else begin
-    fprintf fmt "double low[] = {0};@.";
-    fprintf fmt "double high[] = {0};@."
-  end;
+  let low_str = List.map (fun b -> sprintf "%.20e" b.Interval.low) var_bounds in
+  let high_str = List.map (fun b -> sprintf "%.20e" b.Interval.high) var_bounds in
+  fprintf fmt "double low[] = {%a};@." (print_list ", ") low_str;
+  fprintf fmt "double high[] = {%a};@." (print_list ", ") high_str;
   pp_print_newline fmt ();
   print_mpfr_and_init_f fmt env expr;
   pp_print_newline fmt ();

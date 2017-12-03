@@ -14,18 +14,23 @@ open Expr
 
 module Out = ExprOut.Make(ExprOut.RacketIntervalPrinter)
 
-let gen_racket_function fmt (name, cs, total2, exp, e, opt_bound) =
+let gen_racket_function fmt (task, total2, exp, e, opt_bound) =
   let n2s = Num.string_of_num in
   let f2s f = n2s (More_num.num_of_float f) in
   let p' = Format.pp_print_string fmt in
-  let var_names = vars_in_expr e in
-  let var_bounds = List.map cs.var_rat_bounds var_names in
+  let var_names, var_bounds =
+    let e_vars = vars_in_expr e in
+    let names = Task.all_variables task in
+    let vars = List.filter (fun v -> List.mem v e_vars) names in
+    match vars with
+    | [] -> ["unused"], [(Num.Int 1, Num.Int 2)]
+    | _ -> vars, List.map (Task.variable_num_interval task) vars in
   let bound_strings =
     List.map (fun (low, high) -> 
       Format.sprintf "(cons %s %s)" (n2s low) (n2s high))
       var_bounds in
   let vars = List.map (fun v -> v ^ "-var") var_names in
-  Format.fprintf fmt "(define name \"%s\")@." name;
+  Format.fprintf fmt "(define name \"%s\")@." task.Task.name;
   Format.fprintf fmt "(define opt-max %s)@."
     (match opt_bound with None -> "#f" | Some f -> f2s f);
   Format.fprintf fmt "(define bounds (list %s))@." (String.concat " " bound_strings);
@@ -37,5 +42,5 @@ let gen_racket_function fmt (name, cs, total2, exp, e, opt_bound) =
   Out.print_fmt ~margin:80 fmt e;
   p' ")"
 
-let create_racket_file fmt ~name cs total2 exp expr opt_bound =
-  gen_racket_function fmt (name, cs, total2, exp, expr, opt_bound)
+let create_racket_file fmt task total2 exp expr opt_bound =
+  gen_racket_function fmt (task, total2, exp, expr, opt_bound)

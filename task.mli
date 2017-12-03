@@ -27,6 +27,8 @@ type task = {
 
 val all_variables : task -> string list
 
+val all_active_variables : task -> string list
+
 val find_variable : task -> string -> var_info
 
 val variable_type : task -> string -> Rounding.value_type

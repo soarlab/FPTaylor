@@ -267,7 +267,7 @@ let absolute_errors task tf =
 
         let () = try
           Out_racket.create_racket_file (get_file_formatter "racket")
-            task.Task.name cs total2_i.high exp full_expr (Some total_i.high)
+            task total2_i.high exp full_expr (Some total_i.high)
           with Not_found -> () in
       
         Log.report `Important "exact bound (exp = %d): %s" exp (bound_info bound);
@@ -338,7 +338,7 @@ let relative_errors task tf (f_min, f_max) =
           let () = 
             try
               Out_racket.create_racket_file (get_file_formatter "racket")
-                task.Task.name cs b2_i.high exp full_expr (Some total_i.high)
+                task b2_i.high exp full_expr (Some total_i.high)
             with Not_found -> () in
       
           Log.report `Important "exact bound-rel (exp = %d): %s" exp (bound_info bound);

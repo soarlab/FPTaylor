@@ -32,6 +32,11 @@ type task = {
 let all_variables t =
   List.map (fun v -> v.var_name) t.variables
 
+let all_active_variables t =
+  let vars = Expr.vars_in_expr t.expression in
+  let names = all_variables t in
+  List.filter (fun name -> List.mem name vars) names
+
 let find_variable t name =
   List.find (fun v -> v.var_name = name) t.variables
 
