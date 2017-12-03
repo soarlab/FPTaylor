@@ -125,7 +125,8 @@ The section with variables has the following syntax
 
 All variable definitions must be separated by semicolons. Each
 variable has a type, name, and the interval of values. The type can be
-omitted; in this case, a variable will get the `real` type.
+omitted; in this case, a variable will get the default type
+defined by the option `default-var-type` (its default value is `float64`).
 
 Variables can be of the following types:
 
@@ -152,7 +153,8 @@ Example:
       y in [2.1 / 3, 20/7 + 0.1];
       real z in [-3, 4.5 + k]; // k is a constant
 
-In the example above, `y` and `z` are real variables, `x` is a single
+In the example above, `y` has the default type (`float64` if all 
+options have default values), `z` is a real variable, `x` is a single
 precision variable.
 
 It is also possible to define a variable which has uncertainties. It
@@ -306,7 +308,7 @@ optimization backends of FPTaylor. The default optimization backend
 
 The general rounding operator has the following syntax
 
-    rnd(bits, type, scale, eps, delta)
+    rnd[bits, type, scale, eps, delta]
 
 Here, `bits` is one of the following values: 16, 32, 64, or 128. It
 specifies the floating-point format to which the operator
@@ -317,11 +319,11 @@ zero. The value of `scale` must be a real number, values of `eps` and
 `delta` must be integers. These values play the following role. Assume
 that the following expression is given:
 
-    rnd(bits, type, scale, eps, delta)(f)
+    rnd[bits, type, scale, eps, delta](f)
 
 FPTaylor creates the following relation between `f` and its rounded value:
 
-    rnd(bits, type, scale, eps, delta)(f) = f + f e + d
+    rnd[bits, type, scale, eps, delta](f) = f + f e + d
 
 with `|e| <= scale * 2^eps` and `|d| <= scale * 2^delta` if `type` is
 `ne`, and `|e| <= 2 * scale * 2^eps` and `|d| <= 2 * scale * 2^delta`
@@ -345,32 +347,32 @@ operators. Parameters `eps` and `delta` can be omitted. In that case,
 their values will be deduced automatically from the value of `bits`
 and `type`:
 
-    rnd(bits, type, scale)
+    rnd[bits, type, scale]
 
 The parameter `scale` can also be omitted. If it is omitted, then its
 value is assumed to be `1.0`.
 
 There are several predefined names for most commonly used rounding operators:
 
-    rnd16 = rnd(16, ne)
-    rnd16_up = rnd(16, up)
-    rnd16_down = rnd(16, down)
-    rnd16_0 = rnd(16, zero)
+    rnd16 = rnd[16, ne]
+    rnd16_up = rnd[16, up]
+    rnd16_down = rnd[16, down]
+    rnd16_0 = rnd[16, zero]
 
-    rnd32 = rnd(32, ne)
-    rnd32_up = rnd(32, up)
-    rnd32_down = rnd(32, down)
-    rnd32_0 = rnd(32, zero)
+    rnd32 = rnd[32, ne]
+    rnd32_up = rnd[32, up]
+    rnd32_down = rnd[32, down]
+    rnd32_0 = rnd[32, zero]
 
-    rnd64 = rnd(64, ne)
-    rnd64_up = rnd(64, up)
-    rnd64_down = rnd(64, down)
-    rnd64_0 = rnd(64, zero)
+    rnd64 = rnd[64, ne]
+    rnd64_up = rnd[64, up]
+    rnd64_down = rnd[64, down]
+    rnd64_0 = rnd[64, zero]
 
-    rnd128 = rnd(128, ne)
-    rnd128_up = rnd(128, up)
-    rnd128_down = rnd(128, down)
-    rnd128_0 = rnd(128, zero)
+    rnd128 = rnd[128, ne]
+    rnd128_up = rnd[128, up]
+    rnd128_down = rnd[128, down]
+    rnd128_0 = rnd[128, zero]
 
 The special operation `no_rnd` can be applied to any expression. It is
 equivalent to the identity operation. It may be useful in the
@@ -382,6 +384,9 @@ This example is equivalent to
 
     r1 = rnd32(rnd32(x) + n - 1);
 
+It is also possible to use the rounding operator `rnd` without any parameters.
+In this case, the actual rounding operator is determined by the value of the
+option `default-rnd` (its default value is `rnd64`).
 
 ## Options
 

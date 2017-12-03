@@ -139,7 +139,7 @@ let rounding_type_to_string rnd_type =
 let rounding_to_string rnd =
   try Lib.rev_assoc rnd rounding_table 
   with Not_found ->
-    Printf.sprintf "rnd(%d,%s,%f,%d,%d)" 
+    Printf.sprintf "rnd[%d,%s,%.2f,%d,%d]" 
       rnd.fp_type.bits (rounding_type_to_string rnd.rnd_type) 
       rnd.coefficient rnd.eps_exp rnd.delta_exp
 

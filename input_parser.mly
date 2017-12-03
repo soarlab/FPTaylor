@@ -101,7 +101,7 @@ variable:
 ;
 
 var_type:
-  | { real_type }
+  | { string_to_value_type (Config.get_string_option "default-var-type") }
   | INT { real_type }
   | REAL { real_type }
   | FLOAT { mk_value_type $1 }
@@ -153,16 +153,18 @@ pos_neg_number:
 ;
 
 rnd:
-  | RND LPAREN NUMBER COMMA ID COMMA NUMBER COMMA pos_neg_number COMMA pos_neg_number RPAREN
+  | RND LBRACKET NUMBER COMMA ID COMMA NUMBER COMMA pos_neg_number COMMA pos_neg_number RBRACKET
     { create_explicit_rounding (int_of_string $3) ($5) 
         (float_of_string $7) (int_of_string $9) (int_of_string $11) }
   | NO_RND { create_rounding 0 "ne" 1.0 }
-  | RND LPAREN NUMBER COMMA ID COMMA NUMBER RPAREN
+  | RND LBRACKET NUMBER COMMA ID COMMA NUMBER RBRACKET
     { create_rounding (int_of_string $3) ($5) (float_of_string $7) }
-  | RND LPAREN NUMBER COMMA ID RPAREN
+  | RND LBRACKET NUMBER COMMA ID RBRACKET
     { create_rounding (int_of_string $3) ($5) 1.0 }
   | RND_PAR
     { create_rounding (fst $1) (snd $1) 1.0 }
+  | RND
+    { string_to_rounding (Config.get_string_option "default-rnd") }
 ;
 
 expr:
