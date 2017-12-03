@@ -127,6 +127,11 @@ parser.add_argument('-c', '--config', action='append', nargs='+',
 parser.add_argument('-e', '--error', choices=['abs', 'rel', 'ulp'], default='abs',
                     help="error type (overrides error types defined in configuration files)")
 
+parser.add_argument('-t', '--type', default='64',
+                    choices=['16', '32', '64', 'real'], 
+                    help="default type of variables and rounding operations.\
+                          Also controls flags of ErrorBounds.")
+
 parser.add_argument('-r', '--range',
                     help="redefine the range of input variables")
 
@@ -169,6 +174,9 @@ if not os.path.isdir(plot_tmp):
 if not os.path.isdir(plot_cache):
     os.makedirs(plot_cache)
 
+remove_all(plot_tmp, "*")
+remove_all(fptaylor_tmp, "*")
+
 
 def restrict_input_vars(fname, range):
     ns = [s.strip() for s in range.split(",")]
@@ -205,6 +213,11 @@ def run_error_bounds(input_file):
            "-n", str(args.segments),
            "-s", str(args.err_samples)]
 
+    if args.type == "32":
+        cmd += ["-f"]
+    elif args.type == "real":
+        cmd += ["-r"]
+
     cached_file = find_in_cache(input_file, cmd)
     if cached_file and not args.update_cache:
         log.info("A cached ErrorBounds result is found")
@@ -229,6 +242,17 @@ fptaylor_extra_args = [
     "--log-base-dir", fptaylor_log,
     "--log-append-date", "none"
 ]
+
+if args.type:
+    rnd_types = {
+        "16": ("float16", "rnd16"),
+        "32": ("float32", "rnd32"), 
+        "64": ("float64", "rnd64"),
+        "real": ("real", "rnd64")
+    }
+    var_type, rnd_type = rnd_types[args.type]
+    fptaylor_extra_args += ["--default-var-type", var_type]
+    fptaylor_extra_args += ["--default-rnd", rnd_type]
 
 if args.error == 'abs':
     fptaylor_extra_args += ["-abs", "true", "-rel", "false"]
@@ -297,6 +321,8 @@ for fname in args.input:
 
     # plot-fptaylor.rkt
     image_name = base_fname
+    if args.type:
+        image_name += "-" + args.type
     if args.approx_plot:
         image_name += "-approx"
     image_file = os.path.join(output_path, image_name + ".png")
