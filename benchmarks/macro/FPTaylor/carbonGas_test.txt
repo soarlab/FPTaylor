@@ -8,7 +8,7 @@ Constants
 ;
 
 Variables
-  V in [0.1, 0.5] +/- 0.005
+  real V in [0.1, 0.5] +/- 0.005
 ;
 	
 Definitions

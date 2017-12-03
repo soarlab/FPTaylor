@@ -1,6 +1,6 @@
 Variables
   real x in [-8, 8];
-	
+
 Definitions
   f rnd64= x;
   e = rnd(64, ne, 1.5)(exp(f));
