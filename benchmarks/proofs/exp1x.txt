@@ -3,7 +3,7 @@ Variables
 	
 Definitions
   f rnd32= x,
-  e = rnd(32, ne, 1.125)(exp(f)),
+  e = rnd[32, ne, 1.125](exp(f)),
   r = rnd32((e - 1) / f)  
 ;
 

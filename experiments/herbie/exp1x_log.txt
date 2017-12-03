@@ -3,8 +3,8 @@ Variables
 	
 Definitions
   f rnd32= x,
-  e = rnd(32, ne, 1.02)(exp(f)),
-  l = rnd(32, ne, 1.8)(log(e)),
+  e = rnd[32, ne, 1.02](exp(f)),
+  l = rnd[32, ne, 1.8](log(e)),
 //  r rnd32= (e - 1) / l
   r = rnd32((e - 1) / l)
 ;

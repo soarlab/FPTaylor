@@ -13,10 +13,10 @@ Definitions
   dLon rnd64= lon2 - lon1,
   t2 rnd64= lat2 / 2.0 + pi / 4.0,
   t1 rnd64= lat1 / 2.0 + pi / 4.0,
-  tan2 = rnd(64, ne, 1.5)(tan(t2)),
-  tan1 = rnd(64, ne, 1.5)(tan(t1)),
+  tan2 = rnd[64, ne, 1.5](tan(t2)),
+  tan1 = rnd[64, ne, 1.5](tan(t1)),
   d21 rnd64= tan2 / tan1,
-  dPhi = rnd(64, ne, 1.5)(log(d21)),
+  dPhi = rnd[64, ne, 1.5](log(d21)),
   q rnd64= dLat / dPhi;
 
 Expressions

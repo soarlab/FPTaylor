@@ -11,5 +11,5 @@ Expressions
 	i3 = sqrt(rnd32(x)),
 	i4 rnd32= sqrt(x + y * y),
 	i5 = sin(rnd32(y)),
-	i6 rnd(32, ne, 1.5)= sin(t)
+	i6 rnd[32, ne, 1.5]= sin(t)
 ;

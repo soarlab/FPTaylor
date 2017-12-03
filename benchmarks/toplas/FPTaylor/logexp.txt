@@ -3,9 +3,9 @@ Variables
 
 Definitions
   f rnd64= x;
-  e = rnd(64, ne, 1.5)(exp(f));
+  e = rnd[64, ne, 1.5](exp(f));
   t rnd64= 1 + e;
-  r = rnd(64, ne, 1.5)(log(t));
+  r = rnd[64, ne, 1.5](log(t));
 
 Expressions
   logexp = r;
