@@ -1,6 +1,10 @@
 FPTaylor 0.9.1 (working version)
 ----------------
 
+- [FEATURE] `tools/plot.py`: a script for plotting 1d error models.
+
+- [FEATURE] Exporting ErrorBounds input files.
+
 - [FEATURE] Exporting to the FPCore format.
 
 - [FEATURE] Several tasks in one files (inside curly braces).
