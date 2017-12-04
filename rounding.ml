@@ -48,8 +48,6 @@ let is_subtype type1 type2 =
 let is_no_rnd rnd =
   rnd.fp_type.bits = 0
 
-let get_precision rnd = rnd.fp_type.bits
-
 let eps_delta_from_bits bits =
   match bits with
     | 0 -> 0, 0
@@ -58,6 +56,16 @@ let eps_delta_from_bits bits =
     | 64 -> -53, -1022
     | 128 -> -113, -16382
     | _ -> failwith ("Unsupported fp size: " ^ string_of_int bits)
+
+let type_size t = t.bits
+
+let type_precision t =
+  let eps, _ = eps_delta_from_bits t.bits in 
+  -eps
+
+let type_min_exp t =
+  let _, delta = eps_delta_from_bits t.bits in
+  delta
 
 let max_value_from_bits bits =
   let p, emax =

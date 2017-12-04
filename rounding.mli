@@ -35,7 +35,11 @@ val is_subtype : value_type -> value_type -> bool
 
 val is_no_rnd : rnd_info -> bool
 
-val get_precision : rnd_info -> int
+val type_size : value_type -> int
+
+val type_precision : value_type -> int
+
+val type_min_exp : value_type -> int
 
 val create_rounding : int -> string -> float -> rnd_info
   

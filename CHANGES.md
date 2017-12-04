@@ -1,6 +1,8 @@
 FPTaylor 0.9.2
 --------------
 
+- [FEATURE] ULP error (experimental; almost always suboptimal near powers of 2).
+
 - [FEATURE, can break existing FPTaylor input files]
   The rounding operation `rnd` without parameters can be used
   in input files. The rounding type is defined by the

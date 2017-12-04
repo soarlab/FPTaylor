@@ -46,6 +46,8 @@ let to_num = function
   | Rat n -> n
   | Interval _ -> failwith "Const.to_num: interval constant"
 
+let to_int c = int_of_num (to_num c)
+
 let low_bound_to_num = function
   | Rat n -> n
   | Interval v -> More_num.num_of_float v.low

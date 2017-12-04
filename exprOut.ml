@@ -115,6 +115,9 @@ module InfoPrinter : PrinterType = struct
         match (op, args) with
         | Op_fma, [a1; a2; a3] ->
            fprintf fmt "fma(%a, %a, %a)" print a1 print a2 print a3
+        | Op_ulp, [Const p; Const e; arg] ->
+           fprintf fmt "ulp[%d,%d](%a)" 
+            (Const.to_int p) (Const.to_int e) print arg
         | _ -> failwith ("Info: unknown general operation: " ^ gen_op_name op)
       end
 end
@@ -175,6 +178,9 @@ module OCamlIntervalPrinter : PrinterType = struct
       end
     | Gen_op (op, args) -> begin
         match (op, args) with
+        | Op_ulp, [Const p; Const e; arg] ->
+          fprintf fmt "goldberg_ulp_I (%d,%d) (%a)" 
+            (Const.to_int p) (Const.to_int e) print arg
         | _ ->
            failwith ("OCamlInterval: unknown general operation: " ^ gen_op_name op)
       end
@@ -300,6 +306,9 @@ module RacketIntervalPrinter : PrinterType = struct
         match (op, args) with
         | Op_fma, [a1; a2; a3] ->
            fprintf fmt "(ifma %a %a %a)" print a1 print a2 print a3
+        | Op_ulp, [Const p; Const e; arg] ->
+           fprintf fmt "(igoldberg-ulp %d %d %a)" 
+             (Const.to_int p) (Const.to_int e) print arg
         | _ -> failwith ("Racket: unknown general operation: " ^ gen_op_name op)
       end
 end
@@ -405,8 +414,11 @@ module OCamlFloatPrinter : PrinterType = struct
       end
     | Gen_op (op, args) -> begin
         match (op, args) with
+        | Op_ulp, [Const p; Const e; arg] ->
+          fprintf fmt "goldberg_ulp (%d,%d) (%a)" 
+            (Const.to_int p) (Const.to_int e) print arg
         | _ ->
-           failwith ("OCamlFloat: unknown general operation: " ^ gen_op_name op)
+          failwith ("OCamlFloat: unknown general operation: " ^ gen_op_name op)
       end
 end
 

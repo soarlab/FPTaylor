@@ -31,6 +31,8 @@ val is_interval : t -> bool
 
 val to_num : t -> num
 
+val to_int : t -> int
+
 val low_bound_to_num : t -> num
 
 val high_bound_to_num : t -> num
