@@ -209,7 +209,6 @@ def run_error_bounds(input_file):
     compile_cmd += ["-lmpfr", "-lgmp"]
 
     cmd = [exe_file,
-           "-o", out_file,
            "-n", str(args.segments),
            "-s", str(args.err_samples)]
 
@@ -225,7 +224,7 @@ def run_error_bounds(input_file):
         return out_file
 
     run(compile_cmd)
-    run(cmd)
+    run(cmd + ["-o", out_file])
 
     cache_file(out_file, input_file, cmd)
     return out_file
@@ -255,12 +254,11 @@ if args.type:
     fptaylor_extra_args += ["--default-rnd", rnd_type]
 
 if args.error == 'abs':
-    fptaylor_extra_args += ["-abs", "true", "-rel", "false"]
+    fptaylor_extra_args += ["-abs", "true", "-rel", "false", "-ulp", "false"]
 elif args.error == 'rel':
-    fptaylor_extra_args += ["-abs", "false", "-rel", "true"]
+    fptaylor_extra_args += ["-abs", "false", "-rel", "true", "-ulp", "false"]
 else:
-    # TODO: ulp error
-    pass
+    fptaylor_extra_args += ["-abs", "false", "-rel", "false", "-ulp", "true"]
 
 for fname in args.input:
     if not os.path.isfile(fname):
