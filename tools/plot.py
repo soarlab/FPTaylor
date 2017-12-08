@@ -150,6 +150,10 @@ parser.add_argument('--segments', type=int, default=500,
 parser.add_argument('--err-samples', type=int, default=10000,
                     help="number of samples for ErrorBounds")
 
+parser.add_argument('--data-plot-style', choices=['rectangles', 'lines'],
+                    default='rectangles',
+                    help="specifies how to plot ErrorBounds results")
+
 parser.add_argument('--update-cache', action='store_true',
                     help="do not use cached files")
 
@@ -327,7 +331,8 @@ for fname in args.input:
 
     cmd = [racket, racket_plot,
            "--out", image_file,
-           "--samples", str(args.samples)]
+           "--samples", str(args.samples),
+           "--data-style", args.data_plot_style]
     if args.approx_plot:
         cmd += ["--approx"]
     if data_file:
