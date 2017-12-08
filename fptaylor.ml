@@ -562,14 +562,14 @@ let process_task (task : task) =
   let () =
     let racket_export = Config.get_string_option "export-racket" in
     if racket_export <> "" then begin
-      let fname = Str.global_replace (Str.regexp "{task}") task.name racket_export in
+      let fname = Str.global_replace (Str.regexp "{task}") task.Task.name racket_export in
       Log.report `Important "Racket export: %s" fname;
       open_file "racket" fname
     end in
   let () =
     let error_bounds = Config.get_string_option "export-error-bounds" in
     if error_bounds <> "" then begin
-      let fname = Str.global_replace (Str.regexp "{task}") task.name error_bounds in
+      let fname = Str.global_replace (Str.regexp "{task}") task.Task.name error_bounds in
       Log.report `Important "ErrorBounds export: %s" fname;
       open_file "error-bounds" fname;
       let fmt = get_file_formatter "error-bounds" in
