@@ -281,36 +281,48 @@ class PlotTask:
 
 
 class FPTaylorTask:
-    pass
+    def __init__(self, input_files):
+        self.cfg_files = []
+        if isinstance(input_files, list):
+            self.input_files = list(input_files)
+        else:
+            self.input_files = [input_files]
 
+        self.extra_args = [
+            "-v", str(args.verbosity),
+            "--opt-approx", "false",
+            "--opt-exact", "true",
+            "--tmp-base-dir", fptaylor_tmp,
+            "--tmp-date", "false",
+            "--log-base-dir", fptaylor_log,
+            "--log-append-date", "none"
+        ]
 
-fptaylor_extra_args = [
-    "-v", str(args.verbosity),
-    "--opt-approx", "false",
-    "--opt-exact", "true",
-    "--tmp-base-dir", fptaylor_tmp,
-    "--tmp-date", "false",
-    "--log-base-dir", fptaylor_log,
-    "--log-append-date", "none"
-]
+        if args.type:
+            rnd_types = {
+                "16": ("float16", "rnd16"),
+                "32": ("float32", "rnd32"), 
+                "64": ("float64", "rnd64"),
+                "real": ("real", "rnd64")
+            }
+            var_type, rnd_type = rnd_types[args.type]
+            self.extra_args += ["--default-var-type", var_type]
+            self.extra_args += ["--default-rnd", rnd_type]
 
-if args.type:
-    rnd_types = {
-        "16": ("float16", "rnd16"),
-        "32": ("float32", "rnd32"), 
-        "64": ("float64", "rnd64"),
-        "real": ("real", "rnd64")
-    }
-    var_type, rnd_type = rnd_types[args.type]
-    fptaylor_extra_args += ["--default-var-type", var_type]
-    fptaylor_extra_args += ["--default-rnd", rnd_type]
+        if args.error == 'abs':
+            self.extra_args += ["-abs", "true", "-rel", "false", "-ulp", "false"]
+        elif args.error == 'rel':
+            self.extra_args += ["-abs", "false", "-rel", "true", "-ulp", "false"]
+        else:
+            self.extra_args += ["-abs", "false", "-rel", "false", "-ulp", "true"]
 
-if args.error == 'abs':
-    fptaylor_extra_args += ["-abs", "true", "-rel", "false", "-ulp", "false"]
-elif args.error == 'rel':
-    fptaylor_extra_args += ["-abs", "false", "-rel", "true", "-ulp", "false"]
-else:
-    fptaylor_extra_args += ["-abs", "false", "-rel", "false", "-ulp", "true"]
+    def run(self, args):
+        cfg_args = []
+        for cfg in self.cfg_files:
+            cfg_args += ["-c", cfg]
+        cmd = [fptaylor] + self.input_files + cfg_args + args + self.extra_args
+        run(cmd)
+
 
 for fname in args.input:
     if not os.path.isfile(fname):
@@ -322,24 +334,26 @@ for fname in args.input:
     if args.range:
         restrict_input_vars(fname, args.range)
         base_fname += "-range"
-    plot_tasks = dict()
+
     error_bounds_file_template = None
     remove_all(plot_tmp, base_fname + "*")
+    
+    plot_tasks = dict()
 
     for cfg_files in args.config:
+        fptaylor_task = FPTaylorTask(fname)
+
         if not cfg_files:
             # default config
             cfg_name = "default"
-            cfg_args = []
         else:
             cfg_name = "-".join([basename(cfg) for cfg in cfg_files])
-            cfg_args = []
             for cfg_file in cfg_files:
                 if not os.path.isfile(cfg_file):
                     log.error(
                         "Configuration file does not exist: {0}".format(cfg_file))
                     sys.exit(1)
-                cfg_args += ["-c", cfg_file]
+                fptaylor_task.cfg_files.append(cfg_file)
 
         export_args = []
 
@@ -351,8 +365,7 @@ for fname in args.input:
             plot_tmp, base_fname + "-" + cfg_name + "-{task}.rkt")
         export_args += ["--export-racket", racket_file_template]
 
-        cmd = [fptaylor, fname] + cfg_args + export_args + fptaylor_extra_args
-        run(cmd)
+        fptaylor_task.run(export_args)
 
         for task, racket_file in files_from_template(racket_file_template).iteritems():
             # Adjust the name in the output Racket files
