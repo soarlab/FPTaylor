@@ -54,10 +54,12 @@ let open_file, close_file, close_all, get_file_formatter =
       let fmt = Format.make_formatter (output oc) (fun () -> flush oc) in
       Hashtbl.add files id (oc, fmt) in
   let close_file id =
-    let oc, fmt = Hashtbl.find files id in
-    Format.pp_print_flush fmt ();
-    close_out oc;
-    Hashtbl.remove files id in
+    try
+      let oc, fmt = Hashtbl.find files id in
+      Format.pp_print_flush fmt ();
+      close_out oc;
+      Hashtbl.remove files id
+    with Not_found -> () in
   let close_all () =
     Hashtbl.iter 
       (fun _ (oc, fmt) -> Format.pp_print_flush fmt (); close_out oc) 
@@ -560,19 +562,23 @@ let process_task (task : task) =
   let () =
     let racket_export = Config.get_string_option "export-racket" in
     if racket_export <> "" then begin
-      Log.report `Important "Racket export: %s" racket_export;
-      open_file "racket" racket_export
+      let fname = Str.global_replace (Str.regexp "{task}") task.name racket_export in
+      Log.report `Important "Racket export: %s" fname;
+      open_file "racket" fname
     end in
   let () =
-    let error_bounds_fname = Config.get_string_option "export-error-bounds" in
-    if error_bounds_fname <> "" then begin
-      Log.report `Important "ErrorBounds export: %s" error_bounds_fname;
-      open_file "error-bounds" error_bounds_fname;
+    let error_bounds = Config.get_string_option "export-error-bounds" in
+    if error_bounds <> "" then begin
+      let fname = Str.global_replace (Str.regexp "{task}") task.name error_bounds in
+      Log.report `Important "ErrorBounds export: %s" fname;
+      open_file "error-bounds" fname;
       let fmt = get_file_formatter "error-bounds" in
       Out_error_bounds.generate_error_bounds fmt task;
       close_file "error-bounds"
     end in
-  compute_form { task with constraints = approx_constraints }
+  let result = compute_form { task with constraints = approx_constraints } in
+  close_file "racket";
+  result
 
 let process_input fname =
   Log.report `Main "Loading: %s" fname;

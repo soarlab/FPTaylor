@@ -97,6 +97,21 @@ def replace_in_file(fname, pats, out_name=None):
         f.write("".join(result))
 
 
+def files_from_template(fname_template):
+    result = {}
+    if not fname_template:
+        return result
+    pat = re.sub(r"\\{task\\}", r"(.*)", re.escape(fname_template))
+    log.debug("pat = {0}".format(pat))
+    for fname in glob.glob(re.sub("{task}", "*", fname_template)):
+        if os.path.isfile(fname):
+            log.debug("fname = {0}".format(fname))
+            m = re.match(pat, fname)
+            task = m.group(1)
+            result[task] = fname
+    return result
+
+
 def remove_all(base, name_pat):
     for f in glob.glob(os.path.join(base, name_pat)):
         if os.path.isfile(f):
@@ -236,6 +251,39 @@ def run_error_bounds(input_file):
 
 # Run FPTaylor for each input file
 
+class PlotTask:
+    def __init__(self, base_name):
+        self.base_name = base_name
+        self.racket_files = []
+        self.data_files = []
+
+    def plot(self):
+        # Run plot-fptaylor.rkt
+        image_name = self.base_name
+        if args.type:
+            image_name += "-" + args.type
+        if args.approx_plot:
+            image_name += "-approx"
+        image_file = os.path.join(output_path, image_name + ".png")
+
+        cmd = [racket, racket_plot,
+               "--out", image_file,
+               "--samples", str(args.samples),
+               "--data-style", args.data_plot_style]
+        if args.approx_plot:
+            cmd += ["--approx"]
+        if self.data_files:
+            cmd += ["--data"] + self.data_files
+            cmd += ["--err-type", args.error]
+        cmd += ["--"] + self.racket_files
+
+        run(cmd)
+
+
+class FPTaylorTask:
+    pass
+
+
 fptaylor_extra_args = [
     "-v", str(args.verbosity),
     "--opt-approx", "false",
@@ -274,8 +322,8 @@ for fname in args.input:
     if args.range:
         restrict_input_vars(fname, args.range)
         base_fname += "-range"
-    racket_files = []
-    error_bounds_file = None
+    plot_tasks = dict()
+    error_bounds_file_template = None
     remove_all(plot_tmp, base_fname + "*")
 
     for cfg_files in args.config:
@@ -293,50 +341,36 @@ for fname in args.input:
                     sys.exit(1)
                 cfg_args += ["-c", cfg_file]
 
-        # FPTaylor
-        # TODO: the name should be a pattern such that each task is saved
-        # in a separate file
-
         export_args = []
 
-        if not error_bounds_file:
-            error_bounds_file = os.path.join(plot_tmp, base_fname + ".c")
-            export_args += ["--export-error-bounds", error_bounds_file]
+        if not error_bounds_file_template:
+            error_bounds_file_template = os.path.join(plot_tmp, base_fname + "-{task}.c")
+            export_args += ["--export-error-bounds", error_bounds_file_template]
 
-        racket_file = os.path.join(
-            plot_tmp, base_fname + "-" + cfg_name + ".rkt")
-        racket_files.append(racket_file)
-        export_args += ["--export-racket", racket_file]
+        racket_file_template = os.path.join(
+            plot_tmp, base_fname + "-" + cfg_name + "-{task}.rkt")
+        export_args += ["--export-racket", racket_file_template]
 
         cmd = [fptaylor, fname] + cfg_args + export_args + fptaylor_extra_args
         run(cmd)
 
-        # Adjust the name in the output Racket file
-        replace_in_file(racket_file,
-                        [(r"\(define name", '"([^"]*)"', r'"\1-{0}"'.format(cfg_name))])
+        for task, racket_file in files_from_template(racket_file_template).iteritems():
+            # Adjust the name in the output Racket files
+            replace_in_file(racket_file,
+                            [(r"\(define name", '"([^"]*)"', r'"\1-{0}"'.format(cfg_name))])
+            if task not in plot_tasks:
+                plot_tasks[task] = PlotTask("[{0}]{1}".format(task, base_fname))
+            plot_tasks[task].racket_files.append(racket_file)
 
     # ErrorBounds
-    if error_bounds_file:
-        data_file = run_error_bounds(error_bounds_file)
-    else:
-        data_file = None
+    for task, input_file in files_from_template(error_bounds_file_template).iteritems(): 
+        data_file = run_error_bounds(input_file)
+        if task not in plot_tasks:
+            log.warning("Undefined task '{0}' for the data file '{1}'".format(task, input_file))
+            plot_tasks[task] = PlotTask("[{0}]{1}".format(task, base_fname))
+        plot_tasks[task].data_files.append(data_file)
 
     # plot-fptaylor.rkt
-    image_name = base_fname
-    if args.type:
-        image_name += "-" + args.type
-    if args.approx_plot:
-        image_name += "-approx"
-    image_file = os.path.join(output_path, image_name + ".png")
+    for task in plot_tasks.itervalues():
+        task.plot()
 
-    cmd = [racket, racket_plot,
-           "--out", image_file,
-           "--samples", str(args.samples),
-           "--data-style", args.data_plot_style]
-    if args.approx_plot:
-        cmd += ["--approx"]
-    if data_file:
-        cmd += ["--data", data_file, "--err-type", args.error]
-    cmd += racket_files
-
-    run(cmd)
