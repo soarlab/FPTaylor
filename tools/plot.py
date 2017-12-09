@@ -4,17 +4,12 @@ import sys
 import os
 import re
 import glob
-import subprocess
 import shutil
-import hashlib
-import logging
 import argparse
 
-log = logging.getLogger()
-log.setLevel(logging.INFO)
-_handler = logging.StreamHandler()
-_handler.setFormatter(logging.Formatter("[%(levelname)s] %(message)s"))
-log.addHandler(_handler)
+import common
+
+log = common.get_log()
 
 # Global paths
 
@@ -34,69 +29,6 @@ racket_plot = os.path.join(error_bounds_path, "racket", "plot-fptaylor.rkt")
 racket = "racket"
 
 
-def run(cmd, ignore_return_codes=[]):
-    log.info("Running: {0}".format(" ".join(cmd)))
-    ret = subprocess.call(cmd)
-    if ret != 0 and ret not in ignore_return_codes:
-        log.error("Return code: {0}".format(ret))
-        sys.exit(2)
-    return ret
-
-
-def get_hash(input_file, args):
-    if not input_file or not os.path.isfile(input_file):
-        return None
-    args = sorted(args)
-    m = hashlib.md5()
-    with open(input_file, 'r') as f:
-        m.update(f.read())
-    for arg in args:
-        m.update(arg)
-    return m.hexdigest()
-
-
-def find_in_cache(input_file, args):
-    h = get_hash(input_file, args)
-    if not h:
-        return None
-    fname = os.path.join(plot_cache, h)
-    if os.path.isfile(fname):
-        return fname
-    return None
-
-
-def cache_file(fname, input_file, args):
-    if not os.path.isfile(fname):
-        return
-    h = get_hash(input_file, args)
-    if not h:
-        return
-    out = os.path.join(plot_cache, h)
-    shutil.copy(fname, out)
-
-
-def replace_in_file(fname, pats, out_name=None):
-    """Replaces patterns in a given file."""
-    if not os.path.isfile(fname):
-        log.error("'{0}' does not exist", fname)
-        return
-    with open(fname, 'r') as f:
-        lines = f.readlines()
-
-    def edit_line(line):
-        for (guard, pattern, repl) in pats:
-            if guard == "" or re.search(guard, line):
-                line = re.sub(pattern, repl, line)
-        return line
-    result = []
-    for line in lines:
-        result.append(edit_line(line))
-    if not out_name:
-        out_name = fname
-    with open(out_name, 'w') as f:
-        f.write("".join(result))
-
-
 def files_from_template(fname_template):
     result = {}
     if not fname_template:
@@ -110,23 +42,6 @@ def files_from_template(fname_template):
             task = m.group(1)
             result[task] = fname
     return result
-
-
-def remove_all(base, name_pat):
-    for f in glob.glob(os.path.join(base, name_pat)):
-        if os.path.isfile(f):
-            os.remove(f)
-
-
-def remove_files(files):
-    for f in files:
-        if os.path.isfile(f):
-            os.remove(f)
-
-
-def basename(fname):
-    return os.path.splitext(os.path.basename(fname))[0]
-
 
 # Parse arguments
 
@@ -193,8 +108,12 @@ if not os.path.isdir(plot_tmp):
 if not os.path.isdir(plot_cache):
     os.makedirs(plot_cache)
 
-remove_all(plot_tmp, "*")
-remove_all(fptaylor_tmp, "*")
+common.remove_all(plot_tmp, "*")
+common.remove_all(fptaylor_tmp, "*")
+
+
+def basename(fname):
+    return os.path.splitext(os.path.basename(fname))[0]
 
 
 def restrict_input_vars(fname, range):
@@ -209,15 +128,15 @@ def restrict_input_vars(fname, range):
         repl += "]"
     else:
         return
-    replace_in_file(fname, [(r"[\w]+[\s]+in[\s]*\[.+,.+\]",
-                             r"\[(.+),(.+)\]",
-                             repl)])
+    common.replace_in_file(fname, [(r"[\w]+[\s]+in[\s]*\[.+,.+\]",
+                                    r"\[(.+),(.+)\]",
+                                    repl)])
 
 
 def run_error_bounds(input_file):
     exe_file = os.path.join(plot_tmp, "a.out")
     out_file = os.path.join(plot_tmp, basename(input_file) + "-data.txt")
-    remove_files([exe_file, out_file])
+    common.remove_files([exe_file, out_file])
 
     src_files = [os.path.join(error_bounds_path, f) for f in
                  ["search_mpfr.c", "search_mpfr_main.c", "search_mpfr_utils.c"]]
@@ -236,16 +155,16 @@ def run_error_bounds(input_file):
     elif args.type == "real":
         cmd += ["-r"]
 
-    cached_file = find_in_cache(input_file, cmd)
+    cached_file = common.find_in_cache(plot_cache, input_file, cmd)
     if cached_file and not args.update_cache:
         log.info("A cached ErrorBounds result is found")
         shutil.copy(cached_file, out_file)
         return out_file
 
-    run(compile_cmd)
-    run(cmd + ["-o", out_file])
+    common.run(compile_cmd, log=log)
+    common.run(cmd + ["-o", out_file], log=log)
 
-    cache_file(out_file, input_file, cmd)
+    common.cache_file(plot_cache, out_file, input_file, cmd)
     return out_file
 
 
@@ -277,7 +196,7 @@ class PlotTask:
             cmd += ["--err-type", args.error]
         cmd += ["--"] + self.racket_files
 
-        run(cmd)
+        common.run(cmd, log=log)
 
 
 class FPTaylorTask:
@@ -321,7 +240,7 @@ class FPTaylorTask:
         for cfg in self.cfg_files:
             cfg_args += ["-c", cfg]
         cmd = [fptaylor] + self.input_files + cfg_args + args + self.extra_args
-        run(cmd)
+        common.run(cmd, log=log)
 
 
 for fname in args.input:
@@ -336,7 +255,7 @@ for fname in args.input:
         base_fname += "-range"
 
     error_bounds_file_template = None
-    remove_all(plot_tmp, base_fname + "*")
+    common.remove_all(plot_tmp, base_fname + "*")
     
     plot_tasks = dict()
 
@@ -369,8 +288,8 @@ for fname in args.input:
 
         for task, racket_file in files_from_template(racket_file_template).iteritems():
             # Adjust the name in the output Racket files
-            replace_in_file(racket_file,
-                            [(r"\(define name", '"([^"]*)"', r'"\1-{0}"'.format(cfg_name))])
+            common.replace_in_file(racket_file,
+                                   [(r"\(define name", '"([^"]*)"', r'"\1-{0}"'.format(cfg_name))])
             if task not in plot_tasks:
                 plot_tasks[task] = PlotTask("[{0}]{1}".format(task, base_fname))
             plot_tasks[task].racket_files.append(racket_file)
