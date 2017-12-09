@@ -1,3 +1,4 @@
+import sys
 import os
 import re
 import subprocess
@@ -16,12 +17,13 @@ def get_log():
     return log
 
 
-def run(cmd, ignore_return_codes=[], log=None):
-    msg = "Running: {0}".format(" ".join(cmd))
-    if log:
-        log.info(msg)
-    else:
-        print(msg)
+def run(cmd, ignore_return_codes=[], log=None, silent=False):
+    if not silent:
+        msg = "Running: {0}".format(" ".join(cmd))
+        if log:
+            log.info(msg)
+        else:
+            print(msg)
     ret = subprocess.call(cmd)
     if ret != 0 and ret not in ignore_return_codes:
         msg = "Return code: {0}".format(ret)
@@ -31,6 +33,27 @@ def run(cmd, ignore_return_codes=[], log=None):
             print(msg)
         sys.exit(2)
     return ret
+
+
+def run_output(cmd, ignore_return_codes=[], log=None, silent=False):
+    if not silent:
+        msg = "Running: {0}".format(" ".join(cmd))
+        if log:
+            log.info(msg)
+        else:
+            print(msg)
+    try:
+        return subprocess.check_output(cmd, stderr=subprocess.STDOUT)
+    except subprocess.CalledProcessError as e:
+        if e.returncode in ignore_return_codes:
+            return e.output
+        msg = "{0}\n\nReturn code: {1}".format(e.output, e.returncode)
+        if log:
+            log.error(msg)
+        else:
+            print(msg)
+        sys.exit(2)
+
 
 
 def get_hash(input_file, args):
