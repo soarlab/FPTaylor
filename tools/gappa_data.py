@@ -147,7 +147,8 @@ class GappaTask:
 out_file = os.path.join(tmp_path, basename(args.input) + ".fpcore")
 
 cmd = [fptaylor, args.input, 
-       "--fpcore-out", out_file, 
+       "--fpcore-out", out_file,
+       "--log-append-date", "none",
        "-v", str(args.verbosity)]
 
 rnd_types = {

@@ -13,7 +13,7 @@ log = common.get_log()
 
 # Global paths
 
-base_path = os.path.dirname(os.path.normpath(sys.argv[0]))
+base_path = os.path.normpath(os.path.dirname(os.path.normpath(sys.argv[0])))
 output_path = os.path.join(base_path, "images")
 plot_tmp = os.path.join(base_path, "tmp_plot")
 plot_cache = os.path.join(base_path, "cache_plot")
@@ -70,6 +70,12 @@ parser.add_argument('-v', '--verbosity', type=int, default=1,
 
 parser.add_argument('-s', '--samples', type=int, default=1000,
                     help="number of sample points (intervals) for plots")
+
+parser.add_argument('--gappa', action='store_true',
+                    help="produce Gappa plots")
+
+parser.add_argument('--gappa-segments', type=int, default=200,
+                    help="number of subintervals for Gappa plots")
 
 parser.add_argument('--approx-plot', action='store_true',
                     help="produce approximate plots of FPTaylor error models")
@@ -146,25 +152,24 @@ def run_error_bounds(input_file):
     compile_cmd += src_files + [input_file]
     compile_cmd += ["-lmpfr", "-lgmp"]
 
-    cmd = [exe_file,
-           "-n", str(args.segments),
-           "-s", str(args.err_samples)]
+    cmd_args = ["-n", str(args.segments),
+                "-s", str(args.err_samples)]
 
     if args.type == "32":
-        cmd += ["-f"]
+        cmd_args += ["-f"]
     elif args.type == "real":
-        cmd += ["-r"]
+        cmd_args += ["-r"]
 
-    cached_file = common.find_in_cache(plot_cache, input_file, cmd)
+    cached_file = common.find_in_cache(plot_cache, input_file, cmd_args)
     if cached_file and not args.update_cache:
         log.info("A cached ErrorBounds result is found")
         shutil.copy(cached_file, out_file)
         return out_file
 
     common.run(compile_cmd, log=log)
-    common.run(cmd + ["-o", out_file], log=log)
+    common.run([exe_file] + cmd_args + ["-o", out_file], log=log)
 
-    common.cache_file(plot_cache, out_file, input_file, cmd)
+    common.cache_file(plot_cache, out_file, input_file, cmd_args)
     return out_file
 
 
@@ -175,6 +180,9 @@ class PlotTask:
         self.base_name = base_name
         self.racket_files = []
         self.data_files = []
+
+    def add_data_file(self, fname, style=None):
+        self.data_files.append((fname, style))
 
     def plot(self):
         # Run plot-fptaylor.rkt
@@ -191,8 +199,12 @@ class PlotTask:
                "--data-style", args.data_plot_style]
         if args.approx_plot:
             cmd += ["--approx"]
+        for (data_file, style) in self.data_files:
+            if style:
+                cmd += ["--data-with-style", data_file, style]
+            else:
+                cmd += ["--data", data_file]
         if self.data_files:
-            cmd += ["--data"] + self.data_files
             cmd += ["--err-type", args.error]
         cmd += ["--"] + self.racket_files
 
@@ -240,6 +252,26 @@ class FPTaylorTask:
         for cfg in self.cfg_files:
             cfg_args += ["-c", cfg]
         cmd = [fptaylor] + self.input_files + cfg_args + args + self.extra_args
+        common.run(cmd, log=log)
+
+
+class GappaTask:
+    def __init__(self, input_file):
+        self.input_file = input_file
+
+    def run(self):
+        gappa_data = os.path.join(base_path, "gappa_data.py")
+        if args.error != "ulp":
+            error = args.error
+        else:
+            log.warning("Gappa does not support the ULP error")
+            error = "rel"
+        cmd = [gappa_data,
+               "--error", error,
+               "--type", args.type,
+               "--segments", str(args.gappa_segments),
+               "--output-path", plot_tmp,
+               "--", self.input_file]
         common.run(cmd, log=log)
 
 
@@ -300,7 +332,18 @@ for fname in args.input:
         if task not in plot_tasks:
             log.warning("Undefined task '{0}' for the data file '{1}'".format(task, input_file))
             plot_tasks[task] = PlotTask("[{0}]{1}".format(task, base_fname))
-        plot_tasks[task].data_files.append(data_file)
+        plot_tasks[task].add_data_file(data_file)
+
+    # Gappa
+    if args.gappa:
+        gappa = GappaTask(fname)
+        gappa.run()
+        results = files_from_template(os.path.join(plot_tmp, "gappa-data-{task}.txt"))
+        for task, data_file in results.iteritems():
+            if task not in plot_tasks:
+                log.warning("Undefined task '{0}' for the data file '{1}'".format(task, data_file))
+                plot_tasks[task] = PlotTask("[{0}]{1}".format(task, base_fname))
+            plot_tasks[task].add_data_file(data_file, style="lines")
 
     # plot-fptaylor.rkt
     for task in plot_tasks.itervalues():
