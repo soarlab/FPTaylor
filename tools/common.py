@@ -17,14 +17,14 @@ def get_log():
     return log
 
 
-def run(cmd, ignore_return_codes=[], log=None, silent=False):
+def run(cmd, ignore_return_codes=[], stdout=None, log=None, silent=False):
     if not silent:
         msg = "Running: {0}".format(" ".join(cmd))
         if log:
             log.info(msg)
         else:
             print(msg)
-    ret = subprocess.call(cmd)
+    ret = subprocess.call(cmd, stdout=stdout)
     if ret != 0 and ret not in ignore_return_codes:
         msg = "Return code: {0}".format(ret)
         if log:

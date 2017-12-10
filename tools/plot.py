@@ -26,6 +26,11 @@ fptaylor = os.path.join(fptaylor_base, "fptaylor")
 error_bounds_path = os.path.normpath(
     os.path.join(base_path, "..", "..", "ErrorBounds"))
 racket_plot = os.path.join(error_bounds_path, "racket", "plot-fptaylor.rkt")
+
+fpbench_path = os.path.normpath(
+    os.path.join(base_path, "..", "..", "forks", "FPBench", "tools"))
+core2fptaylor = os.path.join(fpbench_path, "core2fptaylor.rkt")
+
 racket = "racket"
 
 
@@ -70,6 +75,9 @@ parser.add_argument('-v', '--verbosity', type=int, default=1,
 
 parser.add_argument('-s', '--samples', type=int, default=1000,
                     help="number of sample points (intervals) for plots")
+
+parser.add_argument('--subexprs', action='store_true',
+                    help="produce plots for all subexpressions")
 
 parser.add_argument('--gappa', action='store_true',
                     help="produce Gappa plots")
@@ -176,7 +184,8 @@ def run_error_bounds(input_file):
 # Run FPTaylor for each input file
 
 class PlotTask:
-    def __init__(self, base_name):
+    def __init__(self, input_name, base_name):
+        self.input_name = input_name
         self.base_name = base_name
         self.racket_files = []
         self.data_files = []
@@ -191,7 +200,12 @@ class PlotTask:
             image_name += "-" + args.type
         if args.approx_plot:
             image_name += "-approx"
-        image_file = os.path.join(output_path, image_name + ".png")
+        out_path = output_path
+        if args.subexprs:
+            out_path = os.path.join(out_path, self.input_name + "-subexprs")
+        if not os.path.exists(out_path):
+            os.makedirs(out_path)
+        image_file = os.path.join(out_path, image_name + ".png")
 
         cmd = [racket, racket_plot,
                "--out", image_file,
@@ -255,6 +269,54 @@ class FPTaylorTask:
         common.run(cmd, log=log)
 
 
+class InputFileTask:
+    def __init__(self, input_file):
+        self.input_file = input_file
+    
+    def create_fpcore_file(self, fname):
+        out_file = os.path.join(plot_tmp, basename(fname) + ".fpcore")
+        cmd = [fptaylor, fname,
+               "--fpcore-out", out_file,
+               "--tmp-base-dir", fptaylor_tmp,
+               "--log-base-dir", fptaylor_log,
+               "--log-append-date", "none",
+               "-v", str(args.verbosity)]
+
+        rnd_types = {
+            "16": ("float16", "rnd16", "binary16"),
+            "32": ("float32", "rnd32", "binary32"),
+            "64": ("float64", "rnd64", "binary64"),
+            "real": ("real", "rnd64", "real")
+        }
+        var_type, rnd_type, fpcore_type = rnd_types[args.type]
+        cmd += ["--default-var-type", var_type]
+        cmd += ["--default-rnd", rnd_type]
+
+        common.run(cmd, log=log)
+        return out_file, fpcore_type
+
+    def run(self):
+        if not os.path.isfile(self.input_file):
+            log.error("Input file does not exist: {0}".format(self.input_file))
+            sys.exit(1)
+        
+        out_path = os.path.join(plot_tmp, os.path.basename(self.input_file))
+        shutil.copy(self.input_file, out_path)
+        
+        if args.range:
+            restrict_input_vars(out_path, args.range)
+
+        if args.subexprs:
+            fpcore_file, fpcore_type = self.create_fpcore_file(out_path)
+            cmd = [racket, core2fptaylor,
+                   "--var-precision", fpcore_type,
+                   "--subexprs"]
+            with open(out_path, 'w') as f:
+                common.run(cmd + ["--", fpcore_file], log=log, stdout=f)
+
+        return out_path
+
+
 class GappaTask:
     def __init__(self, input_file):
         self.input_file = input_file
@@ -275,15 +337,10 @@ class GappaTask:
         common.run(cmd, log=log)
 
 
-for fname in args.input:
-    if not os.path.isfile(fname):
-        log.error("Input file does not exist: {0}".format(fname))
-        sys.exit(1)
-    shutil.copy(fname, plot_tmp)
-    fname = os.path.join(plot_tmp, os.path.basename(fname))
+for input_file in args.input:
+    fname = InputFileTask(input_file).run()
     base_fname = basename(fname) + "-" + args.error
     if args.range:
-        restrict_input_vars(fname, args.range)
         base_fname += "-range"
 
     error_bounds_file_template = None
@@ -323,7 +380,7 @@ for fname in args.input:
             common.replace_in_file(racket_file,
                                    [(r"\(define name", '"([^"]*)"', r'"\1-{0}"'.format(cfg_name))])
             if task not in plot_tasks:
-                plot_tasks[task] = PlotTask("[{0}]{1}".format(task, base_fname))
+                plot_tasks[task] = PlotTask(base_fname, "[{0}]{1}".format(task, base_fname))
             plot_tasks[task].racket_files.append(racket_file)
 
     # ErrorBounds
@@ -331,7 +388,7 @@ for fname in args.input:
         data_file = run_error_bounds(input_file)
         if task not in plot_tasks:
             log.warning("Undefined task '{0}' for the data file '{1}'".format(task, input_file))
-            plot_tasks[task] = PlotTask("[{0}]{1}".format(task, base_fname))
+            plot_tasks[task] = PlotTask(base_fname, "[{0}]{1}".format(task, base_fname))
         plot_tasks[task].add_data_file(data_file)
 
     # Gappa
@@ -342,7 +399,7 @@ for fname in args.input:
         for task, data_file in results.iteritems():
             if task not in plot_tasks:
                 log.warning("Undefined task '{0}' for the data file '{1}'".format(task, data_file))
-                plot_tasks[task] = PlotTask("[{0}]{1}".format(task, base_fname))
+                plot_tasks[task] = PlotTask(base_fname, "[{0}]{1}".format(task, base_fname))
             plot_tasks[task].add_data_file(data_file, style="lines")
 
     # plot-fptaylor.rkt
