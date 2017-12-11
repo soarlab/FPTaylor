@@ -256,7 +256,12 @@ let generate_error_bounds fmt task =
     let vars = all_active_variables task in
     let bounds = List.map (variable_interval task) vars in
     match vars with
-    | [] -> ["unused"], [{Interval.low = 1.; Interval.high = 2.}]
+    | [] -> ["unused"],
+            let names = all_variables task in
+            if names <> [] then
+              [variable_interval task (List.hd names)]
+            else
+              [{Interval.low = 1.; Interval.high = 2.}]
     | _ -> vars, bounds in
   let var_names = List.map (fun s -> "v_" ^ ExprOut.fix_name s) task_vars in
   let env = mk_env (Lib.zip task_vars var_names) in

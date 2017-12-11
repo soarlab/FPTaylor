@@ -76,6 +76,9 @@ parser.add_argument('-v', '--verbosity', type=int, default=1,
 parser.add_argument('-s', '--samples', type=int, default=1000,
                     help="number of sample points (intervals) for plots")
 
+parser.add_argument('--show-extra-errors', action='store_true',
+                    help="explicitly plot all extra error terms (total2, etc.)")
+
 parser.add_argument('--subexprs', action='store_true',
                     help="produce plots for all subexpressions")
 
@@ -189,6 +192,7 @@ class PlotTask:
         self.base_name = base_name
         self.racket_files = []
         self.data_files = []
+        self.title = None
 
     def add_data_file(self, fname, style=None):
         self.data_files.append((fname, style))
@@ -211,6 +215,10 @@ class PlotTask:
                "--out", image_file,
                "--samples", str(args.samples),
                "--data-style", args.data_plot_style]
+        if self.title:
+            cmd += ["--title", self.title]
+        if args.show_extra_errors:
+            cmd += ["--show-extra-errors"]
         if args.approx_plot:
             cmd += ["--approx"]
         for (data_file, style) in self.data_files:
@@ -381,7 +389,14 @@ for input_file in args.input:
                                    [(r"\(define name", '"([^"]*)"', r'"\1-{0}"'.format(cfg_name))])
             if task not in plot_tasks:
                 plot_tasks[task] = PlotTask(base_fname, "[{0}]{1}".format(task, base_fname))
-            plot_tasks[task].racket_files.append(racket_file)
+            plot_task = plot_tasks[task]
+            plot_task.racket_files.append(racket_file)
+            if args.subexprs:
+                title = common.find_in_file(racket_file, 
+                                            r'\(define expression-string "([^"]*)"\)',
+                                            groups=1)
+                if title:
+                    plot_task.title = title
 
     # ErrorBounds
     for task, input_file in files_from_template(error_bounds_file_template).iteritems(): 

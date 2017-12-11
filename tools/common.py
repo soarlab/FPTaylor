@@ -88,10 +88,11 @@ def cache_file(cache_path, fname, input_file, args):
     shutil.copy(fname, out)
 
 
-def replace_in_file(fname, pats, out_name=None):
+def replace_in_file(fname, pats, out_name=None, log=None):
     """Replaces patterns in a given file."""
     if not os.path.isfile(fname):
-        log.error("'{0}' does not exist", fname)
+        if log:
+            log.error("'{0}' does not exist", fname)
         return
     with open(fname, 'r') as f:
         lines = f.readlines()
@@ -108,6 +109,24 @@ def replace_in_file(fname, pats, out_name=None):
         out_name = fname
     with open(out_name, 'w') as f:
         f.write("".join(result))
+
+
+def find_in_file(fname, pat, groups=None):
+    if not os.path.isfile(fname):
+        return
+    with open(fname, 'r') as f:
+        text = f.read()
+    m = re.search(pat, text)
+    if not m:
+        return None
+    if not groups:
+        return m.group(0)
+    if not isinstance(groups, list):
+        return m.group(groups)
+    result = []
+    for group in groups:
+        result.append(m.group(group))
+    return result
 
 
 def remove_all(base, name_pat):
