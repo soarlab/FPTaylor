@@ -15,12 +15,13 @@ log = common.get_log()
 # Global paths
 
 base_path = os.path.dirname(os.path.normpath(sys.argv[0]))
-tmp_path = os.path.join(base_path, "tmp_gappa_data")
-cache_path = os.path.join(base_path, "cache_gappa_data")
+tmp_base_path = os.path.join(base_path, "tmp")
+tmp_path = os.path.join(tmp_base_path, "tmp_gappa_data")
+cache_path = os.path.join(tmp_base_path, "cache_gappa_data")
 
 fptaylor_base = os.path.normpath(os.path.join(base_path, ".."))
-fptaylor_tmp = os.path.join(base_path, "tmp_fptaylor")
-fptaylor_log = os.path.join(base_path, "log_fptaylor")
+fptaylor_tmp = os.path.join(tmp_base_path, "tmp_fptaylor")
+fptaylor_log = os.path.join(tmp_base_path, "log_export_fptaylor")
 fptaylor = os.path.join(fptaylor_base, "fptaylor")
 
 gappa = os.path.expanduser(os.path.normpath("~/Work/tools/gappa-1.3.1/src/gappa"))
@@ -148,7 +149,10 @@ out_file = os.path.join(tmp_path, basename(args.input) + ".fpcore")
 
 cmd = [fptaylor, args.input, 
        "--fpcore-out", out_file,
+       "--log-base-dir", fptaylor_log,
        "--log-append-date", "none",
+       "--tmp-base-dir", fptaylor_tmp,
+       "--tmp-date", "false",
        "-v", str(args.verbosity)]
 
 rnd_types = {

@@ -15,12 +15,14 @@ log = common.get_log()
 
 base_path = os.path.normpath(os.path.dirname(os.path.normpath(sys.argv[0])))
 output_path = os.path.join(base_path, "images")
-plot_tmp = os.path.join(base_path, "tmp_plot")
-plot_cache = os.path.join(base_path, "cache_plot")
+tmp_path = os.path.join(base_path, "tmp")
+
+plot_tmp = os.path.join(tmp_path, "tmp_plot")
+plot_cache = os.path.join(tmp_path, "cache_plot")
 
 fptaylor_base = os.path.normpath(os.path.join(base_path, ".."))
-fptaylor_tmp = os.path.join(base_path, "tmp_fptaylor")
-fptaylor_log = os.path.join(base_path, "log_fptaylor")
+fptaylor_tmp = os.path.join(tmp_path, "tmp_fptaylor")
+fptaylor_log = os.path.join(tmp_path, "log_fptaylor")
 fptaylor = os.path.join(fptaylor_base, "fptaylor")
 
 error_bounds_path = os.path.normpath(
@@ -158,7 +160,7 @@ def run_error_bounds(input_file):
     out_file = os.path.join(plot_tmp, basename(input_file) + "-data.txt")
     common.remove_files([exe_file, out_file])
 
-    src_files = ["search_mpfr_main.c"]
+    src_files = ["search_mp_main.c"]
     if args.mpfi:
         src_files += ["search_mpfi.c"]
     else:
