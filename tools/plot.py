@@ -76,6 +76,9 @@ parser.add_argument('-v', '--verbosity', type=int, default=1,
 parser.add_argument('-s', '--samples', type=int, default=1000,
                     help="number of sample points (intervals) for plots")
 
+parser.add_argument('--mpfi', action='store_true',
+                    help="use MPFI in ErrorBounds")
+
 parser.add_argument('--show-extra-errors', action='store_true',
                     help="explicitly plot all extra error terms (total2, etc.)")
 
@@ -155,12 +158,18 @@ def run_error_bounds(input_file):
     out_file = os.path.join(plot_tmp, basename(input_file) + "-data.txt")
     common.remove_files([exe_file, out_file])
 
-    src_files = [os.path.join(error_bounds_path, f) for f in
-                 ["search_mpfr.c", "search_mpfr_main.c", "search_mpfr_utils.c"]]
+    src_files = ["search_mpfr_main.c"]
+    if args.mpfi:
+        src_files += ["search_mpfi.c"]
+    else:
+        src_files += ["search_mpfr.c"]
+    src_files = [os.path.join(error_bounds_path, f) for f in src_files]
 
     compile_cmd = ["gcc", "-o", exe_file, "-O3",
                    "-std=c99", "-I" + error_bounds_path]
     compile_cmd += src_files + [input_file]
+    if args.mpfi:
+        compile_cmd += ["-DUSE_MPFI", "-lmpfi"]
     compile_cmd += ["-lmpfr", "-lgmp"]
 
     cmd_args = ["-n", str(args.segments),
@@ -171,7 +180,11 @@ def run_error_bounds(input_file):
     elif args.type == "real":
         cmd_args += ["-r"]
 
-    cached_file = common.find_in_cache(plot_cache, input_file, cmd_args)
+    cache_args = list(cmd_args)
+    if args.mpfi:
+        cache_args += "mpfi"
+
+    cached_file = common.find_in_cache(plot_cache, input_file, cache_args)
     if cached_file and not args.update_cache:
         log.info("A cached ErrorBounds result is found")
         shutil.copy(cached_file, out_file)
@@ -180,7 +193,7 @@ def run_error_bounds(input_file):
     common.run(compile_cmd, log=log)
     common.run([exe_file] + cmd_args + ["-o", out_file], log=log)
 
-    common.cache_file(plot_cache, out_file, input_file, cmd_args)
+    common.cache_file(plot_cache, out_file, input_file, cache_args)
     return out_file
 
 
@@ -350,6 +363,8 @@ for input_file in args.input:
     base_fname = basename(fname) + "-" + args.error
     if args.range:
         base_fname += "-range"
+    if args.mpfi:
+        base_fname += "-mpfi"
 
     error_bounds_file_template = None
     common.remove_all(plot_tmp, base_fname + "*")
