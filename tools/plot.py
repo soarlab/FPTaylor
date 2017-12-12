@@ -78,6 +78,9 @@ parser.add_argument('-v', '--verbosity', type=int, default=1,
 parser.add_argument('-s', '--samples', type=int, default=1000,
                     help="number of sample points (intervals) for plots")
 
+parser.add_argument('--mpfr-prec', type=int,
+                    help="MPFR precision in ErrorBounds")
+
 parser.add_argument('--mpfi', action='store_true',
                     help="use MPFI in ErrorBounds")
 
@@ -181,6 +184,9 @@ def run_error_bounds(input_file):
         cmd_args += ["-f"]
     elif args.type == "real":
         cmd_args += ["-r"]
+    
+    if args.mpfr_prec:
+        cmd_args += ["-p", str(args.mpfr_prec)]
 
     cache_args = list(cmd_args)
     if args.mpfi:
@@ -365,6 +371,8 @@ for input_file in args.input:
     base_fname = basename(fname) + "-" + args.error
     if args.range:
         base_fname += "-range"
+    if args.mpfr_prec:
+        base_fname += "-mpfr{0}".format(args.mpfr_prec)
     if args.mpfi:
         base_fname += "-mpfi"
 
