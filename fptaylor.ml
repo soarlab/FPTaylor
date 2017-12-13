@@ -29,7 +29,9 @@ type result = {
   rel_error_exact : interval option;
   ulp_error_approx : interval option;
   ulp_error_exact : interval option;
+  abs_spec_error : float option;
   rel_spec_error : float option;
+  ulp_spec_error : float option;
   elapsed_time : float;
 }
 
@@ -42,7 +44,9 @@ let default_result = {
   rel_error_exact = None;
   ulp_error_approx = None;
   ulp_error_exact = None;
+  abs_spec_error = None;
   rel_spec_error = None;
+  ulp_spec_error = None;
   elapsed_time = 0.0;
 }
 
@@ -81,9 +85,9 @@ let print_result result =
   let print_total_error width str = function
     | Some rel_err, Some spec_err ->
       let total_err = Fpu.fadd_high rel_err.high spec_err in
-      Log.report `Main "%-*s %e" width "Specification error:" spec_err;
-      Log.report `Main "%-*s %e" width str total_err
-    | _ -> () in
+      Log.report `Main "%-*s %e" width str total_err;
+      Log.report `Main "(%-*s %e)" width "Specification error:" spec_err
+      | _ -> () in
   let print_upper_bound width str = function
     | None -> ()
     | Some v -> Log.report `Main "%-*s %e" width str v.high in
@@ -158,8 +162,19 @@ let print_result result =
   print_upper_bound w rel_exact_str result.rel_error_exact;
   print_upper_bound w ulp_approx_str result.ulp_error_approx;
   print_upper_bound w ulp_exact_str result.ulp_error_exact;
-  print_total_error w "Total rel error (approximate):" (result.rel_error_approx, result.rel_spec_error);
-  print_total_error w "Total rel error (exact):" (result.rel_error_exact, result.rel_spec_error);
+  Log.report `Main "";
+  print_total_error w "Total abs error (approximate):" 
+    (result.abs_error_approx, result.abs_spec_error);
+  print_total_error w "Total abs error (exact):" 
+    (result.abs_error_exact, result.abs_spec_error);
+  print_total_error w "Total rel error (approximate):" 
+    (result.rel_error_approx, result.rel_spec_error);
+  print_total_error w "Total rel error (exact):" 
+    (result.rel_error_exact, result.rel_spec_error);
+  print_total_error w "Total ULP error (approximate):" 
+    (result.ulp_error_approx, result.ulp_spec_error);
+  print_total_error w "Total ULP error (exact):" 
+    (result.ulp_error_exact, result.ulp_spec_error);
   Log.report `Main "\nElapsed time: %.2f\n" result.elapsed_time
 
 let print_form level f =
@@ -307,22 +322,33 @@ let absolute_errors task tf =
   in
   err_approx, err_exact
 
-let relative_errors task tf spec (spec_min, spec_max) =
+let relative_errors task tf =
   Log.report `Important "\nComputing relative errors";
   let cs = constraints_of_task task in
-
-  let f_int = {low = spec_min; high = spec_max} in
+  let spec, err_spec = 
+    match task.spec with
+    | None -> tf.v0, None
+    | Some expr ->
+      Log.report `Important "Computing the approximation relative error: %s"
+        (ExprOut.Info.print_str expr);
+      let err = Spec.compute_spec_rel_error cs tf.v0 ~spec:expr in
+      Log.report `Important "Specification error: %e" err;
+      expr, Some err in
+  let spec_min, spec_max =
+    Opt.find_min_max Opt_common.default_opt_pars cs spec in
+  let spec_bounds = {low = spec_min; high = spec_max} in
+  Log.report `Important "spec bounds: [%e, %e]" spec_bounds.low spec_bounds.high;
   let rel_tol = Config.get_float_option "rel-error-threshold" in
-  if (abs_I f_int).low < rel_tol then begin
+  if (abs_I spec_bounds).low < rel_tol then begin
     Log.warning "\nCannot compute the relative error: \
                  values of the function are close to zero";
-    None, None
+    None, None, None
   end
   else
     let v1, v2 = split_error_terms tf.v1 in
     let bounds2 = List.map (compute_bound cs) v2 in
     let total2_i = sum_err_bounds bounds2 in
-    let b2_i = total2_i /$ abs_I f_int in
+    let b2_i = total2_i /$ abs_I spec_bounds in
     let err_approx =
       if not (Config.get_bool_option "opt-approx") then None
       else
@@ -377,9 +403,9 @@ let relative_errors task tf spec (spec_min, spec_max) =
           Some total_i
         end
     in
-    err_approx, err_exact
+    err_spec, err_approx, err_exact
 
-let ulp_errors task tf (f_min, f_max) =
+let ulp_errors task tf =
   Log.report `Important "\nComputing ULP errors";
   let cs = constraints_of_task task in
   let prec, min_exp =
@@ -388,17 +414,30 @@ let ulp_errors task tf (f_min, f_max) =
     if p <= 0 then failwith (Format.sprintf "Bad precision: %d" p);
     p, type_min_exp t in
   Log.report `Important "\nprec = %d, e_min = %d" prec min_exp;
-  let f_int = Func.goldberg_ulp_I (prec, min_exp) {low = f_min; high = f_max} in
-  if (abs_I f_int).low <= 0. then begin
+  let spec, err_spec = 
+    match task.spec with
+    | None -> tf.v0, None
+    | Some expr ->
+      Log.report `Important "Computing the approximation ULP error: %s"
+        (ExprOut.Info.print_str expr);
+      let err_rel = Spec.compute_spec_rel_error cs tf.v0 ~spec:expr in
+      let err = ldexp err_rel prec in
+      Log.report `Important "Specification error: %e" err;
+      expr, Some err in
+  let spec_min, spec_max =
+    Opt.find_min_max Opt_common.default_opt_pars cs spec in
+  let spec_bounds = Func.goldberg_ulp_I (prec, min_exp) {low = spec_min; high = spec_max} in
+  Log.report `Important "spec ULP bounds: [%e, %e]" spec_bounds.low spec_bounds.high;
+  if (abs_I spec_bounds).low <= 0. then begin
     Log.warning "\nCannot compute the ULP error: \
                  values of the function are close to zero";
-    None, None
+    None, None, None
   end
   else
     let v1, v2 = split_error_terms tf.v1 in
     let bounds2 = List.map (compute_bound cs) v2 in
     let total2_i = sum_err_bounds bounds2 in
-    let b2_i = total2_i /$ abs_I f_int in
+    let b2_i = total2_i /$ abs_I spec_bounds in
     let err_approx =
       if not (Config.get_bool_option "opt-approx") then None
       else
@@ -445,22 +484,17 @@ let ulp_errors task tf (f_min, f_max) =
           Some total_i
         end
     in
-    err_approx, err_exact
+    err_spec, err_approx, err_exact
 
 let errors task tform =
-  let cs = constraints_of_task task in
-  let spec = match task.spec with
-             | Some expr -> expr
-             | None -> tform.v0 in
-  let spec_min, spec_max = 
-    if Config.get_bool_option "rel-error" ||
-       Config.get_bool_option "ulp-error" || 
-       Config.get_bool_option "find-bounds" then
-      Opt.find_min_max Opt_common.default_opt_pars cs spec
-    else
-      neg_infinity, infinity in
-  Log.report `Important "spec bounds: [%e, %e]" spec_min spec_max;
-  let result = { default_result with real_bounds = {low = spec_min; high = spec_max} } in
+  let result =
+    if Config.get_bool_option "find-bounds" then begin
+      let f_min, f_max = 
+        Opt.find_min_max Opt_common.default_opt_pars (constraints_of_task task) tform.v0 in
+      Log.report `Important "bounds: [%e, %e]" f_min f_max;
+      { default_result with real_bounds = {low = f_min; high = f_max} }
+    end else
+      default_result in
   let result =
     if Config.get_bool_option "opt-approx" || Config.get_bool_option "opt-exact" then
       let abs_approx, abs_exact = 
@@ -470,25 +504,14 @@ let errors task tform =
           None, None in
       let rel_spec_error, rel_approx, rel_exact = 
         if Config.get_bool_option "rel-error" then
-          let spec_error = 
-            match task.spec with
-            | None -> None
-            | Some expr -> begin
-              Log.report `Important "Computing relative specification (approximation) error: %s"
-                (ExprOut.Info.print_str spec);
-              let err = Spec.compute_spec_rel_error cs tform.v0 ~spec:expr in
-              Log.report `Important "Specification error: %e" err;
-              Some err
-            end in
-          let e1, e2 = relative_errors task tform spec (spec_min, spec_max) in
-          spec_error, e1, e2
+          relative_errors task tform
         else
           None, None, None in
-      let ulp_approx, ulp_exact = 
+      let ulp_spec_error, ulp_approx, ulp_exact = 
         if Config.get_bool_option "ulp-error" then
-          ulp_errors task tform (spec_min, spec_max)
+          ulp_errors task tform
         else
-          None, None in
+          None, None, None in
       {result with
        abs_error_approx = abs_approx;
        abs_error_exact = abs_exact;
@@ -497,6 +520,7 @@ let errors task tform =
        ulp_error_approx = ulp_approx;
        ulp_error_exact = ulp_exact;
        rel_spec_error = rel_spec_error;
+       ulp_spec_error = ulp_spec_error;
       }
     else
       result in
