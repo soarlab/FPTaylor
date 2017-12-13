@@ -1,0 +1,5 @@
+Variables
+  real x in [1.5, 2.25];
+
+Expressions
+  var rnd= x;

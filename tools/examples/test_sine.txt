@@ -1,0 +1,11 @@
+Variables
+  x in [0.1, 1.57079632679];
+
+Definitions
+  r1 rnd= x - (x*x*x)/6.0 + (x*x*x*x*x)/120.0;
+  r2 rnd= (x*x*x*x*x*x*x)/5040.0;
+
+Expressions
+  sine1 rnd= r1 - r2;
+  test_sine = r1 - r2;
+

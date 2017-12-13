@@ -27,4 +27,8 @@ gelpia/
 log/
 tmp/
 test/
+tools/tmp*
+tools/cache*
+tools/out*
+tools/images*
 .DS_Store

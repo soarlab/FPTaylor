@@ -1,0 +1,6 @@
+Variables
+  x in [0.9, 1.1];
+  y in [3, 3.1];
+
+Expressions
+  sum rnd= x + y;

@@ -27,7 +27,9 @@ type result = {
   abs_error_exact : interval option;
   rel_error_approx : interval option;
   rel_error_exact : interval option;
-  spec_error : float option;
+  ulp_error_approx : interval option;
+  ulp_error_exact : interval option;
+  rel_spec_error : float option;
   elapsed_time : float;
 }
 
@@ -38,7 +40,9 @@ let default_result = {
   abs_error_exact = None;
   rel_error_approx = None;
   rel_error_exact = None;
-  spec_error = None;
+  ulp_error_approx = None;
+  ulp_error_exact = None;
+  rel_spec_error = None;
   elapsed_time = 0.0;
 }
 
@@ -48,16 +52,23 @@ let open_file, close_file, close_all, get_file_formatter =
     if Hashtbl.mem files id then
       failwith ("File with the same id is already open: " ^ id)
     else
-      Hashtbl.add files id (open_out fname) in
+      let oc = open_out fname in
+      let fmt = Format.make_formatter (output oc) (fun () -> flush oc) in
+      Hashtbl.add files id (oc, fmt) in
   let close_file id =
-    close_out (Hashtbl.find files id);
-    Hashtbl.remove files id in
+    try
+      let oc, fmt = Hashtbl.find files id in
+      Format.pp_print_flush fmt ();
+      close_out oc;
+      Hashtbl.remove files id
+    with Not_found -> () in
   let close_all () =
-    Hashtbl.iter (fun _ oc -> close_out oc) files;
+    Hashtbl.iter 
+      (fun _ (oc, fmt) -> Format.pp_print_flush fmt (); close_out oc) 
+      files;
     Hashtbl.clear files in
   let get_fmt id = 
-    let oc = Hashtbl.find files id in
-    Format.make_formatter (output oc) (fun () -> flush oc) in
+    snd (Hashtbl.find files id) in
   open_file, close_file, close_all, get_fmt
 
 let get_problem_absolute_error result =
@@ -108,16 +119,22 @@ let print_result result =
     let abs_exact_str = "The absolute error model (exact):" in
     let rel_approx_str = "The relative error model (approximate):" in
     let rel_exact_str = "The relative error model (exact):" in
+    let ulp_approx_str = "The ULP error model (approximate):" in
+    let ulp_exact_str = "The ULP error model (exact):" in
     let w = max_length [abs_approx_str, result.abs_error_approx;
                         abs_exact_str, result.abs_error_exact;
                         rel_approx_str, result.rel_error_approx;
-                        rel_exact_str, result.rel_error_exact] in
+                        rel_exact_str, result.rel_error_exact;
+                        ulp_approx_str, result.ulp_error_approx;
+                        ulp_exact_str, result.ulp_error_exact] in
     if w > 0 then
       Log.report `Main "Optimization lower bounds for error models:";
     print_lower_bound w abs_approx_str result.abs_error_approx;
     print_lower_bound w abs_exact_str result.abs_error_exact;
     print_lower_bound w rel_approx_str result.rel_error_approx;
     print_lower_bound w rel_exact_str result.rel_error_exact;
+    print_lower_bound w ulp_approx_str result.ulp_error_approx;
+    print_lower_bound w ulp_exact_str result.ulp_error_exact;
     Log.report `Main "";
   end;
   Log.report `Main "Bounds (without rounding): %s" (sprintf_I "%e" result.real_bounds);
@@ -127,16 +144,22 @@ let print_result result =
   let abs_exact_str = "Absolute error (exact):" in
   let rel_approx_str = "Relative error (approximate):" in
   let rel_exact_str = "Relative error (exact):" in
+  let ulp_approx_str = "ULP error (approximate):" in
+  let ulp_exact_str = "ULP error (exact):" in
   let w = max_length [abs_approx_str, result.abs_error_approx;
                       abs_exact_str, result.abs_error_exact;
                       rel_approx_str, result.rel_error_approx;
-                      rel_exact_str, result.rel_error_exact] in
+                      rel_exact_str, result.rel_error_exact;
+                      ulp_approx_str, result.ulp_error_approx;
+                      ulp_exact_str, result.ulp_error_exact] in
   print_upper_bound w abs_approx_str result.abs_error_approx;
   print_upper_bound w abs_exact_str result.abs_error_exact;
   print_upper_bound w rel_approx_str result.rel_error_approx;
   print_upper_bound w rel_exact_str result.rel_error_exact;
-  print_total_error w "Total rel error (approximate):" (result.rel_error_approx, result.spec_error);
-  print_total_error w "Total rel error (exact):" (result.rel_error_exact, result.spec_error);
+  print_upper_bound w ulp_approx_str result.ulp_error_approx;
+  print_upper_bound w ulp_exact_str result.ulp_error_exact;
+  print_total_error w "Total rel error (approximate):" (result.rel_error_approx, result.rel_spec_error);
+  print_total_error w "Total rel error (exact):" (result.rel_error_exact, result.rel_spec_error);
   Log.report `Main "\nElapsed time: %.2f\n" result.elapsed_time
 
 let print_form level f =
@@ -210,8 +233,9 @@ let error2_warning ?(eps = 1e-2) err1 err2 =
                  manually split intervals of input variables.";
   end
 
-let absolute_errors cs tf =
+let absolute_errors task tf =
   Log.report `Important "\nComputing absolute errors";
+  let cs = constraints_of_task task in
   let v1, v2 = split_error_terms tf.v1 in
   let bounds2 =
     let bounds2' = List.map (compute_bound cs) v2 in
@@ -253,12 +277,6 @@ let absolute_errors cs tf =
             Maxima.simplify full_expr', exp
           else
             full_expr', exp in
-
-        let _ = 
-          Out_racket.create_racket_file "abs_exact" 
-            "fptaylor-abs" total2_i.high exp full_expr;
-          Out_test.create_test_file "test_abs_exact.txt" cs full_expr in
-
         let bound =
           let r = Opt.find_max Opt_common.default_opt_pars cs full_expr in
           {low = r.Opt_common.lower_bound; high = r.Opt_common.result} in
@@ -274,6 +292,12 @@ let absolute_errors cs tf =
           end
           else
             total1_i +$ total2_i in
+
+        let () = try
+          Out_racket.create_racket_file (get_file_formatter "racket")
+            task total2_i.high exp full_expr (Some total_i.high)
+          with Not_found -> () in
+      
         Log.report `Important "exact bound (exp = %d): %s" exp (bound_info bound);
         Log.report `Important "total2: %s" (bound_info total2_i);
         Log.report `Important "exact total: %s" (bound_info total_i);
@@ -283,9 +307,11 @@ let absolute_errors cs tf =
   in
   err_approx, err_exact
 
-let relative_errors cs tf spec (f_min, f_max) =
+let relative_errors task tf spec (spec_min, spec_max) =
   Log.report `Important "\nComputing relative errors";
-  let f_int = {low = f_min; high = f_max} in
+  let cs = constraints_of_task task in
+
+  let f_int = {low = spec_min; high = spec_max} in
   let rel_tol = Config.get_float_option "rel-error-threshold" in
   if (abs_I f_int).low < rel_tol then begin
     Log.warning "\nCannot compute the relative error: \
@@ -332,17 +358,18 @@ let relative_errors cs tf spec (f_min, f_max) =
               Maxima.simplify full_expr', exp
             else
               full_expr', exp in
-
-          let _ = 
-            Out_racket.create_racket_file "rel_exact" 
-              "fptaylor-rel" b2_i.high exp full_expr;
-            Out_test.create_test_file "test_rel_exact.txt" cs full_expr in
-
           let bound =
             let r = Opt.find_max Opt_common.default_opt_pars cs full_expr in
             {low = r.Opt_common.lower_bound; high = r.Opt_common.result} in
           let total1_i = get_eps exp *.$ bound in
           let total_i = total1_i +$ b2_i in
+
+          let () = 
+            try
+              Out_racket.create_racket_file (get_file_formatter "racket")
+                task b2_i.high exp full_expr (Some total_i.high)
+            with Not_found -> () in
+      
           Log.report `Important "exact bound-rel (exp = %d): %s" exp (bound_info bound);
           Log.report `Important "total2: %s" (bound_info b2_i);
           Log.report `Important "exact total-rel: %s" (bound_info total_i);
@@ -352,31 +379,124 @@ let relative_errors cs tf spec (f_min, f_max) =
     in
     err_approx, err_exact
 
-let errors cs tform spec =
-  let f_min, f_max = 
-    if Config.get_bool_option "rel-error" || Config.get_bool_option "find-bounds" then
+let ulp_errors task tf (f_min, f_max) =
+  Log.report `Important "\nComputing ULP errors";
+  let cs = constraints_of_task task in
+  let prec, min_exp =
+    let t = Rounding_simpl.get_type (variable_type task) task.expression in
+    let p = type_precision t in
+    if p <= 0 then failwith (Format.sprintf "Bad precision: %d" p);
+    p, type_min_exp t in
+  Log.report `Important "\nprec = %d, e_min = %d" prec min_exp;
+  let f_int = Func.goldberg_ulp_I (prec, min_exp) {low = f_min; high = f_max} in
+  if (abs_I f_int).low <= 0. then begin
+    Log.warning "\nCannot compute the ULP error: \
+                 values of the function are close to zero";
+    None, None
+  end
+  else
+    let v1, v2 = split_error_terms tf.v1 in
+    let bounds2 = List.map (compute_bound cs) v2 in
+    let total2_i = sum_err_bounds bounds2 in
+    let b2_i = total2_i /$ abs_I f_int in
+    let err_approx =
+      if not (Config.get_bool_option "opt-approx") then None
+      else
+        begin
+          let v1_rel = List.map (fun (e, err) -> mk_div e (mk_ulp (prec, min_exp) tf.v0), err) v1 in
+          Log.report `Important "\nSolving the approximate optimization probelm";
+          Log.report `Important "\nULP errors:";
+          let bounds1 = List.map (compute_bound cs) v1_rel in
+          let total1_i = sum_err_bounds bounds1 in
+          let total_i = total1_i +$ b2_i in
+          Log.report `Important "ulp-total1: %s" (bound_info total1_i);
+          Log.report `Important "ulp-total2: %s" (bound_info b2_i);
+          Log.report `Important "ulp-total: %s" (bound_info total_i);
+          error2_warning total1_i.high b2_i.high;
+          Some total_i          
+        end
+    in
+    let err_exact =
+      if not (Config.get_bool_option "opt-exact") then None
+      else
+        begin
+          Log.report `Important "\nSolving the exact optimization problem";
+          let full_expr, exp =
+            let abs_exprs = List.map (fun (e, err) -> mk_abs e, err.exp) v1 in
+            let sum_expr, exp = sum_symbolic abs_exprs in
+            let full_expr' = mk_div sum_expr (mk_abs (mk_ulp (prec, min_exp) tf.v0)) in
+            full_expr', exp in
+          let bound =
+            let r = Opt.find_max Opt_common.default_opt_pars cs full_expr in
+            {low = r.Opt_common.lower_bound; high = r.Opt_common.result} in
+          let total1_i = get_eps exp *.$ bound in
+          let total_i = total1_i +$ b2_i in
+
+          let () = 
+            try
+              Out_racket.create_racket_file (get_file_formatter "racket")
+                task b2_i.high exp full_expr (Some total_i.high)
+            with Not_found -> () in
+
+          Log.report `Important "exact bound-ulp (exp = %d): %s" exp (bound_info bound);
+          Log.report `Important "total2: %s" (bound_info b2_i);
+          Log.report `Important "exact total-ulp: %s" (bound_info total_i);
+          error2_warning total1_i.high b2_i.high;
+          Some total_i
+        end
+    in
+    err_approx, err_exact
+
+let errors task tform =
+  let cs = constraints_of_task task in
+  let spec = match task.spec with
+             | Some expr -> expr
+             | None -> tform.v0 in
+  let spec_min, spec_max = 
+    if Config.get_bool_option "rel-error" ||
+       Config.get_bool_option "ulp-error" || 
+       Config.get_bool_option "find-bounds" then
       Opt.find_min_max Opt_common.default_opt_pars cs spec
     else
       neg_infinity, infinity in
-  Log.report `Important "spec bounds: [%e, %e]" f_min f_max;
-  let result = { default_result with real_bounds = {low = f_min; high = f_max} } in
+  Log.report `Important "spec bounds: [%e, %e]" spec_min spec_max;
+  let result = { default_result with real_bounds = {low = spec_min; high = spec_max} } in
   let result =
     if Config.get_bool_option "opt-approx" || Config.get_bool_option "opt-exact" then
       let abs_approx, abs_exact = 
         if Config.get_bool_option "abs-error" then
-          absolute_errors cs tform
+          absolute_errors task tform
         else
           None, None in
-      let rel_approx, rel_exact = 
+      let rel_spec_error, rel_approx, rel_exact = 
         if Config.get_bool_option "rel-error" then
-          relative_errors cs tform spec (f_min, f_max)
+          let spec_error = 
+            match task.spec with
+            | None -> None
+            | Some expr -> begin
+              Log.report `Important "Computing relative specification (approximation) error: %s"
+                (ExprOut.Info.print_str spec);
+              let err = Spec.compute_spec_rel_error cs tform.v0 ~spec:expr in
+              Log.report `Important "Specification error: %e" err;
+              Some err
+            end in
+          let e1, e2 = relative_errors task tform spec (spec_min, spec_max) in
+          spec_error, e1, e2
+        else
+          None, None, None in
+      let ulp_approx, ulp_exact = 
+        if Config.get_bool_option "ulp-error" then
+          ulp_errors task tform (spec_min, spec_max)
         else
           None, None in
       {result with
        abs_error_approx = abs_approx;
        abs_error_exact = abs_exact;
        rel_error_approx = rel_approx;
-       rel_error_exact = rel_exact
+       rel_error_exact = rel_exact;
+       ulp_error_approx = ulp_approx;
+       ulp_error_exact = ulp_exact;
+       rel_spec_error = rel_spec_error;
       }
     else
       result in
@@ -422,17 +542,7 @@ let compute_form task =
           form in
       print_form `Info form;
       Log.report `Info "";
-      let result = 
-        match task.spec with
-        | None -> errors cs form form.v0
-        | Some spec -> begin
-            Log.report `Important "Computing errors for the specification: %s" 
-              (ExprOut.Info.print_str spec);
-            let errs = errors cs form spec in
-            let spec_err = Spec.compute_spec_rel_error cs form.v0 ~spec:spec in
-            Log.report `Main "Specification error: %e" spec_err;
-            { errs with spec_error = Some spec_err }
-          end in
+      let result = errors task form in
       { result with name = task.Task.name }, form
     with Failure msg ->
       Log.error_str msg;
@@ -476,7 +586,26 @@ let process_task (task : task) =
       Log.report `Important "\n****** Approximating constraints *******\n";
       List.map (approximate_constraint task) task.constraints
     end in
-  compute_form { task with constraints = approx_constraints }
+  let () =
+    let racket_export = Config.get_string_option "export-racket" in
+    if racket_export <> "" then begin
+      let fname = Str.global_replace (Str.regexp "{task}") task.Task.name racket_export in
+      Log.report `Important "Racket export: %s" fname;
+      open_file "racket" fname
+    end in
+  let () =
+    let error_bounds = Config.get_string_option "export-error-bounds" in
+    if error_bounds <> "" then begin
+      let fname = Str.global_replace (Str.regexp "{task}") task.Task.name error_bounds in
+      Log.report `Important "ErrorBounds export: %s" fname;
+      open_file "error-bounds" fname;
+      let fmt = get_file_formatter "error-bounds" in
+      Out_error_bounds.generate_error_bounds fmt task;
+      close_file "error-bounds"
+    end in
+  let result = compute_form { task with constraints = approx_constraints } in
+  close_file "racket";
+  result
 
 let process_input fname =
   Log.report `Main "Loading: %s" fname;

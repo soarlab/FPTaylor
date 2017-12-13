@@ -1,0 +1,15 @@
+// ../../fptaylor sine.txt --opt-x-abs-tol 0 --opt-x-rel-tol 0 --opt-f-abs-tol 0 --opt-f-rel-tol 1e-5 -rel true --rel-error-threshold 1e-100 --fp-power2-model false
+// fp-power2-model=true hides a huge second order error terms inside p2 functions.
+// This example can be easily solved if the input interval is split into
+// the following subintervals:
+// [2p-252, 2p-100], [2p-100, 2p-50], [2p-50, pi/64]
+// and with fp-power2-model=true.
+// Investigate: if fp-power2-model=false then the optimization problems
+// have the same lower bound but cannot be solved with a reasonable
+// number of iterations (tried 1e+7 iterations).
+
+Variables
+  float64 x in [2p-252, 2p-100];//, 3.1415926 / 64];
+
+Expressions
+  sine rnd64= x - (x * x * x) / 6;

@@ -1,0 +1,8 @@
+Variables
+  x in [1e6, 2e6];
+	
+Expressions
+  ex0 rnd64= (1.0 / x) - (1.0 / (x + 1.0));
+  ex1 rnd64= ((1.0 - 0.0) / (x * (x + 1.0)));
+
+  

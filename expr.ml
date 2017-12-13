@@ -45,6 +45,7 @@ type bin_op_type =
 
 type gen_op_type =
   | Op_fma
+  | Op_ulp
 
 (* Expression *)
 type expr =
@@ -100,6 +101,11 @@ let mk_const c = Const c and
   mk_abs_err t x = Bin_op (Op_abs_err, t, x) and
   mk_floor_power2 a = U_op (Op_floor_power2, a)
 
+let mk_ulp (prec, e_min) x = 
+  let p = mk_const (Const.of_int prec) in
+  let e = mk_const (Const.of_int e_min) in
+  Gen_op (Op_ulp, [p; e; x])
+
 let mk_int_const i = mk_const (Const.of_int i) and
   mk_num_const n = mk_const (Const.of_num n) and
   mk_float_const f = mk_const (Const.of_float f) and
@@ -148,6 +154,7 @@ let bin_op_name = function
 
 let gen_op_name = function
   | Op_fma -> "fma"
+  | Op_ulp -> "ulp"
 
 let rec eq_expr e1 e2 =
   match (e1, e2) with

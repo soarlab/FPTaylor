@@ -96,7 +96,7 @@ let simplify_rounding var_type =
       begin
         let arg = simplify arg in
         let ty = get_type var_type arg in
-        if rnd.fp_type.bits = 0 then
+        if is_no_rnd rnd then
           (* No rounding *)
           arg
         else if is_subtype ty rnd.fp_type then
@@ -178,7 +178,7 @@ let check_expr vars =
       | Var v -> vars v
       | Rounding (rnd, e1) ->
         let r1 = eval e1 in
-        if rnd.fp_type.bits = 0 then
+        if is_no_rnd rnd then
           r1
         else
           rnd_I rnd r1

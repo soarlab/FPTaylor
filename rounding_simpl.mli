@@ -12,6 +12,8 @@
 
 exception Exceptional_operation of Expr.expr * string
 
+val get_type : (string -> Rounding.value_type) -> Expr.expr -> Rounding.value_type
+
 val simplify_rounding : (string -> Rounding.value_type) -> Expr.expr -> Expr.expr
-		
+
 val check_expr : (string -> Interval.interval) -> Expr.expr -> Interval.interval

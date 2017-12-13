@@ -1,0 +1,5 @@
+Variables
+  t in [0, 10];
+
+Expressions
+  t_div_t1 rnd= t / (t + 1);

@@ -67,6 +67,21 @@ let floor_power2_I x = {
   high = floor_power2 x.high
 }
 
+let goldberg_ulp (prec, e_min) =
+  let ulp f =
+    let _, e = frexp f in
+    ldexp 1.0 (max e (e_min + 1) - prec) in
+  fun f ->
+    match (classify_float f) with
+    | FP_zero | FP_infinite | FP_nan -> f
+    | FP_subnormal | FP_normal ->
+      if f < 0. then -.ulp(-.f) else ulp f
+
+let goldberg_ulp_I pars x = {
+  low = goldberg_ulp pars x.low;
+  high = goldberg_ulp pars x.high
+}
+
 let sub2 (x, y) = 
   if (0.5 *. x <= y && y <= 2.0 *. x) || 
      (2.0 *. x <= y && y <= 0.5 *. x) 

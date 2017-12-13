@@ -1,5 +1,26 @@
-FPTaylor 0.9.1 (working version)
-----------------
+FPTaylor 0.9.2
+--------------
+
+- [FEATURE] ULP error (experimental; almost always suboptimal near powers of 2).
+
+- [FEATURE, can break existing FPTaylor input files]
+  The rounding operation `rnd` without parameters can be used
+  in input files. The rounding type is defined by the
+  `default-rnd` option (the default value is `rnd64`).
+  Parameters of rounding operations must be given in square brackets.
+  (Parameters were in parentheses before.)
+
+- [FEATURE, can break existing FPTaylor input files]
+  Variables without explicit types are assigned the default type defined
+  by the `default-var-type` option (the default value is `float64`).
+  (Variables without explicit types were assumed to be of the `real` type before.)
+
+FPTaylor 0.9.1
+--------------
+
+- [FEATURE] `tools/plot.py`: a script for plotting 1d error models.
+
+- [FEATURE] Exporting ErrorBounds input files.
 
 - [FEATURE] Exporting to the FPCore format.
 

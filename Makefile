@@ -15,6 +15,7 @@ SRC=	version.mli\
 	config.ml\
 	more_num.mli\
 	more_num.ml\
+	rounding.mli\
 	rounding.ml\
 	binary_float.ml\
 	const.mli\
@@ -50,12 +51,15 @@ SRC=	version.mli\
 	opt_nlopt.ml\
 	opt.mli\
 	opt.ml\
+	out_racket.mli\
 	out_racket.ml\
 	out_test.ml\
 	rounding_simpl.mli\
 	rounding_simpl.ml\
 	out_fpcore.mli\
 	out_fpcore.ml\
+	out_error_bounds.mli\
+	out_error_bounds.ml\
 	taylor_form.mli\
 	taylor_form.ml\
 	spec.mli\

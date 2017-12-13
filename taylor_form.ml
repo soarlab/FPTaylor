@@ -58,7 +58,7 @@ let mk_err_var, reset_error_index =
   mk, reset
 
 let mk_proof_rnd_info rnd =
-  Proof.mk_rnd_info rnd.fp_type.bits rnd.coefficient
+  Proof.mk_rnd_info (type_size rnd.fp_type) rnd.coefficient
 
 let mk_sym_interval_const f =
   let t = abs_float f in
@@ -96,9 +96,8 @@ let estimate_expr, reset_estimate_cache =
     else
       Eval.eval_interval_expr cs.var_interval e in
   let estimate_and_cache cs e =
-    try
-      Lib.assoc_eq eq_expr e !cache
-    with Failure _ ->
+    try Lib.assoc_eq eq_expr e !cache
+    with Not_found ->
       let interval = estimate cs e in
       let _ = (cache := (e, interval) :: !cache) in
       interval

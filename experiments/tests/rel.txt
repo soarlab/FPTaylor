@@ -1,0 +1,5 @@
+Variables
+  float64 x in [-1 + 1e-8, 1];
+
+Expressions
+  e rnd64= x + 1;

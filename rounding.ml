@@ -10,8 +10,6 @@
 (* Parameters for rounding operations                                         *)
 (* -------------------------------------------------------------------------- *)
 
-open Lib
-
 (* bits = max_int <=> a real number *)
 type value_type = {
   bits : int;
@@ -34,9 +32,21 @@ let mk_value_type bits = { bits = bits }
 
 let real_type = mk_value_type max_int
 
+let string_to_value_type str =
+  match str with
+  | "float16" -> mk_value_type 16
+  | "float32" -> mk_value_type 32
+  | "float64" -> mk_value_type 64
+  | "float128" -> mk_value_type 128
+  | "real" -> real_type
+  | _ -> failwith ("Unknown type: " ^ str)
+
 (* Returns true if type1 is a subtype of type2 *)
 let is_subtype type1 type2 =
   type1.bits <= type2.bits
+
+let is_no_rnd rnd =
+  rnd.fp_type.bits = 0
 
 let eps_delta_from_bits bits =
   match bits with
@@ -46,6 +56,16 @@ let eps_delta_from_bits bits =
     | 64 -> -53, -1022
     | 128 -> -113, -16382
     | _ -> failwith ("Unsupported fp size: " ^ string_of_int bits)
+
+let type_size t = t.bits
+
+let type_precision t =
+  let eps, _ = eps_delta_from_bits t.bits in 
+  -eps
+
+let type_min_exp t =
+  let _, delta = eps_delta_from_bits t.bits in
+  delta
 
 let max_value_from_bits bits =
   let p, emax =
@@ -113,8 +133,8 @@ let rounding_table = [
 ]
 
 let string_to_rounding name =
-  try assoc name rounding_table
-  with Failure _ ->
+  try Lib.assoc name rounding_table
+  with Not_found ->
     failwith ("Rounding mode " ^ name ^ " is not defined")
 
 let rounding_type_to_string rnd_type = 
@@ -125,9 +145,9 @@ let rounding_type_to_string rnd_type =
     | Rnd_0 -> "zero"
 
 let rounding_to_string rnd =
-  try rev_assoc rnd rounding_table 
-  with Failure _ ->
-    Printf.sprintf "rnd(%d,%s,%f,%d,%d)" 
+  try Lib.rev_assoc rnd rounding_table 
+  with Not_found ->
+    Printf.sprintf "rnd[%d,%s,%.2f,%d,%d]" 
       rnd.fp_type.bits (rounding_type_to_string rnd.rnd_type) 
       rnd.coefficient rnd.eps_exp rnd.delta_exp
 

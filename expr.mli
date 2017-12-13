@@ -44,6 +44,7 @@ type bin_op_type =
 
 type gen_op_type =
   | Op_fma
+  | Op_ulp
 
 type expr =
   | Const of Const.t
@@ -101,6 +102,8 @@ val mk_sub2 : expr -> expr -> expr
 val mk_abs_err : expr -> expr -> expr
 val mk_floor_power2 : expr -> expr
 val mk_floor_sub2 : expr -> expr -> expr
+
+val mk_ulp : int * int -> expr -> expr
                                         
 val mk_int_const : int -> expr
 val mk_num_const : Num.num -> expr

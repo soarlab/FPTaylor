@@ -56,6 +56,6 @@ let compute_spec_rel_error cs expr ~spec =
   let cmd = Format.sprintf "sollya %s %s" opt sollya_name in
   let out = Lib.run_cmd cmd in
   let output = String.concat "\n" out in
-  Log.report `Important "\nSollya output:\n%s\n" output;
+  Log.report `Info "\nSollya output:\n%s\n" output;
   let err = Opt_common.get_float out "bound = " in
   err
