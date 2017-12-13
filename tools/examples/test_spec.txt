@@ -1,0 +1,5 @@
+Variables
+  x in [0.1, 1];
+
+Expressions
+  test rnd= x ~ sin(x);

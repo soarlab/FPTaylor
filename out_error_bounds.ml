@@ -226,16 +226,23 @@ let remove_rnd expr =
     | Rounding (rnd, arg) -> remove arg in
   remove expr
 
-let print_mp_and_init_f fmt env ?(mpfi = false) expr =
+let print_mp_and_init_f fmt env ?(mpfi = false) ?expr spec_expr =
+  match expr with
+  | None -> ()
+  | Some expr -> begin
+    clear_exprs env;
+    ignore (Lib.write_to_string 
+              (if mpfi then translate_mpfi env else translate_mpfr env) expr)
+  end;
   clear_exprs env;
-  env.subexprs_names <- [expr, "r_op"];
+  env.subexprs_names <- [spec_expr, "r_op"];
   let mp_type, mp_prefix =
     if mpfi then "mpfi_t", "mpfi" else "mpfr_t", "mpfr" in
   let args = List.map (fun (_, name) -> mp_type ^ " " ^ name) env.vars in
   let body, result_name =
     Lib.write_to_string_result 
       (if mpfi then (translate_mpfi env) else (translate_mpfr env))
-      expr in
+      spec_expr in
   let c_names_mp = List.map (fun (_, i) -> sprintf "c_%d" i) env.constants in
   let c_names_double = List.map (fun (_, i) -> sprintf "c_%dd" i) env.constants in
   let c_names_single = List.map (fun (_, i) -> sprintf "c_%df" i) env.constants in
@@ -282,12 +289,12 @@ let print_mp_and_init_f fmt env ?(mpfi = false) expr =
   end;
   fprintf fmt "}@."
 
-let print_double_f fmt env expr =
+let print_double_f fmt env f_name expr =
   clear_exprs env;
   let args = List.map (fun (_, name) -> "double " ^ name) env.vars in
   let body, result_name =
     Lib.write_to_string_result (translate_double env) expr in
-  fprintf fmt "double f_64(%a)@.{@." (print_list ", ") args;
+  fprintf fmt "double %s(%a)@.{@." f_name (print_list ", ") args;
   fprintf fmt "%s@.  return %s;@.}@." body result_name
 
 let print_single_f fmt env expr =
@@ -313,14 +320,18 @@ let generate_error_bounds fmt task =
   let var_names = List.map (fun s -> "v_" ^ ExprOut.fix_name s) task_vars in
   let env = mk_env (Lib.zip task_vars var_names) in
   let expr = remove_rnd task.expression in
+  let spec_expr =
+    match task.spec with
+    | None -> expr
+    | Some spec -> remove_rnd spec in
   fprintf fmt "#ifdef USE_MPFI@.";
   fprintf fmt "@.#include \"search_mpfi.h\"@.";
   pp_print_newline fmt ();
-  print_mp_and_init_f fmt ~mpfi:true env expr;
+  print_mp_and_init_f fmt ~mpfi:true env ~expr:expr spec_expr;
   fprintf fmt "@.#else@.";
   fprintf fmt "@.#include \"search_mpfr.h\"@.";
   pp_print_newline fmt ();
-  print_mp_and_init_f fmt ~mpfi:false env expr;
+  print_mp_and_init_f fmt ~mpfi:false env ~expr:expr spec_expr;
   fprintf fmt "@.#endif@.";
   pp_print_newline fmt ();
   let low_str = List.map (fun b -> sprintf "%.20e" b.Interval.low) var_bounds in
@@ -328,6 +339,8 @@ let generate_error_bounds fmt task =
   fprintf fmt "double low[] = {%a};@." (print_list ", ") low_str;
   fprintf fmt "double high[] = {%a};@." (print_list ", ") high_str;
   pp_print_newline fmt ();
-  print_double_f fmt env expr;
+  print_double_f fmt env "f_64" expr;
+  pp_print_newline fmt ();
+  print_double_f fmt env "f_64_high" spec_expr;
   pp_print_newline fmt ();
   print_single_f fmt env expr
