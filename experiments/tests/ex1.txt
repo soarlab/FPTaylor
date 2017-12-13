@@ -1,0 +1,17 @@
+Variables
+    real x0 in [-5, 5] +/- 1e3,
+    real x1 in [-5, 5] +/- 1e3
+;
+
+Definitions
+   f rnd64= x0-x1,
+   g rnd64= x0*x1,
+   o rnd64= f/g
+;
+
+Constraints
+   c1: g > 1;
+
+Expressions
+   res = o
+;

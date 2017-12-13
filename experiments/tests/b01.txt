@@ -1,0 +1,6 @@
+Variables
+  real u in [-100, 100];
+
+Expressions
+  res1 rnd64= rnd64(1/10);
+  res2 rnd64= rnd64(0.1);

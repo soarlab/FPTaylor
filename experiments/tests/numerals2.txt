@@ -1,0 +1,6 @@
+Constants
+  c1 = 4.16666666666666019037e-02d;
+
+Expressions
+  e1 rnd64= c1;
+
