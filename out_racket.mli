@@ -10,8 +10,8 @@
 (* Racket output for FPTaylor expressions                                     *)
 (* -------------------------------------------------------------------------- *)
 
-val create_racket_file : Format.formatter
-                          -> ?total2_err:float -> ?spec_err:float -> ?opt_bound:float
-                          -> exp:int -> expr:Expr.expr
-                          -> Task.task
-                          -> unit
+val create_racket_file : Format.formatter -> Task.task
+                         -> ?extra_errors:(string * float) list
+                         -> ?opt_bound:float
+                         -> Expr.expr list
+                         -> unit

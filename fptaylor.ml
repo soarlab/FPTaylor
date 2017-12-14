@@ -309,12 +309,13 @@ let absolute_errors task tf =
             total1_i +$ total2_i in
 
         let () = try
-          Out_racket.create_racket_file 
-            (get_file_formatter "racket")
-            ~total2_err:total2_i.high
-            ~opt_bound:total_i.high
-            ~exp:exp ~expr:full_expr
-            task
+          let out_expr = mk_add (mk_mul (mk_float_const (get_eps exp)) full_expr)
+                                (mk_float_const total2_i.high) in
+            Out_racket.create_racket_file 
+              (get_file_formatter "racket") task
+              ~extra_errors:["total2", total2_i.high]
+              ~opt_bound:total_i.high
+              [out_expr]
           with Not_found -> () in
       
         Log.report `Important "exact bound (exp = %d): %s" exp (bound_info bound);
@@ -396,12 +397,16 @@ let relative_errors task tf =
 
           let () = 
             try
-              Out_racket.create_racket_file 
-                (get_file_formatter "racket")
-                ~total2_err:b2_i.high ?spec_err:err_spec
-                ~opt_bound:total_i.high
-                ~exp:exp ~expr:full_expr
-                task
+              let spec_err = Lib.option_default ~default:0. err_spec in
+              let out_expr = 
+                mk_add (mk_add (mk_mul (mk_float_const (get_eps exp)) full_expr)
+                               (mk_float_const b2_i.high))
+                       (mk_float_const spec_err) in
+                Out_racket.create_racket_file 
+                  (get_file_formatter "racket") task
+                  ~extra_errors:["total2", b2_i.high; "spec", spec_err]
+                  ~opt_bound:(Fpu.fadd_high total_i.high spec_err)
+                  [out_expr]
             with Not_found -> () in
       
           Log.report `Important "exact bound-rel (exp = %d): %s" exp (bound_info bound);
@@ -481,12 +486,16 @@ let ulp_errors task tf =
 
           let () = 
             try
+              let spec_err = Lib.option_default ~default:0. err_spec in
+              let out_expr = 
+                mk_add (mk_add (mk_mul (mk_float_const (get_eps exp)) full_expr)
+                               (mk_float_const b2_i.high))
+                       (mk_float_const spec_err) in
               Out_racket.create_racket_file 
-                (get_file_formatter "racket")
-                ~total2_err:b2_i.high ?spec_err:err_spec
-                ~opt_bound:total_i.high
-                ~exp:exp ~expr:full_expr
-                task
+                (get_file_formatter "racket") task
+                ~extra_errors:["total2", b2_i.high; "spec", spec_err]
+                ~opt_bound:(Fpu.fadd_high total_i.high spec_err)
+                [out_expr]
             with Not_found -> () in
 
           Log.report `Important "exact bound-ulp (exp = %d): %s" exp (bound_info bound);
