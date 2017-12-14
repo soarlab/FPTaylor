@@ -284,8 +284,13 @@ let absolute_errors task tf =
             total1_i +$ total2_i in
 
         let () = try
-          Out_racket.create_racket_file (get_file_formatter "racket")
-            task total2_i.high exp full_expr (Some total_i.high)
+          let out_expr = mk_add (mk_mul (mk_float_const (get_eps exp)) full_expr)
+                                (mk_float_const total2_i.high) in
+            Out_racket.create_racket_file 
+              (get_file_formatter "racket") task
+              ~extra_errors:["total2", total2_i.high]
+              ~opt_bound:total_i.high
+              [out_expr]
           with Not_found -> () in
       
         Log.report `Important "exact bound (exp = %d): %s" exp (bound_info bound);
@@ -355,8 +360,13 @@ let relative_errors task tf (f_min, f_max) =
 
           let () = 
             try
-              Out_racket.create_racket_file (get_file_formatter "racket")
-                task b2_i.high exp full_expr (Some total_i.high)
+              let out_expr = mk_add (mk_mul (mk_float_const (get_eps exp)) full_expr)
+                                    (mk_float_const b2_i.high) in
+                Out_racket.create_racket_file 
+                  (get_file_formatter "racket") task
+                  ~extra_errors:["total2", b2_i.high]
+                  ~opt_bound:total_i.high
+                  [out_expr]
             with Not_found -> () in
       
           Log.report `Important "exact bound-rel (exp = %d): %s" exp (bound_info bound);
@@ -423,8 +433,13 @@ let ulp_errors task tf (f_min, f_max) =
 
           let () = 
             try
-              Out_racket.create_racket_file (get_file_formatter "racket")
-                task b2_i.high exp full_expr (Some total_i.high)
+            let out_expr = mk_add (mk_mul (mk_float_const (get_eps exp)) full_expr)
+                                  (mk_float_const b2_i.high) in
+              Out_racket.create_racket_file 
+                (get_file_formatter "racket") task
+                ~extra_errors:["total2", b2_i.high]
+                ~opt_bound:total_i.high
+                [out_expr]
             with Not_found -> () in
 
           Log.report `Important "exact bound-ulp (exp = %d): %s" exp (bound_info bound);
