@@ -83,9 +83,10 @@ let get_problem_absolute_error result =
 
 let print_result result =
   let print_total_error width str = function
-    | Some rel_err, Some spec_err ->
-      let total_err = Fpu.fadd_high rel_err.high spec_err in
-      Log.report `Main "%-*s %e" width str total_err;
+    | Some err, Some spec_err ->
+      let err' = Fpu.fsub_high err.high spec_err in
+      Log.report `Main "%-*s %e" width str err.high;
+      Log.report `Main "(%-*s %e)" width "without spec error:" err';
       Log.report `Main "(%-*s %e)" width "Specification error:" spec_err
       | _ -> () in
   let print_upper_bound width str = function
@@ -330,15 +331,15 @@ let absolute_errors task tf =
 let relative_errors task tf =
   Log.report `Important "\nComputing relative errors";
   let cs = constraints_of_task task in
-  let spec, err_spec = 
+  let spec, err_spec, err_spec_i = 
     match task.spec with
-    | None -> tf.v0, None
+    | None -> tf.v0, None, zero_I
     | Some expr ->
       Log.report `Important "Computing the approximation relative error: %s"
         (ExprOut.Info.print_str expr);
       let err = Spec.compute_spec_rel_error cs tf.v0 ~spec:expr in
       Log.report `Important "Specification error: %e" err;
-      expr, Some err in
+      expr, Some err, {low = 0.; high = err} in
   let spec_min, spec_max =
     Opt.find_min_max Opt_common.default_opt_pars cs spec in
   let spec_bounds = {low = spec_min; high = spec_max} in
@@ -368,10 +369,11 @@ let relative_errors task tf =
           Log.report `Important "\nRelative errors:";
           let bounds1 = List.map (compute_bound cs) v1_rel in
           let total1_i = sum_err_bounds bounds1 in
-          let total_i = total1_i +$ b2_i in
+          let total_i = total1_i +$ b2_i +$ err_spec_i in
           Log.report `Important "rel-total1: %s" (bound_info total1_i);
           Log.report `Important "rel-total2: %s" (bound_info b2_i);
-          Log.report `Important "rel-total: %s" (bound_info total_i);
+          Log.report `Important "rel-spec:   %s" (bound_info err_spec_i);
+          Log.report `Important "rel-total:  %s" (bound_info total_i);
           error2_warning total1_i.high b2_i.high;
           Some total_i          
         end
@@ -393,24 +395,24 @@ let relative_errors task tf =
             let r = Opt.find_max Opt_common.default_opt_pars cs full_expr in
             {low = r.Opt_common.lower_bound; high = r.Opt_common.result} in
           let total1_i = get_eps exp *.$ bound in
-          let total_i = total1_i +$ b2_i in
+          let total_i = total1_i +$ b2_i +$ err_spec_i in
 
           let () = 
             try
-              let spec_err = Lib.option_default ~default:0. err_spec in
               let out_expr = 
                 mk_add (mk_add (mk_mul (mk_float_const (get_eps exp)) full_expr)
                                (mk_float_const b2_i.high))
-                       (mk_float_const spec_err) in
+                       (mk_float_const err_spec_i.high) in
                 Out_racket.create_racket_file 
                   (get_file_formatter "racket") task
-                  ~extra_errors:["total2", b2_i.high; "spec", spec_err]
-                  ~opt_bound:(Fpu.fadd_high total_i.high spec_err)
+                  ~extra_errors:["total2", b2_i.high; "spec", err_spec_i.high]
+                  ~opt_bound:total_i.high
                   [out_expr]
             with Not_found -> () in
       
           Log.report `Important "exact bound-rel (exp = %d): %s" exp (bound_info bound);
           Log.report `Important "total2: %s" (bound_info b2_i);
+          Log.report `Important "spec: %s" (bound_info err_spec_i);
           Log.report `Important "exact total-rel: %s" (bound_info total_i);
           error2_warning total1_i.high b2_i.high;
           Some total_i
@@ -418,8 +420,30 @@ let relative_errors task tf =
     in
     err_spec, err_approx, err_exact
 
-let ulp_errors task tf =
+let ulp_errors task tf_input =
+  let ulp_method = Config.get_string_option "ulp-method" in
+  let rel_flag = 
+    match ulp_method with 
+    | "relative" | "harrison-relative" -> true 
+    | _ -> false in
+  let harrison_flag =
+    match ulp_method with
+    | "harrison" | "harrison-relative" -> true
+    | _ -> false in
+  let adjust_harrison_ulp prec ulp =
+    if ulp <= 1.0 then ulp +. 0.5
+    else
+      let t = ldexp 1.0 prec in
+      if ulp <= t then ulp +. 1.0
+      else 
+        failwith ("adjust_harrison_ulp: big ulp value: " ^ string_of_float ulp) in
+  let adjust_harrison_ulp_i prec ulp = {
+    low = adjust_harrison_ulp prec ulp.low;
+    high = adjust_harrison_ulp prec ulp.high;
+  } in
+
   Log.report `Important "\nComputing ULP errors";
+  Log.report `Important "ULP method: %s" ulp_method;
   let cs = constraints_of_task task in
   let prec, min_exp =
     let t = Rounding_simpl.get_type (variable_type task) task.expression in
@@ -427,19 +451,35 @@ let ulp_errors task tf =
     if p <= 0 then failwith (Format.sprintf "Bad precision: %d" p);
     p, type_min_exp t in
   Log.report `Important "\nprec = %d, e_min = %d" prec min_exp;
-  let spec, err_spec = 
+
+  let tf = 
+    if harrison_flag then begin
+      Log.report `Important "Computing a new Taylor form";
+      let e' = Rounding_simpl.simplify_rounding (variable_type task) task.expression in
+      let e = match e' with
+      | Rounding ({rnd_type = Rnd_ne}, expr) -> expr
+      | _ -> failwith "Cannot compute the ULP error (NE rounding is expected)" in
+      Log.report `Info "New expression: %s" (ExprOut.Info.print_str e);
+      let form = build_form cs e in
+      simplify_form cs form
+    end 
+    else tf_input in
+
+  let spec, err_spec, err_spec_i = 
     match task.spec with
-    | None -> tf.v0, None
+    | None -> tf.v0, None, zero_I
     | Some expr ->
       Log.report `Important "Computing the approximation ULP error: %s"
         (ExprOut.Info.print_str expr);
       let err_rel = Spec.compute_spec_rel_error cs tf.v0 ~spec:expr in
       let err = ldexp err_rel prec in
       Log.report `Important "Specification error: %e" err;
-      expr, Some err in
+      expr, Some err, {low = 0.; high = if rel_flag then ldexp err (-prec) else err} in
   let spec_min, spec_max =
     Opt.find_min_max Opt_common.default_opt_pars cs spec in
-  let spec_bounds = Func.goldberg_ulp_I (prec, min_exp) {low = spec_min; high = spec_max} in
+  let spec_bounds =
+    if rel_flag then {low = spec_min; high = spec_max}
+    else Func.goldberg_ulp_I (prec, min_exp) {low = spec_min; high = spec_max} in
   Log.report `Important "spec ULP bounds: [%e, %e]" spec_bounds.low spec_bounds.high;
   if (abs_I spec_bounds).low <= 0. then begin
     Log.warning "\nCannot compute the ULP error: \
@@ -455,15 +495,16 @@ let ulp_errors task tf =
       if not (Config.get_bool_option "opt-approx") then None
       else
         begin
-          let v1_rel = List.map (fun (e, err) -> mk_div e (mk_ulp (prec, min_exp) tf.v0), err) v1 in
+          let v1_rel = List.map (fun (e, err) -> mk_div e (mk_ulp (prec, min_exp) spec), err) v1 in
           Log.report `Important "\nSolving the approximate optimization probelm";
           Log.report `Important "\nULP errors:";
           let bounds1 = List.map (compute_bound cs) v1_rel in
           let total1_i = sum_err_bounds bounds1 in
-          let total_i = total1_i +$ b2_i in
+          let total_i = total1_i +$ b2_i +$ err_spec_i in
           Log.report `Important "ulp-total1: %s" (bound_info total1_i);
           Log.report `Important "ulp-total2: %s" (bound_info b2_i);
-          Log.report `Important "ulp-total: %s" (bound_info total_i);
+          Log.report `Important "ulp-spec:   %s" (bound_info err_spec_i);
+          Log.report `Important "ulp-total:  %s" (bound_info total_i);
           error2_warning total1_i.high b2_i.high;
           Some total_i          
         end
@@ -476,30 +517,41 @@ let ulp_errors task tf =
           let full_expr, exp =
             let abs_exprs = List.map (fun (e, err) -> mk_abs e, err.exp) v1 in
             let sum_expr, exp = sum_symbolic abs_exprs in
-            let full_expr' = mk_div sum_expr (mk_abs (mk_ulp (prec, min_exp) tf.v0)) in
-            full_expr', exp in
+            if rel_flag then
+              mk_div sum_expr (mk_abs spec), exp
+            else
+              mk_div sum_expr (mk_abs (mk_ulp (prec, min_exp) spec)), exp in
+          Log.report `Debug "Full expr: %s" (ExprOut.Info.print_str full_expr);
           let bound =
             let r = Opt.find_max Opt_common.default_opt_pars cs full_expr in
             {low = r.Opt_common.lower_bound; high = r.Opt_common.result} in
           let total1_i = get_eps exp *.$ bound in
-          let total_i = total1_i +$ b2_i in
+          
+          let total_i = 
+            let total = total1_i +$ b2_i +$ err_spec_i in
+            Log.report `Info "Unadjusted ulp error: %s" (bound_info total);
+            let total = if rel_flag then ldexp 1.0 prec *.$ total else total in
+            let total = if harrison_flag then adjust_harrison_ulp_i prec total else total in
+            total in
 
           let () = 
             try
-              let spec_err = Lib.option_default ~default:0. err_spec in
               let out_expr = 
                 mk_add (mk_add (mk_mul (mk_float_const (get_eps exp)) full_expr)
                                (mk_float_const b2_i.high))
-                       (mk_float_const spec_err) in
+                       (mk_float_const err_spec_i.high) in
+              let out_expr = 
+                if rel_flag then mk_mul (mk_float_const (ldexp 1.0 prec)) out_expr else out_expr in
               Out_racket.create_racket_file 
                 (get_file_formatter "racket") task
-                ~extra_errors:["total2", b2_i.high; "spec", spec_err]
-                ~opt_bound:(Fpu.fadd_high total_i.high spec_err)
+                ~extra_errors:["total2", b2_i.high; "spec", err_spec_i.high]
+                ~opt_bound:total_i.high
                 [out_expr]
             with Not_found -> () in
 
           Log.report `Important "exact bound-ulp (exp = %d): %s" exp (bound_info bound);
           Log.report `Important "total2: %s" (bound_info b2_i);
+          Log.report `Important "spec:   %s" (bound_info err_spec_i);
           Log.report `Important "exact total-ulp: %s" (bound_info total_i);
           error2_warning total1_i.high b2_i.high;
           Some total_i

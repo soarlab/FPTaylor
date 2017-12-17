@@ -25,6 +25,10 @@ let (~-$) = neg_i
 
 let (+$) = add_ii
 
+let (+.$) = add_di
+
+let (+$.) = add_id
+
 let (-$) = sub_ii
 
 let ( *$) = mul_ii

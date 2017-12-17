@@ -1,0 +1,8 @@
+Constants
+  c = 0.1;
+
+Variables
+  x in [0, 2];
+
+Expressions
+  add rnd= x + c;
