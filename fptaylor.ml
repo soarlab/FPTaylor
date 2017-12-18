@@ -11,8 +11,6 @@
 (* -------------------------------------------------------------------------- *)
 
 open Interval
-open Parser
-open Rounding
 open Expr
 open Task
 open Taylor_form
@@ -183,7 +181,7 @@ let add2_symbolic (e1, exp1) (e2, exp2) =
   else if exp1 = exp2 then
     (mk_add e1 e2, exp1)
   else
-    let eps = get_eps (exp1 - exp2) in
+    let eps = Rounding.get_eps (exp1 - exp2) in
     (mk_add (mk_mul (mk_float_const eps) e1) e2, exp2)
 
 let sum_symbolic s = Lib.itlist add2_symbolic s (const_0, 0)
@@ -212,7 +210,7 @@ let sum_err_bounds bounds =
     let s, e = sum_high low in
     -.s, e in
   assert (exp = exp');
-  let eps = get_eps exp in
+  let eps = Rounding.get_eps exp in
   eps *.$ {low = s_low; high = s_high}
 
 (* Issue a warning if the second-order error term is too large *)
@@ -270,10 +268,10 @@ let absolute_errors task tf =
         let bound =
           let r = Opt.find_max Opt_common.default_opt_pars cs full_expr in
           {low = r.Opt_common.lower_bound; high = r.Opt_common.result} in
-        let total1_i = get_eps exp *.$ bound in
+        let total1_i = Rounding.get_eps exp *.$ bound in
         let total_i = 
           if Config.proof_flag then begin
-            let e' = get_eps exp in
+            let e' = Rounding.get_eps exp in
             let e = if e' = 0.0 then 1.0 else e' in
             let bound = make_stronger_i (bound +$ total2_i /$. e) in
             let total_i = e *.$ bound in
@@ -284,7 +282,7 @@ let absolute_errors task tf =
             total1_i +$ total2_i in
 
         let () = try
-          let out_expr = mk_add (mk_mul (mk_float_const (get_eps exp)) full_expr)
+          let out_expr = mk_add (mk_mul (mk_float_const (Rounding.get_eps exp)) full_expr)
                                 (mk_float_const total2_i.high) in
             Out_racket.create_racket_file 
               (get_file_formatter "racket") task
@@ -355,12 +353,12 @@ let relative_errors task tf (f_min, f_max) =
           let bound =
             let r = Opt.find_max Opt_common.default_opt_pars cs full_expr in
             {low = r.Opt_common.lower_bound; high = r.Opt_common.result} in
-          let total1_i = get_eps exp *.$ bound in
+          let total1_i = Rounding.get_eps exp *.$ bound in
           let total_i = total1_i +$ b2_i in
 
           let () = 
             try
-              let out_expr = mk_add (mk_mul (mk_float_const (get_eps exp)) full_expr)
+              let out_expr = mk_add (mk_mul (mk_float_const (Rounding.get_eps exp)) full_expr)
                                     (mk_float_const b2_i.high) in
                 Out_racket.create_racket_file 
                   (get_file_formatter "racket") task
@@ -383,9 +381,9 @@ let ulp_errors task tf (f_min, f_max) =
   let cs = constraints_of_task task in
   let prec, min_exp =
     let t = Rounding_simpl.get_type (variable_type task) task.expression in
-    let p = type_precision t in
+    let p = Rounding.type_precision t in
     if p <= 0 then failwith (Format.sprintf "Bad precision: %d" p);
-    p, type_min_exp t in
+    p, Rounding.type_min_exp t in
   Log.report `Important "\nprec = %d, e_min = %d" prec min_exp;
   let f_int = Func.goldberg_ulp_I (prec, min_exp) {low = f_min; high = f_max} in
   if (abs_I f_int).low <= 0. then begin
@@ -428,12 +426,12 @@ let ulp_errors task tf (f_min, f_max) =
           let bound =
             let r = Opt.find_max Opt_common.default_opt_pars cs full_expr in
             {low = r.Opt_common.lower_bound; high = r.Opt_common.result} in
-          let total1_i = get_eps exp *.$ bound in
+          let total1_i = Rounding.get_eps exp *.$ bound in
           let total_i = total1_i +$ b2_i in
 
           let () = 
             try
-            let out_expr = mk_add (mk_mul (mk_float_const (get_eps exp)) full_expr)
+            let out_expr = mk_add (mk_mul (mk_float_const (Rounding.get_eps exp)) full_expr)
                                   (mk_float_const b2_i.high) in
               Out_racket.create_racket_file 
                 (get_file_formatter "racket") task
@@ -621,7 +619,7 @@ let process_input fname =
         tmp_base_dir in
     Lib.set_tmp_dir tmp_dir in
   Config.print_options `Debug;
-  let tasks = parse_file fname in
+  let tasks = Parser.parse_file fname in
   Log.report `Debug "|tasks| = %d" (List.length tasks);
   if Config.is_option_defined "fpcore-out" then begin
     Log.report `Main "Exporting to the FPCore format";
