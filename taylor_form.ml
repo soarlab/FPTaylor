@@ -213,22 +213,13 @@ let const_rnd_form rnd e =
         }
     | _ -> failwith ("const_rnd_form: not a constant: " ^ ExprOut.Info.print_str e)
 
-let get_var_uncertainty cs eps_exp var_name =
-  let v = cs.var_uncertainty var_name in
-  let u = (Const.to_num v) // More_num.num_of_float (get_eps eps_exp) in
-  if not (u =/ Int 0) then
-    [mk_num_const u, mk_err_var (find_index (mk_var (var_name ^ "$uncertainty"))) eps_exp]
-  else 
-    []
-
 (* variable *)
 let var_form cs e =
   Log.report `Debug "var_form";
   match e with
   | Var v -> {
       v0 = e;
-      (* FIXME: what is the right value of eps_exp here? *)
-      v1 = if Config.get_bool_option "uncertainty" then get_var_uncertainty cs (-53) v else [];
+      v1 = [];
     }
   | _ -> failwith ("var_form: not a variable" ^ ExprOut.Info.print_str e)
 
@@ -237,15 +228,9 @@ let var_rnd_form cs rnd e =
   Log.report `Debug "var_rnd_form";
   match e with
   | Var v -> 
-    let v1_uncertainty = 
-      if Config.get_bool_option "uncertainty" then get_var_uncertainty cs rnd.eps_exp v else [] in
     let v1_rnd =
       let err_expr0 = 
-        if Config.get_bool_option "const-approx-real-vars" then
-          let bound = (abs_I (cs.var_interval v)).high in
-          let err = Func.floor_power2 bound in
-          mk_float_const err
-        else if Config.get_bool_option "fp-power2-model" then
+        if Config.get_bool_option "fp-power2-model" then
           mk_floor_power2 e
         else
           e in
@@ -258,7 +243,7 @@ let var_rnd_form cs rnd e =
       [err_expr, mk_err_var (find_index (mk_rounding rnd e)) rnd.eps_exp] in
     {
       v0 = e;
-      v1 = v1_uncertainty @ v1_rnd;
+      v1 = v1_rnd;
     }
 | _ -> failwith ("var_rnd_form: not a variable" ^ ExprOut.Info.print_str e)
 
