@@ -1,0 +1,5 @@
+Variables
+  x in [1, 10];
+
+Expressions
+  x3 rnd= x * x * x;

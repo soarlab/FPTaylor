@@ -1,0 +1,6 @@
+Variables
+  x in [1, 10];
+
+Expressions
+  x4_iterated rnd= x * x * x * x;
+  x4_double rnd= (x * x) * (x * x);
