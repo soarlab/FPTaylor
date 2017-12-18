@@ -37,8 +37,6 @@ SRC=	version.mli\
 	proof_base.mli\
 	proof_base.ml\
 	proof.ml\
-	maxima.mli\
-	maxima.ml\
 	opt_common.mli\
 	opt_common.ml\
 	opt_basic_bb.mli\

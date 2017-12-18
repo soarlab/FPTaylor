@@ -287,12 +287,7 @@ let absolute_errors task tf =
       begin
         Log.report `Important "\nSolving the exact optimization problem";
         let abs_exprs = List.map (fun (e, err) -> mk_abs e, err.exp) v1 in
-        let full_expr, exp =
-          let full_expr', exp = sum_symbolic abs_exprs in
-          if Config.get_bool_option "maxima-simplification" then
-            Maxima.simplify full_expr', exp
-          else
-            full_expr', exp in
+        let full_expr, exp = sum_symbolic abs_exprs in
         let bound =
           let r = Opt.find_max Opt_common.default_opt_pars cs full_expr in
           {low = r.Opt_common.lower_bound; high = r.Opt_common.result} in
@@ -360,11 +355,6 @@ let relative_errors task tf =
       else
         begin
           let v1_rel = List.map (fun (e, err) -> mk_div e spec, err) v1 in
-          let v1_rel = 
-            if Config.get_bool_option "maxima-simplification" then
-            List.map (fun (e, err) -> Maxima.simplify e, err) v1_rel
-            else
-              v1_rel in
           Log.report `Important "\nSolving the approximate optimization probelm";
           Log.report `Important "\nRelative errors:";
           let bounds1 = List.map (compute_bound cs) v1_rel in
@@ -387,10 +377,7 @@ let relative_errors task tf =
             let abs_exprs = List.map (fun (e, err) -> mk_abs e, err.exp) v1 in
             let sum_expr, exp = sum_symbolic abs_exprs in
             let full_expr' = mk_div sum_expr (mk_abs spec) in
-            if Config.get_bool_option "maxima-simplification" then
-              Maxima.simplify full_expr', exp
-            else
-              full_expr', exp in
+            full_expr', exp in
           let bound =
             let r = Opt.find_max Opt_common.default_opt_pars cs full_expr in
             {low = r.Opt_common.lower_bound; high = r.Opt_common.result} in
@@ -629,14 +616,6 @@ let compute_form task =
       Log.report `Important "Simplifying Taylor forms...";
       let form = simplify_form cs form' in
       Log.report `Important "success";
-      let form = 
-        if Config.get_bool_option "maxima-simplification" then {
-          form_index = form.form_index;
-          v0 = Maxima.simplify form.v0;
-          v1 = List.map (fun (e, err) -> (if err.index < 0 then e else Maxima.simplify e), err) form.v1;
-        }
-        else
-          form in
       print_form `Info form;
       Log.report `Info "";
       let result = errors task form in
@@ -746,15 +725,6 @@ let process_input fname =
   Log.report `Main ""
 
 let validate_options () =
-  let validate_simplification () =
-    if Config.get_bool_option "maxima-simplification" && not (Maxima.test_maxima()) then
-      begin
-        Log.warning "A computer algebra system Maxima is not installed. \
-                     Simplifications are disabled. \
-                     Go to http://maxima.sourceforge.net/ to install Maxima.";
-        Config.set_option "maxima-simplification" "false"
-      end
-  in
   let validate_proof_record () =
     if Config.get_bool_option "proof-record" then
       if Config.get_bool_option "fp-power2-model" then
@@ -769,7 +739,6 @@ let validate_options () =
         end
   in
   begin
-    validate_simplification ();
     validate_proof_record ();
   end
 
