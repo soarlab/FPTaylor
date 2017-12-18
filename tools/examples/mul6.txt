@@ -1,0 +1,8 @@
+Variables
+  x in [0.1, 2.5];
+
+Expressions
+  mul_x_6 rnd= x * 6;
+  mul_x_5 rnd= x * 5;
+  mul_x_3 rnd= x * 3;
+  mul_x_7 rnd= x * 7;

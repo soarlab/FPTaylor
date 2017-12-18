@@ -10,13 +10,12 @@
 (* FPTaylor input task                                                        *)
 (* -------------------------------------------------------------------------- *)
 
-open Rounding
 open Expr
 open Interval
 
 type var_info = {
   var_name : string;
-  var_type : value_type;
+  var_type : Rounding.value_type;
   lo_bound : Const.t;
   hi_bound : Const.t;
   uncertainty : Const.t;

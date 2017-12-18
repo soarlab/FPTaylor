@@ -1,0 +1,8 @@
+Variables
+  x in [0.1, 2.5];
+
+Expressions
+  div_x_6 rnd= x / 6;
+//  div_x_5 rnd= x / 5;
+  div_x_3 rnd= x / 3;
+//  div_x_7 rnd= x / 7;
