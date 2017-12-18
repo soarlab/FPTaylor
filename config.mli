@@ -20,7 +20,6 @@ val is_option_defined : string -> bool
 
 val debug : bool
 val fail_on_exception : bool
-val proof_flag : bool
 
 val print_options : level:Log.level -> unit
 val print_short_names : level:Log.level -> unit

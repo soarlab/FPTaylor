@@ -34,9 +34,6 @@ SRC=	version.mli\
 	input_lexer.ml\
 	parser.mli\
 	parser.ml\
-	proof_base.mli\
-	proof_base.ml\
-	proof.ml\
 	opt_common.mli\
 	opt_common.ml\
 	opt_basic_bb.mli\
@@ -64,10 +61,6 @@ SRC=	version.mli\
 	spec.ml\
 	fptaylor.ml
 
-PROOF_SRC= lib.ml\
-	   proof_base.ml\
-	   proof_to_text.ml
-
 TEST_DIR=benchmarks/tests
 TESTS=	test01_sum3.txt\
 	test02_sum8.txt\
@@ -79,16 +72,11 @@ OBJ_BYTE0 = $(SRC:.ml=.cmo)
 OBJ_BYTE = $(OBJ_BYTE0:.mli=.cmi)
 OBJ_NATIVE = $(OBJ_BYTE:.cmo=.cmx)
 
-OBJ_PROOF_SRC = $(PROOF_SRC:.ml=.cmo)
-
 TEST = $(addprefix $(TEST_DIR)/,$(TESTS))
 
 .PHONY: clean clean-tmp clean-interval clean-simple-interval compile-interval compile-simple-interval
 
 all: fptaylor-interval
-
-proof-tool: $(OBJ_PROOF_SRC)
-	$(ML) -o proof_to_text unix.cma str.cma nums.cma $(OBJ_PROOF_SRC)
 
 test:
 	./fptaylor $(TEST)

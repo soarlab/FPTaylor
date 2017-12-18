@@ -181,8 +181,8 @@ let print_result result =
 let print_form level f =
   Log.report level "v0 = %s" (ExprOut.Info.print_str f.v0);
   List.iter (fun (e, err) -> 
-      Log.report level "%d (%d): exp = %d: %s" 
-        err.index err.proof_index err.exp (ExprOut.Info.print_str e)) f.v1;
+      Log.report level "%d: exp = %d: %s" 
+        err.index err.exp (ExprOut.Info.print_str e)) f.v1;
   Log.report level "\nCorresponding original subexpressions:";
   List.iter (fun (_, err) ->
       let i = err.index in
@@ -253,9 +253,7 @@ let absolute_errors task tf =
   Log.report `Important "\nComputing absolute errors";
   let cs = constraints_of_task task in
   let v1, v2 = split_error_terms tf.v1 in
-  let bounds2 =
-    let bounds2' = List.map (compute_bound cs) v2 in
-    List.map (fun (e, exp) -> make_stronger_i e, exp) bounds2' in
+  let bounds2 = List.map (compute_bound cs) v2 in
   let total2_i = sum_err_bounds bounds2 in
   let err_approx =
     if not (Config.get_bool_option "opt-approx") then None
@@ -263,17 +261,9 @@ let absolute_errors task tf =
       begin
         Log.report `Important "\nSolving the approximate optimization problem";
         Log.report `Important "\nAbsolute errors:";
-        let bounds1 =
-          let bounds1' = List.map (compute_bound cs) v1 in
-          List.map (fun (e, exp) -> make_stronger_i e, exp) bounds1' in
+        let bounds1 = List.map (compute_bound cs) v1 in
         let total1_i = sum_err_bounds bounds1 in
-        let total_i = make_stronger_i (total1_i +$ total2_i) in
-        let () =
-          let all_bounds = List.map (fun (v, _) -> v.high) bounds1
-                           @ List.map (fun (v, _) -> v.high) bounds2 in
-          let all_indices = List.map (fun (_, err) -> err.proof_index) v1 
-                            @ List.map (fun (_, err) -> err.proof_index) v2 in
-          Proof.add_opt_approx all_indices all_bounds total_i.high in
+        let total_i = total1_i +$ total2_i in
         Log.report `Important "total1: %s" (bound_info total1_i);
         Log.report `Important "total2: %s" (bound_info total2_i);
         Log.report `Important "total: %s" (bound_info total_i);
@@ -292,17 +282,7 @@ let absolute_errors task tf =
           let r = Opt.find_max Opt_common.default_opt_pars cs full_expr in
           {low = r.Opt_common.lower_bound; high = r.Opt_common.result} in
         let total1_i = get_eps exp *.$ bound in
-        let total_i = 
-          if Config.proof_flag then begin
-            let e' = get_eps exp in
-            let e = if e' = 0.0 then 1.0 else e' in
-            let bound = make_stronger_i (bound +$ total2_i /$. e) in
-            let total_i = e *.$ bound in
-            Proof.add_opt_exact bound.high exp total_i.high;
-            total_i
-          end
-          else
-            total1_i +$ total2_i in
+        let total_i = total1_i +$ total2_i in
 
         let () = try
           let out_expr = mk_add (mk_mul (mk_float_const (get_eps exp)) full_expr)
@@ -602,7 +582,6 @@ let safety_check task =
 let compute_form task =
   Log.report `Info "\n*************************************";
   Log.report `Info "Taylor form for: %s" (ExprOut.Info.print_str task.expression);
-  if Config.proof_flag then Proof.new_proof task;
   let start = Unix.gettimeofday() in
   let result, tform = 
     try
@@ -626,14 +605,6 @@ let compute_form task =
   in
   let stop = Unix.gettimeofday() in
   Log.report `Info "Elapsed time: %.5f" (stop -. start);
-  let () = 
-    if Config.proof_flag then
-      begin
-        let proof_dir = Config.get_string_option "proof-dir" in
-        Log.report `Important "Saving a proof certificate for %s (in %s)" result.name proof_dir;
-        Proof.save_proof proof_dir (result.name ^ ".proof")
-      end
-  in
   { result with elapsed_time = stop -. start }, tform
 
 let approximate_constraint task (name, c) =
@@ -724,24 +695,6 @@ let process_input fname =
   Log.close ();
   Log.report `Main ""
 
-let validate_options () =
-  let validate_proof_record () =
-    if Config.get_bool_option "proof-record" then
-      if Config.get_bool_option "fp-power2-model" then
-        begin
-          Log.warning "Proof certificates (proof-record = true) are not implemented for \
-                       the improved rounding model (fp-power2-model = true).";
-        end
-      else if Config.get_bool_option "develop" then
-        begin
-          Log.warning "Proof certificates (proof-record = true) are not implemented for \
-                       some features of the development mode (develop = true).";
-        end
-  in
-  begin
-    validate_proof_record ();
-  end
-
 let main () =
   Log.report `Main "FPTaylor, version %s" Version.version;
   if Config.input_files = [] then
@@ -756,7 +709,6 @@ let main () =
     end
   else
     begin
-      validate_options ();
       if Config.is_option_defined "fpcore-out" then begin
         open_file "fpcore-out" (Config.get_string_option "fpcore-out")
       end;

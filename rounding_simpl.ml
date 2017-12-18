@@ -113,8 +113,7 @@ let simplify_rounding var_type =
           (* Plus or minus *)
           | Bin_op (Op_add, e1, e2) | Bin_op (Op_sub, e1, e2) ->
             if (is_subtype (get_type var_type e1) rnd.fp_type && 
-                is_subtype (get_type var_type e2) rnd.fp_type &&
-                not Config.proof_flag) then
+                is_subtype (get_type var_type e2) rnd.fp_type) then
               (* delta = 0 *)
               Rounding ({rnd with delta_exp = 0; special_flag = true;}, arg)
             else
@@ -127,17 +126,11 @@ let simplify_rounding var_type =
           | Bin_op (Op_mul, e1, e2) when 
               (is_neg_power_of_2 e1 && is_subtype (get_type var_type e2) rnd.fp_type) 
               || (is_neg_power_of_2 e2 && is_subtype (get_type var_type e1) rnd.fp_type) ->
-            if Config.proof_flag then
-              (* FIXME: this is not the correct step but the formalization
-                 does not define the required rounding operation *)
-              arg
-            else
               Rounding ({rnd with eps_exp = 0}, arg)
           (* Division *)
           | Bin_op (Op_div, e1, e2) when
               is_power_of_2_or_0 e2 && 
-              is_subtype (get_type var_type e1) rnd.fp_type &&
-              not Config.proof_flag ->
+              is_subtype (get_type var_type e1) rnd.fp_type ->
             (* eps = 0 *)
             Rounding ({rnd with eps_exp = 0}, arg)
           | Bin_op (Op_div, e1, e2) when
