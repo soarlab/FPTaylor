@@ -47,7 +47,7 @@ let get_expr_name env ?(suffix = "") expr =
   with Not_found ->
     let name, flag =
       match expr with
-      | Const c ->
+      | Const c when Const.is_rat c ->
         let index =
           let n = Const.to_num c in
           try Lib.assoc_eq Num.eq_num n env.constants
@@ -112,6 +112,10 @@ let translate_mpfi env =
     else
       let () =
         match expr with
+        | Const c ->
+          let x = Const.to_interval c in
+          fprintf fmt "  mpfi_interv_d(%s, %.20e, %.20e);@." 
+            name x.Interval.low x.Interval.high
         | U_op (op, arg) -> begin
             let arg_name = translate fmt arg in
             match op with
@@ -278,14 +282,14 @@ let print_init_functions env
 let print_mp_f env fmt ?(mpfi = false) ?(index = 1) expr =
   clear_exprs env;
   env.subexprs_names <- [expr, "r_op"];
-  let mp_type = if mpfi then "mpfi_t" else "mpfr_t" in
-  let args = List.map (fun (_, name) -> mp_type ^ " " ^ name) env.vars in
+  let mp_prefix = if mpfi then "mpfi" else "mpfr" in
+  let args = List.map (fun (_, name) -> mp_prefix ^ "_srcptr " ^ name) env.vars in
   let body, result_name =
     Lib.write_to_string_result 
       (if mpfi then (translate_mpfi env) else (translate_mpfr env))
       expr in
   let f_name = "f_high" ^ (if index <= 1 then "" else string_of_int index) in
-  fprintf fmt "void %s(%s r_op, %a)@.{@." f_name mp_type (print_list ", ") args;
+  fprintf fmt "void %s(%s r_op, %a)@.{@." f_name (mp_prefix ^ "_ptr") (print_list ", ") args;
   fprintf fmt "%s" body;
   if result_name <> "r_op" then begin
     if mpfi then 
@@ -354,7 +358,7 @@ let generate_error_bounds fmt task =
   pp_print_newline fmt ();
   print_single_f env fmt expr
 
-let generate_data_function fmt task named_exprs =
+let generate_data_functions fmt task named_exprs =
   let task_vars, var_bounds =
     let vars = all_active_variables task in
     let bounds = List.map (variable_interval task) vars in
@@ -382,5 +386,5 @@ let generate_data_function fmt task named_exprs =
   fprintf fmt "char *f_names[] = {%a};@." (print_list ", ") expr_names;
   let n = List.length exprs in
   let f_names = 
-    Lib.init_list n (fun i -> "f_high" ^ (if i > 1 then string_of_int i else "")) in
+    Lib.init_list n (fun i -> "f_high" ^ (if i = 0 then "" else string_of_int (i + 1))) in
   fprintf fmt "F_HIGH funcs[] = {%a};@." (print_list ", ") f_names

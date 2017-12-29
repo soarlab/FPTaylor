@@ -291,6 +291,17 @@ let absolute_errors task tf =
               [out_expr]
           with Not_found -> () in
       
+        let () = try
+          let out_expr = mk_add (mk_mul (mk_float_const (Rounding.get_eps exp)) full_expr)
+                                (mk_float_const total2_i.high) in
+          let name = task.Task.name in
+            Out_error_bounds.generate_data_functions
+              (get_file_formatter "data") task
+              [name, out_expr;
+               name ^ "-total2", mk_float_const total2_i.high;
+               name ^ "-opt-bound", mk_float_const total_i.high]
+          with Not_found -> () in
+
         Log.report `Important "exact bound (exp = %d): %s" exp (bound_info bound);
         Log.report `Important "total2: %s" (bound_info total2_i);
         Log.report `Important "exact total: %s" (bound_info total_i);
@@ -580,6 +591,13 @@ let process_task (task : task) =
       open_file "racket" fname
     end in
   let () =
+    let data_export = Config.get_string_option "export-error-bounds-data" in
+    if data_export <> "" then begin
+      let fname = Str.global_replace (Str.regexp "{task}") task.Task.name data_export in
+      Log.report `Important "Data (ErrorBounds) export: %s" fname;
+      open_file "data" fname
+    end in
+  let () =
     let error_bounds = Config.get_string_option "export-error-bounds" in
     if error_bounds <> "" then begin
       let fname = Str.global_replace (Str.regexp "{task}") task.Task.name error_bounds in
@@ -591,6 +609,7 @@ let process_task (task : task) =
     end in
   let result = compute_form { task with constraints = approx_constraints } in
   close_file "racket";
+  close_file "data";
   result
 
 let process_input fname =
