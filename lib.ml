@@ -105,6 +105,12 @@ let enumerate =
   in
   fun start list ->
   enum [] start list
+
+let rec init_list n f =
+  let rec init n acc =
+    if n < 0 then acc
+    else init (n - 1) ((f n) :: acc) in
+  init (n - 1) []
  
 (* -------------------------------------------------------------------------- *)
 (* Option type operations                                                     *)
