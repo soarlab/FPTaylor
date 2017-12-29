@@ -142,7 +142,7 @@ let translate_mpfi env =
             | _ -> failwith ("translate_mpfi: unsupported binary operation: " ^ bin_op_name op)
           end
         | Gen_op (Op_ulp, [Const p; Const e; arg]) ->
-          fprintf fmt "mpfi_goldberg_ulp(%s, %d, %d, %s);@."
+          fprintf fmt "  mpfi_goldberg_ulp(%s, %d, %d, %s);@."
             name (Const.to_int p) (Const.to_int e) (translate fmt arg)
         | _ -> failwith ("translate_mpfi: unsupported operation") in
       name 

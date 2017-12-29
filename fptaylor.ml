@@ -377,7 +377,18 @@ let relative_errors task tf (f_min, f_max) =
                   ~opt_bound:total_i.high
                   [out_expr]
             with Not_found -> () in
-      
+
+          let () = try
+            let out_expr = mk_add (mk_mul (mk_float_const (Rounding.get_eps exp)) full_expr)
+                                  (mk_float_const b2_i.high) in
+            let name = task.Task.name in
+              Out_error_bounds.generate_data_functions
+                (get_file_formatter "data") task
+                [name, out_expr;
+                 name ^ "-total2", mk_float_const b2_i.high;
+                 name ^ "-opt-bound", mk_float_const total_i.high]
+            with Not_found -> () in
+
           Log.report `Important "exact bound-rel (exp = %d): %s" exp (bound_info bound);
           Log.report `Important "total2: %s" (bound_info b2_i);
           Log.report `Important "exact total-rel: %s" (bound_info total_i);
@@ -449,6 +460,17 @@ let ulp_errors task tf (f_min, f_max) =
                 ~extra_errors:["total2", b2_i.high]
                 ~opt_bound:total_i.high
                 [out_expr]
+            with Not_found -> () in
+
+          let () = try
+            let out_expr = mk_add (mk_mul (mk_float_const (Rounding.get_eps exp)) full_expr)
+                                  (mk_float_const b2_i.high) in
+            let name = task.Task.name in
+              Out_error_bounds.generate_data_functions
+                (get_file_formatter "data") task
+                [name, out_expr;
+                 name ^ "-total2", mk_float_const b2_i.high;
+                 name ^ "-opt-bound", mk_float_const total_i.high]
             with Not_found -> () in
 
           Log.report `Important "exact bound-ulp (exp = %d): %s" exp (bound_info bound);
