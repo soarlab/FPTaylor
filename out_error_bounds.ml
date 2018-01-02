@@ -387,4 +387,5 @@ let generate_data_functions fmt task named_exprs =
   let n = List.length exprs in
   let f_names = 
     Lib.init_list n (fun i -> "f_high" ^ (if i = 0 then "" else string_of_int (i + 1))) in
+  fprintf fmt "int n_funcs = %d;@." (List.length f_names);
   fprintf fmt "F_HIGH funcs[] = {%a};@." (print_list ", ") f_names
