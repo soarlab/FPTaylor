@@ -389,4 +389,6 @@ let generate_data_functions fmt task named_exprs =
   let f_names = 
     Lib.init_list n (fun i -> "f_high" ^ (if i = 0 then "" else string_of_int (i + 1))) in
   fprintf fmt "const int n_funcs = %d;@." (List.length f_names);
-  fprintf fmt "const F_HIGH funcs[] = {%a};@." (print_list ", ") f_names
+  fprintf fmt "const F_HIGH funcs[] = {%a};@." (print_list ", ") f_names;
+  fprintf fmt "const char *expression_string = \"%s\";@."
+    (ExprOut.Info.print_str (remove_rnd task.expression))

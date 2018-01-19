@@ -31,4 +31,5 @@ tools/tmp*
 tools/cache*
 tools/out*
 tools/images*
+tools/\[old\]*
 .DS_Store
