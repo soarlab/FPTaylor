@@ -51,8 +51,6 @@ SRC=	version.mli\
 	opt_nlopt.ml\
 	opt.mli\
 	opt.ml\
-	out_racket.mli\
-	out_racket.ml\
 	out_test.ml\
 	rounding_simpl.mli\
 	rounding_simpl.ml\
