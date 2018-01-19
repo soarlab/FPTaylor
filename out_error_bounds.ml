@@ -351,8 +351,9 @@ let generate_error_bounds fmt task =
   pp_print_newline fmt ();
   let low_str = List.map (fun b -> sprintf "%.20e" b.Interval.low) var_bounds in
   let high_str = List.map (fun b -> sprintf "%.20e" b.Interval.high) var_bounds in
-  fprintf fmt "double low[] = {%a};@." (print_list ", ") low_str;
-  fprintf fmt "double high[] = {%a};@." (print_list ", ") high_str;
+  fprintf fmt "const double low[] = {%a};@." (print_list ", ") low_str;
+  fprintf fmt "const double high[] = {%a};@." (print_list ", ") high_str;
+  fprintf fmt "const char *f_name = \"%s\";@." task.name;
   pp_print_newline fmt ();
   print_double_f env fmt expr;
   pp_print_newline fmt ();
@@ -380,12 +381,12 @@ let generate_data_functions fmt task named_exprs =
   pp_print_newline fmt ();
   let low_str = List.map (fun b -> sprintf "%.20e" b.Interval.low) var_bounds in
   let high_str = List.map (fun b -> sprintf "%.20e" b.Interval.high) var_bounds in
-  fprintf fmt "double low[] = {%a};@." (print_list ", ") low_str;
-  fprintf fmt "double high[] = {%a};@." (print_list ", ") high_str;
+  fprintf fmt "const double low[] = {%a};@." (print_list ", ") low_str;
+  fprintf fmt "const double high[] = {%a};@." (print_list ", ") high_str;
   let expr_names = List.map (sprintf "\"%s\"") expr_names in
-  fprintf fmt "char *f_names[] = {%a};@." (print_list ", ") expr_names;
+  fprintf fmt "const char *f_names[] = {%a};@." (print_list ", ") expr_names;
   let n = List.length exprs in
   let f_names = 
     Lib.init_list n (fun i -> "f_high" ^ (if i = 0 then "" else string_of_int (i + 1))) in
-  fprintf fmt "int n_funcs = %d;@." (List.length f_names);
-  fprintf fmt "F_HIGH funcs[] = {%a};@." (print_list ", ") f_names
+  fprintf fmt "const int n_funcs = %d;@." (List.length f_names);
+  fprintf fmt "const F_HIGH funcs[] = {%a};@." (print_list ", ") f_names
