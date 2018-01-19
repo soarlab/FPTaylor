@@ -93,11 +93,13 @@ def get_input_bounds(input_file):
     return float(m.group(1)), float(m.group(2))
 
 class GappaTask:
-    def __init__(self):
+    def __init__(self, name):
         self.input_files = []
+        self.name = name
 
     def __repr__(self):
-        return str(self.input_files)
+        s = "GappaTask({0}): {1}".format(self.name, self.input_files)
+        return s
 
     def create_data(self, out_file):
         pat = r'in[\s]*\[([0-9b+-]+)[\s]*(\{[^}]*\})?,[\s]*([0-9b+-]+)'
@@ -113,7 +115,7 @@ class GappaTask:
             m = re.search(pat, output)
             v1 = decode_binary(m.group(1))
             v2 = decode_binary(m.group(3))
-            v = abs(v1 if abs(v1) > abs(v2) else v2)
+            v = max(abs(v1), abs(v2))
             data.append((bounds, v))
             i += 1
             sys.stdout.write("\r{0}/{1}       ".format(i, total))
@@ -128,7 +130,7 @@ class GappaTask:
             else:
                 lo = data[0][0][0]
                 hi = data[n - 1][0][1]
-            f.write("{0}, {1}, {2}\n".format(n, lo, hi))
+            f.write("[Gappa]{0}\n".format(self.name))
             i = 1
             for ((low, high), v) in data:
                 if args.error == 'abs':
@@ -137,9 +139,11 @@ class GappaTask:
                 else:
                     abs_err = 0
                     rel_err = float(v)
+                if i == 1:
+                    low = lo
                 if i == n:
                     high = hi
-                f.write("{0}, {1}, {2}, {3}, 0\n".format(i, high, abs_err, rel_err))
+                f.write("{0}, {1}, {2}, {3}, {4}, 0\n".format(i, low, high, abs_err, rel_err))
                 i += 1
 
 
@@ -197,7 +201,7 @@ for file_path in glob.glob(os.path.join(tmp_path, "*.g")):
         task_name = m.group(1)
         case = int(m.group(2))
     if task_name not in gappa_tasks:
-        gappa_tasks[task_name] = GappaTask()
+        gappa_tasks[task_name] = GappaTask(task_name)
     gappa_tasks[task_name].input_files.append((case, file_path))
 
 for task_name, task in gappa_tasks.iteritems():
