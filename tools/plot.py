@@ -223,8 +223,6 @@ def run_data_mpfi(input_file):
     compile_cmd = ["gcc", "-o", exe_file, "-O3",
                    "-std=c99", "-I" + error_bounds_path]
     compile_cmd += src_files + [input_file]
-    if args.mpfi:
-        compile_cmd += ["-DUSE_MPFI", "-lmpfi"]
     compile_cmd += ["-lmpfi", "-lmpfr", "-lgmp"]
 
     cmd_args = ["-n", str(args.samples)]
@@ -445,8 +443,6 @@ for input_file in args.input:
 
         for task, model_file in files_from_template(c_model_file_template).iteritems():
             # Adjust names in the output model file
-            print(model_file)
-            print(cfg_name)
             common.replace_in_file(model_file,
                                    [(r"f_names\[\] =", '"([^"]*)"', r'"\1-{0}"'.format(cfg_name))])
             data_file = run_data_mpfi(model_file)
