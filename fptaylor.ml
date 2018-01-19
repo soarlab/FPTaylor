@@ -285,13 +285,14 @@ let absolute_errors task tf =
         let () = try
           let out_expr = mk_add (mk_mul (mk_float_const (Rounding.get_eps exp)) full_expr)
                                 (mk_float_const total2_i.high) in
-            Out_racket.create_racket_file 
-              (get_file_formatter "racket") task
-              ~extra_errors:["total2", total2_i.high]
-              ~opt_bound:total_i.high
-              [out_expr]
+          let name = task.Task.name in
+            Out_error_bounds.generate_data_functions
+              (get_file_formatter "data") task
+              [name, out_expr;
+               name ^ "-total2", mk_float_const total2_i.high;
+               name ^ "-opt-bound", mk_float_const total_i.high]
           with Not_found -> () in
-      
+
         Log.report `Important "exact bound (exp = %d): %s" exp (bound_info bound);
         Log.report `Important "total2: %s" (bound_info total2_i);
         Log.report `Important "exact total: %s" (bound_info total_i);
@@ -362,19 +363,20 @@ let relative_errors task tf =
           let total1_i = Rounding.get_eps exp *.$ bound in
           let total_i = total1_i +$ b2_i +$ err_spec_i in
 
-          let () = 
-            try
-              let out_expr = 
-                mk_add (mk_add (mk_mul (mk_float_const (Rounding.get_eps exp)) full_expr)
-                               (mk_float_const b2_i.high))
-                       (mk_float_const err_spec_i.high) in
-                Out_racket.create_racket_file 
-                  (get_file_formatter "racket") task
-                  ~extra_errors:["total2", b2_i.high; "spec", err_spec_i.high]
-                  ~opt_bound:total_i.high
-                  [out_expr]
+          let () = try
+            let out_expr = 
+              mk_add (mk_add (mk_mul (mk_float_const (Rounding.get_eps exp)) full_expr)
+                             (mk_float_const b2_i.high))
+                     (mk_float_const err_spec_i.high) in
+            let name = task.Task.name in
+              Out_error_bounds.generate_data_functions
+                (get_file_formatter "data") task
+                [name, out_expr;
+                 name ^ "-total2", mk_float_const b2_i.high;
+                 name ^ "-spec", mk_float_const err_spec_i.high;
+                 name ^ "-opt-bound", mk_float_const total_i.high]
             with Not_found -> () in
-      
+
           Log.report `Important "exact bound-rel (exp = %d): %s" exp (bound_info bound);
           Log.report `Important "total2: %s" (bound_info b2_i);
           Log.report `Important "spec: %s" (bound_info err_spec_i);
@@ -499,19 +501,20 @@ let ulp_errors task tf_input =
             let total = if harrison_flag then adjust_harrison_ulp_i prec total else total in
             total in
 
-          let () = 
-            try
-              let out_expr = 
-                mk_add (mk_add (mk_mul (mk_float_const (Rounding.get_eps exp)) full_expr)
-                               (mk_float_const b2_i.high))
-                       (mk_float_const err_spec_i.high) in
-              let out_expr = 
-                if rel_flag then mk_mul (mk_float_const (ldexp 1.0 prec)) out_expr else out_expr in
-              Out_racket.create_racket_file 
-                (get_file_formatter "racket") task
-                ~extra_errors:["total2", b2_i.high; "spec", err_spec_i.high]
-                ~opt_bound:total_i.high
-                [out_expr]
+          let () = try
+            let out_expr = 
+              mk_add (mk_add (mk_mul (mk_float_const (Rounding.get_eps exp)) full_expr)
+                             (mk_float_const b2_i.high))
+                     (mk_float_const err_spec_i.high) in
+            let out_expr = 
+              if rel_flag then mk_mul (mk_float_const (ldexp 1.0 prec)) out_expr else out_expr in
+            let name = task.Task.name in
+              Out_error_bounds.generate_data_functions
+                (get_file_formatter "data") task
+                [name, out_expr;
+                 name ^ "-total2", mk_float_const b2_i.high;
+                 name ^ "-spec", mk_float_const err_spec_i.high;
+                 name ^ "-opt-bound", mk_float_const total_i.high]
             with Not_found -> () in
 
           Log.report `Important "exact bound-ulp (exp = %d): %s" exp (bound_info bound);
@@ -632,11 +635,11 @@ let process_task (task : task) =
       List.map (approximate_constraint task) task.constraints
     end in
   let () =
-    let racket_export = Config.get_string_option "export-racket" in
-    if racket_export <> "" then begin
-      let fname = Str.global_replace (Str.regexp "{task}") task.Task.name racket_export in
-      Log.report `Important "Racket export: %s" fname;
-      open_file "racket" fname
+    let data_export = Config.get_string_option "export-error-bounds-data" in
+    if data_export <> "" then begin
+      let fname = Str.global_replace (Str.regexp "{task}") task.Task.name data_export in
+      Log.report `Important "Data (ErrorBounds) export: %s" fname;
+      open_file "data" fname
     end in
   let () =
     let error_bounds = Config.get_string_option "export-error-bounds" in
@@ -650,6 +653,7 @@ let process_task (task : task) =
     end in
   let result = compute_form { task with constraints = approx_constraints } in
   close_file "racket";
+  close_file "data";
   result
 
 let process_input fname =

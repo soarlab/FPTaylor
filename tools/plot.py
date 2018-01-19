@@ -6,6 +6,7 @@ import re
 import glob
 import shutil
 import argparse
+import logging
 
 import common
 
@@ -27,7 +28,7 @@ fptaylor = os.path.join(fptaylor_base, "fptaylor")
 
 error_bounds_path = os.path.normpath(
     os.path.join(base_path, "..", "..", "ErrorBounds"))
-racket_plot = os.path.join(error_bounds_path, "racket", "plot-fptaylor.rkt")
+racket_plot = os.path.join(error_bounds_path, "racket", "plot-data.rkt")
 
 fpbench_path = os.path.normpath(
     os.path.join(base_path, "..", "..", "forks", "FPBench", "tools"))
@@ -96,18 +97,24 @@ parser.add_argument('--gappa', action='store_true',
 parser.add_argument('--gappa-segments', type=int, default=200,
                     help="number of subintervals for Gappa plots")
 
-parser.add_argument('--approx-plot', action='store_true',
-                    help="produce approximate plots of FPTaylor error models")
-
 parser.add_argument('--segments', type=int, default=500,
                     help="number of segments for ErrorBounds")
 
 parser.add_argument('--err-samples', type=int, default=10000,
                     help="number of samples for ErrorBounds")
 
-parser.add_argument('--data-plot-style', choices=['rectangles', 'lines'],
-                    default='rectangles',
+parser.add_argument('--adaptive', action='store_true',
+                    help="produce model data with an adaptive algorithm")
+
+parser.add_argument('--data-plot-style', choices=['stack', 'lines'],
+                    default='stack',
                     help="specifies how to plot ErrorBounds results")
+
+parser.add_argument('--width', type=int,
+                    help="plot width")
+
+parser.add_argument('--height', type=int,
+                    help="plot height")
 
 parser.add_argument('--update-cache', action='store_true',
                     help="do not use cached files")
@@ -205,26 +212,53 @@ def run_error_bounds(input_file):
     return out_file
 
 
-# Run FPTaylor for each input file
+def run_data_mpfi(input_file):
+    exe_file = os.path.join(plot_tmp, "a.out")
+    out_file = os.path.join(plot_tmp, basename(input_file) + "-model-data.txt")
+    common.remove_files([exe_file, out_file])
 
-class PlotTask:
+    src_files = ["data_mpfi.c", "func.c", "data_mpfi_main.c"]
+    src_files = [os.path.join(error_bounds_path, f) for f in src_files]
+
+    compile_cmd = ["gcc", "-o", exe_file, "-O3",
+                   "-std=c99", "-I" + error_bounds_path]
+    compile_cmd += src_files + [input_file]
+    if args.mpfi:
+        compile_cmd += ["-DUSE_MPFI", "-lmpfi"]
+    compile_cmd += ["-lmpfi", "-lmpfr", "-lgmp"]
+
+    cmd_args = ["-n", str(args.samples)]
+    if args.mpfr_prec:
+        cmd_args += ["-p", str(args.mpfr_prec)]
+    if args.adaptive:
+        cmd_args += ["-a"]
+
+    common.run(compile_cmd, log=log)
+    common.run([exe_file] + cmd_args + ["-o", out_file], log=log)
+    return out_file
+
+
+# Tasks
+
+class RacketPlotTask:
     def __init__(self, input_name, base_name):
         self.input_name = input_name
         self.base_name = base_name
-        self.racket_files = []
-        self.data_files = []
+        self.model_files = []
+        self.error_files = []
         self.title = None
 
-    def add_data_file(self, fname, style=None):
-        self.data_files.append((fname, style))
+    def add_error_file(self, fname, style=None):
+        self.error_files.append((fname, style))
+
+    def add_model_file(self, fname, style=None):
+        self.model_files.append((fname, style))
 
     def plot(self):
-        # Run plot-fptaylor.rkt
+        # Run plot-data.rkt
         image_name = self.base_name
         if args.type:
             image_name += "-" + args.type
-        if args.approx_plot:
-            image_name += "-approx"
         out_path = output_path
         if args.subexprs:
             out_path = os.path.join(out_path, self.input_name + "-subexprs")
@@ -233,23 +267,24 @@ class PlotTask:
         image_file = os.path.join(out_path, image_name + ".png")
 
         cmd = [racket, racket_plot,
-               "--out", image_file,
-               "--samples", str(args.samples),
-               "--data-style", args.data_plot_style]
+               "--out", image_file]
         if self.title:
             cmd += ["--title", self.title]
-        if args.show_extra_errors:
-            cmd += ["--show-extra-errors"]
-        if args.approx_plot:
-            cmd += ["--approx"]
-        for (data_file, style) in self.data_files:
-            if style:
-                cmd += ["--data-with-style", data_file, style]
-            else:
-                cmd += ["--data", data_file]
-        if self.data_files:
-            cmd += ["--err-type", args.error]
-        cmd += ["--"] + self.racket_files
+        if args.width:
+            cmd += ["--width", str(args.width)]
+        if args.height:
+            cmd += ["--height", str(arg.height)]
+        if not args.show_extra_errors:
+            cmd += ["--single-data"]
+        for (error_file, style) in self.error_files:
+            if not style:
+                style = args.data_plot_style
+            cmd += ["--error-data", error_file, args.error, style]
+        for (model_file, style) in self.model_files:
+            if not style:
+                style = 'rectangles'
+            cmd += ["--model-data", model_file]
+            # cmd += ["--data", model_file, "2,3,4.5", style]
 
         common.run(cmd, log=log)
 
@@ -402,23 +437,26 @@ for input_file in args.input:
             error_bounds_file_template = os.path.join(plot_tmp, base_fname + "-{task}.c")
             export_args += ["--export-error-bounds", error_bounds_file_template]
 
-        racket_file_template = os.path.join(
-            plot_tmp, base_fname + "-" + cfg_name + "-{task}.rkt")
-        export_args += ["--export-racket", racket_file_template]
+        c_model_file_template = os.path.join(
+            plot_tmp, "model-" + base_fname + "-" + cfg_name + "-{task}.c")
+        export_args += ["--export-error-bounds-data", c_model_file_template]
 
         fptaylor_task.run(export_args)
 
-        for task, racket_file in files_from_template(racket_file_template).iteritems():
-            # Adjust the name in the output Racket files
-            common.replace_in_file(racket_file,
-                                   [(r"\(define name", '"([^"]*)"', r'"\1-{0}"'.format(cfg_name))])
+        for task, model_file in files_from_template(c_model_file_template).iteritems():
+            # Adjust names in the output model file
+            print(model_file)
+            print(cfg_name)
+            common.replace_in_file(model_file,
+                                   [(r"f_names\[\] =", '"([^"]*)"', r'"\1-{0}"'.format(cfg_name))])
+            data_file = run_data_mpfi(model_file)
             if task not in plot_tasks:
-                plot_tasks[task] = PlotTask(base_fname, "[{0}]{1}".format(task, base_fname))
+                plot_tasks[task] = RacketPlotTask(base_fname, "[{0}]{1}".format(task, base_fname))
             plot_task = plot_tasks[task]
-            plot_task.racket_files.append(racket_file)
+            plot_task.add_model_file(data_file)
             if args.subexprs:
-                title = common.find_in_file(racket_file, 
-                                            r'\(define expression-string "([^"]*)"\)',
+                title = common.find_in_file(model_file, 
+                                            r'expression_string = "([^"]*)";',
                                             groups=1)
                 if title:
                     plot_task.title = title
@@ -428,8 +466,8 @@ for input_file in args.input:
         data_file = run_error_bounds(input_file)
         if task not in plot_tasks:
             log.warning("Undefined task '{0}' for the data file '{1}'".format(task, input_file))
-            plot_tasks[task] = PlotTask(base_fname, "[{0}]{1}".format(task, base_fname))
-        plot_tasks[task].add_data_file(data_file)
+            plot_tasks[task] = RacketPlotTask(base_fname, "[{0}]{1}".format(task, base_fname))
+        plot_tasks[task].add_error_file(data_file)
 
     # Gappa
     if args.gappa:
@@ -439,8 +477,8 @@ for input_file in args.input:
         for task, data_file in results.iteritems():
             if task not in plot_tasks:
                 log.warning("Undefined task '{0}' for the data file '{1}'".format(task, data_file))
-                plot_tasks[task] = PlotTask(base_fname, "[{0}]{1}".format(task, base_fname))
-            plot_tasks[task].add_data_file(data_file, style="lines")
+                plot_tasks[task] = RacketPlotTask(base_fname, "[{0}]{1}".format(task, base_fname))
+            plot_tasks[task].add_error_file(data_file, style="lines")
 
     # plot-fptaylor.rkt
     for task in plot_tasks.itervalues():

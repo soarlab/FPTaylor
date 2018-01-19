@@ -11,3 +11,5 @@
 (* -------------------------------------------------------------------------- *)
 
 val generate_error_bounds : Format.formatter -> Task.task -> unit
+
+val generate_data_functions : Format.formatter -> Task.task -> (string * Expr.expr) list -> unit
