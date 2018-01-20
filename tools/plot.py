@@ -277,6 +277,25 @@ class DataSet:
                 y_max = max(y, y_max)
         return (y_min, y_max)
 
+    def export_for_gnuplot(self, out_file, cols, lines_flag):
+        out_file.write(re.sub(r'_', r'\\\\_', self.title))
+        out_file.write("\n")
+        vals = None
+        for row in self.data:
+            vals = []
+            for col in cols:
+                x = row[col]
+                if isinstance(x, tuple):
+                    vals += [x[0], x[1]]
+                else:
+                    vals.append(x)
+            out_file.write(" ".join(["{0}".format(x) for x in vals]))
+            out_file.write("\n")
+        if lines_flag and vals:
+            vals[0] = vals[1]
+            out_file.write(" ".join(["{0}".format(x) for x in vals]))
+            out_file.write("\n")
+
 
 class DataFile:
     def __init__(self, fname):
@@ -323,6 +342,15 @@ class DataFile:
             y_max = max(b, y_max)
         return (y_min, y_max)
 
+    def export_for_gnuplot(self, out_fname, cols, lines_flag=False):
+        with open(out_fname, 'w') as f:
+            n = self.count()
+            for data in self.data_sets:
+                data.export_for_gnuplot(f, cols, lines_flag)
+                n -= 1
+                if n > 0:
+                    f.write("\n\n")
+
 # Tasks
 
 class PlotTask:
@@ -360,8 +388,10 @@ class PlotTask:
             
             # parameters
             f.write("set style fill solid\n")
+            if self.title:
+                f.write("set title '{0}'\n".format(self.title))
             
-            # plot
+            # plots
             plot_cmds = []
             y_max = -1e+308
 
@@ -369,16 +399,43 @@ class PlotTask:
             for (error_file, style) in self.error_files:
                 if not style:
                     style = args.data_plot_style
+                lines_flag = (style == 'lines')
+
+                col = 3
+                if args.error == 'abs':
+                    col = 3
+                elif args.error == 'rel':
+                    col = 4
+                elif args.error == 'ulp':
+                    col = 5
 
                 data = DataFile(error_file)
-                y_min_data, y_max_data = data.bounds(3)
+                y_min_data, y_max_data = data.bounds(col)
                 y_max = max(y_max_data, y_max)
 
-                plot_cmds.append("  '{0}' using {1} with {2} title columnheader(1)".format(
-                    error_file,
-                    "2:3:2:3:(0):4",
-                    "boxxyerrorbars"
-                ))
+                gnuplot_file = os.path.join(os.path.dirname(error_file),
+                                            "[gnuplot]" + os.path.basename(error_file))
+                data.export_for_gnuplot(gnuplot_file, [1,2,col], lines_flag=lines_flag)
+
+                if not lines_flag:
+                    plot_cmds.append("  '{0}' using {1} with {2} title columnheader(1)".format(
+                        gnuplot_file,
+                        "1:2:1:2:(0):3",
+                        "boxxyerrorbars"
+                    ))
+                    if args.mpfi:
+                        plot_cmds.append("  '{0}' using {1} with {2} title '{3}'".format(
+                            gnuplot_file,
+                            "1:2:1:2:3:4",
+                            "boxxyerrorbars",
+                            "[interval]" + re.sub(r'_', r'\\_', data[0].title)
+                        ))
+                else:
+                    plot_cmds.append("  '{0}' using {1} with {2} title columnheader(1)".format(
+                        gnuplot_file,
+                        "1:3",
+                        "steps"
+                    ))
 
             # model files
             for (model_file, style) in self.model_files:
@@ -389,16 +446,21 @@ class PlotTask:
                 y_min_data, y_max_data = data.bounds(4)
                 y_max = max(y_max_data, y_max)
 
+                gnuplot_file = os.path.join(os.path.dirname(model_file),
+                                            "[gnuplot]" + os.path.basename(model_file))
+                data.export_for_gnuplot(gnuplot_file, [1,2,3,4])
+
                 size = data.count() if args.show_extra_errors else 1
 
                 plot_cmds.append("  for [IDX=0:{}] '{}' index IDX using {} with {} title columnheader(1)".format(
                     size - 1,
-                    model_file,
-                    "2:3:2:3:4:5",
+                    gnuplot_file,
+                    "1:2:1:2:3:4",
                     "boxxyerrorbars"
                 ))
             
             # final plot
+            f.write("set xrange [:] noextend\n")
             if y_max > 0:
                 f.write("set yrange [0 : {0}]\n".format(y_max * 1.2))
 
