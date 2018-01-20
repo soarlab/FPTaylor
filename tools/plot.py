@@ -35,6 +35,7 @@ fpbench_path = os.path.normpath(
 core2fptaylor = os.path.join(fpbench_path, "core2fptaylor.rkt")
 
 racket = "racket"
+gnuplot = "gnuplot"
 
 
 def files_from_template(fname_template):
@@ -115,6 +116,9 @@ parser.add_argument('--width', type=int,
 
 parser.add_argument('--height', type=int,
                     help="plot height")
+
+parser.add_argument('--gnuplot', choices=['png', 'html'],
+                    help="produce plots with gnuplot")
 
 parser.add_argument('--update-cache', action='store_true',
                     help="do not use cached files")
@@ -236,9 +240,120 @@ def run_data_mpfi(input_file):
     return out_file
 
 
+# Data files
+
+def decode_line(line):
+    pat = r'(\[([0-9.e+-]+),([0-9.e+-]+)\])|([0-9.e+-]+)'
+    result = []
+    for m in re.finditer(pat, line):
+        if m.group(4):
+            result.append(float(m.group(4)))
+        else:
+            result.append((float(m.group(2)), float(m.group(3))))
+    return result
+
+
+class DataSet:
+    def __init__(self, title, data):
+        self.title = title
+        self.data = data
+
+    def __repr__(self):
+        s = "DataSet({0}):\n".format(self.title)
+        for row in self.data:
+            s += "{0}\n".format(row)
+        return s
+
+    def bounds(self, col):
+        y_min = 1e+308
+        y_max = -1e+308
+        for row in self.data:
+            y = row[col]
+            if isinstance(y, tuple):
+                y_min = min(y[0], y_min)
+                y_max = max(y[1], y_max)
+            else:
+                y_min = min(y, y_min)
+                y_max = max(y, y_max)
+        return (y_min, y_max)
+
+    def export_for_gnuplot(self, out_file, cols, lines_flag):
+        out_file.write(re.sub(r'_', r'\\\\_', self.title))
+        out_file.write("\n")
+        vals = None
+        for row in self.data:
+            vals = []
+            for col in cols:
+                x = row[col]
+                if isinstance(x, tuple):
+                    vals += [x[0], x[1]]
+                else:
+                    vals.append(x)
+            out_file.write(" ".join(["{0}".format(x) for x in vals]))
+            out_file.write("\n")
+        if lines_flag and vals:
+            vals[0] = vals[1]
+            out_file.write(" ".join(["{0}".format(x) for x in vals]))
+            out_file.write("\n")
+
+
+class DataFile:
+    def __init__(self, fname):
+        self.data_sets = []
+        with open(fname, 'r') as f:
+            k = 2
+            data = []
+            title = ""
+            for line in f:
+                line = line.strip('\n')
+                if line.startswith("#"):
+                    continue
+                if not line:
+                    k += 1
+                    continue
+                if k < 2:
+                    data.append(decode_line(line))
+                    continue
+                if title or data:
+                    self.data_sets.append(DataSet(title, data))
+                title = line
+                data = []
+                k = 0
+            if title or data:
+                self.data_sets.append(DataSet(title, data))
+
+    def __repr__(self):
+        s = ""
+        for d in self.data_sets:
+            s += str(d)
+        return s
+
+    def __getitem__(self, index):
+        return self.data_sets[index]
+
+    def count(self):
+        return len(self.data_sets)
+
+    def bounds(self, col):
+        y_min, y_max = 1e+308, -1e-308
+        for data in self.data_sets:
+            a, b = data.bounds(col)
+            y_min = min(a, y_min)
+            y_max = max(b, y_max)
+        return (y_min, y_max)
+
+    def export_for_gnuplot(self, out_fname, cols, lines_flag=False):
+        with open(out_fname, 'w') as f:
+            n = self.count()
+            for data in self.data_sets:
+                data.export_for_gnuplot(f, cols, lines_flag)
+                n -= 1
+                if n > 0:
+                    f.write("\n\n")
+
 # Tasks
 
-class RacketPlotTask:
+class PlotTask:
     def __init__(self, input_name, base_name):
         self.input_name = input_name
         self.base_name = base_name
@@ -252,18 +367,119 @@ class RacketPlotTask:
     def add_model_file(self, fname, style=None):
         self.model_files.append((fname, style))
 
-    def plot(self):
-        # Run plot-data.rkt
-        image_name = self.base_name
-        if args.type:
-            image_name += "-" + args.type
-        out_path = output_path
-        if args.subexprs:
-            out_path = os.path.join(out_path, self.input_name + "-subexprs")
-        if not os.path.exists(out_path):
-            os.makedirs(out_path)
-        image_file = os.path.join(out_path, image_name + ".png")
+    def create_gnuplot_file(self, out_file):
+        script_file = os.path.join(plot_tmp, self.base_name + ".gnuplot")
+        if args.width:
+            width = int(args.width)
+        else:
+            width = 800
+        if args.height:
+            height = int(args.height)
+        else:
+            height = 600
+        with open(script_file, 'w') as f:
+            # terminal
+            if args.gnuplot == "html":
+                f.write("set terminal canvas standalone mousing size {0},{1}\n".format(
+                    width, height))
+            else:
+                f.write("set terminal png size {0},{1}\n".format(width, height))
+            f.write("set output '{0}'\n".format(out_file))
+            
+            # parameters
+            f.write("set style fill solid\n")
+            if self.title:
+                f.write("set title '{0}'\n".format(self.title))
+            
+            # plots
+            plot_cmds = []
+            y_max = -1e+308
 
+            # error files
+            for (error_file, style) in self.error_files:
+                if not style:
+                    style = args.data_plot_style
+                lines_flag = (style == 'lines')
+
+                col = 3
+                if args.error == 'abs':
+                    col = 3
+                elif args.error == 'rel':
+                    col = 4
+                elif args.error == 'ulp':
+                    col = 5
+
+                data = DataFile(error_file)
+                y_min_data, y_max_data = data.bounds(col)
+                y_max = max(y_max_data, y_max)
+
+                gnuplot_file = os.path.join(os.path.dirname(error_file),
+                                            "[gnuplot]" + os.path.basename(error_file))
+                data.export_for_gnuplot(gnuplot_file, [1,2,col], lines_flag=lines_flag)
+
+                if not lines_flag:
+                    plot_cmds.append("  '{0}' using {1} with {2} title columnheader(1)".format(
+                        gnuplot_file,
+                        "1:2:1:2:(0):3",
+                        "boxxyerrorbars"
+                    ))
+                    if args.mpfi:
+                        plot_cmds.append("  '{0}' using {1} with {2} title '{3}'".format(
+                            gnuplot_file,
+                            "1:2:1:2:3:4",
+                            "boxxyerrorbars",
+                            "[interval]" + re.sub(r'_', r'\\_', data[0].title)
+                        ))
+                else:
+                    plot_cmds.append("  '{0}' using {1} with {2} title columnheader(1)".format(
+                        gnuplot_file,
+                        "1:3",
+                        "steps"
+                    ))
+
+            # model files
+            for (model_file, style) in self.model_files:
+                if not style:
+                    style = 'rectangles'
+                
+                data = DataFile(model_file)
+                y_min_data, y_max_data = data.bounds(4)
+                y_max = max(y_max_data, y_max)
+
+                gnuplot_file = os.path.join(os.path.dirname(model_file),
+                                            "[gnuplot]" + os.path.basename(model_file))
+                data.export_for_gnuplot(gnuplot_file, [1,2,3,4])
+
+                size = data.count() if args.show_extra_errors else 1
+
+                plot_cmds.append("  for [IDX=0:{}] '{}' index IDX using {} with {} title columnheader(1)".format(
+                    size - 1,
+                    gnuplot_file,
+                    "1:2:1:2:3:4",
+                    "boxxyerrorbars"
+                ))
+            
+            # final plot
+            f.write("set xrange [:] noextend\n")
+            if y_max > 0:
+                f.write("set yrange [0 : {0}]\n".format(y_max * 1.2))
+
+            f.write("plot \\\n")
+            f.write(",\\\n".join(plot_cmds))
+        return script_file
+
+    def run_gnuplot(self, out_path, image_name):
+        image_name = "[gnuplot]" + image_name
+        if args.gnuplot == "html":
+            image_name += ".html"
+        else:
+            image_name += ".png"
+        script_file = self.create_gnuplot_file(os.path.join(out_path, image_name))
+        cmd = [gnuplot, script_file]
+        common.run(cmd, log=log)
+
+    def run_racket(self, out_path, image_name):
+        image_file = os.path.join(out_path, image_name + ".png")
         cmd = [racket, racket_plot,
                "--out", image_file]
         if self.title:
@@ -285,6 +501,21 @@ class RacketPlotTask:
             # cmd += ["--data", model_file, "2,3,4.5", style]
 
         common.run(cmd, log=log)
+
+    def plot(self):
+        # Run plot-data.rkt
+        image_name = self.base_name
+        if args.type:
+            image_name += "-" + args.type
+        out_path = output_path
+        if args.subexprs:
+            out_path = os.path.join(out_path, self.input_name + "-subexprs")
+        if not os.path.exists(out_path):
+            os.makedirs(out_path)
+        if args.gnuplot:
+            self.run_gnuplot(out_path, image_name)
+        else:
+            self.run_racket(out_path, image_name)
 
 
 class FPTaylorTask:
@@ -447,7 +678,7 @@ for input_file in args.input:
                                    [(r"f_names\[\] =", '"([^"]*)"', r'"\1-{0}"'.format(cfg_name))])
             data_file = run_data_mpfi(model_file)
             if task not in plot_tasks:
-                plot_tasks[task] = RacketPlotTask(base_fname, "[{0}]{1}".format(task, base_fname))
+                plot_tasks[task] = PlotTask(base_fname, "[{0}]{1}".format(task, base_fname))
             plot_task = plot_tasks[task]
             plot_task.add_model_file(data_file)
             if args.subexprs:
@@ -462,7 +693,7 @@ for input_file in args.input:
         data_file = run_error_bounds(input_file)
         if task not in plot_tasks:
             log.warning("Undefined task '{0}' for the data file '{1}'".format(task, input_file))
-            plot_tasks[task] = RacketPlotTask(base_fname, "[{0}]{1}".format(task, base_fname))
+            plot_tasks[task] = PlotTask(base_fname, "[{0}]{1}".format(task, base_fname))
         plot_tasks[task].add_error_file(data_file)
 
     # Gappa
@@ -473,7 +704,7 @@ for input_file in args.input:
         for task, data_file in results.iteritems():
             if task not in plot_tasks:
                 log.warning("Undefined task '{0}' for the data file '{1}'".format(task, data_file))
-                plot_tasks[task] = RacketPlotTask(base_fname, "[{0}]{1}".format(task, base_fname))
+                plot_tasks[task] = PlotTask(base_fname, "[{0}]{1}".format(task, base_fname))
             plot_tasks[task].add_error_file(data_file, style="lines")
 
     # plot-fptaylor.rkt
