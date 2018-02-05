@@ -142,11 +142,11 @@ let min_max_expr (pars : Opt_common.opt_pars) max_only (cs : constraints) e =
   if Config.debug then begin
       let opt, subopt =
         if abs_float fmin > abs_float fmax then
-	  abs_float fmin, abs_float (fmin -. lower_min)
+          abs_float fmin, abs_float (fmin -. lower_min)
         else
-	  abs_float fmax, abs_float (fmax -. lower_max) in
+          abs_float fmax, abs_float (fmax -. lower_max) in
       Log.report `Debug "iterations(min = %d, max = %d): %d" 
-	         iter_min iter_max (max iter_max iter_min);
+                         iter_min iter_max (max iter_max iter_min);
       Log.report `Debug "min = %e (lower_min = %e)" fmin lower_min;
       Log.report `Debug "max = %e (lower_max = %e)" fmax lower_max;
       Log.report `Debug "subopt = %e (%.1f%%)" subopt (subopt /. opt *. 100.0)

@@ -101,10 +101,15 @@ let gen_nlopt_code (pars : nlopt_pars) fmt =
     p "  // max";
     p "  nlopt_set_max_objective(opt, f, NULL);";
     p "  nlopt_result result_max = nlopt_optimize(opt, x_max, &f_max);";
+    p "  printf(\"NLOpt results:\\n\");";
     p "  printf(\"result_min: %d\\n\", result_min);";
     p "  printf(\"result_max: %d\\n\", result_max);";
-    p "  printf(\"min: %.30e\\n\", f_min);";
-    p "  printf(\"max: %.30e\\n\", f_max);";
+    p "  printf(\"min: %.20e\\n\", f_min);";
+    p "  printf(\"max: %.20e\\n\", f_max);";
+    p "  printf(\"x_min: \");";
+    p "  for (int i = 0; i < sizeof(x_min) / sizeof(double); i++) { printf(\"%.20e, \", x_min[i]); }";
+    p "  printf(\"\\nx_max: \");";
+    p "  for (int i = 0; i < sizeof(x_max) / sizeof(double); i++) { printf(\"%.20e, \", x_max[i]); }";
     p "  return 0;";
     p "}" in
 
@@ -131,6 +136,7 @@ let min_max_expr (pars : Opt_common.opt_pars) (cs : constraints) expr =
     failwith str
   else
     let out = Lib.run_cmd exe_name in
+    Log.report `Debug "%s" (String.concat "\n" out);
     let min = get_float out "min: " and
       max = get_float out "max: " in
     min, max
