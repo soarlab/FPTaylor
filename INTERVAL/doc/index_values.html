@@ -12,12 +12,14 @@
 <link title="Interval" rel="Chapter" href="Interval.html"><title>Index of values</title>
 </head>
 <body>
-<center><h1>Index of values</h1></center>
+<div class="navbar">&nbsp;<a class="up" href="index.html" title="Index">Up</a>
+&nbsp;</div>
+<h1>Index of values</h1>
 <table>
 <tr><td align="left"><br></td></tr>
 <tr><td><a href="Interval.html#VAL( *$ )">( *$ )</a> [<a href="Interval.html">Interval</a>]</td>
 <td><div class="info">
-<code class="code">a *$ b</code>
+<code class="code">a *$ b</code>
 multiplies <code class="code">a</code> by <code class="code">b</code> according to interval arithmetic and returns the proper result.
 </div>
 </td></tr>
@@ -134,7 +136,7 @@ Deprecated
 <tr><td align="left"><br>A</td></tr>
 <tr><td><a href="Interval.html#VALabs_I">abs_I</a> [<a href="Interval.html">Interval</a>]</td>
 <td><div class="info">
-<code class="code">abs_I a</code> returns <code class="code">{low=a.low;high=a.high}</code> if <code class="code">a.low&gt;=0.</code>, <code class="code">{low=-a.high;high=-a.low}</code> if <code class="code">a.high&lt;=0.</code>, and <code class="code">{low=0.;high=max -a.low a.high}</code>
+<code class="code">abs_I a</code> returns <code class="code">{low=a.low;high=a.high}</code> if <code class="code">a.low&gt;=0.</code>, <code class="code">{low=-a.high;high=-a.low}</code> if <code class="code">a.high&lt;=0.</code>, and <code class="code">{low=0.;high=max -a.low a.high}</code>
 otherwise
 </div>
 </td></tr>
@@ -221,7 +223,7 @@ Computes cos(x) for x in [-2^63, 2^63]
 </td></tr>
 <tr><td><a href="Interval.html#VALcos_I">cos_I</a> [<a href="Interval.html">Interval</a>]</td>
 <td><div class="info">
-<code class="code">cos_I a</code>  returns the proper extension of cos to arithmetic interval 
+<code class="code">cos_I a</code>  returns the proper extension of cos to arithmetic interval 
 Returns [-1,1] if one of the bounds is greater or lower than +/-2**53
 </div>
 </td></tr>
@@ -396,7 +398,7 @@ Prints an interval into an out_channel with the same format applied to both endp
 </td></tr>
 <tr><td><a href="Interval.html#VALfprintf_X">fprintf_X</a> [<a href="Interval.html">Interval</a>]</td>
 <td><div class="info">
-Prints an interval vector into an out_channel 
+Prints an interval vector into an out_channel 
 with the same format applied to all endpoints
 </div>
 </td></tr>
@@ -587,7 +589,7 @@ Computes sin(x) for x in [-2^63, 2^63]
 </td></tr>
 <tr><td><a href="Interval.html#VALsin_I">sin_I</a> [<a href="Interval.html">Interval</a>]</td>
 <td><div class="info">
-<code class="code">sin_I a</code>  returns the proper extension of sin to arithmetic interval
+<code class="code">sin_I a</code>  returns the proper extension of sin to arithmetic interval
 Returns [-1,1] if one of the bounds is greater or lower than +/-2**53
 </div>
 </td></tr>
@@ -633,13 +635,13 @@ Computes the mean of the size of intervals of the interval vector
 </td></tr>
 <tr><td><a href="Interval.html#VALsprintf_I">sprintf_I</a> [<a href="Interval.html">Interval</a>]</td>
 <td><div class="info">
-Returns a string holding the interval printed with the same format applied to both 
+Returns a string holding the interval printed with the same format applied to both 
 endpoints
 </div>
 </td></tr>
 <tr><td><a href="Interval.html#VALsprintf_X">sprintf_X</a> [<a href="Interval.html">Interval</a>]</td>
 <td><div class="info">
-Returns a string holding the interval vector printed with the same format applied to all
+Returns a string holding the interval vector printed with the same format applied to all
 endpoints
 </div>
 </td></tr>
@@ -671,7 +673,7 @@ Computes tan(x) for x in [-2^63, 2^63]
 </td></tr>
 <tr><td><a href="Interval.html#VALtan_I">tan_I</a> [<a href="Interval.html">Interval</a>]</td>
 <td><div class="info">
-<code class="code">tan_I a</code>  returns the proper extension of tan to arithmetic interval 
+<code class="code">tan_I a</code>  returns the proper extension of tan to arithmetic interval 
 Returns [-Inf,Inf] if one of the bounds is greater or lower than +/-2**53
 </div>
 </td></tr>
@@ -707,6 +709,6 @@ tanh_I is the proper extension of interval arithmetic to tanh
 Neutral element for addition
 </div>
 </td></tr>
-</table><br>
+</table>
 </body>
 </html>

@@ -8,38 +8,39 @@ CC = gcc
 all : interval.cma interval.cmxa libinterval.a doc/index.html ocamlfpu
 
 interval.cma: $(NORM_OBJS)
-	@$(CSLC) -a -custom -o interval.cma $(NORM_OBJS)
+	$(CSLC) -a -custom -o interval.cma $(NORM_OBJS)
 
 
 interval.cmxa: $(OPT_OBJS)
-	@$(CSLOPT) -a -o interval.cmxa  $(OPT_OBJS)
+	$(CSLOPT) -a -o interval.cmxa  $(OPT_OBJS)
 
 libinterval.a: chcw.o
-	@rm -f $@
-	@ar rc $@  chcw.o
-	@ranlib $@
+	rm -f $@
+	ar rc $@  chcw.o
+	ranlib $@
 
 ocamlfpu: interval.cma libinterval.a
-	@ocamlmktop -o ocamlfpu chcw.o interval.cma libinterval.a nums.cma unix.cma str.cma
+	ocamlmktop -o ocamlfpu chcw.o interval.cma libinterval.a
+
 
 .SUFFIXES: .ml .mli .cmo .cmi .cmx
 
 .ml.cmo :
-	@$(CSLC) -c $<
+	$(CSLC) -c $<
 .mli.cmi :
-	@$(CSLC) -c $<
+	$(CSLC) -c $<
 .ml.cmx :
-	@$(CSLOPT) -c $<
+	$(CSLOPT) -c $<
 .c.o :
-	@$(CC) -W -Wall -O5 -I $(OCAMLDIR)/caml -c  $<
+	$(CC) -W -Wall -O3 -I $(OCAMLDIR)/caml -c  $<
 
 clean:
 	\rm -f *.cmo *.cmi *.cmx *.o *~ *.cma *.cmxa *.a a.out ocamlfpu ocamlfpu.exe
 
 doc/index.html: *.mli
-	@ocamldoc -d doc -html *.mli
+	ocamldoc -d doc -html *.mli
 
 depend:
-	@ocamldep *.mli *.ml > .depend
+	ocamldep *.mli *.ml > .depend
 
 include .depend

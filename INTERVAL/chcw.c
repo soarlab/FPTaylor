@@ -66,6 +66,8 @@ Set the processor to use 24+8 bits. IEEE-754 standard for float
 #define SET_24(ref) "fstcw "#ref"\n\t andw $0xfcff,"#ref"\n\t fldcw "#ref"\n\t"
 
 static short int cw;
+static long long int tmp;
+
 
 void set_nearest() {
   asm __volatile__(SET_NEAREST(%0)
@@ -87,31 +89,32 @@ long double infinity = 1.0/0.0;
 long double neg_infinity = -1.0/0.0;
 
 /* Int to float conversion ----------------------------------------------------- */
-static long long int tmp;
-#ifdef __linux
-#define FILDQ   asm __volatile__("fildq tmp":"=t"(res):"m"(tmp):"memory")
-#else
-#define FILDQ   asm __volatile__("fildq _tmp":"=t"(res):"m"(tmp):"memory")
-#endif
+
+#define FILDQ(ref) "fildq "#ref"\n\t"
 
 double ffloat(long int a) {
   double res;
 
   tmp = a;
-  FILDQ;
+  asm __volatile__(FILDQ(%1)
+		   :"=t"(res)
+		   :"m"(tmp)
+		   :"memory");
   return(res);
 }
 
 
 double ffloat_low(long int a) {
   double res;
-
   tmp = a;
   asm __volatile__(SET_LOW(%0)
 		   :"=m"(cw)
 		   :"m"(tmp)
 		   :"memory");
-  FILDQ;
+  asm __volatile__(FILDQ(%1)
+		   :"=t"(res)
+		   :"m"(tmp),"m"(cw)
+		   :"memory");
   asm __volatile__(SET_NEAREST(%0)
 		   :"=m"(cw)
 		   :"m"(res),"m"(tmp)
@@ -127,7 +130,10 @@ double ffloat_high(long int a) {
 		   :"=m"(cw)
 		   :"m"(tmp)
 		   :"memory");
-  FILDQ;
+  asm __volatile__(FILDQ(%1)
+		   :"=t"(res)
+		   :"m"(tmp),"m"(cw)
+		   :"memory");
   asm __volatile__(SET_NEAREST(%0)
 		   :"=m"(cw)
 		   :"m"(res),"m"(tmp)
@@ -527,7 +533,7 @@ long double fprem_l(long double a, long double b) {
        "jnz 1b\n\t"
        :"=t"(res)
        :"0"(a),"u"(b)
-       :"%ax","%cc");
+       :"ax","cc");
   return(res);
 }
 
@@ -541,7 +547,7 @@ void fprem1_l(long double a, long double b, long double *r, int *q) {
 		   "jnz 1b\n\t"
 		   :"=t"(res),"=a"(res2)
 		   :"0"(a),"u"(b)
-		   :"%cc");
+		   :"cc");
   *r=res;
   *q=((res2&0x100)>>6)+((res2&0x4000)>>13)+((res2&0x200)>>9);
 }
@@ -590,7 +596,11 @@ long double flog_l(long double a) {
        "fyl2x\n\t"  /* ln(2)*log2(a) = ln(a) */
        :"=t"(res)
        :"0"(a)
-       :"%st(7)"); /*We push one level of the stack, thus clobbering st(7) */
+#ifdef __GNUCC__
+       :"%st(7)"
+#endif
+       );
+  /*We push one level of the stack, thus clobbering st(7) */
   return(res);
 }
 
@@ -604,7 +614,10 @@ long double flog_low_l(long double a) {
 		   SET_NEAREST(%2)
 		   :"=t"(res)
 		   :"0"(a),"m"(cw)
-		   :"%st(7)");
+#ifdef __GNUCC__
+		   :"%st(7)"
+#endif
+		   );
 
   return(res);
 }
@@ -619,7 +632,10 @@ long double flog_high_l(long double a) {
 		   SET_NEAREST(%2)
 		   :"=t"(res)
 		   :"0"(a),"m"(cw)
-		   :"%st(7)");
+#ifdef __GNUCC__
+		   :"%st(7)"
+#endif
+		   );
 
   return(res);
 }
@@ -645,7 +661,11 @@ long double fexp_l(long double a) {
 		   "fstp    %%st(1)\n\t"
 		   :"=t"(res)
 		   :"0"(a)
-		   :"%st(6)","%st(7)");  /* We push two levels on the stack, thus clobbering st(6) and st(7) */
+#ifdef __GNUCC__
+		   :"%st(6)","%st(7)"
+#endif
+		   );
+  /* We push two levels on the stack, thus clobbering st(6) and st(7) */
 
   return(res);
 }
@@ -671,7 +691,10 @@ long double fexp_low_l(long double a) {
 		     SET_NEAREST(%2)
 		     :"=t"(res)
 		     :"0"(a),"m"(cw)
-		     :"%st(6)","%st(7)");
+#ifdef __GNUCC__
+		     :"%st(6)","%st(7)"
+#endif
+		     );
   }
   else {
     asm __volatile__(SET_HIGH(%2)
@@ -690,7 +713,10 @@ long double fexp_low_l(long double a) {
 		     SET_NEAREST(%2)
 		     :"=t"(res)
 		     :"0"(a),"m"(cw)
-		     :"%st(6)","%st(7)");
+#ifdef __GNUCC__
+		     :"%st(6)","%st(7)"
+#endif
+		     );
   }
   return(res);
 }
@@ -716,7 +742,10 @@ long double fexp_high_l(long double a) {
 		     SET_NEAREST(%2)
 		     :"=t"(res)
 		     :"0"(a),"m"(cw)
-		     :"%st(6)","%st(7)");
+#ifdef __GNUCC__
+		     :"%st(6)","%st(7)"
+#endif
+		     );
   }
   else {
     asm __volatile__(SET_LOW(%2)
@@ -735,7 +764,10 @@ long double fexp_high_l(long double a) {
 		     SET_NEAREST(%2)
 		     :"=t"(res)
 		     :"0"(a),"m"(cw)
-		     :"%st(6)","%st(7)");
+#ifdef __GNUCC__
+		     :"%st(6)","%st(7)"
+#endif
+		     );
   }
   return(res);
 }
@@ -756,7 +788,11 @@ long double flog_pow_l(long double a, long double b) {
        "fscale"                 /* 2^(b*log2(a)) */
        :"=t"(res)
        :"0"(a),"u"(b)
-       :"%st(7)"); /* We push one level of the stack (start with 2 levels, max 3: line fld1) */
+#ifdef __GNUCC__
+       :"%st(7)"
+#endif
+       );
+  /* We push one level of the stack (start with 2 levels, max 3: line fld1) */
   return(res);
 }
 
@@ -779,7 +815,10 @@ long double flog_pow_low_l(long double a, long double b) {
 		   SET_NEAREST(%3)
 		   :"=t"(res)
 		   :"0"(a),"u"(b),"m"(cw)
-		   :"memory","%st(7)");
+#ifdef __GNUCC__
+		   :"memory","%st(7)"
+#endif
+		   );
 
   return(res);
 }
@@ -803,7 +842,10 @@ long double flog_pow_high_l(long double a, long double b) {
 		   SET_NEAREST(%3)
 		   :"=t"(res)
 		   :"0"(a),"u"(b),"m"(cw)
-		   :"memory","%st(7)");
+#ifdef __GNUCC__
+		   :"memory","%st(7)"
+#endif
+		   );
 
   return(res);
 }
@@ -828,7 +870,11 @@ long double facos_l(long double a) {
        "fmulp\n\t"                /* 2*atan(1/sqrt((a+1)/(a-1)) */
        :"=t"(res)
        :"0"(a)
-       :"%st(7)","%st(6)"); /* Start with 1, max 3 : 2 clobbered */
+#ifdef __GNUCC__
+       :"%st(7)","%st(6)"
+#endif
+       );
+  /* Start with 1, max 3 : 2 clobbered */
   return(res);
 }
 
@@ -855,7 +901,10 @@ long double facos_low_l(long double a) {
 		  SET_NEAREST(%2)
 		  :"=t"(res)
 		  :"0"(a),"m"(cw)
-		  :"%st(7)","%st(6)");
+#ifdef __GNUCC__
+		  :"%st(7)","%st(6)"
+#endif
+		  );
 
  return(res);
 }
@@ -884,7 +933,10 @@ long double facos_high_l(long double a) {
 		  SET_NEAREST(%2)
 		  :"=t"(res)
 		  :"0"(a),"m"(cw)
-		  :"%st(7)","%st(6)");
+#ifdef __GNUCC__
+		  :"%st(7)","%st(6)"
+#endif
+		  );
 
  return(res);
 }
@@ -899,7 +951,10 @@ long double fasin_l(long double a) {
        "fpatan\n\t"               /* atan(a/sqrt(1-a2)) */
        :"=t"(res)
        :"0"(a)
-       :"%st(7)");
+#ifdef __GNUCC__
+       :"%st(7)"
+#endif
+       );
   return(res);
 }
 
@@ -919,7 +974,10 @@ long double fasin_low_l(long double a) {
 		     SET_NEAREST(%2)
 		     :"=t"(res)
 		     :"0"(a),"m"(cw)
-		     :"%st(7)");
+#ifdef __GNUCC__
+		     :"%st(7)"
+#endif
+		     );
     return(res);
   }
   else {
@@ -934,7 +992,10 @@ long double fasin_low_l(long double a) {
 		     SET_NEAREST(%2)
 		     :"=t"(res)
 		     :"0"(a),"m"(cw)
-		     :"%st(7)");
+#ifdef __GNUCC__
+		     :"%st(7)"
+#endif
+		     );
     return(res);
   }
 }
@@ -955,7 +1016,10 @@ long double fasin_high_l(long double a) {
 		     SET_NEAREST(%2)
 		     :"=t"(res)
 		     :"0"(a),"m"(cw)
-		     :"%st(7)");
+#ifdef __GNUCC__
+		     :"%st(7)"
+#endif
+		     );
     return(res);
   }
   else {
@@ -970,7 +1034,10 @@ long double fasin_high_l(long double a) {
 		     SET_NEAREST(%2)
 		     :"=t"(res)
 		     :"0"(a),"m"(cw)
-		     :"%st(7)");
+#ifdef __GNUCC__
+		     :"%st(7)"
+#endif
+		     );
     return(res);
   }
 }
@@ -1055,7 +1122,10 @@ long double ftan_l(long double a) {
 		    "fincstp"
 		    :"=t"(res)
 		    :"0"(a)
-		    :"%st(7)");
+#ifdef __GNUCC__
+		    :"%st(7)"
+#endif
+		    );
 
   return(res);
 }
@@ -1306,7 +1376,10 @@ long double fexm1_l(long double a) {
 		     "f2xm1\n\t"                 /* 2^(a*log2(e))-1 */
 		     :"=t"(res)
 		     :"0"(a)
-		     :"%st(7)");
+#ifdef __GNUCC__
+		     :"%st(7)"
+#endif
+		     );
     return(res);
   }
 }
@@ -1325,7 +1398,10 @@ long double fexm1_low_l(long double a) {
 		     SET_NEAREST(%2)
 		     :"=t"(res)
 		     :"0"(a),"m"(cw)
-		     :"%st(7)");
+#ifdef __GNUCC__
+		     :"%st(7)"
+#endif
+		     );
     return(res);
   }
   else {
@@ -1337,7 +1413,10 @@ long double fexm1_low_l(long double a) {
 		     SET_NEAREST(%2)
 		     :"=t"(res)
 		     :"0"(a),"m"(cw)
-		     :"%st(7)");
+#ifdef __GNUCC__
+		     :"%st(7)"
+#endif
+		     );
     return(res);
   }
 }
@@ -1356,7 +1435,10 @@ long double fexm1_high_l(long double a) {
 		     SET_NEAREST(%2)
 		     :"=t"(res)
 		     :"0"(a),"m"(cw)
-		     :"%st(7)");
+#ifdef __GNUCC__
+		     :"%st(7)"
+#endif
+		     );
     return(res);
   }
   else {
@@ -1368,7 +1450,10 @@ long double fexm1_high_l(long double a) {
 		     SET_NEAREST(%2)
 		     :"=t"(res)
 		     :"0"(a),"m"(cw)
-		     :"%st(7)");
+#ifdef __GNUCC__
+		     :"%st(7)"
+#endif
+		     );
     return(res);
   }
 }

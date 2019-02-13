@@ -15,12 +15,13 @@
 <link title="Interval" rel="Chapter" href="Interval.html"><title>Fpu</title>
 </head>
 <body>
-<div class="navbar">&nbsp;<a href="index.html">Up</a>
-&nbsp;<a href="Fpu_rename.html">Next</a>
+<div class="navbar">&nbsp;<a class="up" href="index.html" title="Index">Up</a>
+&nbsp;<a class="post" href="Fpu_rename.html" title="Fpu_rename">Next</a>
 </div>
-<center><h1>Module <a href="type_Fpu.html">Fpu</a></h1></center>
-<br>
-<pre><span class="keyword">module</span> Fpu: <code class="code">sig</code> <a href="Fpu.html">..</a> <code class="code">end</code></pre>Access to low level floating point functions.
+<h1>Module <a href="type_Fpu.html">Fpu</a></h1>
+
+<pre><span class="keyword">module</span> Fpu: <code class="code">sig</code> <a href="Fpu.html">..</a> <code class="code">end</code></pre><div class="info module top">
+Access to low level floating point functions.
 THIS LIBRARY ONLY WORKS FOR INTEL PROCESSORS. 
 <p>
 
@@ -150,69 +151,129 @@ Intel 980X Linux 64 bits
 <li>     fmod speed (10000000 calls):0.152010</li>
 </ul>
 <br>
+</div>
 <hr width="100%">
-<pre><span id="VALffloat"><span class="keyword">val</span> ffloat</span> : <code class="type">int -> float</code></pre><pre><span id="VALffloat_high"><span class="keyword">val</span> ffloat_high</span> : <code class="type">int -> float</code></pre><pre><span id="VALffloat_low"><span class="keyword">val</span> ffloat_low</span> : <code class="type">int -> float</code></pre><div class="info">
+
+<pre><span id="VALffloat"><span class="keyword">val</span> ffloat</span> : <code class="type">int -> float</code></pre>
+<pre><span id="VALffloat_high"><span class="keyword">val</span> ffloat_high</span> : <code class="type">int -> float</code></pre>
+<pre><span id="VALffloat_low"><span class="keyword">val</span> ffloat_low</span> : <code class="type">int -> float</code></pre><div class="info ">
 float() functions. The float function is exact on 32 bits machine
 but not on 64 bits machine with ints larger than 53 bits<br>
 </div>
-<pre><span id="VALfadd"><span class="keyword">val</span> fadd</span> : <code class="type">float -> float -> float</code></pre><pre><span id="VALfadd_low"><span class="keyword">val</span> fadd_low</span> : <code class="type">float -> float -> float</code></pre><pre><span id="VALfadd_high"><span class="keyword">val</span> fadd_high</span> : <code class="type">float -> float -> float</code></pre><div class="info">
+
+<pre><span id="VALfadd"><span class="keyword">val</span> fadd</span> : <code class="type">float -> float -> float</code></pre>
+<pre><span id="VALfadd_low"><span class="keyword">val</span> fadd_low</span> : <code class="type">float -> float -> float</code></pre>
+<pre><span id="VALfadd_high"><span class="keyword">val</span> fadd_high</span> : <code class="type">float -> float -> float</code></pre><div class="info ">
 Floating point addition in nearest, low and high mode<br>
 </div>
-<pre><span id="VALfsub"><span class="keyword">val</span> fsub</span> : <code class="type">float -> float -> float</code></pre><pre><span id="VALfsub_low"><span class="keyword">val</span> fsub_low</span> : <code class="type">float -> float -> float</code></pre><pre><span id="VALfsub_high"><span class="keyword">val</span> fsub_high</span> : <code class="type">float -> float -> float</code></pre><div class="info">
+
+<pre><span id="VALfsub"><span class="keyword">val</span> fsub</span> : <code class="type">float -> float -> float</code></pre>
+<pre><span id="VALfsub_low"><span class="keyword">val</span> fsub_low</span> : <code class="type">float -> float -> float</code></pre>
+<pre><span id="VALfsub_high"><span class="keyword">val</span> fsub_high</span> : <code class="type">float -> float -> float</code></pre><div class="info ">
 Floating point substraction in nearest, low and high mode<br>
 </div>
-<pre><span id="VALfmul"><span class="keyword">val</span> fmul</span> : <code class="type">float -> float -> float</code></pre><pre><span id="VALfmul_low"><span class="keyword">val</span> fmul_low</span> : <code class="type">float -> float -> float</code></pre><pre><span id="VALfmul_high"><span class="keyword">val</span> fmul_high</span> : <code class="type">float -> float -> float</code></pre><div class="info">
+
+<pre><span id="VALfmul"><span class="keyword">val</span> fmul</span> : <code class="type">float -> float -> float</code></pre>
+<pre><span id="VALfmul_low"><span class="keyword">val</span> fmul_low</span> : <code class="type">float -> float -> float</code></pre>
+<pre><span id="VALfmul_high"><span class="keyword">val</span> fmul_high</span> : <code class="type">float -> float -> float</code></pre><div class="info ">
 Floating point multiplication in nearest, low and high mode<br>
 </div>
-<pre><span id="VALfdiv"><span class="keyword">val</span> fdiv</span> : <code class="type">float -> float -> float</code></pre><pre><span id="VALfdiv_low"><span class="keyword">val</span> fdiv_low</span> : <code class="type">float -> float -> float</code></pre><pre><span id="VALfdiv_high"><span class="keyword">val</span> fdiv_high</span> : <code class="type">float -> float -> float</code></pre><div class="info">
+
+<pre><span id="VALfdiv"><span class="keyword">val</span> fdiv</span> : <code class="type">float -> float -> float</code></pre>
+<pre><span id="VALfdiv_low"><span class="keyword">val</span> fdiv_low</span> : <code class="type">float -> float -> float</code></pre>
+<pre><span id="VALfdiv_high"><span class="keyword">val</span> fdiv_high</span> : <code class="type">float -> float -> float</code></pre><div class="info ">
 Floating point division in nearest, low and high mode<br>
 </div>
-<pre><span id="VALfmod"><span class="keyword">val</span> fmod</span> : <code class="type">float -> float -> float</code></pre><div class="info">
+
+<pre><span id="VALfmod"><span class="keyword">val</span> fmod</span> : <code class="type">float -> float -> float</code></pre><div class="info ">
 Modulo (result is supposed to be exact)<br>
 </div>
-<pre><span id="VALfsqrt"><span class="keyword">val</span> fsqrt</span> : <code class="type">float -> float</code></pre><pre><span id="VALfsqrt_low"><span class="keyword">val</span> fsqrt_low</span> : <code class="type">float -> float</code></pre><pre><span id="VALfsqrt_high"><span class="keyword">val</span> fsqrt_high</span> : <code class="type">float -> float</code></pre><div class="info">
+
+<pre><span id="VALfsqrt"><span class="keyword">val</span> fsqrt</span> : <code class="type">float -> float</code></pre>
+<pre><span id="VALfsqrt_low"><span class="keyword">val</span> fsqrt_low</span> : <code class="type">float -> float</code></pre>
+<pre><span id="VALfsqrt_high"><span class="keyword">val</span> fsqrt_high</span> : <code class="type">float -> float</code></pre><div class="info ">
 Floating point square root in nearest, low and high mode<br>
 </div>
-<pre><span id="VALfexp"><span class="keyword">val</span> fexp</span> : <code class="type">float -> float</code></pre><pre><span id="VALfexp_low"><span class="keyword">val</span> fexp_low</span> : <code class="type">float -> float</code></pre><pre><span id="VALfexp_high"><span class="keyword">val</span> fexp_high</span> : <code class="type">float -> float</code></pre><div class="info">
+
+<pre><span id="VALfexp"><span class="keyword">val</span> fexp</span> : <code class="type">float -> float</code></pre>
+<pre><span id="VALfexp_low"><span class="keyword">val</span> fexp_low</span> : <code class="type">float -> float</code></pre>
+<pre><span id="VALfexp_high"><span class="keyword">val</span> fexp_high</span> : <code class="type">float -> float</code></pre><div class="info ">
 Floating point exponential in nearest, low and high mode<br>
 </div>
-<pre><span id="VALflog"><span class="keyword">val</span> flog</span> : <code class="type">float -> float</code></pre><pre><span id="VALflog_low"><span class="keyword">val</span> flog_low</span> : <code class="type">float -> float</code></pre><pre><span id="VALflog_high"><span class="keyword">val</span> flog_high</span> : <code class="type">float -> float</code></pre><div class="info">
+
+<pre><span id="VALflog"><span class="keyword">val</span> flog</span> : <code class="type">float -> float</code></pre>
+<pre><span id="VALflog_low"><span class="keyword">val</span> flog_low</span> : <code class="type">float -> float</code></pre>
+<pre><span id="VALflog_high"><span class="keyword">val</span> flog_high</span> : <code class="type">float -> float</code></pre><div class="info ">
 Floating point log in nearest, low and high mode<br>
 </div>
-<pre><span id="VALflog_pow"><span class="keyword">val</span> flog_pow</span> : <code class="type">float -> float -> float</code></pre><pre><span id="VALflog_pow_low"><span class="keyword">val</span> flog_pow_low</span> : <code class="type">float -> float -> float</code></pre><pre><span id="VALflog_pow_high"><span class="keyword">val</span> flog_pow_high</span> : <code class="type">float -> float -> float</code></pre><div class="info">
+
+<pre><span id="VALflog_pow"><span class="keyword">val</span> flog_pow</span> : <code class="type">float -> float -> float</code></pre>
+<pre><span id="VALflog_pow_low"><span class="keyword">val</span> flog_pow_low</span> : <code class="type">float -> float -> float</code></pre>
+<pre><span id="VALflog_pow_high"><span class="keyword">val</span> flog_pow_high</span> : <code class="type">float -> float -> float</code></pre><div class="info ">
 Computes x^y for 0 &lt; x &lt; infinity and neg_infinity &lt; y &lt; infinity<br>
 </div>
-<pre><span id="VALfpow"><span class="keyword">val</span> fpow</span> : <code class="type">float -> float -> float</code></pre><pre><span id="VALfpow_low"><span class="keyword">val</span> fpow_low</span> : <code class="type">float -> float -> float</code></pre><pre><span id="VALfpow_high"><span class="keyword">val</span> fpow_high</span> : <code class="type">float -> float -> float</code></pre><div class="info">
+
+<pre><span id="VALfpow"><span class="keyword">val</span> fpow</span> : <code class="type">float -> float -> float</code></pre>
+<pre><span id="VALfpow_low"><span class="keyword">val</span> fpow_low</span> : <code class="type">float -> float -> float</code></pre>
+<pre><span id="VALfpow_high"><span class="keyword">val</span> fpow_high</span> : <code class="type">float -> float -> float</code></pre><div class="info ">
 Computes x^y expanded to its mathematical limit when it exists<br>
 </div>
-<pre><span id="VALfsin"><span class="keyword">val</span> fsin</span> : <code class="type">float -> float</code></pre><pre><span id="VALfsin_low"><span class="keyword">val</span> fsin_low</span> : <code class="type">float -> float</code></pre><pre><span id="VALfsin_high"><span class="keyword">val</span> fsin_high</span> : <code class="type">float -> float</code></pre><div class="info">
+
+<pre><span id="VALfsin"><span class="keyword">val</span> fsin</span> : <code class="type">float -> float</code></pre>
+<pre><span id="VALfsin_low"><span class="keyword">val</span> fsin_low</span> : <code class="type">float -> float</code></pre>
+<pre><span id="VALfsin_high"><span class="keyword">val</span> fsin_high</span> : <code class="type">float -> float</code></pre><div class="info ">
 Computes sin(x) for x in ]-2^63, 2^63[<br>
 </div>
-<pre><span id="VALfcos"><span class="keyword">val</span> fcos</span> : <code class="type">float -> float</code></pre><pre><span id="VALfcos_low"><span class="keyword">val</span> fcos_low</span> : <code class="type">float -> float</code></pre><pre><span id="VALfcos_high"><span class="keyword">val</span> fcos_high</span> : <code class="type">float -> float</code></pre><div class="info">
+
+<pre><span id="VALfcos"><span class="keyword">val</span> fcos</span> : <code class="type">float -> float</code></pre>
+<pre><span id="VALfcos_low"><span class="keyword">val</span> fcos_low</span> : <code class="type">float -> float</code></pre>
+<pre><span id="VALfcos_high"><span class="keyword">val</span> fcos_high</span> : <code class="type">float -> float</code></pre><div class="info ">
 Computes cos(x) for x in ]-2^63, 2^63[<br>
 </div>
-<pre><span id="VALftan"><span class="keyword">val</span> ftan</span> : <code class="type">float -> float</code></pre><pre><span id="VALftan_low"><span class="keyword">val</span> ftan_low</span> : <code class="type">float -> float</code></pre><pre><span id="VALftan_high"><span class="keyword">val</span> ftan_high</span> : <code class="type">float -> float</code></pre><div class="info">
+
+<pre><span id="VALftan"><span class="keyword">val</span> ftan</span> : <code class="type">float -> float</code></pre>
+<pre><span id="VALftan_low"><span class="keyword">val</span> ftan_low</span> : <code class="type">float -> float</code></pre>
+<pre><span id="VALftan_high"><span class="keyword">val</span> ftan_high</span> : <code class="type">float -> float</code></pre><div class="info ">
 Computes tan(x) for x in ]-2^63, 2^63[<br>
 </div>
-<pre><span id="VALfatan"><span class="keyword">val</span> fatan</span> : <code class="type">float -> float -> float</code></pre><pre><span id="VALfatan_low"><span class="keyword">val</span> fatan_low</span> : <code class="type">float -> float -> float</code></pre><pre><span id="VALfatan_high"><span class="keyword">val</span> fatan_high</span> : <code class="type">float -> float -> float</code></pre><div class="info">
+
+<pre><span id="VALfatan"><span class="keyword">val</span> fatan</span> : <code class="type">float -> float -> float</code></pre>
+<pre><span id="VALfatan_low"><span class="keyword">val</span> fatan_low</span> : <code class="type">float -> float -> float</code></pre>
+<pre><span id="VALfatan_high"><span class="keyword">val</span> fatan_high</span> : <code class="type">float -> float -> float</code></pre><div class="info ">
 fatan x y computes atan2 y x<br>
 </div>
-<pre><span id="VALfacos"><span class="keyword">val</span> facos</span> : <code class="type">float -> float</code></pre><pre><span id="VALfacos_low"><span class="keyword">val</span> facos_low</span> : <code class="type">float -> float</code></pre><pre><span id="VALfacos_high"><span class="keyword">val</span> facos_high</span> : <code class="type">float -> float</code></pre><div class="info">
+
+<pre><span id="VALfacos"><span class="keyword">val</span> facos</span> : <code class="type">float -> float</code></pre>
+<pre><span id="VALfacos_low"><span class="keyword">val</span> facos_low</span> : <code class="type">float -> float</code></pre>
+<pre><span id="VALfacos_high"><span class="keyword">val</span> facos_high</span> : <code class="type">float -> float</code></pre><div class="info ">
 arc-cosine functions<br>
 </div>
-<pre><span id="VALfasin"><span class="keyword">val</span> fasin</span> : <code class="type">float -> float</code></pre><pre><span id="VALfasin_low"><span class="keyword">val</span> fasin_low</span> : <code class="type">float -> float</code></pre><pre><span id="VALfasin_high"><span class="keyword">val</span> fasin_high</span> : <code class="type">float -> float</code></pre><div class="info">
+
+<pre><span id="VALfasin"><span class="keyword">val</span> fasin</span> : <code class="type">float -> float</code></pre>
+<pre><span id="VALfasin_low"><span class="keyword">val</span> fasin_low</span> : <code class="type">float -> float</code></pre>
+<pre><span id="VALfasin_high"><span class="keyword">val</span> fasin_high</span> : <code class="type">float -> float</code></pre><div class="info ">
 arc-sinus functions<br>
 </div>
-<pre><span id="VALfsinh"><span class="keyword">val</span> fsinh</span> : <code class="type">float -> float</code></pre><pre><span id="VALfsinh_low"><span class="keyword">val</span> fsinh_low</span> : <code class="type">float -> float</code></pre><pre><span id="VALfsinh_high"><span class="keyword">val</span> fsinh_high</span> : <code class="type">float -> float</code></pre><div class="info">
+
+<pre><span id="VALfsinh"><span class="keyword">val</span> fsinh</span> : <code class="type">float -> float</code></pre>
+<pre><span id="VALfsinh_low"><span class="keyword">val</span> fsinh_low</span> : <code class="type">float -> float</code></pre>
+<pre><span id="VALfsinh_high"><span class="keyword">val</span> fsinh_high</span> : <code class="type">float -> float</code></pre><div class="info ">
 Computes sinh(x)<br>
 </div>
-<pre><span id="VALfcosh"><span class="keyword">val</span> fcosh</span> : <code class="type">float -> float</code></pre><pre><span id="VALfcosh_low"><span class="keyword">val</span> fcosh_low</span> : <code class="type">float -> float</code></pre><pre><span id="VALfcosh_high"><span class="keyword">val</span> fcosh_high</span> : <code class="type">float -> float</code></pre><div class="info">
+
+<pre><span id="VALfcosh"><span class="keyword">val</span> fcosh</span> : <code class="type">float -> float</code></pre>
+<pre><span id="VALfcosh_low"><span class="keyword">val</span> fcosh_low</span> : <code class="type">float -> float</code></pre>
+<pre><span id="VALfcosh_high"><span class="keyword">val</span> fcosh_high</span> : <code class="type">float -> float</code></pre><div class="info ">
 Computes cosh(x)<br>
 </div>
-<pre><span id="VALftanh"><span class="keyword">val</span> ftanh</span> : <code class="type">float -> float</code></pre><pre><span id="VALftanh_low"><span class="keyword">val</span> ftanh_low</span> : <code class="type">float -> float</code></pre><pre><span id="VALftanh_high"><span class="keyword">val</span> ftanh_high</span> : <code class="type">float -> float</code></pre><div class="info">
+
+<pre><span id="VALftanh"><span class="keyword">val</span> ftanh</span> : <code class="type">float -> float</code></pre>
+<pre><span id="VALftanh_low"><span class="keyword">val</span> ftanh_low</span> : <code class="type">float -> float</code></pre>
+<pre><span id="VALftanh_high"><span class="keyword">val</span> ftanh_high</span> : <code class="type">float -> float</code></pre><div class="info ">
 Computes tanh(x)<br>
 </div>
-<pre><span id="VALis_neg"><span class="keyword">val</span> is_neg</span> : <code class="type">float -> bool</code></pre><div class="info">
+
+<pre><span id="VALis_neg"><span class="keyword">val</span> is_neg</span> : <code class="type">float -> bool</code></pre><div class="info ">
 is_neg x returns if x has its sign bit set (true for -0.)<br>
 </div>
 <br>
@@ -251,13 +312,16 @@ for all interval computations, so you don't really need these functions.
 <p>
 
 PPS: Please, don't use them...<br>
-<pre><span id="VALset_low"><span class="keyword">val</span> set_low</span> : <code class="type">unit -> unit</code></pre><div class="info">
+
+<pre><span id="VALset_low"><span class="keyword">val</span> set_low</span> : <code class="type">unit -> unit</code></pre><div class="info ">
 Sets the rounding mod to DOWNWARD (towards minus infinity)<br>
 </div>
-<pre><span id="VALset_high"><span class="keyword">val</span> set_high</span> : <code class="type">unit -> unit</code></pre><div class="info">
+
+<pre><span id="VALset_high"><span class="keyword">val</span> set_high</span> : <code class="type">unit -> unit</code></pre><div class="info ">
 Sets the rounding mod to UPWARD (towards infinity)<br>
 </div>
-<pre><span id="VALset_nearest"><span class="keyword">val</span> set_nearest</span> : <code class="type">unit -> unit</code></pre><div class="info">
+
+<pre><span id="VALset_nearest"><span class="keyword">val</span> set_nearest</span> : <code class="type">unit -> unit</code></pre><div class="info ">
 Sets the rounding mod to NEAREST (default mode)<br>
 </div>
 </body></html>
