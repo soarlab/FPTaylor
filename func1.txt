@@ -1,0 +1,4 @@
+Formula
+func1
+2*(sin(x)+cos(x))
+

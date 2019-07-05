@@ -11,6 +11,11 @@
 (* -------------------------------------------------------------------------- *)
 
 (* Operations *)
+(*
+input: no
+output: no
+description: general type of unary operators and single variable functions
+*)
 type u_op_type = 
   | Op_neg
   | Op_abs
@@ -30,8 +35,14 @@ type u_op_type =
   | Op_asinh
   | Op_acosh
   | Op_atanh
+  | Op_relu
   | Op_floor_power2
 
+(*
+input: no
+output: no
+description: general type of binary operators and double variable functions
+*)
 type bin_op_type =
   | Op_max
   | Op_min
@@ -43,11 +54,21 @@ type bin_op_type =
   | Op_sub2
   | Op_abs_err
 
+(*
+input: 
+output: 
+description: 
+*)
 type gen_op_type =
   | Op_fma
   | Op_ulp
 
 (* Expression *)
+(*
+input: no
+output: no
+description: type of expression
+*)
 type expr =
   | Const of Const.t
   | Var of string
@@ -56,11 +77,21 @@ type expr =
   | Bin_op of bin_op_type * expr * expr
   | Gen_op of gen_op_type * expr list
 
+(*
+input: no
+output: no
+description: type of formula
+*)
 type formula =
   | Le of expr * expr
   | Lt of expr * expr
   | Eq of expr * expr
 
+(*
+input: 
+output: 
+description: 
+*)
 type constraints = {
   var_interval : string -> Interval.interval;
   var_rat_bounds : string -> Num.num * Num.num;
@@ -68,6 +99,11 @@ type constraints = {
   constraints : formula list;
 }
 
+(*
+input: Const.t
+output: expr
+description: make an expression from a constant, one or two expression wrt to the meaning of the output expression
+*)
 let mk_const c = Const c and
   mk_var v = Var v and
   mk_rounding rnd a = Rounding (rnd, a) and
@@ -89,6 +125,7 @@ let mk_const c = Const c and
   mk_asinh a = U_op (Op_asinh, a) and
   mk_acosh a = U_op (Op_acosh, a) and
   mk_atanh a = U_op (Op_atanh, a) and
+  mk_relu a = U_op (Op_relu, a) and
   mk_max a b = Bin_op (Op_max, a, b) and
   mk_min a b = Bin_op (Op_min, a, b) and
   mk_add a b = Bin_op (Op_add, a, b) and
@@ -101,18 +138,38 @@ let mk_const c = Const c and
   mk_abs_err t x = Bin_op (Op_abs_err, t, x) and
   mk_floor_power2 a = U_op (Op_floor_power2, a)
 
+(*
+input: 
+output: 
+description: 
+*)
 let mk_ulp (prec, e_min) x = 
   let p = mk_const (Const.of_int prec) in
   let e = mk_const (Const.of_int e_min) in
   Gen_op (Op_ulp, [p; e; x])
 
+(*
+input: variable of type int/num/float/interval
+output: expr
+description: make a constant expression with the given type number
+*)
 let mk_int_const i = mk_const (Const.of_int i) and
   mk_num_const n = mk_const (Const.of_num n) and
   mk_float_const f = mk_const (Const.of_float f) and
   mk_interval_const v = mk_const (Const.of_interval v)
 
+(*
+input: 
+output: 
+description: 
+*)
 let mk_floor_sub2 a b = mk_floor_power2 (mk_sub2 a b)
 
+(*
+input: 
+output: 
+description: some interger constant expr
+*)
 let const_0 = mk_int_const 0 and
   const_1 = mk_int_const 1 and
   const_2 = mk_int_const 2 and
@@ -120,6 +177,11 @@ let const_0 = mk_int_const 0 and
   const_4 = mk_int_const 4 and
   const_5 = mk_int_const 5
 
+(*
+input: u_op_type
+output: string
+description: return the name of the operator/function from u_op_type
+*)
 let u_op_name = function
   | Op_neg -> "neg"
   | Op_abs -> "abs"
@@ -139,8 +201,14 @@ let u_op_name = function
   | Op_asinh -> "asinh"
   | Op_acosh -> "acosh"
   | Op_atanh -> "atanh"
+  | Op_relu -> "relu"
   | Op_floor_power2 -> "floor_power2"
 
+(*
+input: bin_op_type
+output: string
+description: return the name of the operator/function from bin_op_type
+*)
 let bin_op_name = function
   | Op_max -> "max"
   | Op_min -> "min"
@@ -152,10 +220,20 @@ let bin_op_name = function
   | Op_sub2 -> "sub2"
   | Op_abs_err -> "abs_err"
 
+(*
+input: gen_op_type
+output: string
+description: return the name of the operator/function from gen_op_type
+*)
 let gen_op_name = function
   | Op_fma -> "fma"
   | Op_ulp -> "ulp"
 
+(*
+input: expr,expr
+output: bool
+description: return true if the two expressions are the same
+*)
 let rec eq_expr e1 e2 =
   match (e1, e2) with
   | (Const c1, Const c2) -> Const.eq_c c1 c2
@@ -170,6 +248,11 @@ let rec eq_expr e1 e2 =
     Lib.itlist (fun (a1, a2) x -> eq_expr a1 a2 && x) (Lib.zip as1 as2) true
   | _ -> false
 
+(*
+input: expr
+output: expr list
+description: return the list of variables in an expression
+*)
 let rec vars_in_expr e =
   match e with
   | Var v -> [v]
