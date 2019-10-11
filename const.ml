@@ -14,8 +14,6 @@ open Num
 open Interval
 
 (*
-input: no
-output: no
 description: Type for constants, which can be a num (build-in of Ocaml) or interval
 *)
 type t = Rat of num | Interval of interval
@@ -23,28 +21,28 @@ type t = Rat of num | Interval of interval
 (*
 input: num
 output: t
-description: cover num to constrant (t type)
+description: coverts num to constant (t type)
 *)
 let of_num n = Rat n
 
 (*
 input: int
 output: t
-description: cover int to constrant (t type)
+description: coverts int to constant (t type)
 *)
 let of_int i = Rat (Int i)
 
 (*
 input: float
 output: t
-description: cover float to constrant (t type)
+description: cover float to constant (t type)
 *)
 let of_float f = Rat (More_num.num_of_float f)
                                          
 (*
 input: interval
 output: t
-description: cover interval to constrant (t type)
+description: coverts interval to constant (t type)
 *)
 let of_interval v =
   if v.low = v.high then of_float v.low
@@ -63,7 +61,7 @@ let is_rat = function
 (*
 input: interval
 output: bool
-description: return true if the constrant is an interval
+description: return true if the constant is an interval
 *)
 let is_interval = function
   | Rat _ -> false
@@ -106,7 +104,7 @@ let to_int c = int_of_num (to_num c)
 (*
 input: t
 output: num
-description: cover the lower bound of an interval constant to num, if the constant is num, just return it
+description: coverts the lower bound of an interval constant to num, if the constant is num, just return it
 *)
 let low_bound_to_num = function
   | Rat n -> n
@@ -115,7 +113,7 @@ let low_bound_to_num = function
 (*
 input: t
 output: num
-description: cover the upper bound of an interval constant to num, if the constant is num, just return it
+description: coverts the upper bound of an interval constant to num, if the constant is num, just return it
 *)
 let high_bound_to_num = function
   | Rat n -> n
