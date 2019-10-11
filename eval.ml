@@ -21,7 +21,7 @@ open Expr
 (*
 input: string->float
 output: float
-description: estimate an expression and return a float value, the first argument is a function which return the value (float) of a variable's name
+description: evaluate an expression and return a float value, the first argument is a function which return the value (float) of a variable's name
 *)
 let eval_float_expr vars =
   let rec eval = function
