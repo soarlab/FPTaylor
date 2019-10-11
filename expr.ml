@@ -12,8 +12,6 @@
 
 (* Operations *)
 (*
-input: no
-output: no
 description: general type of unary operators and single variable functions
 *)
 type u_op_type = 
@@ -39,8 +37,6 @@ type u_op_type =
   | Op_floor_power2
 
 (*
-input: no
-output: no
 description: general type of binary operators and double variable functions
 *)
 type bin_op_type =
@@ -54,10 +50,8 @@ type bin_op_type =
   | Op_sub2
   | Op_abs_err
 
-(*
-input: 
-output: 
-description: 
+(* 
+description: type of general multivariate operators and functions
 *)
 type gen_op_type =
   | Op_fma
@@ -65,8 +59,6 @@ type gen_op_type =
 
 (* Expression *)
 (*
-input: no
-output: no
 description: type of expression
 *)
 type expr =
