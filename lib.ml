@@ -199,7 +199,7 @@ let run_cmd cmd =
 
 let write_to_file fname writer arg =
   let oc = open_out fname in
-  let fmt = Format.make_formatter (output oc) (fun () -> flush oc) in
+  let fmt = Format.make_formatter (output_substring oc) (fun () -> flush oc) in
   let result = writer fmt arg in
   Format.pp_print_flush fmt ();
   close_out oc;

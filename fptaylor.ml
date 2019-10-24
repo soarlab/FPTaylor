@@ -49,7 +49,7 @@ let open_file, close_file, close_all, get_file_formatter =
       failwith ("File with the same id is already open: " ^ id)
     else
       let oc = open_out fname in
-      let fmt = Format.make_formatter (output oc) (fun () -> flush oc) in
+      let fmt = Format.make_formatter (output_substring oc) (fun () -> flush oc) in
       Hashtbl.add files id (oc, fmt) in
   let close_file id =
     try
