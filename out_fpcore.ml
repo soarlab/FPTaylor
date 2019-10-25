@@ -37,10 +37,10 @@ let precision_of_rounding rnd =
 (* Selects the most frequent rounding operation type *)
 let select_precision expr =
   let table = Hashtbl.create 10 in
-  let incr bits =
+  let incr ty =
     let v = 
-      try Hashtbl.find table bits with Not_found -> 0 in
-    Hashtbl.replace table bits (v + 1) in
+      try Hashtbl.find table ty with Not_found -> 0 in
+    Hashtbl.replace table ty (v + 1) in
   let rec count = function
     | Const c -> ()
     | Var v -> ()
@@ -48,14 +48,14 @@ let select_precision expr =
     | Bin_op (_, arg1, arg2) -> count arg1; count arg2
     | Gen_op (_, args) -> List.iter count args
     | Rounding (rnd, arg) ->
-      incr (type_size rnd.fp_type);
+      incr rnd.fp_type;
       count arg in
   count expr;
-  let bits, _ = Hashtbl.fold
+  let ty, _ = Hashtbl.fold
       (fun bits v ((_, v_max) as r) ->
          if v >= v_max then (bits, v) else r) 
-      table (max_int, 0) in
-  create_rounding bits "ne" 1.0
+      table (mk_value_type 0 (0, 0), 0) in
+  create_rounding ty "ne" 1.0
 
 let cmp_rnd r1 r2 =
   r1.fp_type = r2.fp_type && r1.rnd_type = r2.rnd_type
@@ -92,7 +92,7 @@ let generate_fpcore fmt task =
     let rnd = select_precision task.expression in
     let prec = precision_of_rounding rnd in
     if prec = "real" then 
-      create_rounding max_int "ne" 1.0, prec
+      create_rounding real_type "ne" 1.0, prec
     else
       rnd, prec in
   fprintf fmt "(FPCore (%a)@."

@@ -16,8 +16,8 @@ open Task
 
 include Proof_base
 
-let mk_rnd_info bits c = {
-  bits = bits;
+let mk_rnd_info ty c = {
+  bits = Rounding.type_to_bits ty;
   coefficient = c;
 }
 

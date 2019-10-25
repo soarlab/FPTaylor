@@ -25,9 +25,19 @@ type rnd_info = {
   special_flag : bool;
 }
 
-val mk_value_type : int -> value_type
+(* significand bits, (max_exp, min_exp) *)
+val mk_value_type : int -> int * int -> value_type
+
+(* significand bits (including the implicit bit) and exponent bits *)
+val value_type_of_bits : int -> int -> value_type
+
+val value_type_of_total_bits : int -> value_type
 
 val real_type : value_type
+val fp16_type : value_type
+val fp32_type : value_type
+val fp64_type : value_type
+val fp128_type : value_type
 
 val string_to_value_type : string -> value_type
 
@@ -35,17 +45,20 @@ val is_subtype : value_type -> value_type -> bool
 
 val is_no_rnd : rnd_info -> bool
 
-val type_size : value_type -> int
+(* deprecated *)
+val type_to_bits : value_type -> int
 
 val type_precision : value_type -> int
 
 val type_min_exp : value_type -> int
 
-val create_rounding : int -> string -> float -> rnd_info
+val create_rounding : value_type -> string -> float -> rnd_info
   
-val create_explicit_rounding : int -> string -> float -> int -> int -> rnd_info
+val create_explicit_rounding : value_type -> string -> float -> int -> int -> rnd_info
 
 val string_to_rounding : string -> rnd_info
+
+val value_type_to_string : value_type -> string
 
 val rounding_to_string : rnd_info -> string
 

@@ -14,9 +14,9 @@
 %token <string> NUMBER SINGLE_NUMERAL DOUBLE_NUMERAL
 
 %token CONSTANTS VARIABLES DEFINITIONS CONSTRAINTS EXPRESSIONS
-%token INT REAL 
-%token <int> FLOAT
-%token <int * string> RND_PAR
+%token INT REAL FLOAT
+%token <Rounding.value_type> FLOAT_PAR
+%token <Rounding.value_type * string> RND_PAR
 %token RND NO_RND
 %token E_CONST
 
@@ -104,7 +104,16 @@ var_type:
   | { string_to_value_type (Config.get_string_option "default-var-type") }
   | INT { real_type }
   | REAL { real_type }
-  | FLOAT { mk_value_type $1 }
+  | FLOAT_PAR { $1 }
+  | FLOAT value_type { $2 }
+;
+
+value_type:
+  | LT NUMBER GT { value_type_of_total_bits (int_of_string $2) }
+  | LT NUMBER COMMA NUMBER GT 
+    { value_type_of_bits (int_of_string $2) (int_of_string $4) }
+  | LT NUMBER COMMA LPAREN NUMBER COMMA NUMBER RPAREN GT 
+    { mk_value_type (int_of_string $2) (int_of_string $5, int_of_string $7) }
 ;
 
 definitions_list:
@@ -153,14 +162,23 @@ pos_neg_number:
 ;
 
 rnd:
+  | RND LBRACKET value_type COMMA ID COMMA NUMBER COMMA pos_neg_number COMMA pos_neg_number RBRACKET
+    { create_explicit_rounding $3 ($5) (float_of_string $7) (int_of_string $9) (int_of_string $11) }
+  | RND LBRACKET value_type COMMA ID COMMA NUMBER RBRACKET
+    { create_rounding $3 ($5) (float_of_string $7) }
+  | RND LBRACKET value_type COMMA ID RBRACKET
+    { create_rounding $3 ($5) 1.0 }
+  | NO_RND { create_rounding (mk_value_type 0 (0, 0)) "ne" 1.0 }
   | RND LBRACKET NUMBER COMMA ID COMMA NUMBER COMMA pos_neg_number COMMA pos_neg_number RBRACKET
-    { create_explicit_rounding (int_of_string $3) ($5) 
+    { (* deprecated *) 
+        create_explicit_rounding (value_type_of_total_bits (int_of_string $3)) ($5) 
         (float_of_string $7) (int_of_string $9) (int_of_string $11) }
-  | NO_RND { create_rounding 0 "ne" 1.0 }
   | RND LBRACKET NUMBER COMMA ID COMMA NUMBER RBRACKET
-    { create_rounding (int_of_string $3) ($5) (float_of_string $7) }
+    { (* deprecated *)
+      create_rounding (value_type_of_total_bits (int_of_string $3)) ($5) (float_of_string $7) }
   | RND LBRACKET NUMBER COMMA ID RBRACKET
-    { create_rounding (int_of_string $3) ($5) 1.0 }
+    { (* deprecated *)
+      create_rounding (value_type_of_total_bits (int_of_string $3)) ($5) 1.0 }
   | RND_PAR
     { create_rounding (fst $1) (snd $1) 1.0 }
   | RND
