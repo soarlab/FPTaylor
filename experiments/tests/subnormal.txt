@@ -1,0 +1,5 @@
+Variables
+    real x in [0, 1p-128];
+
+Expressions
+    r rnd32= 1.5 * x;

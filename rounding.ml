@@ -51,9 +51,9 @@ let is_no_rnd rnd =
 let eps_delta_from_bits bits =
   match bits with
     | 0 -> 0, 0
-    | 16 -> -11, -14
-    | 32 -> -24, -126
-    | 64 -> -53, -1022
+    | 16 -> -11, -25
+    | 32 -> -24, -150
+    | 64 -> -53, -1075
     | 128 -> -113, -16382
     | _ -> failwith ("Unsupported fp size: " ^ string_of_int bits)
 
@@ -76,7 +76,7 @@ let max_value_from_bits bits =
       | 64 -> 52, 1023
       | 128 -> 112, 16383 
       | _ -> failwith ("max_value_from_bits: Unsupported fp size: " ^ string_of_int bits) in
-  (2.0 -. ldexp 1.0 (-p)) *. ldexp 1.0 emax
+  min (Fpu.fsub_low 2.0 (ldexp 1.0 (-p)) *. ldexp 1.0 emax) max_float
 
 let string_to_rnd_type str =
   match str with
