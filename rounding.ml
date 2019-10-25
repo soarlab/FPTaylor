@@ -31,11 +31,14 @@ type rnd_info = {
   special_flag : bool;
 }
 
-let mk_value_type bits (min_exp, max_exp) = {
-  significand_bits = bits;
-  min_exp = min_exp;
-  max_exp = max_exp;
-}
+let mk_value_type bits (min_exp, max_exp) =
+  if bits < 0 || min_exp > max_exp then 
+    failwith (Printf.sprintf "Incorrect type parameters: %d (%d, %d)" bits min_exp max_exp);
+  {
+    significand_bits = bits;
+    min_exp = min_exp;
+    max_exp = max_exp;
+  }
 
 let value_type_of_bits sig_bits exp_bits =
   if exp_bits < 2 || exp_bits > 60 then failwith ("Bad value of exp_bits: " ^ string_of_int exp_bits);

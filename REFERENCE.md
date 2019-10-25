@@ -136,6 +136,10 @@ Variables can be of the following types:
 - `float32`: the type of IEEE-754 32-bit floating-point numbers (single precision).
 - `float64`: the type of IEEE-754 64-bit floating-point numbers (double precision).
 - `float128`: the type of IEEE-754 128-bit floating-point numbers (quadruple precision).
+- `float<sbits, ebits>`: the type of floating-point numbers with `sbits` significand bits
+   (including the implicit bit) and `ebits` exponent bits (e.g., `float32 = float<24, 8>`).
+- `float<sbits, (emin, emax)>`: the type of floating-point number with `sbits` significand bits
+   (including the implicit bit) and with the exponent `e` satisfying `emin <= e <= emax`. 
 
 Names of variables should be different from names of constants.
 
@@ -206,6 +210,8 @@ Example:
     r2 rnd64= x + r0 * y;
     r3 rnd16_up= rnd32(x) + y;
     r4 rnd32= rnd64(x + y);
+    // The space between '>' and '=' is required
+    r5 rnd<10, 5> = x
     
 
 It is equivalent to
@@ -215,6 +221,7 @@ It is equivalent to
     r2 = rnd64(rnd64(x) + rnd64(rnd64(r0) * rnd64(y)));
     r3 = rnd16_up(rnd32(x) + rnd16_up(y));
     r4 = rnd64(x + y);
+    r5 = rnd<10, 5>(x);
 
 ### Constraints
 
@@ -308,22 +315,32 @@ optimization backends of FPTaylor. The default optimization backend
 
 The general rounding operator has the following syntax
 
-    rnd[bits, type, scale, eps, delta]
+    rnd[format_type, type, scale, eps, delta]
 
-Here, `bits` is one of the following values: 16, 32, 64, or 128. It
-specifies the floating-point format to which the operator
-rounds. Values of `type` can be: `ne`, `up`, `down`, or `zero`. It
+Here, `format_type` specifies the floating-point format to which the operator
+rounds. It is one of the following values:
+
+- `bits` (*deprecated*): the floating-point type with the given number of bits:
+   16, 32, 64, or 128.
+- `<bits>`: the floating-point type with the given number of bits:
+   16, 32, 64, or 128.
+- `<sbits, ebits>`: the floating-point type with `sbits` significand bits
+   (including the implicit bit) and `ebits` exponent bits.
+- `<sbits, (emin, emax)>`: the floating-point type with `sbits` significand bits
+   (including the implicit bit) and with the exponent `e` satisfying `emin <= e <= emax`.
+
+Values of `type` can be: `ne`, `up`, `down`, or `zero`. It
 specifies the type of the rounding operator: to nearest, toward
 positive infinity (up), toward negative infinity (down), or toward
 zero. The value of `scale` must be a real number, values of `eps` and
 `delta` must be integers. These values play the following role. Assume
 that the following expression is given:
 
-    rnd[bits, type, scale, eps, delta](f)
+    rnd[format_type, type, scale, eps, delta](f)
 
 FPTaylor creates the following relation between `f` and its rounded value:
 
-    rnd[bits, type, scale, eps, delta](f) = f + f e + d
+    rnd[format_type, type, scale, eps, delta](f) = f + f e + d
 
 with `|e| <= scale * 2^eps` and `|d| <= scale * 2^delta` if `type` is
 `ne`, and `|e| <= 2 * scale * 2^eps` and `|d| <= 2 * scale * 2^delta`
@@ -338,41 +355,44 @@ approximation. In general, the imporved rounding model leads to more
 complicated problems for FPTaylor to solve. It can be turned on with a
 special option.
 
-Note that values of `bits` and `type` are not explicitly used in the
+Note that values of `format_type` and `type` are not explicitly used in the
 above rounded expression. Nevertheless, they play an important role in
 the analysis which FPTaylor does internally.
 
 There are several simplified versions of rounding
 operators. Parameters `eps` and `delta` can be omitted. In that case,
-their values will be deduced automatically from the value of `bits`
+their values will be deduced automatically from the value of `format_type`
 and `type`:
 
-    rnd[bits, type, scale]
+    rnd[format_type, type, scale]
 
 The parameter `scale` can also be omitted. If it is omitted, then its
-value is assumed to be `1.0`.
+value is assumed to be `1.0`. It is also possible to omit `type` and write
+
+    rnd<sbit, ebits>
+    rnd<sbits, (emin, emax)>
 
 There are several predefined names for most commonly used rounding operators:
 
-    rnd16 = rnd[16, ne]
-    rnd16_up = rnd[16, up]
-    rnd16_down = rnd[16, down]
-    rnd16_0 = rnd[16, zero]
+    rnd16 = rnd[<11, 5>, ne]
+    rnd16_up = rnd[<11, 5>, up]
+    rnd16_down = rnd[<11, 5>, down]
+    rnd16_0 = rnd[<11, 5>, zero]
 
-    rnd32 = rnd[32, ne]
-    rnd32_up = rnd[32, up]
-    rnd32_down = rnd[32, down]
-    rnd32_0 = rnd[32, zero]
+    rnd32 = rnd[<24, 8>, ne]
+    rnd32_up = rnd[<24, 8>, up]
+    rnd32_down = rnd[<24, 8>, down]
+    rnd32_0 = rnd[<24, 8>, zero]
 
-    rnd64 = rnd[64, ne]
-    rnd64_up = rnd[64, up]
-    rnd64_down = rnd[64, down]
-    rnd64_0 = rnd[64, zero]
+    rnd64 = rnd[<53, 11>, ne]
+    rnd64_up = rnd[<53, 11>, up]
+    rnd64_down = rnd[<53, 11>, down]
+    rnd64_0 = rnd[<53, 11>, zero]
 
-    rnd128 = rnd[128, ne]
-    rnd128_up = rnd[128, up]
-    rnd128_down = rnd[128, down]
-    rnd128_0 = rnd[128, zero]
+    rnd128 = rnd[<113, 15>, ne]
+    rnd128_up = rnd[<113, 15>, up]
+    rnd128_down = rnd[<113, 15>, down]
+    rnd128_0 = rnd[<113, 15>, zero]
 
 The special operation `no_rnd` can be applied to any expression. It is
 equivalent to the identity operation. It may be useful in the

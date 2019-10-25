@@ -1,0 +1,5 @@
+Variables
+  x1 in [-10, 10];
+
+Expressions
+  r1 rnd= x1 + x1;

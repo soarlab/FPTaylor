@@ -1,0 +1,7 @@
+Variables
+  // <5, 2> = 5 significand bits (including the implicit bit) and 2 exponent bits
+  float<5, 2> x1 in [-10, 10];
+
+Expressions
+  // The space between '>' and '=' is required 
+  r1 rnd<4, 4> = x1 + x1;
