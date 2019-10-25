@@ -17,7 +17,7 @@ open Task
 include Proof_base
 
 let mk_rnd_info ty c = {
-  bits = Rounding.type_to_bits ty;
+  bits = (try Rounding.type_to_bits ty with Failure _ -> 64);
   coefficient = c;
 }
 

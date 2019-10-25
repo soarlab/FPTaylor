@@ -181,6 +181,8 @@ rnd:
       create_rounding (value_type_of_total_bits (int_of_string $3)) ($5) 1.0 }
   | RND_PAR
     { create_rounding (fst $1) (snd $1) 1.0 }
+  | RND value_type
+    { create_rounding $2 "ne" 1.0 }
   | RND
     { string_to_rounding (Config.get_string_option "default-rnd") }
 ;
