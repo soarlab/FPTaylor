@@ -11,12 +11,12 @@ SRC=	version.mli\
 	func.ml\
 	log.mli\
 	log.ml\
+	rounding.mli\
+	rounding.ml\
 	config.mli\
 	config.ml\
 	more_num.mli\
 	more_num.ml\
-	rounding.mli\
-	rounding.ml\
 	binary_float.ml\
 	const.mli\
 	const.ml\

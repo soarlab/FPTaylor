@@ -19,6 +19,14 @@ let short_names = Hashtbl.create 100
 
 let loaded_cfg_files = ref []
 
+let var_type_parser = ref Rounding.string_to_value_type
+
+let rounding_parser = ref Rounding.string_to_rounding
+
+let set_parsers ~var_type_parser:vp ~rounding_parser:rp = 
+  var_type_parser := vp;
+  rounding_parser := rp
+
 let find_option ?default p = 
   try Hashtbl.find param_table p
   with Not_found -> begin
@@ -181,6 +189,10 @@ let get_bool_option name = stob ~name (find_option name)
 let get_int_option name = stoi ~name (find_option name)
 
 let get_float_option name = stof ~name (find_option name)
+
+let get_var_type_option name = !var_type_parser (find_option name)
+
+let get_rounding_option name = !rounding_parser (find_option name)
 
 let is_option_defined name =
   try ignore (find_option name); true with Failure _ -> false  

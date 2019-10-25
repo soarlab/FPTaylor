@@ -38,7 +38,12 @@
 %start expr
 %type <Input_parser_env.raw_expr> expr
 
+%start var_type
+%type <Rounding.value_type> var_type
+
 %type <Input_parser_env.raw_formula> raw_constr
+
+%start rnd
 %type <Rounding.rnd_info> rnd
 
 %%
@@ -101,7 +106,7 @@ variable:
 ;
 
 var_type:
-  | { string_to_value_type (Config.get_string_option "default-var-type") }
+  | { Config.get_var_type_option "default-var-type" }
   | INT { real_type }
   | REAL { real_type }
   | FLOAT_PAR { $1 }
@@ -112,7 +117,7 @@ value_type:
   | LT NUMBER GT { value_type_of_total_bits (int_of_string $2) }
   | LT NUMBER COMMA NUMBER GT 
     { value_type_of_bits (int_of_string $2) (int_of_string $4) }
-  | LT NUMBER COMMA LPAREN NUMBER COMMA NUMBER RPAREN GT 
+  | LT NUMBER COMMA LPAREN pos_neg_number COMMA NUMBER RPAREN GT 
     { mk_value_type (int_of_string $2) (int_of_string $5, int_of_string $7) }
 ;
 
@@ -184,7 +189,7 @@ rnd:
   | RND value_type
     { create_rounding $2 "ne" 1.0 }
   | RND
-    { string_to_rounding (Config.get_string_option "default-rnd") }
+    { Config.get_rounding_option "default-rnd" }
 ;
 
 expr:

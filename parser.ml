@@ -18,6 +18,12 @@ let parse_expr str =
   let raw = parse_raw_expr str in
   Input_parser_env.transform_raw_expr raw
 
+let parse_var_type str =
+  Input_parser.var_type Input_lexer.token (Lexing.from_string str)
+
+let parse_rnd str =
+  Input_parser.rnd Input_lexer.token (Lexing.from_string str)
+
 let parse_string str =
   Input_parser_env.reset();
   let lexbuf = Lexing.from_string str in

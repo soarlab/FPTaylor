@@ -678,6 +678,8 @@ let main () =
     end
   else
     begin
+      Config.set_parsers ~var_type_parser:Parser.parse_var_type
+                         ~rounding_parser:Parser.parse_rnd;
       validate_options ();
       if Config.is_option_defined "fpcore-out" then begin
         open_file "fpcore-out" (Config.get_string_option "fpcore-out")
