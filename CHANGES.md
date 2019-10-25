@@ -1,3 +1,16 @@
+FPTaylor 0.9.3
+--------------
+
+- [FEATURE] Custom floating-point formats: `float<sbits, ebits>` or
+   `float<sbits, (emin, emax)>`. These formats can be also applied
+   to rounding operators: `rnd<sbits, ebits>`.
+
+- [FIX] Upgraded the minimum OCaml version to 4.02.0. Some 4.00.0 incompatible
+   changes were required to support newer versions of OCaml.
+
+- [FIX] Improved `delta` bounds (they were too conservative). For example, 
+   changed `-1022` to `-1075` for 64-bit floats).
+
 FPTaylor 0.9.2
 --------------
 
