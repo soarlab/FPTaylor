@@ -12,20 +12,17 @@
 
 open Interval
 
-let fix_name =
-  let bad_chars = Str.regexp "[^a-zA-Z0-9]+" in
-  let subst sep str =
-    let str = Str.matched_string str in
-    let n = String.length str in
-    let buf = Buffer.create (5 * n) in
-    for i = 0 to n - 1 do
-      Buffer.add_string buf sep;
-      Buffer.add_string buf (string_of_int (int_of_char str.[i]));
-      Buffer.add_string buf sep
-    done;
-    Buffer.contents buf in
+let rec fix_name =
+  let results = Hashtbl.create 100 in
+  let bad_chars = Str.regexp "[^a-zA-Z0-9_]" in
   fun name ->
-      Str.global_substitute bad_chars (subst "_") name
+    let res = Str.global_replace bad_chars "_" name in
+    try
+      let t = Hashtbl.find results res in
+      if t = name then res else fix_name ("_" ^ name)
+    with Not_found ->
+      Hashtbl.add results res name;
+      res
 
 module type PrinterType =
   sig
