@@ -13,7 +13,7 @@
 open Interval
 
 let fix_name =
-  let bad_chars = Str.regexp "[^a-zA-Z0-9]+" in
+  let bad_chars = Str.regexp "[^a-zA-Z0-9_]+" in
   let subst sep str =
     let str = Str.matched_string str in
     let n = String.length str in
