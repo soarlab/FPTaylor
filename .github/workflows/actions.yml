@@ -3,18 +3,22 @@ name: CI
 on: [push]
 
 jobs:
-  build:
+  build_and_run:
     runs-on: ${{ matrix.os }}
 
     strategy:
       matrix:
-        os: [ubuntu-16.04, ubuntu-18.04]
+        os: [ubuntu-16.04, ubuntu-18.04, macos-latest]
 
     steps:
     - uses: actions/checkout@v1
     - name: Install ocaml
       run: sudo apt install ocaml
-    - name: Build FPTaylor
+    - name: Build FPTaylor (Linux)
+      if: ${{ matrix.os }} == macos-latest
       run: make
+    - name: Build FPTaylor (Mac)
+      if: ${{ matrix.os }} != macos-latest
+      run: make fptaylor-simple-interval
     - name: Run basic tests
       run: make test
