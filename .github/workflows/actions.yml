@@ -31,7 +31,9 @@ jobs:
     - name: Build FPTaylor
       run: make
     - name: Run basic tests
-      run: make test
+      run: |
+        grep opt -C 3 default.cfg
+        make test
     - name: Run basic tests with gelpia
       if: startsWith(matrix.os, 'ubuntu')
       run: |
