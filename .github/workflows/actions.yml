@@ -20,10 +20,6 @@ jobs:
     - name: Install num
       if: startsWith(matrix.ocaml, '4.09')
       run: opam install -y num
-    - name: Build FPTaylor
-      run: make
-    - name: Run basic tests
-      run: make test
     - name: Download and build gelpia
       run: |
         git clone https://github.com/soarlab/gelpia.git
@@ -31,6 +27,10 @@ jobs:
         git checkout version_2
         make requirements
         make
+    - name: Build FPTaylor
+      run: make
+    - name: Run basic tests
+      run: make test    
     - name: Run basic tests with gelpia
       run: |
         sed -i "s|^opt = bb|opt = gelpia|g" default.cfg
