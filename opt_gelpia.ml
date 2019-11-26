@@ -58,14 +58,14 @@ let gen_gelpia_code fmt =
 
 let name_counter = ref 0
 
-let get_gelpia_cmd =
+let get_gelpia_cmd ()=
   let cc = Filename.concat in
   let path =
     try
       Sys.getenv "GELPIA_PATH"
     with Not_found ->
       cc Config.base_dir "gelpia" in
-  let cmd = cc (cc path "bin") ("gelpia") in
+  let cmd = cc (cc path "bin") "gelpia" in
   if Sys.file_exists cmd then
     cmd
   else
@@ -89,7 +89,7 @@ let min_max_expr (pars : Opt_common.opt_pars) max_only (cs : constraints) expr =
   let gen = gen_gelpia_code in
   let abs_expr = expr in
   let _ = Lib.write_to_file gelpia_name gen (pars, cs, abs_expr) in
-  let cmd = Format.sprintf "%s --mode=%s %s" (get_gelpia_cmd) (if max_only then "max" else "min-max") gelpia_name in
+  let cmd = Format.sprintf "%s --mode=%s %s" (get_gelpia_cmd ()) (if max_only then "max" else "min-max") gelpia_name in
   let out = Lib.run_cmd cmd in
   try
     let min = if max_only then 0.0 else get_float out "Minimum lower bound " in
