@@ -475,7 +475,7 @@ module GelpiaPrinter : PrinterType = struct
     match expr with
     | Const c ->
         let v = Const.to_interval c in
-        fprintf fmt "interval(%.20e, %.20e)" v.low v.high
+        fprintf fmt "[%.20e, %.20e]" v.low v.high
     | Var v -> fprintf fmt "var_%s" (fix_name v)
     | Rounding (rnd, arg) ->
        let rnd_str = Rounding.rounding_to_string rnd in

@@ -19,8 +19,34 @@ jobs:
         ocaml_version: ${{ matrix.ocaml }}
     - name: Install num
       if: startsWith(matrix.ocaml, '4.09')
-      run: opam install -y num        
+      run: opam install -y num
+    - name: Set up Python 3.7 for gelpia
+      if: startsWith(matrix.os, 'ubuntu')
+      uses: actions/setup-python@v1
+      with:
+        python-version: 3.7
+    - name: Install gelpia dependencies
+      if: startsWith(matrix.os, 'ubuntu')
+      run: |
+        python -m pip install --upgrade pip
+        pip install sly
+        sudo apt install flex bison wget
+    - name: Download and build gelpia
+      if: startsWith(matrix.os, 'ubuntu')
+      run: |
+        git clone https://github.com/soarlab/gelpia.git
+        cd gelpia
+        git checkout version_2
+        make requirements
+        make
     - name: Build FPTaylor
       run: make
     - name: Run basic tests
-      run: make test
+      run: |
+        grep opt -C 3 default.cfg
+        make test
+    - name: Run basic tests with gelpia
+      if: startsWith(matrix.os, 'ubuntu')
+      run: |
+        sed -i "s|^opt = bb|opt = gelpia|g" default.cfg
+        make test

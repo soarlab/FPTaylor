@@ -23,7 +23,7 @@ Requirements
   which has limited functionality but it is portable to different
   systems.
 
-- (Optional) [Gelpia](https://github.com/keram88/gelpia)
+- (Optional) [Gelpia](https://github.com/soarlab/gelpia)
 
 - (Optional) [Z3](https://github.com/Z3Prover/z3)
 
