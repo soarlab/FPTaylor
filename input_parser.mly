@@ -24,6 +24,7 @@
 %token MIN MAX 
 %token EXP LOG
 %token COS SIN TAN COSH SINH TANH
+%token RELU
 %token ACOS ASIN ATAN ACOSH ASINH ATANH ATAN2
 %token SUB2 FLOOR_POWER2
 
@@ -207,6 +208,7 @@ expr:
   | ACOSH LPAREN expr RPAREN { Raw_u_op ("acosh", $3) }
   | ASINH LPAREN expr RPAREN { Raw_u_op ("asinh", $3) }
   | ATANH LPAREN expr RPAREN { Raw_u_op ("atanh", $3) }
+  | RELU LPAREN expr RPAREN { Raw_u_op ("relu", $3) }
   | ATAN2 LPAREN expr COMMA expr RPAREN { raise TODO }
   | SUB2 LPAREN expr COMMA expr RPAREN { Raw_bin_op ("sub2", $3, $5) }
   | FLOOR_POWER2 LPAREN expr RPAREN { Raw_u_op ("floor_power2", $3) }

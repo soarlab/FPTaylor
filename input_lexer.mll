@@ -85,6 +85,7 @@
       "argsinh", ASINH;
       "argcosh", ACOSH;
       "argtanh", ATANH;
+      "relu", RELU;
       "sub2", SUB2;
       "floor_power2", FLOOR_POWER2;
     ] in

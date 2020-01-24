@@ -77,6 +77,7 @@ module InfoPrinter : PrinterType = struct
     | U_op (op, arg) -> begin
         match op with
         | Op_neg -> fprintf fmt "(-(%a))" print arg
+        | Op_relu -> fprintf fmt "relu(%a)" print arg
         | Op_abs -> fprintf fmt "abs(%a)" print arg
         | Op_inv -> fprintf fmt "inv(%a)" print arg
         | Op_sqrt -> fprintf fmt "sqrt(%a)" print arg
@@ -153,6 +154,7 @@ module OCamlIntervalPrinter : PrinterType = struct
         | Op_asinh -> fprintf fmt "asinh_I(%a)" print arg
         | Op_acosh -> fprintf fmt "acosh_I(%a)" print arg
         | Op_atanh -> fprintf fmt "atanh_I(%a)" print arg
+        | Op_relu -> fprintf fmt "(%a)" print arg
         | Op_floor_power2 -> fprintf fmt "floor_power2_I(%a)" print arg
       end
     | Bin_op (op, arg1, arg2) -> begin
@@ -206,6 +208,7 @@ module FPCorePrinter : PrinterType = struct
     | U_op (op, arg) -> begin
         match op with
         | Op_neg -> fprintf fmt "(- %a)" print arg
+        | Op_relu -> fprintf fmt "(relu %a)" print arg
         | Op_abs -> fprintf fmt "(fabs %a)" print arg
         | Op_inv -> fprintf fmt "(/ 1 %a)" print arg
         | Op_sqrt -> fprintf fmt "(sqrt %a)" print arg
@@ -268,6 +271,7 @@ module RacketIntervalPrinter : PrinterType = struct
     | U_op (op, arg) -> begin
         match op with
         | Op_neg -> fprintf fmt "(i- %a)" print arg
+        | Op_relu -> fprintf fmt "(irelu %a)" print arg
         | Op_abs -> fprintf fmt "(iabs %a)" print arg
         | Op_inv -> fprintf fmt "(i/ %a)" print arg
         | Op_sqrt -> fprintf fmt "(isqrt %a)" print arg
@@ -378,6 +382,7 @@ module OCamlFloatPrinter : PrinterType = struct
     | U_op (op, arg) -> begin
         match op with
         | Op_neg -> fprintf fmt "(-.(%a))" print arg
+        | Op_relu -> fprintf fmt "relu(%a)" print arg
         | Op_abs -> fprintf fmt "abs_float(%a)" print arg
         | Op_inv -> fprintf fmt "(1. /. %a)" print arg
         | Op_sqrt -> fprintf fmt "sqrt(%a)" print arg

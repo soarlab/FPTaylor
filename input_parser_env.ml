@@ -64,6 +64,19 @@ let env = {
   expressions = [];
 }
 
+let rec fillrnd1 rnd expr = match expr with
+
+  | Const _ -> Rounding (rnd, expr)
+  | Var _ -> Rounding (rnd, expr)
+  | Rounding (r,e) -> Rounding (r, fillrnd1 rnd e)
+  | U_op (op, arg) -> Rounding (rnd, U_op (op, fillrnd1 rnd arg))
+  | Bin_op (op, arg1, arg2) ->Rounding (rnd, Bin_op (op, fillrnd1 rnd arg1,  fillrnd1 rnd arg2))
+  | Gen_op (op, args) -> Rounding(rnd, Gen_op (op,List.map (fillrnd1 rnd) args))
+
+let getfirstrnd expr = match expr with | Rounding (rnd,expr) ->rnd 
+ 
+let fillrnd expr = fillrnd1 (getfirstrnd expr) expr 
+
 let reset () =
   let clear = Hashtbl.clear in
   clear env.constants;
@@ -155,13 +168,14 @@ let apply_raw_rounding_to_formula rnd f =
   | Raw_eq (e1, e2) ->
     Raw_eq (apply_raw_rounding rnd e1, apply_raw_rounding rnd e2)
 
+
 (* Builds an expression from a raw expression *)
-let rec transform_raw_expr = function
+let rec transform_raw_expr1 = function
   | Raw_rounding (rnd, arg) ->
-    let e1 = transform_raw_expr arg in
+    let e1 = transform_raw_expr1 arg in
     Rounding (rnd, e1)
   | Raw_u_op (str, arg) -> 
-    let e1 = transform_raw_expr arg in
+    let e1 = transform_raw_expr1 arg in
     begin
       match str with
       | "-" -> U_op (Op_neg, e1)
@@ -179,6 +193,7 @@ let rec transform_raw_expr = function
       | "sinh" -> U_op (Op_sinh, e1)
       | "cosh" -> U_op (Op_cosh, e1)
       | "tanh" -> U_op (Op_tanh, e1)
+      | "relu" -> Bin_op (Op_max,mk_const (Const.of_float 0.0),e1)
       | "asinh" -> U_op (Op_asinh, e1)
       | "acosh" -> U_op (Op_acosh, e1)
       | "atanh" -> U_op (Op_atanh, e1)
@@ -186,8 +201,8 @@ let rec transform_raw_expr = function
       | _ -> failwith ("transform_raw_expr: Unknown unary operation: " ^ str)
     end
   | Raw_bin_op (str, arg1, arg2) -> 
-    let e1 = transform_raw_expr arg1 and
-    e2 = transform_raw_expr arg2 in
+    let e1 = transform_raw_expr1 arg1 and
+    e2 = transform_raw_expr1 arg2 in
     begin
       match str with
       | "+" -> Bin_op (Op_add, e1, e2)
@@ -201,7 +216,7 @@ let rec transform_raw_expr = function
       | _ -> failwith ("transform_raw_expr: Unknown binary operation: " ^ str)
     end
   | Raw_gen_op (str, args) ->
-    let es = List.map transform_raw_expr args in
+    let es = List.map transform_raw_expr1 args in
     begin
       match str with
       | "fma" -> Gen_op (Op_fma, es)
@@ -214,6 +229,8 @@ let rec transform_raw_expr = function
     try let var = find_variable name in Var var.var_name
     with Not_found ->
       let c = find_constant name in Const c.value
+
+let transform_raw_expr re = match re with |Raw_rounding _ -> fillrnd (transform_raw_expr1 re)  | _ -> transform_raw_expr1 re
 
 (* Builds a formula from a raw formula *)
 let transform_raw_formula = function

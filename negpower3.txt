@@ -1,0 +1,7 @@
+Derivative
+negpower_3
+-3*x*x
+-6.0 *.$ x
+-.x*.x*.x
+minus_num (x*/x*/x)
+pow_I_i ~-$x 3
