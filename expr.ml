@@ -17,6 +17,7 @@ type u_op_type =
   | Op_inv
   | Op_sqrt
   | Op_sin
+  | Op_my_sin
   | Op_cos
   | Op_tan
   | Op_asin
@@ -76,6 +77,7 @@ let mk_const c = Const c and
   mk_sqrt a = U_op (Op_sqrt, a) and
   mk_inv a = U_op (Op_inv, a) and
   mk_sin a = U_op (Op_sin, a) and
+  mk_my_sin a = a and
   mk_cos a = U_op (Op_cos, a) and
   mk_tan a = U_op (Op_tan, a) and
   mk_asin a = U_op (Op_asin, a) and
@@ -126,6 +128,7 @@ let u_op_name = function
   | Op_inv -> "inv"
   | Op_sqrt -> "sqrt"
   | Op_sin -> "sin"
+  | Op_my_sin -> "my_sin"
   | Op_cos -> "cos"
   | Op_tan -> "tan"
   | Op_asin -> "asin"

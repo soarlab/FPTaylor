@@ -1,0 +1,7 @@
+{
+Variables
+        real x in [-1/2, 1/2];
+
+Expressions
+        sine rnd64= my_sin(x);
+}

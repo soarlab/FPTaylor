@@ -169,6 +169,7 @@ let rec transform_raw_expr = function
       | "inv" -> U_op (Op_inv, e1)
       | "sqrt" -> U_op (Op_sqrt, e1)
       | "sin" -> U_op (Op_sin, e1)
+      | "my_sin" -> U_op (Op_my_sin, e1)
       | "cos" -> U_op (Op_cos, e1)
       | "tan" -> U_op (Op_tan, e1)
       | "asin" -> U_op (Op_asin, e1)

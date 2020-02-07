@@ -578,6 +578,41 @@ let sin_form cs f =
          @ [mk_float_const m3, m3_err];
   }
 
+(* my_sine *)
+(* since my_sin(x) = x the error compared to real sin is x - sin(x)
+   from email:
+        f(x + e) = g(x) + e * v(x) + h(x, e)
+   where:
+        f is the function
+        x is the input
+        e is the error on the input
+        g is the function
+        v is the derivative of the function
+        h is f(x + e) - g(x) - e * v(x)
+
+   for my_sin we get:
+       g(x) = sin(x)
+       v(x) = cos(x)
+       h(x, e) = x - sin(x)
+
+   so in code:
+      v0 = sin(x)
+      v1 = e*cos(x) + (x - sin(x))
+ *)
+
+let my_sin_form cs f =
+  Log.report `Debug "my_sine_form";
+  let i = next_form_index() in
+  let sin_v0 = mk_sin f.v0 in
+  let cos_v0 = mk_cos f.v0 in
+  let mk_my_sin_err e = mk_add (mk_mul e cos_v0) (mk_sub f.v0 sin_v0) in
+  {
+    form_index = i;
+    v0 = sin_v0;
+    v1 = List.map (fun (e, err) -> mk_my_sin_err e, err) f.v1;
+  }
+
+
 (* cosine *)
 let cos_form cs f =
   Log.report `Debug "cos_form";
@@ -1142,6 +1177,7 @@ let build_form (cs : constraints) =
         | Op_inv -> inv_form cs arg_form
         | Op_sqrt -> sqrt_form cs arg_form
         | Op_sin -> sin_form cs arg_form
+        | Op_my_sin -> my_sin_form cs arg_form
         | Op_cos -> cos_form cs arg_form
         | Op_tan -> tan_form cs arg_form
         | Op_asin -> asin_form cs arg_form

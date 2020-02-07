@@ -23,7 +23,7 @@
 %token ABS INV SQRT FMA
 %token MIN MAX 
 %token EXP LOG
-%token COS SIN TAN COSH SINH TANH
+%token COS SIN MY_SIN TAN COSH SINH TANH
 %token ACOS ASIN ATAN ACOSH ASINH ATANH ATAN2
 %token SUB2 FLOOR_POWER2
 
@@ -195,6 +195,7 @@ expr:
   | LOG LPAREN expr RPAREN { Raw_u_op ("log", $3) }
   | COS LPAREN expr RPAREN { Raw_u_op ("cos", $3) }
   | SIN LPAREN expr RPAREN { Raw_u_op ("sin", $3) }
+  | MY_SIN LPAREN expr RPAREN { Raw_u_op ("my_sin", $3) }
   | TAN LPAREN expr RPAREN { Raw_u_op ("tan", $3) }
   | MIN LPAREN expr COMMA expr RPAREN { Raw_bin_op ("min", $3, $5) }
   | MAX LPAREN expr COMMA expr RPAREN { Raw_bin_op ("max", $3, $5) }

@@ -199,6 +199,7 @@ let check_expr vars =
             else
               sqrt_I x
           | Op_sin -> sin_I x
+          | Op_my_sin -> x
           | Op_cos -> cos_I x
           | Op_tan -> tan_I x
           | Op_asin ->

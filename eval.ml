@@ -33,6 +33,7 @@ let eval_float_expr vars =
         | Op_inv -> 1.0 /. x
         | Op_sqrt -> sqrt x
         | Op_sin -> sin x
+        | Op_my_sin -> x
         | Op_cos -> cos x
         | Op_tan -> tan x
         | Op_asin -> asin x
@@ -146,6 +147,7 @@ let eval_interval_expr vars =
         | Op_inv -> inv_I x
         | Op_sqrt -> sqrt_I x
         | Op_sin -> sin_I x
+        | Op_my_sin -> x
         | Op_cos -> cos_I x
         | Op_tan -> tan_I x
         | Op_asin -> asin_I x

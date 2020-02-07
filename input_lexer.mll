@@ -62,6 +62,7 @@
       "log", LOG;
       "cos", COS;
       "sin", SIN;
+      "my_sin", MY_SIN;
       "tan", TAN;
       "cosh", COSH;
       "sinh", SINH;

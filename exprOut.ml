@@ -83,6 +83,7 @@ module InfoPrinter : PrinterType = struct
         | Op_exp -> fprintf fmt "exp(%a)" print arg
         | Op_log -> fprintf fmt "log(%a)" print arg
         | Op_sin -> fprintf fmt "sin(%a)" print arg
+        | Op_my_sin -> fprintf fmt "my_sin(%a)" print arg
         | Op_cos -> fprintf fmt "cos(%a)" print arg
         | Op_tan -> fprintf fmt "tan(%a)" print arg
         | Op_asin -> fprintf fmt "asin(%a)" print arg
@@ -142,6 +143,7 @@ module OCamlIntervalPrinter : PrinterType = struct
         | Op_exp -> fprintf fmt "exp_I(%a)" print arg
         | Op_log -> fprintf fmt "log_I(%a)" print arg
         | Op_sin -> fprintf fmt "sin_I(%a)" print arg
+        | Op_my_sin -> fprintf fmt "%a" print arg
         | Op_cos -> fprintf fmt "cos_I(%a)" print arg
         | Op_tan -> fprintf fmt "tan_I(%a)" print arg
         | Op_asin -> fprintf fmt "asin_I(%a)" print arg
@@ -212,6 +214,7 @@ module FPCorePrinter : PrinterType = struct
         | Op_exp -> fprintf fmt "(exp %a)" print arg
         | Op_log -> fprintf fmt "(log %a)" print arg
         | Op_sin -> fprintf fmt "(sin %a)" print arg
+        | Op_my_sin -> fprintf fmt "%a" print arg
         | Op_cos -> fprintf fmt "(cos %a)" print arg
         | Op_tan -> fprintf fmt "(tan %a)" print arg
         | Op_asin -> fprintf fmt "(asin %a)" print arg
@@ -274,6 +277,7 @@ module RacketIntervalPrinter : PrinterType = struct
         | Op_exp -> fprintf fmt "(iexp %a)" print arg
         | Op_log -> fprintf fmt "(ilog %a)" print arg
         | Op_sin -> fprintf fmt "(isin %a)" print arg
+        | Op_my_sin -> fprintf fmt "%a" print arg
         | Op_cos -> fprintf fmt "(icos %a)" print arg
         | Op_tan -> fprintf fmt "(itan %a)" print arg
         | Op_asin -> fprintf fmt "(iasin %a)" print arg
@@ -330,6 +334,7 @@ module CPrinter : PrinterType = struct
         | Op_exp -> fprintf fmt "exp(%a)" print arg
         | Op_log -> fprintf fmt "log(%a)" print arg
         | Op_sin -> fprintf fmt "sin(%a)" print arg
+        | Op_my_sin -> fprintf fmt "%a" print arg
         | Op_cos -> fprintf fmt "cos(%a)" print arg
         | Op_tan -> fprintf fmt "tan(%a)" print arg
         | Op_asin -> fprintf fmt "asin(%a)" print arg
@@ -384,6 +389,7 @@ module OCamlFloatPrinter : PrinterType = struct
         | Op_exp -> fprintf fmt "exp(%a)" print arg
         | Op_log -> fprintf fmt "log(%a)" print arg
         | Op_sin -> fprintf fmt "sin(%a)" print arg
+        | Op_my_sin -> fprintf fmt "%a" print arg
         | Op_cos -> fprintf fmt "cos(%a)" print arg
         | Op_tan -> fprintf fmt "tan(%a)" print arg
         | Op_asin -> fprintf fmt "asin(%a)" print arg
@@ -489,6 +495,7 @@ module GelpiaPrinter : PrinterType = struct
         | Op_exp -> fprintf fmt "exp(%a)" print arg
         | Op_log -> fprintf fmt "log(%a)" print arg
         | Op_sin -> fprintf fmt "sin(%a)" print arg
+        | Op_my_sin -> fprintf fmt "%a" print arg
         | Op_cos -> fprintf fmt "cos(%a)" print arg
         | Op_tan -> fprintf fmt "tan(%a)" print arg
         | Op_asin -> fprintf fmt "asin(%a)" print arg
