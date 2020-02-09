@@ -581,35 +581,45 @@ let sin_form cs f =
 (* my_sine *)
 (* since my_sin(x) = x the error compared to real sin is x - sin(x)
    from email:
-        f(x + e) = g(x) + e * v(x) + h(x, e)
+        f(x + e) = g(x) + e * v(x) + v2(x) + h(x, e)
    where:
-        f is the function
+        f is the (approximate) function
         x is the input
         e is the error on the input
-        g is the function
-        v is the derivative of the function
-        h is f(x + e) - g(x) - e * v(x)
+        g is the (target) function
+        v is the linear approximation of f relative to g
+        v2 is a new error term
+        h is f(x + e) - g(x) - e * v(x) - v2(x)
 
    for my_sin we get:
+       f(x) = x
        g(x) = sin(x)
-       v(x) = cos(x)
-       h(x, e) = x - sin(x)
+       v(x) = 1
+       v2(x) = x - sin(x)
+       h(x, e) = 0
+
+   check:
+       f(x + e) = x + e = sin(x) + e * 1 + (x - sin(x)) + 0 = g(x) + e * v(x) + v2(x) + h(x, e)
 
    so in code:
       v0 = sin(x)
-      v1 = e*cos(x) + (x - sin(x))
+      v1 = [e;  (x - sin(x))]
+
+   note: we define v2(x) = 2 * (x - sin(x)) with the corresponding exponent 2^-1. 
+         It is not possible to have the exponent 2^0 because 0 is reserved for zero values
+         (see Rounding.get_eps)
  *)
 
 let my_sin_form cs f =
   Log.report `Debug "my_sine_form";
   let i = next_form_index() in
   let sin_v0 = mk_sin f.v0 in
-  let cos_v0 = mk_cos f.v0 in
-  let mk_my_sin_err e = mk_add (mk_mul e cos_v0) (mk_sub f.v0 sin_v0) in
+  let err_expr = mk_mul const_2 (mk_sub f.v0 sin_v0) in
+  let v2_err = mk_err_var (find_index err_expr) (-1) in
   {
     form_index = i;
     v0 = sin_v0;
-    v1 = List.map (fun (e, err) -> mk_my_sin_err e, err) f.v1;
+    v1 = f.v1 @ [err_expr, v2_err]
   }
 
 

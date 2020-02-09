@@ -85,7 +85,7 @@ let translate_mpfr env =
             | Op_exp -> fprintf fmt "  mpfr_exp(%s, %s, MPFR_RNDN);@." name arg_name
             | Op_log -> fprintf fmt "  mpfr_log(%s, %s, MPFR_RNDN);@." name arg_name
             | Op_sin -> fprintf fmt "  mpfr_sin(%s, %s, MPFR_RNDN);@." name arg_name
-            | Op_my_sin -> fprintf fmt "  mpfr_sin(%s, %s, MPFR_RNDN);@." name arg_name
+            | Op_my_sin -> fprintf fmt "  mpfr_set(%s, %s, MPFR_RNDN);@." name arg_name
             | Op_cos -> fprintf fmt "  mpfr_cos(%s, %s, MPFR_RNDN);@." name arg_name
             | _ -> failwith ("translate_mpfr: unsupported unary operation: " ^ u_op_name op)
           end
@@ -127,7 +127,7 @@ let translate_mpfi env =
             | Op_exp -> fprintf fmt "  mpfi_exp(%s, %s);@." name arg_name
             | Op_log -> fprintf fmt "  mpfi_log(%s, %s);@." name arg_name
             | Op_sin -> fprintf fmt "  mpfi_sin(%s, %s);@." name arg_name
-            | Op_my_sin -> fprintf fmt "  mpfi_sin(%s, %s);@." name arg_name
+            | Op_my_sin -> fprintf fmt "  mpfi_set(%s, %s);@." name arg_name
             | Op_cos -> fprintf fmt "  mpfi_cos(%s, %s);@." name arg_name
             | Op_floor_power2 -> fprintf fmt "  mpfi_floor_power2(%s, %s);@." name arg_name
             | _ -> failwith ("translate_mpfi: unsupported unary operation: " ^ u_op_name op)
