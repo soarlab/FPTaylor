@@ -18,6 +18,11 @@ open Expr
 (* Computes a floating-point value of an expression *)
 (* vars : string -> float is a function which associates 
    floating-point values with variable names *)
+(*
+input: string->float
+output: float
+description: evaluate an expression and return a float value, the first argument is a function which return the value (float) of a variable's name
+*)
 let eval_float_expr vars =
   let rec eval = function
     | Const c -> Const.to_float c
@@ -74,12 +79,22 @@ let eval_float_expr vars =
   in
   eval
 
+(*
+input: expr
+output: float
+description: estimate a constant expression and return a float value
+*)
 let eval_float_const_expr =
   eval_float_expr (fun v -> failwith ("eval_float_const_expr: Var " ^ v))
 
 (* Computes a rational value of an expression *)
 (* vars : string -> num is a function which associates 
    rational values with variable names *)
+(*
+input: string->num
+output: num
+description: estimate an expression and return a float value, the first argument is a function which return the value (num) of a variable's name
+*)
 let eval_num_expr vars =
   let one = Int 1 in
   let rec eval = function
@@ -125,12 +140,22 @@ let eval_num_expr vars =
   in
   eval
 
+(*
+input: expr
+output: num
+description: estimate a constant expression and return a num value
+*)
 let eval_num_const_expr =
   eval_num_expr (fun v -> failwith ("eval_num_const_expr: Var " ^ v))
 
 (* Computes an interval value of an expression *)
 (* vars : string -> interval is a function which associates 
    inteval values with variable names *)
+(*
+input: string->interval
+output: interval
+description: estimate an expression and return a float value, the first argument is a function which return the value (interval) of a variable's name
+*)
 let eval_interval_expr vars =
   let rec eval = function
     | Const c -> Const.to_interval c
@@ -191,10 +216,19 @@ let eval_interval_expr vars =
   in
   eval
 
+(*
+input: expr
+output: interval
+description: estimate a constant expression and return an interval value
+*)
 let eval_interval_const_expr =
   eval_interval_expr (fun v -> failwith ("eval_interval_const_expr: Var " ^ v))
 
-
+(*
+input: expr
+output: Const.t
+description: estimate a constant expression and return a constant
+*)
 let eval_const_expr e = 
   Log.report `Debug "eval_const_expr: %s" (ExprOut.Info.print_str e);
   let n = eval_num_const_expr e in

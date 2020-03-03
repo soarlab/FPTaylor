@@ -1,0 +1,23 @@
+Manual
+relu
+{
+let relu_form cs = let c=mk_const (Const.of_int 0) in let zeroexpr = const_form c in max_form cs zeroexpr
+}
+max (float_of_int 0) x
+max_num (Int 0) x
+max_I_I {low=0.0;high=0.0} x
+
+Derivative
+negpower_3
+-3*x*x
+-6.0 *.$ x
+-.x*.x*.x
+minus_num (x*/x*/x)
+pow_I_i ~-$x 3
+
+
+Formula
+func1
+2*(sin(x)+cos(x))
+
+

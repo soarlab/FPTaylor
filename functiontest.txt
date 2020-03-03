@@ -1,0 +1,13 @@
+Variables
+
+
+real x in [1000,1009];
+
+Expressions
+exp0 rnd32 = func1(x),
+exp1 rnd32 = 2*(sin(x)+cos(x)),
+exp2 rnd32 = negpower_3(x),
+exp3 rnd32 = -x*x*x,
+exp4 rnd32 = relu(x),
+exp5 rnd32 = max(0,x),
+

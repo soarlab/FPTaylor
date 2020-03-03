@@ -29,6 +29,7 @@ type u_op_type =
   | Op_asinh
   | Op_acosh
   | Op_atanh
+  | Op_relu
   | Op_floor_power2
 
 type bin_op_type =
@@ -88,6 +89,7 @@ val mk_tanh : expr -> expr
 val mk_asinh : expr -> expr
 val mk_acosh : expr -> expr
 val mk_atanh : expr -> expr
+val mk_relu : expr -> expr
 
 val mk_max : expr -> expr -> expr
 val mk_min : expr -> expr -> expr
