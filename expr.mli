@@ -16,7 +16,11 @@ type u_op_type =
   | Op_inv
   | Op_sqrt
   | Op_sin
-  | Op_my_sin
+  | Op_zero_sin
+  | Op_one_sin
+  | Op_m_one_sin
+  | Op_taylor_1_sin
+  | Op_taylor_3_sin
   | Op_cos
   | Op_tan
   | Op_asin
@@ -76,7 +80,11 @@ val mk_abs : expr -> expr
 val mk_sqrt : expr -> expr
 val mk_inv : expr -> expr
 val mk_sin : expr -> expr
-val mk_my_sin : expr -> expr
+val mk_zero_sin : expr -> expr
+val mk_one_sin : expr -> expr
+val mk_m_one_sin : expr -> expr
+val mk_taylor_1_sin : expr -> expr
+val mk_taylor_3_sin : expr -> expr
 val mk_cos : expr -> expr
 val mk_tan : expr -> expr
 val mk_asin : expr -> expr

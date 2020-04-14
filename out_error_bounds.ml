@@ -85,7 +85,11 @@ let translate_mpfr env =
             | Op_exp -> fprintf fmt "  mpfr_exp(%s, %s, MPFR_RNDN);@." name arg_name
             | Op_log -> fprintf fmt "  mpfr_log(%s, %s, MPFR_RNDN);@." name arg_name
             | Op_sin -> fprintf fmt "  mpfr_sin(%s, %s, MPFR_RNDN);@." name arg_name
-            | Op_my_sin -> fprintf fmt "  mpfr_set(%s, %s, MPFR_RNDN);@." name arg_name
+            | Op_zero_sin -> fprintf fmt "  mpfr_set_zero(%s, 0);@." name
+            | Op_one_sin -> fprintf fmt "  mpfr_set_str(%s,\"1\", 10, MPFR_RNDN);@." name
+            | Op_m_one_sin -> fprintf fmt "  mpfr_set_str(%s,\"-1\", 10, MPFR_RNDN);@." name
+            | Op_taylor_1_sin -> fprintf fmt "  mpfr_set(%s, %s, MPFR_RNDN);@." name arg_name
+            | Op_taylor_3_sin -> fprintf fmt "  BROKE %s %s ;@." name arg_name
             | Op_cos -> fprintf fmt "  mpfr_cos(%s, %s, MPFR_RNDN);@." name arg_name
             | _ -> failwith ("translate_mpfr: unsupported unary operation: " ^ u_op_name op)
           end
@@ -127,7 +131,11 @@ let translate_mpfi env =
             | Op_exp -> fprintf fmt "  mpfi_exp(%s, %s);@." name arg_name
             | Op_log -> fprintf fmt "  mpfi_log(%s, %s);@." name arg_name
             | Op_sin -> fprintf fmt "  mpfi_sin(%s, %s);@." name arg_name
-            | Op_my_sin -> fprintf fmt "  mpfi_set(%s, %s);@." name arg_name
+            | Op_zero_sin -> fprintf fmt "  mpfi_set_si(%s, 0);@." name
+            | Op_one_sin -> fprintf fmt "  mpfi_set_si(%s, 1);@." name
+            | Op_m_one_sin -> fprintf fmt "  mpfi_set_si(%s, -1);@." name
+            | Op_taylor_1_sin -> fprintf fmt "  mpfi_set(%s, %s);@." name arg_name
+            | Op_taylor_3_sin -> fprintf fmt "  BROKE mpfi_set(%s, %s);@." name arg_name
             | Op_cos -> fprintf fmt "  mpfi_cos(%s, %s);@." name arg_name
             | Op_floor_power2 -> fprintf fmt "  mpfi_floor_power2(%s, %s);@." name arg_name
             | _ -> failwith ("translate_mpfi: unsupported unary operation: " ^ u_op_name op)
@@ -168,7 +176,11 @@ let translate_double env =
             | Op_exp -> fprintf fmt "  double %s = exp(%s);@." name arg_name
             | Op_log -> fprintf fmt "  double %s = log(%s);@." name arg_name
             | Op_sin -> fprintf fmt "  double %s = sin(%s);@." name arg_name
-            | Op_my_sin -> fprintf fmt "  double %s = %s;@." name arg_name
+            | Op_zero_sin -> fprintf fmt "  double %s = 0.0;@." name
+            | Op_one_sin -> fprintf fmt "  double %s = 1.0;@." name
+            | Op_m_one_sin -> fprintf fmt "  double %s = -1.0;@." name
+            | Op_taylor_1_sin -> fprintf fmt "  double %s = %s;@." name arg_name
+            | Op_taylor_3_sin -> fprintf fmt " BROKE double %s = %s;@." name arg_name
             | Op_cos -> fprintf fmt "  double %s = cos(%s);@." name arg_name
             | _ -> failwith ("translate_double: unsupported unary operation: " ^ u_op_name op)
           end
@@ -206,7 +218,11 @@ let translate_single env =
             | Op_exp -> fprintf fmt "  float %s = expf(%s);@." name arg_name
             | Op_log -> fprintf fmt "  float %s = logf(%s);@." name arg_name
             | Op_sin -> fprintf fmt "  float %s = sinf(%s);@." name arg_name
-            | Op_my_sin -> fprintf fmt "  float %s = %s;@." name arg_name
+            | Op_zero_sin -> fprintf fmt "  float %s = 0.0f;@." name
+            | Op_one_sin -> fprintf fmt "  float %s = 1.0f;@." name
+            | Op_m_one_sin -> fprintf fmt "  float %s = -1.0f;@." name
+            | Op_taylor_1_sin -> fprintf fmt "  float %s = %s;@." name arg_name
+            | Op_taylor_3_sin -> fprintf fmt "  BROKE float %s = %s;@." name arg_name
             | Op_cos -> fprintf fmt "  float %s = cosf(%s);@." name arg_name
             | _ -> failwith ("translate_single: unsupported unary operation: " ^ u_op_name op)
           end

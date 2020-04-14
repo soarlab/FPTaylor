@@ -33,7 +33,11 @@ let eval_float_expr vars =
         | Op_inv -> 1.0 /. x
         | Op_sqrt -> sqrt x
         | Op_sin -> sin x
-        | Op_my_sin -> x
+        | Op_zero_sin -> 0.0
+        | Op_one_sin -> 1.0
+        | Op_m_one_sin -> -1.0
+        | Op_taylor_1_sin -> x
+        | Op_taylor_3_sin -> x -. (x *. x *. x) /. 6.0
         | Op_cos -> cos x
         | Op_tan -> tan x
         | Op_asin -> asin x
@@ -147,7 +151,11 @@ let eval_interval_expr vars =
         | Op_inv -> inv_I x
         | Op_sqrt -> sqrt_I x
         | Op_sin -> sin_I x
-        | Op_my_sin -> x
+        | Op_zero_sin -> zero_I (* Const.to_interval (Const.of_int 0) *)
+        | Op_one_sin -> one_I
+        | Op_m_one_sin -> ~-$ one_I
+        | Op_taylor_1_sin -> x
+        | Op_taylor_3_sin -> x -$ ((x **$. 3.0) /$ {low=6.;high=6.})
         | Op_cos -> cos_I x
         | Op_tan -> tan_I x
         | Op_asin -> asin_I x

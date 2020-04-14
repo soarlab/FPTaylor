@@ -62,7 +62,11 @@
       "log", LOG;
       "cos", COS;
       "sin", SIN;
-      "my_sin", MY_SIN;
+      "zero_sin", ZERO_SIN;
+      "one_sin", ONE_SIN;
+      "m_one_sin", M_ONE_SIN;
+      "taylor_1_sin", TAYLOR_1_SIN;
+      "taylor_3_sin", TAYLOR_3_SIN;
       "tan", TAN;
       "cosh", COSH;
       "sinh", SINH;

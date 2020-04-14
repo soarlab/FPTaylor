@@ -199,7 +199,11 @@ let check_expr vars =
             else
               sqrt_I x
           | Op_sin -> sin_I x
-          | Op_my_sin -> x
+          | Op_zero_sin -> zero_I (* Const.to_interval (Const.of_int 0) *)
+          | Op_one_sin -> one_I
+          | Op_m_one_sin -> ~-$ one_I
+          | Op_taylor_1_sin -> x
+          | Op_taylor_3_sin -> x -$ ((pow_I_i x 2) /$ {low=2.;high=2.})
           | Op_cos -> cos_I x
           | Op_tan -> tan_I x
           | Op_asin ->

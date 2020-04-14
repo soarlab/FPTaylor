@@ -17,7 +17,11 @@ type u_op_type =
   | Op_inv
   | Op_sqrt
   | Op_sin
-  | Op_my_sin
+  | Op_zero_sin
+  | Op_one_sin
+  | Op_m_one_sin
+  | Op_taylor_1_sin
+  | Op_taylor_3_sin
   | Op_cos
   | Op_tan
   | Op_asin
@@ -77,7 +81,11 @@ let mk_const c = Const c and
   mk_sqrt a = U_op (Op_sqrt, a) and
   mk_inv a = U_op (Op_inv, a) and
   mk_sin a = U_op (Op_sin, a) and
-  mk_my_sin a = a and
+  mk_zero_sin a = Const (Const.of_int 0) and
+  mk_one_sin a = Const (Const.of_int 1) and
+  mk_m_one_sin a = Const (Const.of_int (- 1)) and
+  mk_taylor_1_sin a = a and
+  mk_taylor_3_sin a = Bin_op (Op_sub, a, (Bin_op (Op_div, (Bin_op (Op_nat_pow, a, (Const (Const.of_int 3)))), (Const (Const.of_int 6))))) and
   mk_cos a = U_op (Op_cos, a) and
   mk_tan a = U_op (Op_tan, a) and
   mk_asin a = U_op (Op_asin, a) and
@@ -128,7 +136,11 @@ let u_op_name = function
   | Op_inv -> "inv"
   | Op_sqrt -> "sqrt"
   | Op_sin -> "sin"
-  | Op_my_sin -> "my_sin"
+  | Op_zero_sin -> "zero_sin"
+  | Op_one_sin -> "one_sin"
+  | Op_m_one_sin -> "m_one_sin"
+  | Op_taylor_1_sin -> "taylor_1_sin"
+  | Op_taylor_3_sin -> "taylor_3_sin"
   | Op_cos -> "cos"
   | Op_tan -> "tan"
   | Op_asin -> "asin"
