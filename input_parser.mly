@@ -95,9 +95,9 @@ variables_list:
 
 variable:
   | var_type ID IN LBRACKET expr COMMA expr RBRACKET PLUS_MINUS expr 
-    { add_variable_with_uncertainty $1 $2 $5 $7 $10 }
+    { add_variable_with_uncertainty $1 $2 ($5, $7, $10) }
   | var_type ID IN LBRACKET expr COMMA expr RBRACKET 
-    { add_variable $1 $2 $5 $7 }
+    { add_variable $1 $2 ($5, $7) }
 ;
 
 var_type:

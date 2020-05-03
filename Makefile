@@ -28,6 +28,7 @@ SRC=	version.mli\
 	eval.ml\
 	task.mli\
 	task.ml\
+	input_parser_env.mli\
 	input_parser_env.ml\
 	input_parser.mli\
 	input_parser.ml\

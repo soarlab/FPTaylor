@@ -36,10 +36,10 @@ let maxima_expr str =
     Parser.parse_expr out
   with
     | Failure msg ->
-      Log.error "Cannot parse Maxima output: %s" out;
+      Log.error "Cannot parse Maxima output: '%s'" out;
       failwith msg
     | _ ->
-      Log.error "Cannot parse Maxima output: %s" out;
+      Log.error "Cannot parse Maxima output: '%s'" out;
       failwith "parsing error"
 
 let simplify e =

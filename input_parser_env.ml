@@ -66,6 +66,7 @@ let env = {
 
 let reset () =
   let clear = Hashtbl.clear in
+  Log.report `Debug "Resetting input_parser_env";
   clear env.constants;
   clear env.variables;
   clear env.definitions;
@@ -213,7 +214,9 @@ let rec transform_raw_expr = function
     with Not_found ->
     try let var = find_variable name in Var var.var_name
     with Not_found ->
-      let c = find_constant name in Const c.value
+    try let c = find_constant name in Const c.value
+    with Not_found ->
+      failwith (Printf.sprintf "Unknown identifier: '%s'" name)
 
 (* Builds a formula from a raw formula *)
 let transform_raw_formula = function
@@ -241,7 +244,7 @@ let is_same_bounds lo hi =
   with _ -> false
 
 (* Adds a variable to the environment *)
-let add_variable_with_uncertainty var_type name lo hi uncertainty =
+let add_variable_with_uncertainty var_type name (lo, hi, uncertainty) =
   if Hashtbl.mem env.variables name then
     failwith ("Variable " ^ name ^ " is already defined")
   else
@@ -265,8 +268,8 @@ let add_variable_with_uncertainty var_type name lo hi uncertainty =
       } in
       Hashtbl.add env.variables name v
 
-let add_variable var_type name lo hi =
-  add_variable_with_uncertainty var_type name lo hi (Numeral (Int 0))
+let add_variable var_type name (lo, hi) =
+  add_variable_with_uncertainty var_type name (lo, hi, Numeral (Int 0))
 
 (* Adds a definition to the environment *)
 let add_definition name raw =
