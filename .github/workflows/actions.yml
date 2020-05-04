@@ -36,7 +36,7 @@ jobs:
       run: |
         git clone https://github.com/soarlab/gelpia.git
         cd gelpia
-        git checkout version_2
+        git checkout develop
         make requirements
         make
     - name: Build FPTaylor
