@@ -87,6 +87,7 @@
       "argtanh", ATANH;
       "sub2", SUB2;
       "floor_power2", FLOOR_POWER2;
+      "interval", INTERVAL;
     ] in
   fun str ->
     try Hashtbl.find table str

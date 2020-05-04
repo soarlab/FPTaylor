@@ -203,7 +203,7 @@ let rec transform_raw_expr = function
     end
   | Raw_bin_op (str, arg1, arg2) -> 
     let e1 = transform_raw_expr arg1 and
-    e2 = transform_raw_expr arg2 in
+        e2 = transform_raw_expr arg2 in
     begin
       match str with
       | "+" -> Bin_op (Op_add, e1, e2)
@@ -214,7 +214,11 @@ let rec transform_raw_expr = function
       | "min" -> Bin_op (Op_min, e1, e2)
       | "^" -> Bin_op (Op_nat_pow, e1, e2)
       | "sub2" -> Bin_op (Op_sub2, e1, e2)
-      | _ -> failwith ("transform_raw_expr: Unknown binary operation: " ^ str)
+      | "interval" ->
+        let lo_bound = Const.to_interval (eval_const_expr e1) and
+            hi_bound = Const.to_interval (eval_const_expr e2) in
+        mk_interval_const { low = lo_bound.low; high = hi_bound.high }
+    | _ -> failwith ("transform_raw_expr: Unknown binary operation: " ^ str)
     end
   | Raw_gen_op (str, args) ->
     let es = List.map transform_raw_expr args in
@@ -267,7 +271,7 @@ let add_variable_with_uncertainty var_type name (lo, hi, uncertainty) =
     hi_expr = transform_raw_expr hi and
     u_expr = transform_raw_expr uncertainty in
     let lo_bound = eval_const_expr lo_expr and
-      hi_bound = eval_const_expr hi_expr in
+        hi_bound = eval_const_expr hi_expr in
     if var_type = real_type && is_same_bounds lo_bound hi_bound then
       begin
         Log.report `Info "Variable %s is a constant" name;

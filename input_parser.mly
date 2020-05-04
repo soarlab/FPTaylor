@@ -25,7 +25,7 @@
 %token EXP LOG
 %token COS SIN TAN COSH SINH TANH
 %token ACOS ASIN ATAN ACOSH ASINH ATANH ATAN2
-%token SUB2 FLOOR_POWER2
+%token SUB2 FLOOR_POWER2 INTERVAL
 
 %left PLUS MINUS
 %left MULT DIVIDE
@@ -210,6 +210,7 @@ expr:
   | ATAN2 LPAREN expr COMMA expr RPAREN { raise TODO }
   | SUB2 LPAREN expr COMMA expr RPAREN { Raw_bin_op ("sub2", $3, $5) }
   | FLOOR_POWER2 LPAREN expr RPAREN { Raw_u_op ("floor_power2", $3) }
+  | INTERVAL LPAREN expr COMMA expr RPAREN { Raw_bin_op("interval", $3, $5) }
 ;
 
 %%

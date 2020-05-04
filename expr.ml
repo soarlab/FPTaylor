@@ -106,10 +106,10 @@ let mk_ulp (prec, e_min) x =
   let e = mk_const (Const.of_int e_min) in
   Gen_op (Op_ulp, [p; e; x])
 
-let mk_int_const i = mk_const (Const.of_int i) and
-  mk_num_const n = mk_const (Const.of_num n) and
-  mk_float_const f = mk_const (Const.of_float f) and
-  mk_interval_const v = mk_const (Const.of_interval v)
+let mk_int_const i = mk_const (Const.of_int i)
+let mk_num_const n = mk_const (Const.of_num n)
+let mk_float_const f = mk_const (Const.of_float f)
+let mk_interval_const v = mk_const (Const.of_interval v)
 
 let mk_floor_sub2 a b = mk_floor_power2 (mk_sub2 a b)
 
