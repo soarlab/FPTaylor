@@ -14,11 +14,11 @@ val maxima : string -> string
 
 val test_maxima : unit -> bool
    
-val simplify : Expr.expr -> Expr.expr
+val simplify : Task.task -> Expr.expr -> Expr.expr
 
-val diff : string -> Expr.expr -> Expr.expr
+val diff : Task.task -> string -> Expr.expr -> Expr.expr
 
-val simplify_diff : string -> Expr.expr -> Expr.expr
+val simplify_diff : Task.task -> string -> Expr.expr -> Expr.expr
 
 val taylor_coeff : string -> int -> Expr.expr -> string
 

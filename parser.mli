@@ -10,6 +10,8 @@
 (* Auxiliary parser functions                                                 *)
 (* -------------------------------------------------------------------------- *)
 
+val create_env_from_task : Task.task -> unit
+
 val parse_raw_expr : string -> Input_parser_env.raw_expr
 
 val parse_expr : string -> Expr.expr

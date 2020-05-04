@@ -73,6 +73,21 @@ let reset () =
   env.constraints <- [];
   env.expressions <- []
 
+let create_env_from_task (task : task) =
+  reset ();
+  env.expressions <- [task.name, task.expression];
+  env.constraints <- task.constraints;
+  List.iter (fun (v : Task.var_info) ->
+    let var = {
+      var_name = v.var_name;
+      var_type = v.var_type;
+      lo_bound = v.lo_bound;
+      hi_bound = v.hi_bound;
+      uncertainty = v.uncertainty
+    } in 
+    Hashtbl.add env.variables v.var_name var) 
+    task.variables
+
 let env_to_tasks () =
   let vars = Hashtbl.fold 
       (fun _ v vs -> {

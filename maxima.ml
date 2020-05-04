@@ -30,9 +30,10 @@ let test_maxima () =
     let _ = maxima "factor(x * x - y * y)" in true
   with _ -> false
    
-let maxima_expr str =
+let maxima_expr task str =
   let out = maxima str in
   try
+    Parser.create_env_from_task task;
     Parser.parse_expr out
   with
     | Failure msg ->
@@ -42,10 +43,10 @@ let maxima_expr str =
       Log.error "Cannot parse Maxima output: '%s'" out;
       failwith "parsing error"
 
-let simplify e =
+let simplify task e =
   try
     let str = "factor(" ^ ExprOut.Info.print_str e ^ ")" in
-    maxima_expr str
+    maxima_expr task str
   with 
     | Failure msg -> 
       Log.error "Simplification failed: %s" msg;
@@ -54,13 +55,13 @@ let simplify e =
       Log.error "Simplification failed (unknown error)";
       e
 
-let diff v e =
+let diff task v e =
   let str = "diff(" ^ ExprOut.Info.print_str e ^ ", " ^ v ^ ")" in
-  maxima_expr str
+  maxima_expr task str
 
-let simplify_diff v e =
+let simplify_diff task v e =
   let str = "factor(diff(" ^ ExprOut.Info.print_str e ^ ", " ^ v ^ "))" in
-  maxima_expr str
+  maxima_expr task str
 
 (* Returns the k-th Taylor coefficient in the expansion of e with respect to v around 0 *)
 let taylor_coeff v k e =

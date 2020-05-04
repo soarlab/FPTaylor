@@ -10,6 +10,9 @@
 (* Auxiliary parser functions                                                 *)
 (* -------------------------------------------------------------------------- *)
 
+let create_env_from_task task =
+  Input_parser_env.create_env_from_task task
+
 let parse_raw_expr str =
   let lexbuf = Lexing.from_string str in
   Input_parser.expr Input_lexer.token lexbuf

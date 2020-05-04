@@ -262,7 +262,7 @@ let absolute_errors task tf =
         let full_expr, exp =
           let full_expr', exp = sum_symbolic abs_exprs in
           if Config.get_bool_option "maxima-simplification" then
-            Maxima.simplify full_expr', exp
+            Maxima.simplify task full_expr', exp
           else
             full_expr', exp in
         let bound =
@@ -323,7 +323,7 @@ let relative_errors task tf (f_min, f_max) =
           let v1_rel = List.map (fun (e, err) -> mk_div e tf.v0, err) v1 in
           let v1_rel = 
             if Config.get_bool_option "maxima-simplification" then
-            List.map (fun (e, err) -> Maxima.simplify e, err) v1_rel
+            List.map (fun (e, err) -> Maxima.simplify task e, err) v1_rel
             else
               v1_rel in
           Log.report `Important "\nSolving the approximate optimization probelm";
@@ -348,7 +348,7 @@ let relative_errors task tf (f_min, f_max) =
             let sum_expr, exp = sum_symbolic abs_exprs in
             let full_expr' = mk_div sum_expr (mk_abs tf.v0) in
             if Config.get_bool_option "maxima-simplification" then
-              Maxima.simplify full_expr', exp
+              Maxima.simplify task full_expr', exp
             else
               full_expr', exp in
           let bound =
@@ -523,8 +523,8 @@ let compute_form task =
       let form = 
         if Config.get_bool_option "maxima-simplification" then {
           form_index = form.form_index;
-          v0 = Maxima.simplify form.v0;
-          v1 = List.map (fun (e, err) -> (if err.index < 0 then e else Maxima.simplify e), err) form.v1;
+          v0 = Maxima.simplify task form.v0;
+          v1 = List.map (fun (e, err) -> (if err.index < 0 then e else Maxima.simplify task e), err) form.v1;
         }
         else
           form in

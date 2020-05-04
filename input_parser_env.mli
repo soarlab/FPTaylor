@@ -13,6 +13,8 @@ type raw_formula =
 
 val reset : unit -> unit
 
+val create_env_from_task : Task.task -> unit
+
 val env_to_tasks : unit -> Task.task list
 
 val add_constant : string -> raw_expr -> unit
