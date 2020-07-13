@@ -170,6 +170,7 @@ let rec transform_raw_expr = function
       | "sqrt" -> U_op (Op_sqrt, e1)
       | "sin" -> U_op (Op_sin, e1)
       | "zero_sin" -> U_op (Op_zero_sin, e1)
+      | "hidden_sin" -> U_op (Op_hidden_sin, e1)
       | "one_sin" -> U_op (Op_one_sin, e1)
       | "m_one_sin" -> U_op (Op_m_one_sin, e1)
       | "taylor_1_sin" -> U_op (Op_taylor_1_sin, e1)

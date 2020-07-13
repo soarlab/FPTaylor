@@ -86,6 +86,7 @@ let translate_mpfr env =
             | Op_log -> fprintf fmt "  mpfr_log(%s, %s, MPFR_RNDN);@." name arg_name
             | Op_sin -> fprintf fmt "  mpfr_sin(%s, %s, MPFR_RNDN);@." name arg_name
             | Op_zero_sin -> fprintf fmt "  mpfr_set_zero(%s, 0);@." name
+            | Op_hidden_sin -> fprintf fmt "  mpfr_sin(%s, %s, MPFR_RNDN);@." name arg_name
             | Op_one_sin -> fprintf fmt "  mpfr_set_str(%s,\"1\", 10, MPFR_RNDN);@." name
             | Op_m_one_sin -> fprintf fmt "  mpfr_set_str(%s,\"-1\", 10, MPFR_RNDN);@." name
             | Op_taylor_1_sin -> fprintf fmt "  mpfr_set(%s, %s, MPFR_RNDN);@." name arg_name
@@ -132,6 +133,7 @@ let translate_mpfi env =
             | Op_log -> fprintf fmt "  mpfi_log(%s, %s);@." name arg_name
             | Op_sin -> fprintf fmt "  mpfi_sin(%s, %s);@." name arg_name
             | Op_zero_sin -> fprintf fmt "  mpfi_set_si(%s, 0);@." name
+            | Op_hidden_sin -> fprintf fmt "  mpfi_sin(%s, %s);@." name arg_name
             | Op_one_sin -> fprintf fmt "  mpfi_set_si(%s, 1);@." name
             | Op_m_one_sin -> fprintf fmt "  mpfi_set_si(%s, -1);@." name
             | Op_taylor_1_sin -> fprintf fmt "  mpfi_set(%s, %s);@." name arg_name
@@ -177,6 +179,7 @@ let translate_double env =
             | Op_log -> fprintf fmt "  double %s = log(%s);@." name arg_name
             | Op_sin -> fprintf fmt "  double %s = sin(%s);@." name arg_name
             | Op_zero_sin -> fprintf fmt "  double %s = 0.0;@." name
+            | Op_hidden_sin -> fprintf fmt "  double %s = sin(%s);@." name arg_name
             | Op_one_sin -> fprintf fmt "  double %s = 1.0;@." name
             | Op_m_one_sin -> fprintf fmt "  double %s = -1.0;@." name
             | Op_taylor_1_sin -> fprintf fmt "  double %s = %s;@." name arg_name
@@ -219,6 +222,7 @@ let translate_single env =
             | Op_log -> fprintf fmt "  float %s = logf(%s);@." name arg_name
             | Op_sin -> fprintf fmt "  float %s = sinf(%s);@." name arg_name
             | Op_zero_sin -> fprintf fmt "  float %s = 0.0f;@." name
+            | Op_hidden_sin -> fprintf fmt "  float %s = sinf(%s);@." name arg_name
             | Op_one_sin -> fprintf fmt "  float %s = 1.0f;@." name
             | Op_m_one_sin -> fprintf fmt "  float %s = -1.0f;@." name
             | Op_taylor_1_sin -> fprintf fmt "  float %s = %s;@." name arg_name

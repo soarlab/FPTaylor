@@ -63,6 +63,7 @@
       "cos", COS;
       "sin", SIN;
       "zero_sin", ZERO_SIN;
+      "hidden_sin", HIDDEN_SIN;
       "one_sin", ONE_SIN;
       "m_one_sin", M_ONE_SIN;
       "taylor_1_sin", TAYLOR_1_SIN;

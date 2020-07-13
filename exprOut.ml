@@ -84,6 +84,7 @@ module InfoPrinter : PrinterType = struct
         | Op_log -> fprintf fmt "log(%a)" print arg
         | Op_sin -> fprintf fmt "sin(%a)" print arg
         | Op_zero_sin -> fprintf fmt "zero_sin(%a)" print arg
+        | Op_hidden_sin -> fprintf fmt "hidden_sin(%a)" print arg
         | Op_one_sin -> fprintf fmt "one_sin(%a)" print arg
         | Op_m_one_sin -> fprintf fmt "m_one_sin(%a)" print arg
         | Op_taylor_1_sin -> fprintf fmt "taylor_1_sin(%a)" print arg
@@ -148,6 +149,7 @@ module OCamlIntervalPrinter : PrinterType = struct
         | Op_log -> fprintf fmt "log_I(%a)" print arg
         | Op_sin -> fprintf fmt "sin_I(%a)" print arg
         | Op_zero_sin -> fprintf fmt "%a" print const_0
+        | Op_hidden_sin -> fprintf fmt "sin_I(%a)" print arg
         | Op_one_sin -> fprintf fmt "%a" print const_1
         | Op_m_one_sin -> fprintf fmt "%a" print (mk_neg const_1)
         | Op_taylor_1_sin -> fprintf fmt "%a" print arg
@@ -223,6 +225,7 @@ module FPCorePrinter : PrinterType = struct
         | Op_log -> fprintf fmt "(log %a)" print arg
         | Op_sin -> fprintf fmt "(sin %a)" print arg
         | Op_zero_sin -> fprintf fmt "%a" print const_0
+        | Op_hidden_sin -> fprintf fmt "(sin %a)" print arg
         | Op_one_sin -> fprintf fmt "%a" print const_1
         | Op_m_one_sin -> fprintf fmt "%a" print (mk_neg const_1)
         | Op_taylor_1_sin -> fprintf fmt "%a" print arg
@@ -290,6 +293,7 @@ module RacketIntervalPrinter : PrinterType = struct
         | Op_log -> fprintf fmt "(ilog %a)" print arg
         | Op_sin -> fprintf fmt "(isin %a)" print arg
         | Op_zero_sin -> fprintf fmt "%a" print const_0
+        | Op_hidden_sin -> fprintf fmt "(isin %a)" print arg
         | Op_one_sin -> fprintf fmt "%a" print const_1
         | Op_m_one_sin -> fprintf fmt "%a" print (mk_neg const_1)
         | Op_taylor_1_sin -> fprintf fmt "%a" print arg
@@ -351,6 +355,7 @@ module CPrinter : PrinterType = struct
         | Op_log -> fprintf fmt "log(%a)" print arg
         | Op_sin -> fprintf fmt "sin(%a)" print arg
         | Op_zero_sin -> fprintf fmt "%a" print const_0
+        | Op_hidden_sin -> fprintf fmt "sin(%a)" print arg
         | Op_one_sin -> fprintf fmt "%a" print const_1
         | Op_m_one_sin -> fprintf fmt "%a" print (mk_neg const_1)
         | Op_taylor_1_sin -> fprintf fmt "%a" print arg
@@ -410,6 +415,7 @@ module OCamlFloatPrinter : PrinterType = struct
         | Op_log -> fprintf fmt "log(%a)" print arg
         | Op_sin -> fprintf fmt "sin(%a)" print arg
         | Op_zero_sin -> fprintf fmt "%a" print const_0
+        | Op_hidden_sin -> fprintf fmt "sin(%a)" print arg
         | Op_one_sin -> fprintf fmt "%a" print const_1
         | Op_m_one_sin -> fprintf fmt "%a" print (mk_neg const_1)
         | Op_taylor_1_sin -> fprintf fmt "%a" print arg
@@ -520,6 +526,7 @@ module GelpiaPrinter : PrinterType = struct
         | Op_log -> fprintf fmt "log(%a)" print arg
         | Op_sin -> fprintf fmt "sin(%a)" print arg
         | Op_zero_sin -> fprintf fmt "%a" print const_0
+        | Op_hidden_sin -> fprintf fmt "sin(%a)" print arg
         | Op_one_sin -> fprintf fmt "%a" print const_1
         | Op_m_one_sin -> fprintf fmt "%a" print (mk_neg const_1)
         | Op_taylor_1_sin -> fprintf fmt "%a" print arg

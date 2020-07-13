@@ -34,6 +34,7 @@ let eval_float_expr vars =
         | Op_sqrt -> sqrt x
         | Op_sin -> sin x
         | Op_zero_sin -> 0.0
+        | Op_hidden_sin -> sin(x)
         | Op_one_sin -> 1.0
         | Op_m_one_sin -> -1.0
         | Op_taylor_1_sin -> x
@@ -152,6 +153,7 @@ let eval_interval_expr vars =
         | Op_sqrt -> sqrt_I x
         | Op_sin -> sin_I x
         | Op_zero_sin -> zero_I (* Const.to_interval (Const.of_int 0) *)
+        | Op_hidden_sin -> sin_I x
         | Op_one_sin -> one_I
         | Op_m_one_sin -> ~-$ one_I
         | Op_taylor_1_sin -> x

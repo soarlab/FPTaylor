@@ -578,6 +578,63 @@ let sin_form cs f =
          @ [mk_float_const m3, m3_err];
   }
 
+(* hidden_sine *)
+(* since hidden_sin(x) = sin(x) the error compared to real sin is sin(x) - sin(x)
+   from email:
+        f(x + e) = g(x) + e * v(x) + v2(x) + h(x, e)
+   where:
+        f is the (approximate) function
+        x is the input
+        e is the error on the input
+        g is the (target) function
+        v is the linear approximation of f relative to g
+        v2 is a new error term
+        h is f(x + e) - g(x) - e * v(x) - v2(x)
+
+   for hidden_sin we get:
+       f(x) = sin(x)
+       g(x) = sin(x)
+       v(x) = cos(x)
+       v2(x) = sin(x) - sin(x)
+             = 0
+       h(x, e) = f(x + e) - g(x)   - e * v(x)   - v2(x)
+               = sin(x+e) - sin(x) - e * cos(x) - 0
+               = sin(x+e) - sin(x) - e * cos(x)
+
+   check:
+       f(x + e) = sin(x+e)
+                = g(x)   + e * v(x)   + v2(x) + h(x, e)
+                = sin(x) + e * cos(x) + 0     + (sin(x+e) - sin(x) - e * cos(x))
+                = sin(x) + e * cos(x) + sin(x+e) - sin(x) - e * cos(x)
+                = sin(x) - sin(x) + e * cos(x) - e * cos(x) + sin(x+e)
+                = sin(x+e)
+
+   so in code:
+      v0 = sin(x)
+      v1 = [e*v(x);  v2(x)]
+         = [e*cos(x); 0]
+
+   note: e*cos(x) is really a map over the old v1
+
+   note: we define v2(x) = 2 * 0 with the corresponding exponent 2^-1.
+         It is not possible to have the exponent 2^0 because 0 is reserved for zero values
+         (see Rounding.get_eps)
+ *)
+
+let hidden_sin_form cs f =
+  Log.report `Debug "hidden_sine_form";
+  let i = next_form_index() in
+  let sin_v0 = mk_sin f.v0 in
+  let cos_v0 = mk_cos f.v0 in
+  let v2_expr = mk_mul const_2 const_0 in
+  let v2_idx = mk_err_var (find_index v2_expr) (-1) in
+  {
+    form_index = i;
+    v0 = sin_v0;
+    v1 = List.map (fun (e, err) -> mk_mul cos_v0 e, err) f.v1
+         @ [v2_expr, v2_idx]
+  }
+
 (* zero_sine *)
 (* since zero_sin(x) = 0 the error compared to real sin is 0 - sin(x)
    from email:
@@ -728,10 +785,19 @@ let m_one_sin_form cs f =
        g(x) = sin(x)
        v(x) = 1
        v2(x) = x - sin(x)
-       h(x, e) = 0
+       h(x, e) = f(x + e) - g(x)   - e * v(x) - v2(x)
+               = (x + e)  - sin(x) - e * 1    - (x - sin(x))
+               = x + e - sin(x) - e - x + sin(x)
+               = x - x + e - e - sin(x) + sin(x)
+               = 0
 
    check:
-       f(x + e) = x + e = sin(x) + e * 1 + (x - sin(x)) + 0 = g(x) + e * v(x) + v2(x) + h(x, e)
+       f(x + e) = x + e
+                = g(x)   + e * v(x) + v2(x)        + h(x, e)
+                = sin(x) + e * 1    + (x - sin(x)) + 0
+                = sin(x) + e + x - sin(x)
+                = sin(x) - sin(x) + x + e
+                = x + e
 
    so in code:
       v0 = sin(x)
@@ -1368,6 +1434,7 @@ let build_form (cs : constraints) =
         | Op_sqrt -> sqrt_form cs arg_form
         | Op_sin -> sin_form cs arg_form
         | Op_zero_sin -> zero_sin_form cs arg_form
+        | Op_hidden_sin -> hidden_sin_form cs arg_form
         | Op_one_sin -> one_sin_form cs arg_form
         | Op_m_one_sin -> m_one_sin_form cs arg_form
         | Op_taylor_1_sin -> taylor_1_sin_form cs arg_form

@@ -24,7 +24,7 @@
 %token MIN MAX 
 %token EXP LOG
 %token COS
-%token SIN ZERO_SIN ONE_SIN M_ONE_SIN TAYLOR_1_SIN TAYLOR_3_SIN
+%token SIN ZERO_SIN HIDDEN_SIN ONE_SIN M_ONE_SIN TAYLOR_1_SIN TAYLOR_3_SIN
 %token TAN COSH SINH TANH
 %token ACOS ASIN ATAN ACOSH ASINH ATANH ATAN2
 %token SUB2 FLOOR_POWER2
@@ -198,6 +198,7 @@ expr:
   | COS LPAREN expr RPAREN { Raw_u_op ("cos", $3) }
   | SIN LPAREN expr RPAREN { Raw_u_op ("sin", $3) }
   | ZERO_SIN LPAREN expr RPAREN { Raw_u_op ("zero_sin", $3) }
+  | HIDDEN_SIN LPAREN expr RPAREN { Raw_u_op ("hidden_sin", $3) }
   | ONE_SIN LPAREN expr RPAREN { Raw_u_op ("one_sin", $3) }
   | M_ONE_SIN LPAREN expr RPAREN { Raw_u_op ("m_one_sin", $3) }
   | TAYLOR_1_SIN LPAREN expr RPAREN { Raw_u_op ("taylor_1_sin", $3) }

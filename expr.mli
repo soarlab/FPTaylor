@@ -17,6 +17,7 @@ type u_op_type =
   | Op_sqrt
   | Op_sin
   | Op_zero_sin
+  | Op_hidden_sin
   | Op_one_sin
   | Op_m_one_sin
   | Op_taylor_1_sin
@@ -81,6 +82,7 @@ val mk_sqrt : expr -> expr
 val mk_inv : expr -> expr
 val mk_sin : expr -> expr
 val mk_zero_sin : expr -> expr
+val mk_hidden_sin : expr -> expr
 val mk_one_sin : expr -> expr
 val mk_m_one_sin : expr -> expr
 val mk_taylor_1_sin : expr -> expr

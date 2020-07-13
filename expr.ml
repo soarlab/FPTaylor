@@ -18,6 +18,7 @@ type u_op_type =
   | Op_sqrt
   | Op_sin
   | Op_zero_sin
+  | Op_hidden_sin
   | Op_one_sin
   | Op_m_one_sin
   | Op_taylor_1_sin
@@ -82,6 +83,7 @@ let mk_const c = Const c and
   mk_inv a = U_op (Op_inv, a) and
   mk_sin a = U_op (Op_sin, a) and
   mk_zero_sin a = Const (Const.of_int 0) and
+  mk_hidden_sin a = U_op (Op_sin, a) and
   mk_one_sin a = Const (Const.of_int 1) and
   mk_m_one_sin a = Const (Const.of_int (- 1)) and
   mk_taylor_1_sin a = a and
@@ -137,6 +139,7 @@ let u_op_name = function
   | Op_sqrt -> "sqrt"
   | Op_sin -> "sin"
   | Op_zero_sin -> "zero_sin"
+  | Op_hidden_sin -> "hidden_sin"
   | Op_one_sin -> "one_sin"
   | Op_m_one_sin -> "m_one_sin"
   | Op_taylor_1_sin -> "taylor_1_sin"
