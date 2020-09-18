@@ -1,3 +1,10 @@
+FPTaylor 0.9.3
+--------------
+
+- Minimal version of OCaml is increased to 4.03.
+
+- [FEATURE] Printing exact floating-point error values as hexadecimal numbers.
+
 FPTaylor 0.9.2
 --------------
 
