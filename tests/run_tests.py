@@ -1,6 +1,9 @@
 import subprocess
+import os
 import sys
+import glob
 import logging
+import argparse
 import re
 import yaml
 
@@ -47,6 +50,19 @@ class FPTaylorExpression:
         self.upper_bound = data.get('upper-bound', None)
         self.lower_bound = data.get('lower-bound', None)
         self.exact_value = data.get('exact-value', None)
+        self.time = data.get('time', None)
+
+    def to_dict(self):
+        res = {'name': self.name}
+        if self.upper_bound is not None:
+            res['upper-bound'] = self.upper_bound
+        if self.lower_bound is not None:
+            res['lower-bound'] = self.lower_bound
+        if self.exact_value is not None:
+            res['exact-value'] = self.exact_value
+        if self.time is not None:
+            res['time'] = self.time
+        return res
 
     def select_output_lines(self, output):
         res = []
@@ -67,6 +83,15 @@ class FPTaylorExpression:
                 res[v] = m.group(1)
         return res
 
+    def generate(self, output):
+        vals = self.parse_output(self.select_output_lines(output))
+        if 'abs-error' in vals:
+            self.upper_bound = float(vals['abs-error'])
+        if 'abs-error-hex' in vals:
+            self.exact_value = vals['abs-error-hex']
+        if 'time' in vals:
+            self.time = float(vals['time'])
+
     def check(self, output):
         vals = self.parse_output(self.select_output_lines(output))
         if self.upper_bound is not None:
@@ -86,10 +111,21 @@ class FPTaylorExpression:
 
 class FPTaylorFile:
     def __init__(self, data):
-        self.name = data['name']
-        self.expressions = [FPTaylorExpression(d) for d in data['expressions']]
+        if isinstance(data, str):
+            self.name = data
+            self.expressions = []
+        else:
+            self.name = data['name']
+            self.expressions = [FPTaylorExpression(d) for d in data['expressions']]
 
-    def run_tests(self, args=[]):
+    def to_dict(self):
+        res = {
+            'name': self.name,
+            'expressions': [expr.to_dict() for expr in self.expressions]
+        }
+        return res
+
+    def run(self, args=[]):
         extra_args = [
             '-v', '0',
             '--print-hex-floats', 'true',
@@ -121,6 +157,21 @@ class FPTaylorFile:
 
         cmd = [fptaylor] + [self.name] + args + extra_args
         output = run_output(cmd).decode()
+        return output
+
+    def generate_tests(self, args=[]):
+        self.expressions.clear()
+        output = self.run(args)
+        for line in output.split('\n'):
+            m = re.match(r'Problem: (.+)', line)
+            if m:
+                expr = FPTaylorExpression({'name': m.group(1)})
+                expr.generate(output)
+                self.expressions.append(expr)
+
+
+    def run_tests(self, args=[]):
+        output = self.run(args)
         for expr in self.expressions:
             expr.check(output)
 
@@ -137,9 +188,33 @@ class FPTaylorFile:
 # with open('aaa.yml', 'w') as f:
 #     yaml.dump(data, f, sort_keys=False)
 
-with open('tests.yml', 'r') as f:
-    tests = yaml.safe_load(f)
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description='Test runner for FPTaylor')
+    parser.add_argument('--generate', 
+        help='generate tests from files in the given directory')
 
-files = [FPTaylorFile(f) for f in tests['files']]
-for f in files:
-    f.run_tests()
+    args = parser.parse_args()
+    return args
+
+def main():
+    args = parse_args()
+
+    if args.generate:
+        files = []
+        for fname in glob.glob(os.path.join(args.generate, '*.txt')):
+            f = FPTaylorFile(fname)
+            f.generate_tests()
+            files.append(f.to_dict())
+        with open('aaa.yml', 'w') as f:
+            yaml.dump({'files': files}, f, sort_keys=False)
+    else:
+        with open('aaa.yml', 'r') as f:
+            tests = yaml.safe_load(f)
+
+        files = [FPTaylorFile(f) for f in tests['files']]
+        for f in files:
+            f.run_tests()
+
+if __name__ == '__main__':
+    main()
