@@ -74,16 +74,24 @@ let get_problem_absolute_error result =
   min e1.high e2.high
 
 let print_result result =
+  let hex = Config.get_bool_option "print-hex-floats" in
   let print_upper_bound width str = function
     | None -> ()
+    | Some v when hex -> Log.report `Main "%-*s %e (%h)" width str v.high v.high
     | Some v -> Log.report `Main "%-*s %e" width str v.high in
   let print_lower_bound width str = function
     | None -> ()
     | Some v ->
       if v.low > neg_infinity then
         let subopt = v.high -. v.low in
-        Log.report `Main "%-*s %e (suboptimality = %.1f%%)"
-          width str v.low (subopt /. v.high *. 100.)
+        if hex then
+          Log.report `Main "%-*s %e (%h) (suboptimality = %.1f%%)"
+            width str v.low v.low (subopt /. v.high *. 100.)
+        else
+          Log.report `Main "%-*s %e (suboptimality = %.1f%%)"
+            width str v.low (subopt /. v.high *. 100.)
+      else if hex then
+        Log.report `Main "%-*s %e (%h)" width str v.low v.low
       else
         Log.report `Main "%-*s %e" width str v.low in
   let print_bounds r =

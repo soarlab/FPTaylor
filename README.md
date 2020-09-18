@@ -13,7 +13,7 @@ Publications
 Requirements
 -------------
 
-- [OCaml](http://ocaml.org/) version 4.02.0 or higher with a native compiler (do
+- [OCaml](http://ocaml.org/) version 4.03.0 or higher with a native compiler (do
   not forget `make opt` if you are building from source code). 
   A recommended way to install OCaml is with [OPAM](https://opam.ocaml.org/doc/Install.html)
 
