@@ -690,6 +690,15 @@ let main () =
       if Config.is_option_defined "fpcore-out" then begin
         open_file "fpcore-out" (Config.get_string_option "fpcore-out")
       end;
+      if Config.is_option_defined "export-options" then begin
+        let out_name = Config.get_string_option "export-options" in
+        if out_name <> "" then begin
+          Log.report `Important "Exporting options into: %s" out_name;
+          open_file "config-out" out_name;
+          Config.export_options (get_file_formatter "config-out");
+          close_file "config-out"
+        end
+      end;
       Log.report `Main "";
       List.iter process_input Config.input_files;
       close_all ();

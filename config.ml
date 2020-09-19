@@ -141,6 +141,12 @@ let input_files =
     Log.error "Cannot open default.cfg: %s" main_cfg;
     exit 2
 
+let export_options fmt =
+  let print name value =
+    if name <> "export-options" then
+      Format.fprintf fmt "%s = %s\n" name value in
+  Hashtbl.iter print param_table
+
 let print_options ~level:level =
   let print name value =
     Log.report level "%s = %s" name value in
@@ -183,8 +189,8 @@ let get_int_option name = stoi ~name (find_option name)
 let get_float_option name = stof ~name (find_option name)
 
 let is_option_defined name =
-  try ignore (find_option name); true with Failure _ -> false  
-  
+  try ignore (find_option name); true with Failure _ -> false
+
 (* General paramaters *)
 let debug = get_bool_option "debug"
 let proof_flag = get_bool_option "proof-record"
