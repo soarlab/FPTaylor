@@ -3,7 +3,10 @@ FPTaylor 0.9.3
 
 - Minimal version of OCaml is increased to 4.03.
 
-- [FEATURE] Printing exact floating-point error values as hexadecimal numbers.
+- [FEATURE] --print-hex-floats: Printing important floating-point values as 
+  exact hexadecimal numbers.
+
+- [FEATURE] --export-options: Exporting all options into a given file.
 
 FPTaylor 0.9.2
 --------------
