@@ -8,6 +8,8 @@ FPTaylor 0.9.3
 
 - [FEATURE] --export-options: Exporting all options into a given file.
 
+- Moved `tools/plot.py` to `scripts/plot/plot.py`.
+
 FPTaylor 0.9.2
 --------------
 

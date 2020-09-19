@@ -47,7 +47,7 @@ def run_output(cmd, ignore_return_codes=[], log=None, silent=False):
     except subprocess.CalledProcessError as e:
         if e.returncode in ignore_return_codes:
             return e.output
-        msg = "{0}\n\nReturn code: {1}".format(e.output, e.returncode)
+        msg = "{0}\n\nReturn code: {1}".format(e.output.decode(), e.returncode)
         if log:
             log.error(msg)
         else:
