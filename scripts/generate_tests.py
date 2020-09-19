@@ -16,6 +16,8 @@ def parse_args():
         help='configuration files for generating tests')
     parser.add_argument('--config-name', default='_tests.cfg',
         help='name of the output configuration file for generated tests')
+    parser.add_argument('--test-file', default='_tests.yml',
+        help='name of the output test file')
     parser.add_argument('path',
         help='path to a directory or file for which tests are generated')
 
@@ -25,14 +27,16 @@ def parse_args():
 def main():
     args = parse_args()
 
+    if os.path.isdir(args.path):
+        base_path = args.path
+        fnames = sorted(glob.glob(os.path.join(args.path, '*.txt')))
+    else:
+        base_path = os.path.dirname(args.path)
+        fnames = [args.path]
     files = []
-    cfg_path = os.path.join(args.path, args.config_name)
+    cfg_path = os.path.join(base_path, args.config_name)
     config = Config(args.config)
     cfg_exported = False
-    if os.path.isdir(args.path):
-        fnames = glob.glob(os.path.join(args.path, '*.txt'))
-    else:
-        fnames = [args.path]
     for fname in fnames:
         f = FPTaylorFile(fname)
         if cfg_exported:
@@ -40,12 +44,16 @@ def main():
         else:
             f.generate_tests(config.args, export_options=cfg_path)
             cfg_exported = True
-        files.append(f.to_dict())
+        f_data = f.to_dict()
+        f_data['name'] = os.path.relpath(f_data['name'], base_path)
+        files.append(f_data)
     data = {}
     if cfg_exported:
-        data['config'] = [cfg_path]
+        # The saved configuration file path is relative to the base path
+        data['config'] = [args.config_name]
     data['files'] = files
-    with open('aaa.yml', 'w') as f:
+    out_path = os.path.join(base_path, args.test_file)
+    with open(out_path, 'w') as f:
         yaml.dump(data, f, sort_keys=False)
 
 if __name__ == '__main__':
