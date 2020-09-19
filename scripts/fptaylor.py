@@ -1,9 +1,13 @@
 import re
+import os
+import logging
 import common
 import config
 
+_log = logging.getLogger()
+
 class Config:
-    def __init__(self, lst):
+    def __init__(self, lst, base_path=''):
         self.args = []
         for arg in lst:
             if '=' in arg:
@@ -12,7 +16,7 @@ class Config:
                 self.args.append(rhs.lstrip())
             else:
                 self.args.append('-c')
-                self.args.append(arg)
+                self.args.append(os.path.join(base_path, arg))
 
 
 class FPTaylorExpression:
@@ -74,29 +78,31 @@ class FPTaylorExpression:
         if self.upper_bound is not None:
             v = float(vals['abs-error'])
             if v > self.upper_bound:
-                log.error(f'Incorrect upper bound: actual = {v} > expected = {self.upper_bound}')
+                _log.error(f'Incorrect upper bound: actual = {v} > expected = {self.upper_bound}')
         if self.lower_bound is not None:
             v = float(vals['abs-error'])
             if v < self.lower_bound:
-                log.error(f'Incorrect lower bound: actual = {v} < expected = {self.lower_bound}')
+                _log.error(f'Incorrect lower bound: actual = {v} < expected = {self.lower_bound}')
         if self.exact_value is not None:
             v = vals['abs-error-hex']
             if v != self.exact_value:
-                log.error(f'Incorrect exact value: actual = {v} != expected = {self.exact_value}')
+                _log.error(f'Incorrect exact value: actual = {v} != expected = {self.exact_value}')
 
 
 class FPTaylorFile:
-    def __init__(self, data):
+    def __init__(self, data, base_path=''):
         if isinstance(data, str):
             self.name = data
             self.expressions = []
         else:
             self.name = data['name']
             self.expressions = [FPTaylorExpression(d) for d in data['expressions']]
+        self.base_path = base_path
+        self.name = os.path.join(base_path, self.name)
 
     def to_dict(self):
         res = {
-            'name': self.name,
+            'name': os.path.relpath(self.name, self.base_path) if self.base_path else self.name,
             'expressions': [expr.to_dict() for expr in self.expressions]
         }
         return res
