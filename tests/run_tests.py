@@ -31,12 +31,24 @@ def run_output(cmd, ignore_return_codes=[], log=None, silent=False):
     except subprocess.CalledProcessError as e:
         if e.returncode in ignore_return_codes:
             return e.output
-        msg = "{0}\n\nReturn code: {1}".format(e.output, e.returncode)
+        msg = "{0}\n\nReturn code: {1}".format(e.output.decode(), e.returncode)
         if log:
             log.error(msg)
         else:
             print(msg)
         sys.exit(2)
+
+class Config:
+    def __init__(self, lst):
+        self.args = []
+        for arg in lst:
+            if '=' in arg:
+                lhs, rhs = arg.split('=')
+                self.args.append('--' + lhs.strip())
+                self.args.append(rhs.lstrip())
+            else:
+                self.args.append('-c')
+                self.args.append(arg)
 
 class FPTaylorExpression:
     patterns = [
@@ -129,39 +141,22 @@ class FPTaylorFile:
         extra_args = [
             '-v', '0',
             '--print-hex-floats', 'true',
-            # "--opt-approx", "false",
-            # "--opt-exact", "true",
             # "--tmp-base-dir", fptaylor_tmp,
             # "--tmp-date", "false",
             # "--log-base-dir", fptaylor_log,
             "--log-append-date", "none"
         ]
-
-        # if args.type:
-        #     rnd_types = {
-        #         "16": ("float16", "rnd16"),
-        #         "32": ("float32", "rnd32"), 
-        #         "64": ("float64", "rnd64"),
-        #         "real": ("real", "rnd64")
-        #     }
-        #     var_type, rnd_type = rnd_types[args.type]
-        #     self.extra_args += ["--default-var-type", var_type]
-        #     self.extra_args += ["--default-rnd", rnd_type]
-
-        # if args.error == 'abs':
-        #     self.extra_args += ["-abs", "true", "-rel", "false", "-ulp", "false"]
-        # elif args.error == 'rel':
-        #     self.extra_args += ["-abs", "false", "-rel", "true", "-ulp", "false"]
-        # else:
-        #     self.extra_args += ["-abs", "false", "-rel", "false", "-ulp", "true"]
-
-        cmd = [fptaylor] + [self.name] + args + extra_args
+        cmd = [fptaylor] + args + extra_args + [self.name]
         output = run_output(cmd).decode()
         return output
 
-    def generate_tests(self, args=[]):
+    def generate_tests(self, args=[], export_options=None):
         self.expressions.clear()
-        output = self.run(args)
+        extra_args = []
+        if export_options:
+            extra_args.append('--export-options')
+            extra_args.append(export_options)
+        output = self.run(args + extra_args)
         for line in output.split('\n'):
             m = re.match(r'Problem: (.+)', line)
             if m:
@@ -175,24 +170,15 @@ class FPTaylorFile:
         for expr in self.expressions:
             expr.check(output)
 
-    # def run(self, args):
-    #     cfg_args = []
-    #     for cfg in self.cfg_files:
-    #         cfg_args += ["-c", cfg]
-    #     cmd = [fptaylor] + self.input_files + cfg_args + args + self.extra_args
-    #     common.run(cmd, log=log)
-
-
-# data = [{'file': 'jet.txt', 'tasks': {'name': 'jet', 'upper-bound': 1.11e-11, 'lower-bound': 1.0e-10}}]
-
-# with open('aaa.yml', 'w') as f:
-#     yaml.dump(data, f, sort_keys=False)
-
 def parse_args():
     parser = argparse.ArgumentParser(
         description='Test runner for FPTaylor')
     parser.add_argument('--generate', 
         help='generate tests from files in the given directory')
+    parser.add_argument('--config', nargs='+', default=[],
+        help='configuration files for generating tests')
+    parser.add_argument('--config-name', default='_tests.cfg',
+        help='name of the output configuration file for generated tests')
 
     args = parser.parse_args()
     return args
@@ -202,19 +188,31 @@ def main():
 
     if args.generate:
         files = []
+        cfg_path = os.path.join(args.generate, args.config_name)
+        config = Config(args.config)
+        cfg_exported = False
         for fname in glob.glob(os.path.join(args.generate, '*.txt')):
             f = FPTaylorFile(fname)
-            f.generate_tests()
+            if cfg_exported:
+                f.generate_tests(config.args)
+            else:
+                f.generate_tests(config.args, export_options=cfg_path)
+                cfg_exported = True
             files.append(f.to_dict())
+        data = {}
+        if cfg_exported:
+            data['config'] = [cfg_path]
+        data['files'] = files
         with open('aaa.yml', 'w') as f:
-            yaml.dump({'files': files}, f, sort_keys=False)
+            yaml.dump(data, f, sort_keys=False)
     else:
         with open('aaa.yml', 'r') as f:
             tests = yaml.safe_load(f)
 
         files = [FPTaylorFile(f) for f in tests['files']]
+        config = Config(tests.get('config', []))
         for f in files:
-            f.run_tests()
+            f.run_tests(config.args)
 
 if __name__ == '__main__':
     main()
