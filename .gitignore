@@ -27,9 +27,9 @@ gelpia/
 log/
 tmp/
 test/
-tools/tmp*
-tools/cache*
-tools/out*
-tools/images*
-tools/\[old\]*
+scripts/**/tmp*
+scripts/**/cache*
+scripts/**/out*
+scripts/**/images*
+scripts/**/\[old\]*
 .DS_Store

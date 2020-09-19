@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import sys
 import os
@@ -8,6 +8,7 @@ import shutil
 import argparse
 import logging
 
+sys.path.append('..')
 import common
 
 log = common.get_log()
@@ -21,7 +22,7 @@ tmp_path = os.path.join(base_path, "tmp")
 plot_tmp = os.path.join(tmp_path, "tmp_plot")
 plot_cache = os.path.join(tmp_path, "cache_plot")
 
-fptaylor_base = os.path.normpath(os.path.join(base_path, ".."))
+fptaylor_base = os.path.normpath(os.path.join(base_path, "..", ".."))
 fptaylor_tmp = os.path.join(tmp_path, "tmp_fptaylor")
 fptaylor_log = os.path.join(tmp_path, "log_fptaylor")
 fptaylor = os.path.join(fptaylor_base, "fptaylor")
@@ -672,7 +673,7 @@ for input_file in args.input:
 
         fptaylor_task.run(export_args)
 
-        for task, model_file in files_from_template(c_model_file_template).iteritems():
+        for task, model_file in files_from_template(c_model_file_template).items():
             # Adjust names in the output model file
             common.replace_in_file(model_file,
                                    [(r"f_names\[\] =", '"([^"]*)"', r'"\1-{0}"'.format(cfg_name))])
@@ -689,7 +690,7 @@ for input_file in args.input:
                     plot_task.title = title
 
     # ErrorBounds
-    for task, input_file in files_from_template(error_bounds_file_template).iteritems(): 
+    for task, input_file in files_from_template(error_bounds_file_template).items(): 
         data_file = run_error_bounds(input_file)
         if task not in plot_tasks:
             log.warning("Undefined task '{0}' for the data file '{1}'".format(task, input_file))
@@ -701,7 +702,7 @@ for input_file in args.input:
         gappa = GappaTask(fname)
         gappa.run()
         results = files_from_template(os.path.join(plot_tmp, "gappa-data-{task}.txt"))
-        for task, data_file in results.iteritems():
+        for task, data_file in results.items():
             if task not in plot_tasks:
                 log.warning("Undefined task '{0}' for the data file '{1}'".format(task, data_file))
                 plot_tasks[task] = PlotTask(base_fname, "[{0}]{1}".format(task, base_fname))
