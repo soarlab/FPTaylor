@@ -7,36 +7,11 @@ import argparse
 import re
 import yaml
 
+import common
+
 fptaylor = '../fptaylor'
 
-def get_log():
-    log = logging.getLogger()
-    log.setLevel(logging.INFO)
-    handler = logging.StreamHandler()
-    handler.setFormatter(logging.Formatter("[%(levelname)s] %(message)s"))
-    log.addHandler(handler)
-    return log
-
-log = get_log()
-
-def run_output(cmd, ignore_return_codes=[], log=None, silent=False):
-    if not silent:
-        msg = "Running: {0}".format(" ".join(cmd))
-        if log:
-            log.info(msg)
-        else:
-            print(msg)
-    try:
-        return subprocess.check_output(cmd, stderr=subprocess.STDOUT)
-    except subprocess.CalledProcessError as e:
-        if e.returncode in ignore_return_codes:
-            return e.output
-        msg = "{0}\n\nReturn code: {1}".format(e.output.decode(), e.returncode)
-        if log:
-            log.error(msg)
-        else:
-            print(msg)
-        sys.exit(2)
+log = common.get_log()
 
 class Config:
     def __init__(self, lst):
@@ -147,7 +122,7 @@ class FPTaylorFile:
             "--log-append-date", "none"
         ]
         cmd = [fptaylor] + args + extra_args + [self.name]
-        output = run_output(cmd).decode()
+        output = common.run_output(cmd).decode()
         return output
 
     def generate_tests(self, args=[], export_options=None):
