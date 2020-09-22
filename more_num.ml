@@ -47,7 +47,7 @@ let decode_num_str =
   in
   let starts_with str prefix =
     let len_str = String.length str and
-	len_p = String.length prefix in
+        len_p = String.length prefix in
     if len_p > len_str then
       false
     else
@@ -60,17 +60,17 @@ let decode_num_str =
     else
       let s1, s2 = split_at str 'e' in
       if s2 <> "" then
-	s1, 10, s2
+        s1, 10, s2
       else
-	s1, 10, "0"
+        s1, 10, "0"
   in
   let compute_exp_shift hex base s_frac =
     let n = String.length s_frac in
     if n = 0 then 0 else
       match (hex, base) with
-	| true, 2 -> n * 4
-	| false, 10 -> n
-	| _ -> failwith "Fractional part is not allowed for the given base"
+  | true, 2 -> n * 4
+  | false, 10 -> n
+  | _ -> failwith "Fractional part is not allowed for the given base"
   in
   fun str ->
     let hex = starts_with str "0x" || starts_with str "-0x" in
@@ -89,7 +89,7 @@ let num_of_float_string str =
 let is_nan x = (compare x nan = 0)
 
 let is_infinity x = (classify_float x = FP_infinite)
-                  
+
 let num_of_float x =
   match classify_float x with
   | FP_nan | FP_infinite ->
@@ -103,6 +103,44 @@ let num_of_float x =
      let m, e = frexp x in
      let t = Int64.of_float (ldexp m 53) in
      num_of_big_int (Big_int.big_int_of_int64 t) */ (Int 2 **/ Int (e - 53))
+
+let log_num_simple b v =
+  let rec loop t k =
+    if t >/ v then k
+    else loop (Int b */ t) (k + 1) in
+  loop (Int 1) (-1)
+
+let string_of_pos_finite_float_hi prec x =
+  assert (x > 0. && prec > 0);
+  let q = num_of_float x in
+  let n = floor_num q in
+  if sign_num n > 0 then
+    let k = log_num_simple 10 n + 1 in
+    let r, e =
+      if k >= prec then
+        let b = Int 10 **/ Int (k - prec) in
+        let t = floor_num (n // b) in
+        t, k - prec
+      else
+        let b = Int 10 **/ Int (prec - k) in
+        n */ b +/ floor_num ((q -/ n) */ b), k - prec in
+    let r = if r */ (Int 10 **/ Int e) <=/ q then succ_num r else r in
+
+
+
+
+(* let string_of_pos_finite_float_hi prec x =
+  assert (x >= 0. && prec > 0);
+  let s = Printf.sprintf "%.*e" prec x in
+  let nx = num_of_float x in
+  let f = decode_num_str s in
+  let nf = num_of_gen_float f in
+  if nf >=/ nx then s
+  else
+    let f = {f with significand = succ_num f.significand} in
+    assert (num_of_gen_float f >=/ nx);
+
+    s *)
 
 let is_exact str =
   let f = float_of_string str in
