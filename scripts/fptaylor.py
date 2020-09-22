@@ -118,7 +118,7 @@ class FPTaylorFile:
     def run(self, args=[], silent=False):
         extra_args = [
             '-v', '0',
-            '--print-hex-floats', 'true',
+            # '--print-hex-floats', 'true',
             # "--tmp-base-dir", fptaylor_tmp,
             # "--tmp-date", "false",
             # "--log-base-dir", fptaylor_log,
