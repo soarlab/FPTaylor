@@ -20,15 +20,17 @@ jobs:
     - name: Install num
       if: startsWith(matrix.ocaml, '4.09')
       run: opam install -y num
-    - name: Set up Python 3.7 for gelpia
-      if: startsWith(matrix.os, 'ubuntu')
+    - name: Set up Python 3.7 for tests (and gelpia)
       uses: actions/setup-python@v1
       with:
         python-version: 3.7
+    - name: Install Python dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install pyyaml
     - name: Install gelpia dependencies
       if: startsWith(matrix.os, 'ubuntu')
       run: |
-        python -m pip install --upgrade pip
         pip install sly
         sudo apt install flex bison wget
     - name: Download and build gelpia
@@ -50,3 +52,7 @@ jobs:
       run: |
         sed -i "s|^opt = bb|opt = gelpia|g" default.cfg
         make test
+    - name: Regression tests
+      run: |
+        cd scripts
+        python run_tests.py ../tests/core

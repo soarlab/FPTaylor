@@ -33,6 +33,7 @@ def main():
 
     passed, failed = 0, 0
     for test_file in test_files:
+        print(f'Running tests from: {test_file}')
         with open(test_file, 'r') as f:
             tests = yaml.safe_load(f)
 
