@@ -16,6 +16,11 @@ val denominator : Num.num -> Big_int.big_int
 val num_of_float_string : string -> Num.num
 val num_of_float : float -> Num.num
 
+val log_big_int_floor : int -> Big_int.big_int -> int
+
+val string_of_float_lo : int -> float -> string
+val string_of_float_hi : int -> float -> string
+
 val is_power_of_two : Num.num -> bool
 
 val is_nan : float -> bool
