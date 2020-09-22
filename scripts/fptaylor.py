@@ -74,19 +74,26 @@ class FPTaylorExpression:
             self.time = float(vals['time'])
 
     def check(self, output):
+        print(f'  {self.name}: ', end='', flush=True)
         vals = self.parse_output(self.select_output_lines(output))
+        passed = True
         if self.upper_bound is not None:
             v = float(vals['abs-error'])
             if v > self.upper_bound:
                 _log.error(f'Incorrect upper bound: actual = {v} > expected = {self.upper_bound}')
+                passed = False
         if self.lower_bound is not None:
             v = float(vals['abs-error'])
             if v < self.lower_bound:
                 _log.error(f'Incorrect lower bound: actual = {v} < expected = {self.lower_bound}')
+                passed = False
         if self.exact_value is not None:
             v = vals['abs-error-hex']
             if v != self.exact_value:
                 _log.error(f'Incorrect exact value: actual = {v} != expected = {self.exact_value}')
+                passed = False
+        print('PASSED' if passed else 'FAILED')
+        return passed
 
 
 class FPTaylorFile:
@@ -117,7 +124,7 @@ class FPTaylorFile:
             "--log-append-date", "none"
         ]
         cmd = [config.fptaylor_exe] + args + extra_args + [self.name]
-        output = common.run_output(cmd).decode()
+        output = common.run_output(cmd, silent=True).decode()
         return output
 
     def generate_tests(self, args=[], export_options=None):
@@ -134,8 +141,13 @@ class FPTaylorFile:
                 expr.generate(output)
                 self.expressions.append(expr)
 
-
     def run_tests(self, args=[]):
+        print(f'Testing: {self.name}', flush=True)
         output = self.run(args)
+        passed, failed = 0, 0
         for expr in self.expressions:
-            expr.check(output)
+            if expr.check(output):
+                passed += 1
+            else:
+                failed += 1
+        return passed, failed
