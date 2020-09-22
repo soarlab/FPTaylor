@@ -1,0 +1,17 @@
+config:
+- _tests-b.cfg
+files:
+- name: micro.txt
+  expressions:
+  - name: sum
+    upper-bound: '3.136381e-15'
+    exact-value: 0x1.c400000000002p-49
+    time: 1.98
+  - name: nonlin1
+    upper-bound: '2.250663e-16'
+    exact-value: 0x1.037bd66f60405p-52
+    time: 1.19
+  - name: nonlin2
+    upper-bound: '1.422585e-14'
+    exact-value: 0x1.00451c007a967p-46
+    time: 1.16
