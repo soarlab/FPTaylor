@@ -1,5 +1,6 @@
 import re
 import os
+from decimal import Decimal
 import logging
 import common
 import config
@@ -67,7 +68,7 @@ class FPTaylorExpression:
     def generate(self, output):
         vals = self.parse_output(self.select_output_lines(output))
         if 'abs-error' in vals:
-            self.upper_bound = float(vals['abs-error'])
+            self.upper_bound = vals['abs-error']
         if 'abs-error-hex' in vals:
             self.exact_value = vals['abs-error-hex']
         if 'time' in vals:
@@ -78,13 +79,13 @@ class FPTaylorExpression:
         vals = self.parse_output(self.select_output_lines(output))
         passed = True
         if self.upper_bound is not None:
-            v = float(vals['abs-error'])
-            if v > self.upper_bound:
+            v = Decimal(vals['abs-error'])
+            if v > Decimal(self.upper_bound):
                 _log.error(f'Incorrect upper bound: actual = {v} > expected = {self.upper_bound}')
                 passed = False
         if self.lower_bound is not None:
-            v = float(vals['abs-error'])
-            if v < self.lower_bound:
+            v = Decimal(vals['abs-error'])
+            if v < Decimal(self.lower_bound):
                 _log.error(f'Incorrect lower bound: actual = {v} < expected = {self.lower_bound}')
                 passed = False
         if self.exact_value is not None:
@@ -114,7 +115,7 @@ class FPTaylorFile:
         }
         return res
 
-    def run(self, args=[]):
+    def run(self, args=[], silent=False):
         extra_args = [
             '-v', '0',
             '--print-hex-floats', 'true',
@@ -124,7 +125,7 @@ class FPTaylorFile:
             "--log-append-date", "none"
         ]
         cmd = [config.fptaylor_exe] + args + extra_args + [self.name]
-        output = common.run_output(cmd, silent=True).decode()
+        output = common.run_output(cmd, silent=silent).decode()
         return output
 
     def generate_tests(self, args=[], export_options=None):
@@ -143,7 +144,7 @@ class FPTaylorFile:
 
     def run_tests(self, args=[]):
         print(f'Testing: {self.name}', flush=True)
-        output = self.run(args)
+        output = self.run(args, silent=True)
         passed, failed = 0, 0
         for expr in self.expressions:
             if expr.check(output):
