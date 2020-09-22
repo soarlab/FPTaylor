@@ -42,6 +42,8 @@ def run_output(cmd, ignore_return_codes=[], log=None, silent=False):
             log.info(msg)
         else:
             print(msg)
+    elif log:
+        log.debug('Running: ' + ' '.join(cmd))
     try:
         return subprocess.check_output(cmd, stderr=subprocess.STDOUT)
     except subprocess.CalledProcessError as e:
