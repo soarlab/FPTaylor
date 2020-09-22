@@ -8,6 +8,9 @@ FPTaylor 0.9.3
 
 - [FEATURE] --export-options: Exporting all options into a given file.
 
+- [FEATURE] --print-precision: Error bounds are printed as correctly rounded
+  decimal numbers with the given number of digits.
+
 - Moved `tools/plot.py` to `scripts/plot/plot.py`.
 
 FPTaylor 0.9.2
