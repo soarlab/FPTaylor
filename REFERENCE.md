@@ -575,6 +575,9 @@ end. This summary contains the following information
 
 - The analysis time in seconds printed as `Elapsed time: time`.
 
+All error bounds are printed as correctly rounded decimal numbers. The number
+of digits in the printed results can be changed with the option `print-precision`.
+
 An example:
 
 ```

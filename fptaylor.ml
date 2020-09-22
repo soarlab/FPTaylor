@@ -75,25 +75,35 @@ let get_problem_absolute_error result =
 
 let print_result result =
   let hex = Config.get_bool_option "print-hex-floats" in
+  let prec = Config.get_int_option "print-precision" in
   let print_upper_bound width str = function
     | None -> ()
-    | Some v when hex -> Log.report `Main "%-*s %e (%h)" width str v.high v.high
-    | Some v -> Log.report `Main "%-*s %e" width str v.high in
+    | Some v ->
+      let bound = More_num.string_of_float_hi prec v.high in
+      if hex then
+        Log.report `Main "%-*s %s (%h)" width str bound v.high
+      else
+        Log.report `Main "%-*s %s" width str bound in
   let print_lower_bound width str = function
     | None -> ()
     | Some v ->
+      let bound = More_num.string_of_float_lo prec v.low in
       if v.low > neg_infinity then
         let subopt = v.high -. v.low in
         if hex then
-          Log.report `Main "%-*s %e (%h) (suboptimality = %.1f%%)"
-            width str v.low v.low (subopt /. v.high *. 100.)
+          Log.report `Main "%-*s %s (%h) (suboptimality = %.1f%%)"
+            width str bound v.low (subopt /. v.high *. 100.)
         else
-          Log.report `Main "%-*s %e (suboptimality = %.1f%%)"
-            width str v.low (subopt /. v.high *. 100.)
+          Log.report `Main "%-*s %s (suboptimality = %.1f%%)"
+            width str bound (subopt /. v.high *. 100.)
       else if hex then
-        Log.report `Main "%-*s %e (%h)" width str v.low v.low
+        Log.report `Main "%-*s %s (%h)" width str bound v.low
       else
-        Log.report `Main "%-*s %e" width str v.low in
+        Log.report `Main "%-*s %s" width str bound in
+  let string_of_interval r =
+    let lo = More_num.string_of_float_lo prec r.low in
+    let hi = More_num.string_of_float_hi prec r.high in
+    Printf.sprintf "[%s, %s]" lo hi in
   let print_bounds r =
     if r.real_bounds.low > neg_infinity || r.real_bounds.high < infinity then
       begin
@@ -101,7 +111,7 @@ let print_result result =
         assert (err >= 0.);
         if err < infinity then
           let bounds = r.real_bounds +$ {low = -.err; high = err} in
-          Log.report `Main "Bounds (floating-point): %s" (sprintf_I "%.20e" bounds)
+          Log.report `Main "Bounds (floating-point): %s" (string_of_interval bounds)
       end in
   let rec max_length strs_and_opts =
     match strs_and_opts with
@@ -135,7 +145,7 @@ let print_result result =
     print_lower_bound w ulp_exact_str result.ulp_error_exact;
     Log.report `Main "";
   end;
-  Log.report `Main "Bounds (without rounding): %s" (sprintf_I "%e" result.real_bounds);
+  Log.report `Main "Bounds (without rounding): %s" (string_of_interval result.real_bounds);
   print_bounds result;
   Log.report `Main "";
   let abs_approx_str = "Absolute error (approximate):" in
@@ -645,31 +655,40 @@ let process_input fname =
   Log.report `Main ""
 
 let validate_options () =
+  let open Config in
   let validate_simplification () =
-    if Config.get_bool_option "maxima-simplification" && not (Maxima.test_maxima()) then
+    if get_bool_option "maxima-simplification" && not (Maxima.test_maxima()) then
       begin
         Log.warning "A computer algebra system Maxima is not installed. \
                      Simplifications are disabled. \
                      Go to http://maxima.sourceforge.net/ to install Maxima.";
-        Config.set_option "maxima-simplification" "false"
+        set_option "maxima-simplification" "false"
       end
   in
   let validate_proof_record () =
-    if Config.get_bool_option "proof-record" then
-      if Config.get_bool_option "fp-power2-model" then
+    if get_bool_option "proof-record" then
+      if get_bool_option "fp-power2-model" then
         begin
           Log.warning "Proof certificates (proof-record = true) are not implemented for \
                        the improved rounding model (fp-power2-model = true).";
         end
-      else if Config.get_bool_option "develop" then
+      else if get_bool_option "develop" then
         begin
           Log.warning "Proof certificates (proof-record = true) are not implemented for \
                        some features of the development mode (develop = true).";
         end
   in
+  let validate_other () =
+    let prec = get_int_option "print-precision" in
+    if prec < 1 || prec > 1000 then begin
+      Log.warning "Bad print-precision value: %d" prec;
+      set_option "print-precision" "7"
+    end
+  in
   begin
     validate_simplification ();
     validate_proof_record ();
+    validate_other ();
   end
 
 let main () =
