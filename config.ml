@@ -142,10 +142,12 @@ let input_files =
     exit 2
 
 let export_options fmt =
-  let print name value =
+  let print (name, value) =
     if name <> "export-options" then
       Format.fprintf fmt "%s = %s\n" name value in
-  Hashtbl.iter print param_table
+  Hashtbl.fold (fun name value lst -> (name, value) :: lst) param_table [] 
+    |> List.sort compare
+    |> List.iter print
 
 let print_options ~level:level =
   let print name value =
