@@ -4,7 +4,7 @@ files:
 - name: carbonGas.txt
   expressions:
   - name: carbon_gas
-    upper-bound: '4.962322e-9'
+    upper-bound: '4.962321e-9'
     exact-value: 0x1.5502137b3d1cp-28
     time: 2.13
 - name: doppler1.txt
