@@ -23,7 +23,6 @@ def parse_args():
 def main():
     args = parse_args()
     if os.path.isdir(args.path):
-        paths = set()
         if args.r:
             test_files = glob.glob(os.path.join(args.path, '**', '*.yml'), recursive=True)
         else:
