@@ -1,0 +1,34 @@
+Variables
+  float64 x in [1, 2];
+  float64 y in [1, 2];
+  float64 u in [-200, 200];
+  float64 v in [-200, 200];
+  real a in [1, 2];
+  real b in [1, 2];
+
+Expressions
+  add_small rnd64= x + y;
+  sub_small rnd64= x - y;
+  mul_small rnd64= x * y;
+  div_small rnd64= x / y;
+  sqrt_small rnd64= sqrt(x);
+
+  add_large rnd64= u + v;
+  sub_large rnd64= u - v;
+  mul_large rnd64= u * v;
+
+  add_r rnd64= a + b;
+  sub_r rnd64= a - b;
+  mul_r rnd64= a * b;
+  div_r rnd64= a / b;
+
+  add_small32 rnd32= x + y;
+  sub_small32 rnd32= x - y;
+  mul_small32 rnd32= x * y;
+  div_small32 rnd32= x / y;
+  sqrt_small32 rnd32= sqrt(x);
+
+  add_large32 rnd32= u + v;
+  sub_large32 rnd32= u - v;
+  mul_large32 rnd32= u * v;
+  

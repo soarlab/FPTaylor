@@ -1,0 +1,25 @@
+Variables
+  real x in [-10, 10];
+  real y in [-1, 1];
+  real z in [1, 2];
+  real u in [0, 0.3];
+  float32 a in [-10, 10];
+  float64 b in [-10, 10];
+  float64 c in [0, 4];
+
+Expressions
+  x32 rnd32= x,
+  x64 rnd64= x;
+  y32 rnd32= y;
+  y64 rnd64= y;
+  z32 rnd32= z;
+  z64 rnd64= z;
+  u32 rnd32= u;
+  u64 rnd64= u;
+  
+  a32 rnd32= a;
+  a64 rnd64= a;
+  b32 rnd32= b;
+  b64 rnd64= b;
+  c32 rnd32= c;
+  c64 rnd64= c;

@@ -1,0 +1,22 @@
+{
+  Variables
+    real x in [1, 999];
+
+  Definitions
+    r rnd64= x / (x + 1);
+
+  Expressions
+    f1 = r;
+}
+
+{
+  Variables
+    real x in [1, 999];
+
+  Definitions
+    t rnd32= x + 1;
+    r rnd64= x / t;
+
+  Expressions
+    f1_mixed = r;
+}

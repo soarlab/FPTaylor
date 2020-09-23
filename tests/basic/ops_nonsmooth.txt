@@ -1,0 +1,22 @@
+Variables
+  float64 x in [-100, 100];
+  float32 y in [-100, 100];
+  real z in [-100, 100];
+  real u in [1, 2];
+
+Expressions
+  abs_x rnd64= abs(x);
+  abs_y rnd32= abs(y);
+  abs_z rnd64= abs(z);
+  abs_u rnd64= abs(u);
+
+  max_xz rnd64= max(x, z);
+  min_xz rnd64= min(x, z);
+  max_yz rnd32= max(y, z);
+  min_yz rnd32= min(y, z);
+  max_zu rnd64= max(z, u);
+  min_zu rnd64= min(z, u);
+  
+  max_xx rnd64= max(x, x);
+  max_xx32 rnd32= max(x, x);
+  max_uu rnd32= max(u, u);

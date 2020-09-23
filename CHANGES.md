@@ -13,6 +13,8 @@ FPTaylor 0.9.3
 
 - Moved `tools/plot.py` to `scripts/plot/plot.py`.
 
+- Added regression tests.
+
 FPTaylor 0.9.2
 --------------
 

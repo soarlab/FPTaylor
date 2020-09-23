@@ -1,0 +1,799 @@
+config:
+- _tests.cfg
+files:
+- name: constants.txt
+  expressions:
+  - name: c1_32
+    upper-bound: '1.490117e-9'
+    exact-value: 0x1.999999999999ap-30
+    time: 1.12
+  - name: c1_64
+    upper-bound: '5.551116e-18'
+    exact-value: 0x1.999999999999ap-58
+    time: 1.04
+  - name: c1_2_64
+    upper-bound: '5.551116e-18'
+    exact-value: 0x1.999999999999ap-58
+    time: 1.12
+  - name: c2_32
+    upper-bound: '0.0'
+    exact-value: 0x0p+0
+    time: 1.13
+  - name: c2_64
+    upper-bound: '0.0'
+    exact-value: 0x0p+0
+    time: 1.14
+  - name: c3_32
+    upper-bound: '3.814698e-7'
+    exact-value: 0x1.99999998p-22
+    time: 1.24
+  - name: c3_64
+    upper-bound: '4.440893e-16'
+    exact-value: 0x1p-51
+    time: 1.53
+  - name: c4_32
+    upper-bound: '0.0'
+    exact-value: 0x0p+0
+    time: 1.09
+  - name: c4_64
+    upper-bound: '0.0'
+    exact-value: 0x0p+0
+    time: 1.04
+  - name: c5_32
+    upper-bound: '1.490117e-9'
+    exact-value: 0x1.999999999999ap-30
+    time: 1.04
+  - name: c5_64
+    upper-bound: '5.551116e-18'
+    exact-value: 0x1.999999999999ap-58
+    time: 1.04
+  - name: c6_32
+    upper-bound: '0.0'
+    exact-value: 0x0p+0
+    time: 1.04
+  - name: c6_64
+    upper-bound: '0.0'
+    exact-value: 0x0p+0
+    time: 1.05
+  - name: c7_32
+    upper-bound: '1.241764e-9'
+    exact-value: 0x1.5555568p-30
+    time: 1.04
+  - name: c7_64
+    upper-bound: '0.0'
+    exact-value: 0x0p+0
+    time: 1.13
+  - name: c8_32
+    upper-bound: '1.192093e-7'
+    exact-value: 0x1.0000000000001p-23
+    time: 1.58
+  - name: c8_64
+    upper-bound: '2.220447e-16'
+    exact-value: 0x1.0000000000001p-52
+    time: 1.58
+  - name: test_64
+    upper-bound: '1.110224e-17'
+    exact-value: 0x1.999999999999ap-57
+    time: 1.09
+  - name: test_c_add_64
+    upper-bound: '1.110224e-17'
+    exact-value: 0x1.999999999999ap-57
+    time: 1.04
+  - name: test_add_64
+    upper-bound: '2.498002e-17'
+    exact-value: 0x1.ccccccccccccdp-56
+    time: 1.57
+- name: constants2.txt
+  expressions:
+  - name: a64
+    upper-bound: '0.0'
+    exact-value: 0x0p+0
+    time: 1.04
+  - name: a32
+    upper-bound: '0.0'
+    exact-value: 0x0p+0
+    time: 1.21
+  - name: b64
+    upper-bound: '0.0'
+    exact-value: 0x0p+0
+    time: 1.16
+  - name: b32
+    upper-bound: '1.000000'
+    exact-value: 0x1p+0
+    time: 1.05
+  - name: c64
+    upper-bound: '0.0'
+    exact-value: 0x0p+0
+    time: 1.02
+  - name: c32
+    upper-bound: '0.0'
+    exact-value: 0x0p+0
+    time: 1.04
+  - name: d64
+    upper-bound: '0.0'
+    exact-value: 0x0p+0
+    time: 1.05
+  - name: d32
+    upper-bound: '0.0'
+    exact-value: 0x0p+0
+    time: 1.04
+  - name: e64
+    upper-bound: '0.0'
+    exact-value: 0x0p+0
+    time: 1.01
+  - name: e32
+    upper-bound: '0.0'
+    exact-value: 0x0p+0
+    time: 1.05
+- name: ops.txt
+  expressions:
+  - name: add_small
+    upper-bound: '2.220447e-16'
+    exact-value: 0x1p-52
+    time: 1.54
+  - name: sub_small
+    upper-bound: '5.551116e-17'
+    exact-value: 0x1p-54
+    time: 2.11
+  - name: mul_small
+    upper-bound: '2.220447e-16'
+    exact-value: 0x1.0000000000001p-52
+    time: 2.02
+  - name: div_small
+    upper-bound: '1.110224e-16'
+    exact-value: 0x1.0000000000001p-53
+    time: 1.67
+  - name: sqrt_small
+    upper-bound: '1.110224e-16'
+    exact-value: 0x1p-53
+    time: 1.85
+  - name: add_large
+    upper-bound: '2.842171e-14'
+    exact-value: 0x1p-45
+    time: 1.69
+  - name: sub_large
+    upper-bound: '2.842171e-14'
+    exact-value: 0x1p-45
+    time: 2.86
+  - name: mul_large
+    upper-bound: '3.637979e-12'
+    exact-value: 0x1.0000000000001p-38
+    time: 3.32
+  - name: add_r
+    upper-bound: '6.661339e-16'
+    exact-value: 0x1.8p-51
+    time: 2.01
+  - name: sub_r
+    upper-bound: '3.330670e-16'
+    exact-value: 0x1.8p-52
+    time: 1.86
+  - name: mul_r
+    upper-bound: '8.881785e-16'
+    exact-value: 0x1.0000000000001p-50
+    time: 2.11
+  - name: div_r
+    upper-bound: '5.551116e-16'
+    exact-value: 0x1.4000000000001p-51
+    time: 1.76
+  - name: add_small32
+    upper-bound: '3.576279e-7'
+    exact-value: 0x1.8p-22
+    time: 1.74
+  - name: sub_small32
+    upper-bound: '1.788140e-7'
+    exact-value: 0x1.8p-23
+    time: 1.81
+  - name: mul_small32
+    upper-bound: '4.768372e-7'
+    exact-value: 0x1.0000002000001p-21
+    time: 1.75
+  - name: div_small32
+    upper-bound: '2.980233e-7'
+    exact-value: 0x1.400000c00001dp-22
+    time: 1.69
+  - name: sqrt_small32
+    upper-bound: '8.940697e-8'
+    exact-value: 0x1.8000002000004p-24
+    time: 2.34
+  - name: add_large32
+    upper-bound: '3.051758e-5'
+    exact-value: 0x1p-15
+    time: 1.84
+  - name: sub_large32
+    upper-bound: '3.051758e-5'
+    exact-value: 0x1p-15
+    time: 1.76
+  - name: mul_large32
+    upper-bound: '5.004883e-3'
+    exact-value: 0x1.4800004000001p-8
+    time: 1.77
+- name: ops_constants.txt
+  expressions:
+  - name: add_x_c1
+    upper-bound: '8.937296e-16'
+    exact-value: 0x1.019999999999ap-50
+    time: 1.8
+  - name: add_y_c1
+    upper-bound: '1.781908e-15'
+    exact-value: 0x1.00ccccccccccdp-49
+    time: 1.56
+  - name: sub_x_c1
+    upper-bound: '8.937296e-16'
+    exact-value: 0x1.019999999999ap-50
+    time: 1.69
+  - name: sub_y_c1
+    upper-bound: '1.781908e-15'
+    exact-value: 0x1.00ccccccccccdp-49
+    time: 1.59
+  - name: mul_x_c1
+    upper-bound: '1.665335e-16'
+    exact-value: 0x1.8000000000002p-53
+    time: 1.6
+  - name: mul_y_c1
+    upper-bound: '3.330670e-16'
+    exact-value: 0x1.8000000000002p-52
+    time: 1.68
+  - name: mul_c1_x
+    upper-bound: '1.665335e-16'
+    exact-value: 0x1.8000000000002p-53
+    time: 1.7
+  - name: mul_c1_y
+    upper-bound: '3.330670e-16'
+    exact-value: 0x1.8000000000002p-52
+    time: 1.76
+  - name: div_x_c1
+    upper-bound: '1.265655e-14'
+    exact-value: 0x1.c800000000003p-47
+    time: 2.05
+  - name: div_y_c1
+    upper-bound: '2.531309e-14'
+    exact-value: 0x1.c800000000003p-46
+    time: 1.99
+  - name: div_c1_x
+    upper-bound: '1.249001e-17'
+    exact-value: 0x1.ccccccccccccep-57
+    time: 1.61
+  - name: add_u_c2
+    upper-bound: '3.019807e-15'
+    exact-value: 0x1.b333333333334p-49
+    time: 1.63
+  - name: add_v_c2
+    upper-bound: '3.907986e-15'
+    exact-value: 0x1.199999999999ap-48
+    time: 1.62
+  - name: sub_u_c2
+    upper-bound: '1.465495e-15'
+    exact-value: 0x1.a666666666667p-50
+    time: 2.02
+  - name: sub_v_c2
+    upper-bound: '3.907986e-15'
+    exact-value: 0x1.199999999999ap-48
+    time: 1.72
+  - name: mul_u_c2
+    upper-bound: '1.962875e-14'
+    exact-value: 0x1.619999999999cp-46
+    time: 1.87
+  - name: mul_v_c2
+    upper-bound: '3.925749e-14'
+    exact-value: 0x1.619999999999cp-45
+    time: 1.69
+  - name: mul_c2_u
+    upper-bound: '1.962875e-14'
+    exact-value: 0x1.619999999999cp-46
+    time: 1.61
+  - name: mul_c2_v
+    upper-bound: '3.925749e-14'
+    exact-value: 0x1.619999999999cp-45
+    time: 1.8
+  - name: div_u_c2
+    upper-bound: '1.782768e-16'
+    exact-value: 0x1.9b14004d17f78p-53
+    time: 1.65
+  - name: div_v_c2
+    upper-bound: '3.565535e-16'
+    exact-value: 0x1.9b14004d17f78p-52
+    time: 1.89
+  - name: div_c2_u
+    upper-bound: '2.364776e-15'
+    exact-value: 0x1.54ccccccccce4p-49
+    time: 1.73
+  - name: add_c1_c2
+    upper-bound: '1.237899e-15'
+    exact-value: 0x1.64ccccccccccdp-50
+    time: 2.11
+  - name: sub_c1_c2
+    upper-bound: '1.249001e-15'
+    exact-value: 0x1.6800000000001p-50
+    time: 1.61
+  - name: mul_c1_c2
+    upper-bound: '1.315615e-16'
+    exact-value: 0x1.2f5c28f5c28f8p-53
+    time: 1.65
+  - name: div_c1_c2
+    upper-bound: '1.765249e-18'
+    exact-value: 0x1.04813129887edp-59
+    time: 1.69
+  - name: sqrt_c1
+    upper-bound: '1.725725e-8'
+    exact-value: 0x1.287a26c71834ap-26
+    time: 1.89
+  - name: sqrt_c2
+    upper-bound: '2.779392e-16'
+    exact-value: 0x1.40712963e2d15p-52
+    time: 1.75
+- name: ops_nonsmooth.txt
+  expressions:
+  - name: abs_x
+    upper-bound: '0.0'
+    exact-value: 0x0p+0
+    time: 1.06
+  - name: abs_y
+    upper-bound: '0.0'
+    exact-value: 0x0p+0
+    time: 1.04
+  - name: abs_z
+    upper-bound: '7.105428e-15'
+    exact-value: 0x1p-47
+    time: 1.05
+  - name: abs_u
+    upper-bound: '1.110224e-16'
+    exact-value: 0x1p-53
+    time: 1.47
+  - name: max_xz
+    upper-bound: '7.105428e-15'
+    exact-value: 0x1p-47
+    time: 1.15
+  - name: min_xz
+    upper-bound: '7.105428e-15'
+    exact-value: 0x1p-47
+    time: 1.14
+  - name: max_yz
+    upper-bound: '3.814698e-6'
+    exact-value: 0x1p-18
+    time: 1.13
+  - name: min_yz
+    upper-bound: '3.814698e-6'
+    exact-value: 0x1p-18
+    time: 1.04
+  - name: max_zu
+    upper-bound: '7.105428e-15'
+    exact-value: 0x1p-47
+    time: 1.06
+  - name: min_zu
+    upper-bound: '7.105428e-15'
+    exact-value: 0x1p-47
+    time: 1.45
+  - name: max_xx
+    upper-bound: '0.0'
+    exact-value: 0x0p+0
+    time: 1.07
+  - name: max_xx32
+    upper-bound: '7.629395e-6'
+    exact-value: 0x1p-17
+    time: 1.39
+  - name: max_uu
+    upper-bound: '1.192093e-7'
+    exact-value: 0x1p-23
+    time: 1.11
+- name: ops_trans.txt
+  expressions:
+  - name: sin_x
+    upper-bound: '2.775558e-17'
+    exact-value: 0x1.0000000000001p-55
+    time: 1.67
+  - name: cos_x
+    upper-bound: '5.551116e-17'
+    exact-value: 0x1.0000000000001p-54
+    time: 1.64
+  - name: tan_x
+    upper-bound: '5.551116e-17'
+    exact-value: 0x1.0000000000001p-54
+    time: 1.59
+  - name: exp_x
+    upper-bound: '1.110224e-16'
+    exact-value: 0x1.0000000000001p-53
+    time: 1.54
+  - name: asin_x
+    upper-bound: '5.551116e-17'
+    exact-value: 0x1.0000000000001p-54
+    time: 1.78
+  - name: acos_x
+    upper-bound: '2.220447e-16'
+    exact-value: 0x1.0000000000001p-52
+    time: 1.54
+  - name: atan_x
+    upper-bound: '2.775558e-17'
+    exact-value: 0x1.0000000000001p-55
+    time: 1.61
+  - name: sinh_x
+    upper-bound: '5.551116e-17'
+    exact-value: 0x1.0000000000001p-54
+    time: 1.76
+  - name: cosh_x
+    upper-bound: '1.110224e-16'
+    exact-value: 0x1.0000000000001p-53
+    time: 1.58
+  - name: tanh_x
+    upper-bound: '2.775558e-17'
+    exact-value: 0x1.0000000000001p-55
+    time: 1.59
+  - name: asinh_x
+    upper-bound: '2.775558e-17'
+    exact-value: 0x1.0000000000001p-55
+    time: 1.62
+  - name: atanh_x
+    upper-bound: '5.551116e-17'
+    exact-value: 0x1.0000000000001p-54
+    time: 2.0
+  - name: sin_y
+    upper-bound: '5.551116e-17'
+    exact-value: 0x1.0000000000001p-54
+    time: 1.64
+  - name: cos_y
+    upper-bound: '5.551116e-17'
+    exact-value: 0x1.0000000000001p-54
+    time: 1.7
+  - name: exp_y
+    upper-bound: '1.818990e-12'
+    exact-value: 0x1.0000000000001p-39
+    time: 1.58
+  - name: atan_y
+    upper-bound: '1.110224e-16'
+    exact-value: 0x1.0000000000001p-53
+    time: 1.56
+  - name: sinh_y
+    upper-bound: '9.094948e-13'
+    exact-value: 0x1.0000000000001p-40
+    time: 1.57
+  - name: cosh_y
+    upper-bound: '9.094948e-13'
+    exact-value: 0x1.0000000000001p-40
+    time: 1.6
+  - name: tanh_y
+    upper-bound: '5.551116e-17'
+    exact-value: 0x1.0000000000001p-54
+    time: 1.57
+  - name: acosh_y
+    upper-bound: '2.220447e-16'
+    exact-value: 0x1.0000000000001p-52
+    time: 1.65
+  - name: asinh_y
+    upper-bound: '2.220447e-16'
+    exact-value: 0x1.0000000000001p-52
+    time: 1.61
+  - name: log_y
+    upper-bound: '2.220447e-16'
+    exact-value: 0x1.0000000000001p-52
+    time: 1.57
+  - name: sin_z
+    upper-bound: '8.965745e-16'
+    exact-value: 0x1.026b855490209p-50
+    time: 1.64
+  - name: cos_z
+    upper-bound: '8.939653e-16'
+    exact-value: 0x1.01aaff03ad46cp-50
+    time: 1.72
+  - name: exp_z
+    upper-bound: '2.138243e-11'
+    exact-value: 0x1.7829dcf950563p-36
+    time: 1.62
+  - name: atan_z
+    upper-bound: '1.556122e-16'
+    exact-value: 0x1.66d131b08dcf4p-53
+    time: 1.64
+  - name: sinh_z
+    upper-bound: '1.069122e-11'
+    exact-value: 0x1.7829dd0537131p-37
+    time: 1.64
+  - name: cosh_z
+    upper-bound: '1.069122e-11'
+    exact-value: 0x1.7829dced69995p-37
+    time: 1.66
+  - name: tanh_z
+    upper-bound: '1.028906e-16'
+    exact-value: 0x1.da7fb661e446ep-54
+    time: 1.57
+  - name: asinh_z
+    upper-bound: '3.345016e-16'
+    exact-value: 0x1.81a772434387p-52
+    time: 2.01
+  - name: log_z
+    upper-bound: '3.383364e-16'
+    exact-value: 0x1.861345f87583p-52
+    time: 1.57
+  - name: sin_y_scaled
+    upper-bound: '8.326673e-17'
+    exact-value: 0x1.8000000000001p-54
+    time: 1.6
+  - name: cos_y_scaled
+    upper-bound: '8.326673e-17'
+    exact-value: 0x1.8000000000001p-54
+    time: 1.66
+  - name: exp_y_scaled
+    upper-bound: '2.728485e-12'
+    exact-value: 0x1.8000000000001p-39
+    time: 1.6
+  - name: log_y_scaled
+    upper-bound: '3.330670e-16'
+    exact-value: 0x1.8000000000001p-52
+    time: 1.61
+- name: rounding.txt
+  expressions:
+  - name: c1_32
+    upper-bound: '1.490117e-9'
+    exact-value: 0x1.999999999999ap-30
+    time: 1.07
+  - name: c1_32_d
+    upper-bound: '5.960465e-9'
+    exact-value: 0x1.999999999999ap-28
+    time: 1.02
+  - name: c1_32_u
+    upper-bound: '1.490117e-9'
+    exact-value: 0x1.999999999999ap-30
+    time: 1.02
+  - name: c1_32_0
+    upper-bound: '5.960465e-9'
+    exact-value: 0x1.999999999999ap-28
+    time: 1.18
+  - name: x_32
+    upper-bound: '9.536744e-7'
+    exact-value: 0x1p-20
+    time: 1.11
+  - name: x_32_d
+    upper-bound: '1.907349e-6'
+    exact-value: 0x1p-19
+    time: 1.14
+  - name: x_32_u
+    upper-bound: '1.907349e-6'
+    exact-value: 0x1p-19
+    time: 1.11
+  - name: x_32_0
+    upper-bound: '1.907349e-6'
+    exact-value: 0x1p-19
+    time: 1.03
+  - name: y_32
+    upper-bound: '0.0'
+    exact-value: 0x0p+0
+    time: 1.01
+  - name: y_32_d
+    upper-bound: '0.0'
+    exact-value: 0x0p+0
+    time: 1.03
+  - name: y_32_u
+    upper-bound: '0.0'
+    exact-value: 0x0p+0
+    time: 1.06
+  - name: y_32_0
+    upper-bound: '0.0'
+    exact-value: 0x0p+0
+    time: 1.03
+  - name: z_32
+    upper-bound: '9.536744e-7'
+    exact-value: 0x1p-20
+    time: 1.09
+  - name: z_32_d
+    upper-bound: '1.907349e-6'
+    exact-value: 0x1p-19
+    time: 1.08
+  - name: z_32_u
+    upper-bound: '1.907349e-6'
+    exact-value: 0x1p-19
+    time: 1.16
+  - name: z_32_0
+    upper-bound: '1.907349e-6'
+    exact-value: 0x1p-19
+    time: 1.07
+  - name: c1_16
+    upper-bound: '2.441407e-5'
+    exact-value: 0x1.999999999999ap-16
+    time: 1.07
+  - name: x_16
+    upper-bound: '7.812500e-3'
+    exact-value: 0x1p-7
+    time: 1.06
+  - name: y_16
+    upper-bound: '7.812500e-3'
+    exact-value: 0x1p-7
+    time: 1.08
+  - name: z_16
+    upper-bound: '7.812500e-3'
+    exact-value: 0x1p-7
+    time: 1.48
+  - name: c1_128_d
+    upper-bound: '7.222238e-36'
+    exact-value: 0x1.3333333333334p-117
+    time: 1.09
+  - name: x_128_u
+    upper-bound: '3.081488e-33'
+    exact-value: 0x1p-108
+    time: 1.05
+  - name: x_128_0
+    upper-bound: '3.081488e-33'
+    exact-value: 0x1p-108
+    time: 1.3
+  - name: x_128
+    upper-bound: '1.540744e-33'
+    exact-value: 0x1p-109
+    time: 1.25
+  - name: c1_64_d_scaled
+    upper-bound: '8.326673e-18'
+    exact-value: 0x1.3333333333334p-57
+    time: 1.11
+  - name: x_64_u_scaled
+    upper-bound: '8.881785e-15'
+    exact-value: 0x1.4p-47
+    time: 1.06
+  - name: y_64_0_scaled
+    upper-bound: '0.0'
+    exact-value: 0x0p+0
+    time: 1.1
+  - name: z_64_scaled
+    upper-bound: '0.0'
+    exact-value: 0x0p+0
+    time: 1.04
+  - name: c1_16_d_scaled
+    upper-bound: '2.441407e-5'
+    exact-value: 0x1.999999999999ap-16
+    time: 1.04
+  - name: x_16_u_scaled
+    upper-bound: '3.906250e-2'
+    exact-value: 0x1.4p-5
+    time: 1.08
+  - name: y_16_0_scaled
+    upper-bound: '3.906250e-2'
+    exact-value: 0x1.4p-5
+    time: 1.07
+  - name: z_16_scaled
+    upper-bound: '1.953125e-2'
+    exact-value: 0x1.4p-6
+    time: 1.07
+  - name: c1_32_d_full
+    upper-bound: '9.536744e-8'
+    exact-value: 0x1.999999999999ap-24
+    time: 1.13
+  - name: x_32_u_full
+    upper-bound: '3.814698e-5'
+    exact-value: 0x1.4p-15
+    time: 1.13
+  - name: y_32_0_full
+    upper-bound: '0.0'
+    exact-value: 0x0p+0
+    time: 1.06
+  - name: z_32_full
+    upper-bound: '3.814698e-5'
+    exact-value: 0x1.4p-15
+    time: 1.07
+- name: rounding2.txt
+  expressions:
+  - name: c1_xy_64
+    upper-bound: '1.665335e-16'
+    exact-value: 0x1.8000000000002p-53
+    time: 1.81
+  - name: c1_xy_32
+    upper-bound: '8.046628e-8'
+    exact-value: 0x1.599999c666668p-24
+    time: 1.75
+  - name: c1_xy_64_nornd
+    upper-bound: '8.881785e-17'
+    exact-value: 0x1.999999999999bp-54
+    time: 1.82
+  - name: c1_xy_64_32
+    upper-bound: '4.172326e-8'
+    exact-value: 0x1.6666667333336p-25
+    time: 1.64
+  - name: c1_xy_32_64
+    upper-bound: '6.258488e-8'
+    exact-value: 0x1.0cccccec00002p-24
+    time: 1.71
+  - name: c1_32_xy_64
+    upper-bound: '8.940697e-9'
+    exact-value: 0x1.3333338000002p-27
+    time: 1.59
+  - name: xy_rnd32_rnd32
+    upper-bound: '1.788140e-7'
+    exact-value: 0x1.8p-23
+    time: 1.2
+  - name: xy_rnd32
+    upper-bound: '4.172326e-7'
+    exact-value: 0x1.cp-22
+    time: 2.23
+  - name: xy_64_32
+    upper-bound: '4.172326e-7'
+    exact-value: 0x1.cp-22
+    time: 1.84
+  - name: xy_32_64
+    upper-bound: '2.384186e-7'
+    exact-value: 0x1.0000000e00001p-22
+    time: 1.99
+  - name: xyz64
+    upper-bound: '1.665335e-15'
+    exact-value: 0x1.ep-50
+    time: 1.76
+  - name: xyz32
+    upper-bound: '1.013279e-6'
+    exact-value: 0x1.1p-20
+    time: 1.8
+  - name: xyz32_64_1
+    upper-bound: '8.881785e-16'
+    exact-value: 0x1.0000000000001p-50
+    time: 1.83
+  - name: xyz32_64
+    upper-bound: '1.665335e-15'
+    exact-value: 0x1.ep-50
+    time: 1.67
+- name: uncertainty.txt
+  expressions:
+  - name: add
+    upper-bound: '9.536744e-7'
+    exact-value: 0x1p-20
+    time: 1.62
+  - name: sub
+    upper-bound: '9.536744e-7'
+    exact-value: 0x1p-20
+    time: 2.12
+  - name: mul
+    upper-bound: '3.337861e-6'
+    exact-value: 0x1.c000008000001p-19
+    time: 2.14
+  - name: div
+    upper-bound: '1.730505e-4'
+    exact-value: 0x1.6ae9c63ad11ccp-13
+    time: 1.85
+- name: variables.txt
+  expressions:
+  - name: x32
+    upper-bound: '4.768372e-7'
+    exact-value: 0x1p-21
+    time: 1.14
+  - name: x64
+    upper-bound: '8.881785e-16'
+    exact-value: 0x1p-50
+    time: 1.2
+  - name: y32
+    upper-bound: '2.980233e-8'
+    exact-value: 0x1p-25
+    time: 1.05
+  - name: y64
+    upper-bound: '5.551116e-17'
+    exact-value: 0x1p-54
+    time: 1.04
+  - name: z32
+    upper-bound: '5.960465e-8'
+    exact-value: 0x1p-24
+    time: 1.12
+  - name: z64
+    upper-bound: '1.110224e-16'
+    exact-value: 0x1p-53
+    time: 1.19
+  - name: u32
+    upper-bound: '1.490117e-8'
+    exact-value: 0x1p-26
+    time: 1.07
+  - name: u64
+    upper-bound: '2.775558e-17'
+    exact-value: 0x1p-55
+    time: 1.05
+  - name: a32
+    upper-bound: '0.0'
+    exact-value: 0x0p+0
+    time: 1.63
+  - name: a64
+    upper-bound: '0.0'
+    exact-value: 0x0p+0
+    time: 1.02
+  - name: b32
+    upper-bound: '4.768372e-7'
+    exact-value: 0x1p-21
+    time: 1.11
+  - name: b64
+    upper-bound: '0.0'
+    exact-value: 0x0p+0
+    time: 1.01
+  - name: c32
+    upper-bound: '1.192093e-7'
+    exact-value: 0x1p-23
+    time: 1.09
+  - name: c64
+    upper-bound: '0.0'
+    exact-value: 0x0p+0
+    time: 1.13

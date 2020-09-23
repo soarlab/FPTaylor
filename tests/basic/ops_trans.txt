@@ -1,0 +1,44 @@
+Variables
+  float64 x in [-0.5, 0.5];
+  float64 y in [1.1, 10];
+  real z in [0.1, 10];
+
+Expressions
+  sin_x rnd64= sin(x);
+  cos_x rnd64= cos(x);
+  tan_x rnd64= tan(x);
+  exp_x rnd64= exp(x);
+  asin_x rnd64= asin(x);
+  acos_x rnd64= acos(x);
+  atan_x rnd64= atan(x);
+  sinh_x rnd64= sinh(x);
+  cosh_x rnd64= cosh(x);
+  tanh_x rnd64= tanh(x);
+  asinh_x rnd64= asinh(x);
+  atanh_x rnd64= atanh(x);
+  
+  sin_y rnd64= sin(y);
+  cos_y rnd64= cos(y);
+  exp_y rnd64= exp(y);
+  atan_y rnd64= atan(y);
+  sinh_y rnd64= sinh(y);
+  cosh_y rnd64= cosh(y);
+  tanh_y rnd64= tanh(y);
+  acosh_y rnd64= acosh(y);
+  asinh_y rnd64= asinh(y);
+  log_y rnd64= log(y);
+
+  sin_z rnd64= sin(z);
+  cos_z rnd64= cos(z);
+  exp_z rnd64= exp(z);
+  atan_z rnd64= atan(z);
+  sinh_z rnd64= sinh(z);
+  cosh_z rnd64= cosh(z);
+  tanh_z rnd64= tanh(z);
+  asinh_z rnd64= asinh(z);
+  log_z rnd64= log(z);
+
+  sin_y_scaled = rnd[64, ne, 1.5](sin(y));
+  cos_y_scaled = rnd[64, ne, 1.5](cos(y));
+  exp_y_scaled = rnd[64, ne, 1.5](exp(y));
+  log_y_scaled = rnd[64, ne, 1.5](log(y));

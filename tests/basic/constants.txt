@@ -1,0 +1,37 @@
+Constants
+  c1 = 0.1;
+  c2 = -1.1f,
+  c3 = 1.1d + 10d,
+  c4 = -0x1.p-10d,
+  c5 = 1e-1,
+  c6 = -1e-1f;
+  c7 = 4.16666666666666019037e-02d;
+  c_add = 0.1 + 0.1;
+
+Definitions
+  c8 = 4 * atan(1);
+
+Expressions
+  c1_32 rnd32= c1;
+  c1_64 rnd64= c1;
+  c1_2_64 rnd64= 0.1;
+
+  c2_32 rnd32= c2;
+  c2_64 rnd64= c2;
+  c3_32 rnd32= c3;
+  c3_64 rnd64= c3;
+  c4_32 rnd32= c4;
+  c4_64 rnd64= c4;
+  c5_32 rnd32= c5;
+  c5_64 rnd64= c5;
+  c6_32 rnd32= c6;
+  c6_64 rnd64= c6;
+  c7_32 rnd32= c7;
+  c7_64 rnd64= c7;
+  c8_32 rnd32= c8;
+  c8_64 rnd64= c8;
+
+  test_64 rnd64= 0.2;
+  test_c_add_64 rnd64= c_add;
+  test_add_64 rnd64= 0.1 + 0.1;
+
