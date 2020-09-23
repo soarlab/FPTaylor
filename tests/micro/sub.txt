@@ -1,0 +1,5 @@
+Variables
+  float32 x in [0, 2];
+
+Expressions
+  sub rnd32= x - (1.5 * x);

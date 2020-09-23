@@ -1,0 +1,27 @@
+Constants
+  c1 = 0.1;
+
+Variables
+  real x in [-1, 2];
+  real y in [-3, 4];
+  float64 z in [1, 4];
+
+Definitions
+  xy32 rnd32= x + y;
+  xy64 rnd64= x + y;
+
+Expressions
+  c1_xy_64 rnd64= c1 * (x + y);
+  c1_xy_32 rnd32= c1 * (x + y);
+  c1_xy_64_nornd rnd64= c1 * no_rnd(x + y);
+  c1_xy_64_32 rnd64= c1 * xy32;
+  c1_xy_32_64 rnd32= c1 * xy64;
+  c1_32_xy_64 rnd64= rnd32(c1) * (x + y);
+  xy_rnd32_rnd32 = rnd32(x) + rnd32(y);
+  xy_rnd32 rnd32= xy32;
+  xy_64_32 rnd64= xy32;
+  xy_32_64 rnd32= xy64;
+  xyz64 rnd64= z + x + y;
+  xyz32 rnd32= z + x + y;
+  xyz32_64_1 rnd32= rnd64(z + x + y); // rnd32= has no effect
+  xyz32_64 rnd32= rnd64(rnd64(z + rnd64(x)) + rnd64(y)); // rnd32= has no effect

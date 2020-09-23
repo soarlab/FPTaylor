@@ -1,17 +1,59 @@
 config:
 - _tests-b.cfg
 files:
+- name: f1_all.txt
+  expressions:
+  - name: f1
+    upper-bound: '2.252315e-16'
+    exact-value: 0x1.03ac94139c689p-52
+    time: 1.19
+  - name: f1_mixed
+    upper-bound: '1.894655e-6'
+    exact-value: 0x1.fc97af046cca4p-20
+    time: 1.16
 - name: micro.txt
   expressions:
   - name: sum
     upper-bound: '3.136381e-15'
     exact-value: 0x1.c400000000002p-49
-    time: 1.98
+    time: 1.36
   - name: nonlin1
     upper-bound: '2.250663e-16'
     exact-value: 0x1.037bd66f60405p-52
-    time: 1.19
+    time: 1.16
   - name: nonlin2
     upper-bound: '1.422585e-14'
     exact-value: 0x1.00451c007a967p-46
-    time: 1.16
+    time: 1.26
+- name: sqrt_add.txt
+  expressions:
+  - name: sqrt_add
+    upper-bound: '1.693754e-16'
+    exact-value: 0x1.868d95ab95595p-53
+    time: 1.17
+- name: sqrt_sub.txt
+  expressions:
+  - name: sqrt_sub
+    upper-bound: '8.864964e-15'
+    exact-value: 0x1.3f64da2dfbe01p-47
+    time: 1.18
+- name: sub.txt
+  expressions:
+  - name: sub
+    upper-bound: '2.402813e-7'
+    exact-value: 0x1.020000c000001p-22
+    time: 1.39
+- name: sub_sub.txt
+  expressions:
+  - name: e_add32
+    upper-bound: '1.430512e-6'
+    exact-value: 0x1.800000cp-20
+    time: 1.26
+  - name: e_add64
+    upper-bound: '2.664536e-15'
+    exact-value: 0x1.8000000000001p-49
+    time: 1.18
+  - name: e_sub_add32
+    upper-bound: '9.629878e-7'
+    exact-value: 0x1.028002e00000cp-20
+    time: 1.19

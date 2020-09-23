@@ -1,0 +1,52 @@
+Constants
+  c1 = 0.1;
+
+Variables
+  real x in [1, 20];
+  float32 y in [1, 20];
+  float64 z in [1, 20];
+
+Expressions
+  c1_32 rnd32= c1;
+  c1_32_d rnd32_down= c1;
+  c1_32_u rnd32_up= c1;
+  c1_32_0 rnd32_0= c1;
+  x_32 rnd32= x;
+  x_32_d rnd32_down= x;
+  x_32_u rnd32_up= x;
+  x_32_0 rnd32_0= x;
+  y_32 rnd32= y;
+  y_32_d rnd32_down= y;
+  y_32_u rnd32_up= y;
+  y_32_0 rnd32_0= y;
+  z_32 rnd32= z;
+  z_32_d rnd32_down= z;
+  z_32_u rnd32_up= z;
+  z_32_0 rnd32_0= z;
+
+  c1_16 rnd[16, ne]= c1;
+  x_16 rnd[16, ne]= x;
+  y_16 rnd[16, ne]= y;
+  z_16 rnd[16, ne]= z;
+  
+  c1_128_d rnd[128, down]= c1;
+  x_128_u rnd[128, up]= x;
+  x_128_0 rnd[128, zero]= x;
+  x_128 rnd[128, ne]= x;
+
+  c1_64_d_scaled rnd[64, down, 2.5]= c1;
+  x_64_u_scaled rnd[64, up, 2.5]= x;
+  y_64_0_scaled rnd[64, zero, 2.5]= y;
+  z_64_scaled rnd[64, ne, 2.5]= z;
+
+  c1_16_d_scaled rnd[16, down, 2.5]= c1;
+  x_16_u_scaled rnd[16, up, 2.5]= x;
+  y_16_0_scaled rnd[16, zero, 2.5]= y;
+  z_16_scaled rnd[16, ne, 2.5]= z;
+
+  c1_32_d_full rnd[32, down, 2.5, -20, -30]= c1;
+  x_32_u_full rnd[32, up, 2.5, -20, -30]= x;
+  y_32_0_full rnd[32, zero, 2.5, -20, -30]= y;
+  z_32_full rnd[32, ne, 2.5, -20, -30]= z;
+
+

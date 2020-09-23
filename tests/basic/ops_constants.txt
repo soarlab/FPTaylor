@@ -1,0 +1,41 @@
+Constants
+  c1 = 0.1;
+  c2 = 10.1;
+
+Variables
+  float64 x in [1, 10];
+  float64 y in [-20, 20];
+  real u in [1, 10];
+  real v in [-20, 20];
+
+Expressions
+  add_x_c1 rnd64= x + c1;
+  add_y_c1 rnd64= y + c1;
+  sub_x_c1 rnd64= x - c1;
+  sub_y_c1 rnd64= y - c1;
+  mul_x_c1 rnd64= x * c1;
+  mul_y_c1 rnd64= y * c1;
+  mul_c1_x rnd64= c1 * x;
+  mul_c1_y rnd64= c1 * y;
+  div_x_c1 rnd64= x / c1;
+  div_y_c1 rnd64= y / c1;
+  div_c1_x rnd64= c1 / x;
+
+  add_u_c2 rnd64= u + c2;
+  add_v_c2 rnd64= v + c2;
+  sub_u_c2 rnd64= u - c2;
+  sub_v_c2 rnd64= v - c2;
+  mul_u_c2 rnd64= u * c2;
+  mul_v_c2 rnd64= v * c2;
+  mul_c2_u rnd64= c2 * u;
+  mul_c2_v rnd64= c2 * v;
+  div_u_c2 rnd64= u / c2;
+  div_v_c2 rnd64= v / c2;
+  div_c2_u rnd64= c2 / u;
+  
+  add_c1_c2 rnd64= c1 + c2;
+  sub_c1_c2 rnd64= c1 - c2;
+  mul_c1_c2 rnd64= c1 * c2;
+  div_c1_c2 rnd64= c1 / c2;
+  sqrt_c1 rnd32= sqrt(c1);
+  sqrt_c2 rnd64= sqrt(c2);

@@ -1,0 +1,27 @@
+config:
+- _tests-b.cfg
+files:
+- name: azimuth.txt
+  expressions:
+  - name: azimuth
+    upper-bound: '1.300036e-14'
+    exact-value: 0x1.d463132e9459p-47
+    time: 28.99
+- name: hartman3.txt
+  expressions:
+  - name: hartman3
+    upper-bound: '5.889160e-15'
+    exact-value: 0x1.a85bcfb97cba1p-48
+    time: 81.62
+- name: logexp.txt
+  expressions:
+  - name: logexp
+    upper-bound: '2.516050e-15'
+    exact-value: 0x1.6a99da677998bp-49
+    time: 1.42
+- name: sphere.txt
+  expressions:
+  - name: sphere
+    upper-bound: '1.081879e-14'
+    exact-value: 0x1.85c9b28358c91p-47
+    time: 3.06

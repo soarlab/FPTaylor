@@ -55,4 +55,6 @@ jobs:
     - name: Regression tests
       run: |
         cd scripts
+        python run_tests.py ../tests/basic
+        python run_tests.py ../tests/micro
         python run_tests.py ../tests/core

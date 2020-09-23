@@ -1,0 +1,18 @@
+Constants
+  a = 1p+50;
+  b = 1p+52 + 1;
+  c = 1p-1074;
+  d = 1p-1075;
+  e = c + d;
+
+Expressions
+  a64 rnd64= a; // err = 0
+  a32 rnd32= a; // err = 0
+  b64 rnd64= b; // err = 0
+  b32 rnd32= b; // err = 1
+  c64 rnd64= c; // err = 0
+  c32 rnd32= c; // err = 1p-1074 (!)
+  d64 rnd64= d; // err = 1p-1075 (!)
+  d32 rnd32= d; // err = 1p-1075 (!)
+  e64 rnd64= e; // err = 1p-1075 (!)
+  e32 rnd32= e; // err = 1p-1074 + 1p-1075 (!)

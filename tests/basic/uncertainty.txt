@@ -1,0 +1,9 @@
+Variables
+    real x in [-5, 5] +/- 1e3;
+    real y in [-5, 5] +/- 1e3;
+
+Expressions
+  add rnd32= x + y;
+  sub rnd32= x - y;
+  mul rnd32= x * y;
+  div rnd32= x / (y + 5.1);

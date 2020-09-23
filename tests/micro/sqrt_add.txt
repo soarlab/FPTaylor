@@ -1,0 +1,11 @@
+Variables
+  real x in [1,1000];
+	
+Definitions
+  r1 rnd64= sqrt(x + 1);
+  r2 rnd64= sqrt(x);
+  r rnd64= 1 / (r1 + r2);
+
+Expressions
+  sqrt_add = r;
+
