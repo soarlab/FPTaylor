@@ -5,6 +5,7 @@ open Opt_common
 type expr' =
   | Const' of interval
   | Var' of int
+  | Pown of expr' * int
   | U_op' of u_op_type * expr'
   | Bin_op' of bin_op_type * expr' * expr'
   | Gen_op' of gen_op_type * expr' list
@@ -15,8 +16,14 @@ let expr'_of_expr var_index =
   | Var v -> Var' (var_index v)
   | Rounding _ -> failwith "Rounding is not supported"
   | U_op (op, arg) -> U_op' (op, of_expr arg)
-  | Bin_op (Op_mul, arg1, arg2) when eq_expr arg1 arg2 ->
-    Bin_op' (Op_nat_pow, of_expr arg1, Const' ({low = 2.0; high = 2.0}))
+  | Bin_op (Op_mul, arg1, arg2) when eq_expr arg1 arg2 -> Pown (of_expr arg1, 2)
+  | Bin_op (Op_nat_pow, arg1, arg2) ->
+    let e = Eval.eval_interval_const_expr arg2 in
+    let n = truncate e.low in
+    if n < 0 || e.low <> e.high || float n <> e.low then
+      failwith "expr'_of_expr: Op_nat_pow"
+    else
+      Pown (of_expr arg1, n)
   | Bin_op (op, arg1, arg2) -> Bin_op' (op, of_expr arg1, of_expr arg2)
   | Gen_op (op, args) -> Gen_op' (op, List.map of_expr args)
   in
@@ -25,6 +32,7 @@ let expr'_of_expr var_index =
 let rec eval_expr' arr = function
 | Const' c -> c
 | Var' v -> arr.(v)
+| Pown (arg, n) -> pow_I_i (eval_expr' arr arg) n
 | U_op' (op, arg) ->
   begin
     let x = eval_expr' arr arg in
