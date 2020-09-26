@@ -26,6 +26,8 @@ let optimize_expr (pars : Opt_common.opt_pars) max_only (cs : constraints) expr 
       {empty_result with result = fmax; lower_bound = neg_infinity}
     | "bb" -> 
       Opt_basic_bb.min_max_expr pars max_only cs expr
+    | "bb-eval" ->
+      Opt_bb_eval.min_max_expr pars max_only cs expr
     | "nlopt" -> 
       let fmin, fmax = Opt_nlopt.min_max_expr pars cs expr in
       {empty_result with result = fmin; lower_bound = infinity},

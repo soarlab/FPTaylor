@@ -2,7 +2,7 @@ ML = ocamlc
 OPT_ML = ocamlopt
 INTERVAL_DIR = INTERVAL
 SIMPLE_INTERVAL_DIR = simple_interval
-OPT_DIR= b_and_b
+OPT_DIR = b_and_b
 
 SRC=	version.mli\
 	version.ml\
@@ -50,6 +50,10 @@ SRC=	version.mli\
 	opt_z3.ml\
 	opt_nlopt.mli\
 	opt_nlopt.ml\
+	$(OPT_DIR)/opt0.mli\
+	$(OPT_DIR)/opt0.ml\
+	opt_bb_eval.mli\
+	opt_bb_eval.ml\
 	opt.mli\
 	opt.ml\
 	out_test.ml\
@@ -95,7 +99,7 @@ test:
 fptaylor-interval: INCLUDE=$(INTERVAL_DIR)
 
 fptaylor-interval: compile-interval compile-byte
-	$(ML) -o fptaylor -I $(INTERVAL_DIR) \
+	$(ML) -o fptaylor -I $(OPT_DIR) -I $(INTERVAL_DIR) \
 		unix.cma str.cma nums.cma \
 		$(INTERVAL_DIR)/chcw.o $(INTERVAL_DIR)/interval.cma \
 		$(SRC:.ml=.cmo)
@@ -106,7 +110,7 @@ fptaylor-interval: compile-interval compile-byte
 fptaylor-simple-interval: INCLUDE=$(SIMPLE_INTERVAL_DIR)
 
 fptaylor-simple-interval: compile-simple-interval compile-byte
-	$(ML) -o fptaylor -I $(SIMPLE_INTERVAL_DIR) \
+	$(ML) -o fptaylor -I $(OPT_DIR) -I $(SIMPLE_INTERVAL_DIR) \
 		unix.cma str.cma nums.cma \
 		$(SIMPLE_INTERVAL_DIR)/interval.cma \
 		$(SRC:.ml=.cmo)
@@ -117,7 +121,7 @@ fptaylor-simple-interval: compile-simple-interval compile-byte
 fptaylor-simple-interval2: INCLUDE=$(SIMPLE_INTERVAL_DIR)
 
 fptaylor-simple-interval2: compile-simple-interval compile-byte
-	$(ML) -o fptaylor -I $(SIMPLE_INTERVAL_DIR) \
+	$(ML) -o fptaylor -I $(OPT_DIR) -I $(SIMPLE_INTERVAL_DIR) \
 		unix.cma str.cma nums.cma \
 		$(SIMPLE_INTERVAL_DIR)/interval.cma \
 		$(SRC:.ml=.cmo)
@@ -154,13 +158,13 @@ input_parser.ml input_parser.mli: input_parser.mly
 	ocamlyacc input_parser.mly
 
 %.cmi : %.mli
-	$(ML) -c -I $(INCLUDE) $^
+	$(ML) -c -I $(OPT_DIR) -I $(INCLUDE) $^
 
 %.cmo : %.ml
-	$(ML) -c -I $(INCLUDE) $^
+	$(ML) -c -I $(OPT_DIR) -I $(INCLUDE) $^
 
 %.cmx : %.ml
-	$(OPT_ML) -c -I $(INCLUDE) $^
+	$(OPT_ML) -c -I $(OPT_DIR) -I $(INCLUDE) $^
 
 clean-interval:
 	cd $(INTERVAL_DIR); $(MAKE) clean
