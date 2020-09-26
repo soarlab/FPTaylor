@@ -50,6 +50,7 @@ SRC=	version.mli\
 	opt_z3.ml\
 	opt_nlopt.mli\
 	opt_nlopt.ml\
+	$(OPT_DIR)/opt0.mli\
 	$(OPT_DIR)/opt0.ml\
 	opt_bb_eval.mli\
 	opt_bb_eval.ml\
