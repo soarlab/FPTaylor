@@ -479,7 +479,7 @@ support exact optimization problems.
 
 ### `opt`
 
-Possible values: `bb`, `z3`, `gelpia`, and `nlopt`
+Possible values: `bb`, `bb-eval`, `z3`, `gelpia`, and `nlopt`
 
 Specifies the optimization backend of FPTaylor.
 
@@ -488,6 +488,10 @@ Specifies the optimization backend of FPTaylor.
   model. Constraints are not supported. [OCaml](http://ocaml.org)
   compiler must be installed in order to use this optimization
   backend.
+
+- `bb-eval` is the same as `bb` but it does not require an OCaml compiler
+  to be installed. In general, it is slower than `bb` but may be
+  faster on small problems.
 
 - `z3` is the optimization backend based on
   [Z3 SMT solver](https://github.com/Z3Prover/z3). Z3 must be

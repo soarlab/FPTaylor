@@ -15,6 +15,9 @@ FPTaylor 0.9.3
 
 - Added regression tests.
 
+- [FEATURE] bb-eval optimization: the same as bb but does not require
+  an OCaml compiler to be installed.
+
 FPTaylor 0.9.2
 --------------
 
