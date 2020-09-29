@@ -132,13 +132,15 @@ fptaylor-simple-interval2: compile-simple-interval compile-byte
 	chmod +x $(OPT_DIR)/compile.sh	
 
 fptaylor-js: INCLUDE=$(SIMPLE_INTERVAL_DIR)
+fptaylor-js: ML=ocamlc -g
 
-fptaylor-js: compile-simple-interval compile-byte
-	ocamlfind ocamlc -o fptaylor.bytes -I $(OPT_DIR) -I $(SIMPLE_INTERVAL_DIR) \
+fptaylor-js: compile-simple-interval compile-byte default.cmo main_js.cmo
+	ocamlfind ocamlc -g -o fptaylor.bytes -I $(OPT_DIR) -I $(SIMPLE_INTERVAL_DIR) \
 		-package js_of_ocaml,js_of_ocaml-ppx,unix,str,num -linkpkg \
 		$(SIMPLE_INTERVAL_DIR)/interval.cma \
-		$(SRC:.ml=.cmo)
-	js_of_ocaml --opt 3 fptaylor.bytes
+		$(filter-out main.cmo, $(SRC:.ml=.cmo)) default.cmo main_js.cmo
+	js_of_ocaml --pretty fptaylor.bytes
+	# js_of_ocaml --opt 3 fptaylor.bytes
 
 compile-interval:
 	cd $(INTERVAL_DIR); $(MAKE)
@@ -157,6 +159,11 @@ input_lexer.ml: input_lexer.mll
 
 input_parser.ml input_parser.mli: input_parser.mly
 	ocamlyacc input_parser.mly
+
+main_js.cmo: main_js.ml
+	ocamlfind ocamlc -c -I $(OPT_DIR) -I $(INCLUDE) \
+		-package js_of_ocaml,js_of_ocaml-ppx \
+		main_js.ml
 
 %.cmi : %.mli
 	$(ML) -c -I $(OPT_DIR) -I $(INCLUDE) $^
