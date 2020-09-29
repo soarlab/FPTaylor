@@ -654,72 +654,20 @@ let process_input fname =
   Log.close ();
   Log.report `Main ""
 
-let validate_options () =
-  let open Config in
-  let validate_simplification () =
-    if get_bool_option "maxima-simplification" && not (Maxima.test_maxima()) then
-      begin
-        Log.warning "A computer algebra system Maxima is not installed. \
-                     Simplifications are disabled. \
-                     Go to http://maxima.sourceforge.net/ to install Maxima.";
-        set_option "maxima-simplification" "false"
-      end
-  in
-  let validate_proof_record () =
-    if get_bool_option "proof-record" then
-      if get_bool_option "fp-power2-model" then
-        begin
-          Log.warning "Proof certificates (proof-record = true) are not implemented for \
-                       the improved rounding model (fp-power2-model = true).";
-        end
-      else if get_bool_option "develop" then
-        begin
-          Log.warning "Proof certificates (proof-record = true) are not implemented for \
-                       some features of the development mode (develop = true).";
-        end
-  in
-  let validate_other () =
-    let prec = get_int_option "print-precision" in
-    if prec < 1 || prec > 1000 then begin
-      Log.warning "Bad print-precision value: %d" prec;
-      set_option "print-precision" "7"
-    end
-  in
-  begin
-    validate_simplification ();
-    validate_proof_record ();
-    validate_other ();
-  end
 
-let fptaylor () =
-  Log.report `Main "FPTaylor, version %s" Version.version;
-  let input_files = Config.input_files () in
-  if input_files = [] then
-    begin
-      let prog_name = Sys.argv.(0) in
-      Printf.printf
-        "\nUsage: %s [--opt_name opt_value ...] [-c config1 ...] \
-         input_file1 [input_file2 ...]\n\n\
-         Run '%s --help' to see a list of available options.\n\n"
-        prog_name prog_name;
-      exit 1
+let fptaylor input_files =
+  if Config.is_option_defined "fpcore-out" then begin
+    open_file "fpcore-out" (Config.get_string_option "fpcore-out")
+  end;
+  if Config.is_option_defined "export-options" then begin
+    let out_name = Config.get_string_option "export-options" in
+    if out_name <> "" then begin
+      Log.report `Important "Exporting options into: %s" out_name;
+      open_file "config-out" out_name;
+      Config.export_options (get_file_formatter "config-out");
+      close_file "config-out"
     end
-  else
-    begin
-      validate_options ();
-      if Config.is_option_defined "fpcore-out" then begin
-        open_file "fpcore-out" (Config.get_string_option "fpcore-out")
-      end;
-      if Config.is_option_defined "export-options" then begin
-        let out_name = Config.get_string_option "export-options" in
-        if out_name <> "" then begin
-          Log.report `Important "Exporting options into: %s" out_name;
-          open_file "config-out" out_name;
-          Config.export_options (get_file_formatter "config-out");
-          close_file "config-out"
-        end
-      end;
-      Log.report `Main "";
-      List.iter process_input input_files;
-      close_all ();
-    end
+  end;
+  Log.report `Main "";
+  List.iter process_input input_files;
+  close_all ();
