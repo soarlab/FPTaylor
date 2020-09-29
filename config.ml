@@ -17,6 +17,10 @@ let param_table = Hashtbl.create 100
 
 let short_names = Hashtbl.create 100
 
+let input_files_ref = ref []
+
+let base_dir_ref = ref ""
+
 let loaded_cfg_files = ref []
 
 let find_option ?default p = 
@@ -109,38 +113,6 @@ let parse_config_file ?(init = false) fname =
   loaded_cfg_files := !loaded_cfg_files @ [fname];
   List.rev !arg_list
 
-(* Set the base directory *)
-let base_dir =
-  try 
-    let base = Sys.getenv "FPTAYLOR_BASE" in
-    Log.report `Main "***** The environment variable FPTAYLOR_BASE is defined = '%s'" base;
-    base
-  with Not_found ->
-    Filename.dirname Sys.executable_name
-
-(* Load the main configuration file and parse arguments *)
-let input_files =
-  let files = ref [] in
-  let add_file name = files := name :: !files in
-  let parse_config_arg name = ignore (parse_config_file ~init:false name) in
-  let main_cfg = Filename.concat base_dir "default.cfg" in
-  try
-    let c_arg = ("-c", Arg.String parse_config_arg, 
-                 "filename Load options from a file.") in 
-    let fpcore_arg = ("--fpcore-out", Arg.String (set_option ~init:true "fpcore-out"), 
-                      "filename Exports tasks to the FPCore format") in
-    let args = c_arg :: fpcore_arg :: parse_config_file main_cfg ~init:true in
-    let args = Arg.align args in
-    Arg.parse args add_file usage_msg;
-    List.rev !files
-  with
-  | Failure msg | Sys_error msg ->
-    Log.error_str msg;
-    exit 2
-  | _ ->
-    Log.error "Cannot open default.cfg: %s" main_cfg;
-    exit 2
-
 let export_options fmt =
   let print (name, value) =
     if name <> "export-options" then
@@ -152,7 +124,7 @@ let export_options fmt =
 let print_options ~level:level =
   let print name value =
     Log.report level "%s = %s" name value in
-  Log.report level "Base path: %s" base_dir;
+  Log.report level "Base path: %s" !base_dir_ref;
   List.iter (Log.report level "Config file: %s") !loaded_cfg_files;
   Hashtbl.iter print param_table
 
@@ -194,11 +166,58 @@ let is_option_defined name =
   try ignore (find_option name); true with Failure _ -> false
 
 (* General paramaters *)
-let debug = get_bool_option "debug"
-let proof_flag = get_bool_option "proof-record"
-let fail_on_exception = get_bool_option "fail-on-exception"
 
-let () =
+let base_dir () = !base_dir_ref
+
+let input_files () = !input_files_ref
+
+let debug () = get_bool_option "debug"
+let proof_flag () = get_bool_option "proof-record"
+let fail_on_exception () = get_bool_option "fail-on-exception"
+
+(* Returns the base directory *)
+let get_base_dir () =
+  try 
+    let base = Sys.getenv "FPTAYLOR_BASE" in
+    Log.report `Main "***** The environment variable FPTAYLOR_BASE is defined = '%s'" base;
+    base
+  with Not_found ->
+    Filename.dirname Sys.executable_name
+
+(* Clears all mutable values *)
+let clear_all () =
+  Hashtbl.clear param_table;
+  Hashtbl.clear short_names;
+  loaded_cfg_files := [];
+  base_dir_ref := "";
+  input_files_ref := []
+
+(* Load the main configuration file and parse arguments *)
+let init () =
+  clear_all ();
+  base_dir_ref := get_base_dir ();
+  let files = ref [] in
+  let add_file name = files := name :: !files in
+  let parse_config_arg name = ignore (parse_config_file ~init:false name) in
+  let main_cfg = Filename.concat !base_dir_ref "default.cfg" in
+  input_files_ref := begin
+    try
+      let c_arg = ("-c", Arg.String parse_config_arg, 
+                  "filename Load options from a file.") in 
+      let fpcore_arg = ("--fpcore-out", Arg.String (set_option ~init:true "fpcore-out"), 
+                        "filename Exports tasks to the FPCore format") in
+      let args = c_arg :: fpcore_arg :: parse_config_file main_cfg ~init:true in
+      let args = Arg.align args in
+      Arg.parse args add_file usage_msg;
+      List.rev !files;
+    with
+    | Failure msg | Sys_error msg ->
+      Log.error_str msg;
+      exit 2
+    | _ ->
+      Log.error "Cannot open default.cfg: %s" main_cfg;
+      exit 2
+  end;
   let verbosity = get_int_option "verbosity" in
   if verbosity < 0 then
     Log.warning "verbosity < 0: %d" verbosity;

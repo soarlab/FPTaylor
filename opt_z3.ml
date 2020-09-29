@@ -145,7 +145,7 @@ let min_max_expr (pars : Opt_common.opt_pars) max_only (cs : constraints) bounds
     let _ = Lib.write_to_file py_name gen (cs, e) in
     let python_path =
       let path = try Unix.getenv "PYTHONPATH" with Not_found -> "" in
-      let base = Filename.concat Config.base_dir "z3opt" in
+      let base = Filename.concat (Config.base_dir ()) "z3opt" in
       let z3path = Config.get_string_option "z3-python-lib" in
       Lib.concat_env_paths [path; base; z3path] in
     let lib_path =

@@ -6,8 +6,8 @@
 (*      This file is distributed under the terms of the MIT license           *)
 (* ========================================================================== *)
 
-val base_dir : string
-val input_files : string list
+val base_dir : unit -> string
+val input_files : unit -> string list
 
 val set_option : ?init:bool -> ?short:string -> string -> string -> unit
                          
@@ -18,11 +18,13 @@ val get_float_option : string -> float
 
 val is_option_defined : string -> bool
 
-val debug : bool
-val fail_on_exception : bool
-val proof_flag : bool
+val debug : unit -> bool
+val fail_on_exception : unit -> bool
+val proof_flag : unit -> bool
 
 val export_options : Format.formatter -> unit
 
 val print_options : level:Log.level -> unit
 val print_short_names : level:Log.level -> unit
+
+val init : unit -> unit
