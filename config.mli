@@ -27,4 +27,4 @@ val export_options : Format.formatter -> unit
 val print_options : level:Log.level -> unit
 val print_short_names : level:Log.level -> unit
 
-val init : unit -> unit
+val init : config_files:string list -> unit

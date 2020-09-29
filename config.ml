@@ -192,8 +192,9 @@ let clear_all () =
   base_dir_ref := "";
   input_files_ref := []
 
-(* Load the main configuration file and parse arguments *)
-let init () =
+(* Loads the main configuration file and parses arguments *)
+(* Parameters from the given config_files override paramters from command line arguments *)
+let init ~config_files =
   clear_all ();
   base_dir_ref := get_base_dir ();
   let files = ref [] in
@@ -209,6 +210,7 @@ let init () =
       let args = c_arg :: fpcore_arg :: parse_config_file main_cfg ~init:true in
       let args = Arg.align args in
       Arg.parse args add_file usage_msg;
+      List.iter parse_config_arg config_files;
       List.rev !files;
     with
     | Failure msg | Sys_error msg ->
