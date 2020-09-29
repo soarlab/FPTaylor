@@ -1,3 +1,4 @@
 B simple_interval
 B INTERVAL
 B b_and_b
+PKG js_of_ocaml js_of_ocaml.ppx
