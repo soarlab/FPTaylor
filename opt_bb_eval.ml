@@ -82,7 +82,7 @@ let rec eval_expr' arr = function
   end
 
 let min_max_expr (pars : Opt_common.opt_pars) max_only (cs : constraints) e =
-  if Config.debug then
+  if Config.debug () then
     Log.report `Debug "bb-eval_opt: x_abs_tol = %e, f_rel_tol = %e, f_abs_tol = %e, iters = %d"
          pars.x_abs_tol pars.f_rel_tol pars.f_abs_tol pars.max_iters;
   let var_names = vars_in_expr e in

@@ -64,13 +64,13 @@ let get_gelpia_cmd ()=
     try
       Sys.getenv "GELPIA_PATH"
     with Not_found ->
-      cc Config.base_dir "gelpia" in
+      cc (Config.base_dir ()) "gelpia" in
   let cmd = cc (cc path "bin") "gelpia" in
   if Sys.file_exists cmd then
     cmd
   else
     failwith (cmd ^ " not found.\n" ^
-	      "Set the GELPIA_PATH variable or copy GELPIA to the FPTaylor root directory.")
+      "Set the GELPIA_PATH variable or copy GELPIA to the FPTaylor root directory.")
 
 let min_max_expr (pars : Opt_common.opt_pars) max_only (cs : constraints) expr =
 (*

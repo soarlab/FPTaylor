@@ -205,7 +205,7 @@ let add2_symbolic (e1, exp1) (e2, exp2) =
 let sum_symbolic s = Lib.itlist add2_symbolic s (const_0, 0)
 
 let compute_bound cs (expr, err) =
-  let r = Opt.find_max_abs Opt_common.default_opt_pars cs expr in
+  let r = Opt.find_max_abs (Opt_common.default_opt_pars ()) cs expr in
   let bound = {low = r.Opt_common.lower_bound; high = r.Opt_common.result} in
   Log.report `Info "%d: exp = %d: %s" err.index err.exp (bound_info bound);
   bound, err.exp 
@@ -284,11 +284,11 @@ let absolute_errors task tf =
           else
             full_expr', exp in
         let bound =
-          let r = Opt.find_max Opt_common.default_opt_pars cs full_expr in
+          let r = Opt.find_max (Opt_common.default_opt_pars ()) cs full_expr in
           {low = r.Opt_common.lower_bound; high = r.Opt_common.result} in
         let total1_i = Rounding.get_eps exp *.$ bound in
         let total_i = 
-          if Config.proof_flag then begin
+          if Config.proof_flag () then begin
             let e' = Rounding.get_eps exp in
             let e = if e' = 0.0 then 1.0 else e' in
             let bound = make_stronger_i (bound +$ total2_i /$. e) in
@@ -370,7 +370,7 @@ let relative_errors task tf (f_min, f_max) =
             else
               full_expr', exp in
           let bound =
-            let r = Opt.find_max Opt_common.default_opt_pars cs full_expr in
+            let r = Opt.find_max (Opt_common.default_opt_pars ()) cs full_expr in
             {low = r.Opt_common.lower_bound; high = r.Opt_common.result} in
           let total1_i = Rounding.get_eps exp *.$ bound in
           let total_i = total1_i +$ b2_i in
@@ -443,7 +443,7 @@ let ulp_errors task tf (f_min, f_max) =
             let full_expr' = mk_div sum_expr (mk_abs (mk_ulp (prec, min_exp) tf.v0)) in
             full_expr', exp in
           let bound =
-            let r = Opt.find_max Opt_common.default_opt_pars cs full_expr in
+            let r = Opt.find_max (Opt_common.default_opt_pars ()) cs full_expr in
             {low = r.Opt_common.lower_bound; high = r.Opt_common.result} in
           let total1_i = Rounding.get_eps exp *.$ bound in
           let total_i = total1_i +$ b2_i in
@@ -474,7 +474,7 @@ let errors task tform =
     if Config.get_bool_option "rel-error" ||
        Config.get_bool_option "ulp-error" || 
        Config.get_bool_option "find-bounds" then
-      Opt.find_min_max Opt_common.default_opt_pars cs tform.v0
+      Opt.find_min_max (Opt_common.default_opt_pars ()) cs tform.v0
     else
       neg_infinity, infinity in
   Log.report `Important "bounds: [%e, %e]" f_min f_max;
@@ -516,7 +516,7 @@ let safety_check task =
     let msg =
       Format.sprintf "\nPotential exception detected: %s at:\n%s"
         str (ExprOut.Info.print_str e0) in
-    if Config.fail_on_exception then
+    if Config.fail_on_exception () then
       failwith msg
     else
       (Log.warning_str msg; zero_I)
@@ -524,7 +524,7 @@ let safety_check task =
 let compute_form task =
   Log.report `Info "\n*************************************";
   Log.report `Info "Taylor form for: %s" (ExprOut.Info.print_str task.expression);
-  if Config.proof_flag then Proof.new_proof task;
+  if Config.proof_flag () then Proof.new_proof task;
   let start = Unix.gettimeofday() in
   let result, tform = 
     try
@@ -557,7 +557,7 @@ let compute_form task =
   let stop = Unix.gettimeofday() in
   Log.report `Info "Elapsed time: %.5f" (stop -. start);
   let () = 
-    if Config.proof_flag then
+    if Config.proof_flag () then
       begin
         let proof_dir = Config.get_string_option "proof-dir" in
         Log.report `Important "Saving a proof certificate for %s (in %s)" result.name proof_dir;
@@ -654,74 +654,20 @@ let process_input fname =
   Log.close ();
   Log.report `Main ""
 
-let validate_options () =
-  let open Config in
-  let validate_simplification () =
-    if get_bool_option "maxima-simplification" && not (Maxima.test_maxima()) then
-      begin
-        Log.warning "A computer algebra system Maxima is not installed. \
-                     Simplifications are disabled. \
-                     Go to http://maxima.sourceforge.net/ to install Maxima.";
-        set_option "maxima-simplification" "false"
-      end
-  in
-  let validate_proof_record () =
-    if get_bool_option "proof-record" then
-      if get_bool_option "fp-power2-model" then
-        begin
-          Log.warning "Proof certificates (proof-record = true) are not implemented for \
-                       the improved rounding model (fp-power2-model = true).";
-        end
-      else if get_bool_option "develop" then
-        begin
-          Log.warning "Proof certificates (proof-record = true) are not implemented for \
-                       some features of the development mode (develop = true).";
-        end
-  in
-  let validate_other () =
-    let prec = get_int_option "print-precision" in
-    if prec < 1 || prec > 1000 then begin
-      Log.warning "Bad print-precision value: %d" prec;
-      set_option "print-precision" "7"
-    end
-  in
-  begin
-    validate_simplification ();
-    validate_proof_record ();
-    validate_other ();
-  end
 
-let main () =
-  Log.report `Main "FPTaylor, version %s" Version.version;
-  if Config.input_files = [] then
-    begin
-      let prog_name = Sys.argv.(0) in
-      Printf.printf
-        "\nUsage: %s [--opt_name opt_value ...] [-c config1 ...] \
-         input_file1 [input_file2 ...]\n\n\
-         Run '%s --help' to see a list of available options.\n\n"
-        prog_name prog_name;
-      exit 1
+let fptaylor input_files =
+  if Config.is_option_defined "fpcore-out" then begin
+    open_file "fpcore-out" (Config.get_string_option "fpcore-out")
+  end;
+  if Config.is_option_defined "export-options" then begin
+    let out_name = Config.get_string_option "export-options" in
+    if out_name <> "" then begin
+      Log.report `Important "Exporting options into: %s" out_name;
+      open_file "config-out" out_name;
+      Config.export_options (get_file_formatter "config-out");
+      close_file "config-out"
     end
-  else
-    begin
-      validate_options ();
-      if Config.is_option_defined "fpcore-out" then begin
-        open_file "fpcore-out" (Config.get_string_option "fpcore-out")
-      end;
-      if Config.is_option_defined "export-options" then begin
-        let out_name = Config.get_string_option "export-options" in
-        if out_name <> "" then begin
-          Log.report `Important "Exporting options into: %s" out_name;
-          open_file "config-out" out_name;
-          Config.export_options (get_file_formatter "config-out");
-          close_file "config-out"
-        end
-      end;
-      Log.report `Main "";
-      List.iter process_input Config.input_files;
-      close_all ();
-      exit 0
-    end
-
-let () = main ()
+  end;
+  Log.report `Main "";
+  List.iter process_input input_files;
+  close_all ();

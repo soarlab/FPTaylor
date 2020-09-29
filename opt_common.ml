@@ -38,12 +38,12 @@ let get_tol name default =
   let tol = Config.get_float_option name in
   if tol < 0.0 then
     let () = Log.warning "Bad tolerance value: %s = %e. Using default value: %e"
-		         name tol default in
+               name tol default in
     default
   else
     tol
 
-let default_opt_pars = {
+let default_opt_pars () = {
   f_rel_tol = get_tol "opt-f-rel-tol" 0.01;
   f_abs_tol = get_tol "opt-f-abs-tol" 0.01;
   x_rel_tol = get_tol "opt-x-rel-tol" 0.0;
@@ -63,7 +63,7 @@ let get_float ?default strs name =
     | str :: t ->
       let i = try Str.search_forward r str 0 with Not_found -> -1 in
       if i == 0 then
-	float_of_string (Str.string_after str n)
+        float_of_string (Str.string_after str n)
       else
-	find t in
-  find strs
+        find t in
+        find strs

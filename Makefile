@@ -65,7 +65,9 @@ SRC=	version.mli\
 	out_error_bounds.ml\
 	taylor_form.mli\
 	taylor_form.ml\
-	fptaylor.ml
+	fptaylor.mli\
+	fptaylor.ml\
+	main.ml
 
 PROOF_SRC= lib.ml\
 	   proof_base.ml\
