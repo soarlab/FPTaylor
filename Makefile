@@ -160,6 +160,12 @@ input_lexer.ml: input_lexer.mll
 input_parser.ml input_parser.mli: input_parser.mly
 	ocamlyacc input_parser.mly
 
+default.cmo: default.cfg
+	echo "let default_cfg = \"" > default.ml
+	cat default.cfg | sed -e 's/opt[ ]*=.*/opt = bb-eval/; s/log-base-dir[ ]*=.*/log-base-dir =/; s/tmp-base-dir[ ]*=.*/tmp-base-dir =/' >> default.ml
+	echo "\"" >> default.ml
+	$(ML) -c default.ml
+
 main_js.cmo: main_js.ml
 	ocamlfind ocamlc -c -I $(OPT_DIR) -I $(INCLUDE) \
 		-package js_of_ocaml,js_of_ocaml-ppx \
