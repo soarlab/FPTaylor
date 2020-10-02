@@ -1,6 +1,6 @@
 open Js_of_ocaml
 
-let append_string output cl s =
+(* let append_string output cl s =
   let open Js_of_ocaml in
   let d = Dom_html.window##.document in
   let span = Dom_html.createDiv d in
@@ -14,16 +14,20 @@ let init_out chan =
     (* let text = Js.to_string out##.innerHTML in *)
     (* out##.innerHTML := Js.string (text ^ s) in *)
     append_string out "test" s in
-  Sys_js.set_channel_flusher chan flush
+  Sys_js.set_channel_flusher chan flush *)
 
-let get_input_textarea () =
+(* let get_input_textarea () =
   match Dom_html.getElementById_coerce "input" Dom_html.CoerceTo.textarea with
   | None -> failwith "No input textarea"
-  | Some v -> v
+  | Some v -> v *)
+
+let init_out chan =
+  let flush s = Worker.post_message (Js.string s) in
+  Sys_js.set_channel_flusher chan flush
 
 let init_fs () =
   Sys_js.create_file "./default.cfg" Default.default_cfg;
-  Sys_js.create_file "user.cfg" "";
+  Sys_js.create_file "user.cfg" "verbosity = 1";
   Sys_js.create_file "input.txt" "";
   ()
 
@@ -31,7 +35,7 @@ let run_fptaylor () =
   Config.init ["user.cfg"];
   Fptaylor.fptaylor ["input.txt"]
 
-let init_button () =
+(* let init_button () =
   let input = get_input_textarea () in
   let counter = ref 0 in
   let button = Dom_html.getElementById "button" in
@@ -40,16 +44,26 @@ let init_button () =
     Printf.printf "Button clicked: %d\n" !counter;
     Sys_js.update_file "input.txt" (Js.to_string input##.value);
     run_fptaylor ();
-    Js._true)
+    Js._true) *)
 
-let init () =
+(* let init () =
   Log.report `Main "FPTaylor, version %s" Version.version;
   init_out Stdlib.stdout;
   init_out Stdlib.stderr;
   init_fs ();
-  init_button ()
+  init_button () *)
 
-let () = Dom_html.window##.onload := 
+(* let () = Dom_html.window##.onload := 
   Dom_html.handler (fun _ ->
     init ();
-    Js._false)
+    Js._false) *)
+
+let () =
+  init_out Stdlib.stdout;
+  init_out Stdlib.stderr;
+  init_fs ()
+
+let () =
+  Worker.set_onmessage (fun msg ->
+    Sys_js.update_file "input.txt" (Js.to_string msg);
+    run_fptaylor ())

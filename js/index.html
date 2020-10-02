@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
+          "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <title>Js_of_ocaml - Hello</title>
+    <!-- <script type="text/javascript" src="aaa.js"></script> -->
+    <!-- <script type="text/javascript" src="../fptaylor.js"></script> -->
+    <script type="text/javascript" src="main.js"></script>
+  </head>
+  <body>
+    <div style="width: 50%; float: left;">
+    <p id="output" style="background-color: beige;">
+      Init
+    </p>
+    <button id="run" onclick="callFPTaylor()">Run</button>
+    <button id="stop" onclick="onStop()">Stop</button>
+    <button id="clear" onclick="onClear()">Clear</button>
+    </div>
+    <div style="float: right; width: 50%;">
+      <textarea id="input" style="background-color: bisque; height: 300px; width: 100%;">
+Variables
+  real x in [0, 20];
+
+Expressions
+  r rnd64= x + x;</textarea>
+    </div>
+  </body>
+</html>

@@ -162,7 +162,7 @@ input_parser.ml input_parser.mli: input_parser.mly
 
 default.cmo: default.cfg
 	echo "let default_cfg = \"" > default.ml
-	cat default.cfg | sed -e 's/opt[ ]*=.*/opt = bb-eval/; s/log-base-dir[ ]*=.*/log-base-dir =/; s/tmp-base-dir[ ]*=.*/tmp-base-dir =/' >> default.ml
+	cat default.cfg | sed -e 's/^opt[ ]*=.*/opt = bb-eval/; s/^log-base-dir[ ]*=.*/log-base-dir =/; s/^tmp-base-dir[ ]*=.*/tmp-base-dir =/' >> default.ml
 	echo "\"" >> default.ml
 	$(ML) -c default.ml
 
