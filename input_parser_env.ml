@@ -154,9 +154,12 @@ let rec apply_raw_rounding rnd expr =
   | Raw_u_op (op, arg) -> 
     let e1 = apply_raw_rounding rnd arg in
     Raw_rounding (rnd, Raw_u_op (op, e1))
+  | Raw_bin_op ("^", arg1, arg2) ->
+    let e1 = apply_raw_rounding rnd arg1 in
+    Raw_rounding (rnd, Raw_bin_op ("^", e1, arg2))
   | Raw_bin_op (op, arg1, arg2) ->
     let e1 = apply_raw_rounding rnd arg1 and
-    e2 = apply_raw_rounding rnd arg2 in
+        e2 = apply_raw_rounding rnd arg2 in
     Raw_rounding (rnd, Raw_bin_op (op, e1, e2))
   | Raw_gen_op (op, args) ->
     let es = List.map (apply_raw_rounding rnd) args in
