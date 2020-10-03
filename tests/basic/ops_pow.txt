@@ -1,0 +1,14 @@
+// The power operation is not supported
+
+Variables
+  float64 x in [1, 2];
+  float64 y in [-200, 200];
+  real z in [1, 2];
+
+Expressions
+  pow2_x rnd64= x ^ 2;
+  pow2_y rnd64= y ^ 2;
+  pow2_z rnd64= z ^ 2;
+  pow3_x rnd64= x ^ 3;
+  pow3_y rnd64= y ^ 3;
+  pow3_z rnd64= z ^ 3;
