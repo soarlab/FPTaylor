@@ -4,18 +4,22 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <title>Js_of_ocaml - Hello</title>
-    <!-- <script type="text/javascript" src="aaa.js"></script> -->
-    <!-- <script type="text/javascript" src="../fptaylor.js"></script> -->
     <script type="text/javascript" src="main.js"></script>
+    <style>
+      .stdout {
+      }
+
+      .stderr {
+        color: #d9534f;
+      }
+
+    </style>
   </head>
   <body>
     <div style="width: 50%; float: left;">
-    <p id="output" style="background-color: beige;">
-      Init
-    </p>
-    <button id="run" onclick="callFPTaylor()">Run</button>
-    <button id="stop" onclick="onStop()">Stop</button>
-    <button id="clear" onclick="onClear()">Clear</button>
+      <p id="output" style="background-color: beige;">
+        Init
+      </p>
     </div>
     <div style="float: right; width: 50%;">
       <textarea id="input" style="background-color: bisque; height: 300px; width: 100%;">
@@ -24,6 +28,12 @@ Variables
 
 Expressions
   r rnd64= x + x;</textarea>
+      <textarea id="config" style="background-color: rgb(149, 221, 177); height: 300px; width: 100%;">
+verbosity = 2
+      </textarea>
+      <button id="run" onclick="callFPTaylor()">Run</button>
+      <button id="stop" onclick="onStop()">Stop</button>
+      <button id="clear" onclick="onClear()">Clear</button>
     </div>
   </body>
 </html>

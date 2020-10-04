@@ -139,7 +139,7 @@ fptaylor-js: compile-simple-interval compile-byte default.cmo main_js.cmo
 		-package js_of_ocaml,js_of_ocaml-ppx,unix,str,num -linkpkg \
 		$(SIMPLE_INTERVAL_DIR)/interval.cma \
 		$(filter-out main.cmo, $(SRC:.ml=.cmo)) default.cmo main_js.cmo
-	js_of_ocaml --pretty fptaylor.bytes
+	js_of_ocaml --pretty -o js/fptaylor.js fptaylor.bytes
 	# js_of_ocaml --opt 3 fptaylor.bytes
 
 compile-interval:

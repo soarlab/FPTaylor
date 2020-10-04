@@ -1,3 +1,5 @@
+const classes = {1: 'stdout', 2: 'stderr'};
+
 const workers = [];
 
 function onClear() {
@@ -11,17 +13,20 @@ function onStop() {
 }
 
 function callFPTaylor() {
-  const worker = new Worker('../fptaylor.js');
+  const worker = new Worker('fptaylor.js');
   const output = document.getElementById('output');
 
   const input = document.getElementById('input').value;
-  console.log(`input.value = ${input}`);
+  const config = document.getElementById('config').value;
   
   worker.onmessage = function(e) {
-    output.innerHTML += `<div>${e.data}</div>`;
+    const {ty, str} = e.data;
+    output.innerHTML += `<div class="${classes[ty]}">${str}</div>`;
   };
 
-  worker.postMessage(input);
+  output.innerHTML = '';
+
+  worker.postMessage({input, config});
   workers.push(worker);
 }
 
