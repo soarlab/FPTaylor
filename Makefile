@@ -190,7 +190,7 @@ clean:
 	rm -rf _build tmp log
 	rm -f fptaylor fptaylor.native
 	rm -f input_parser.ml input_parser.mli input_lexer.ml input_lexer.mli
-	rm -f *~ *.o *.cmo *.cmi *.cmx *.pyc
+	rm -f *~ *.o *.cmo *.cmi *.cmx *.pyc *.bytes
 	cd $(OPT_DIR); $(MAKE) clean
 
 clean-all: clean-interval clean-simple-interval clean

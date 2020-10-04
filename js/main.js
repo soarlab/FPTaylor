@@ -20,8 +20,13 @@ function callFPTaylor() {
   const config = document.getElementById('config').value;
   
   worker.onmessage = function(e) {
-    const {ty, str} = e.data;
-    output.innerHTML += `<div class="${classes[ty]}">${str}</div>`;
+    if (Array.isArray(e.data)) {
+      console.log(e.data);
+    }
+    else {
+      const {ty, str} = e.data;
+      output.innerHTML += `<div class="${classes[ty]}">${str}</div>`;
+    }
   };
 
   output.innerHTML = '';
