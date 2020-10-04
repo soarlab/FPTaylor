@@ -100,7 +100,8 @@ let min_max_expr (pars : Opt_common.opt_pars) max_only (cs : constraints) e =
     if max_only then 0., 0., 0
     else
       let f_min arr = ~-$ (eval_expr' arr e') in
-      Opt0.opt f_min start_interval x_tol pars.f_rel_tol pars.f_abs_tol pars.max_iters in
+      let fm, lm, i = Opt0.opt f_min start_interval x_tol pars.f_rel_tol pars.f_abs_tol pars.max_iters in
+      -.fm, -.lm, i in
   let rmin = {
     result = fmin;
     lower_bound = lower_min;
