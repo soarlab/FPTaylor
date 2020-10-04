@@ -49,6 +49,6 @@ let main () =
     exit 1
   end;
   validate_options ();
-  Fptaylor.fptaylor input_files
+  Fptaylor.fptaylor input_files |> ignore
 
 let () = main ()

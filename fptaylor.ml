@@ -641,21 +641,25 @@ let process_input fname =
   Config.print_options `Debug;
   let tasks = Parser.parse_file fname in
   Log.report `Debug "|tasks| = %d" (List.length tasks);
-  if Config.is_option_defined "fpcore-out" then begin
-    Log.report `Main "Exporting to the FPCore format";
-    let fmt = get_file_formatter "fpcore-out" in
-    List.iter (Out_fpcore.generate_fpcore fmt) tasks
-  end 
-  else begin
-    let results = List.map process_task tasks in
-    Log.report `Info "*************************************\n";
-    List.iter (fun (r, tf) -> print_result r) results
-  end;
+  let results =
+    if Config.is_option_defined "fpcore-out" then begin
+      Log.report `Main "Exporting to the FPCore format";
+      let fmt = get_file_formatter "fpcore-out" in
+      List.iter (Out_fpcore.generate_fpcore fmt) tasks;
+      []
+    end 
+    else begin
+      let results = List.map process_task tasks in
+      Log.report `Info "*************************************\n";
+      List.iter (fun (r, tf) -> print_result r) results;
+      results
+    end in
   Log.close ();
-  Log.report `Main ""
+  Log.report `Main "";
+  results
 
 
-let fptaylor input_files =
+let fptaylor ~input_files =
   if Config.is_option_defined "fpcore-out" then begin
     open_file "fpcore-out" (Config.get_string_option "fpcore-out")
   end;
@@ -669,5 +673,8 @@ let fptaylor input_files =
     end
   end;
   Log.report `Main "";
-  List.iter process_input input_files;
+  let results = input_files
+    |> List.fold_left (fun rs fname -> rs @ process_input fname) []
+    |> List.map fst in
   close_all ();
+  results
