@@ -17,7 +17,6 @@ let init_fs () =
 
 let run_fptaylor () =
   try
-    Printf.printf "Running...";
     Config.init ["user.cfg"];
     Fptaylor.fptaylor ["input.txt"]
   with 

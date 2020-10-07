@@ -57,9 +57,12 @@ function populateSelect(examples, selectId, inputId) {
   examples.forEach(example => {
     const opt = document.createElement('option');
     opt.textContent = example.name;
-    opt.value = example.data;
+    opt.value = example.data.trim();
     select.appendChild(opt);
   });
+  if (!input.value) {
+    input.value = examples[0].data;
+  }
 }
 
 window.onload = function() {
