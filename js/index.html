@@ -5,6 +5,7 @@
   <head>
     <title>FPTaylor JS</title>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <script type="text/javascript" src="examples.js"></script>
     <script type="text/javascript" src="main.js"></script>
     <style>
       .stdout {
@@ -70,7 +71,6 @@
         flex: 2;
         padding: 5px;
         background-color: lightblue;
-        border-top: none;
       }
 
       button {
@@ -90,6 +90,15 @@
         flex: 1;
       }
 
+      .examples-container {
+        display: flex;
+        justify-content: flex-end;
+      }
+
+      label {
+        margin-right: 5pt;
+      }
+
     </style>
   </head>
   <body>
@@ -97,12 +106,15 @@
       <pre id="output">Output</pre>
     </div>
     <div id="input-panel">
-      <textarea id="input">
-Variables
-  real x in [0, 20];
-
-Expressions
-  r rnd64= x + x;</textarea>
+      <div class="examples-container">
+        <label for="input-examples">Input examples</label>
+        <select id="input-examples" name="input-examples"></select>
+      </div>
+      <textarea id="input"></textarea>
+      <div class="examples-container">
+        <label for="config-examples">Configuration examples</label>
+        <select id="config-examples" name="config-examples"></select>
+      </div>
       <textarea id="config">
 verbosity = 2
       </textarea>

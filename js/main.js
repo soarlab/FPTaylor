@@ -48,3 +48,21 @@ function runFPTaylor(onFinished) {
   worker.postMessage({input, config});
 }
 
+function populateSelect(examples, selectId, inputId) {
+  const select = document.getElementById(selectId);
+  const input = document.getElementById(inputId);
+  select.onchange = function(e) {
+    input.value = e.target.value;
+  };
+  examples.forEach(example => {
+    const opt = document.createElement('option');
+    opt.textContent = example.name;
+    opt.value = example.data;
+    select.appendChild(opt);
+  });
+}
+
+window.onload = function() {
+  populateSelect(inputExamples, 'input-examples', 'input');
+  populateSelect(configExamples, 'config-examples', 'config');
+}
