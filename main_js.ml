@@ -16,8 +16,14 @@ let init_fs () =
   ()
 
 let run_fptaylor () =
-  Config.init ["user.cfg"];
-  Fptaylor.fptaylor ["input.txt"]
+  try
+    Printf.printf "Running...";
+    Config.init ["user.cfg"];
+    Fptaylor.fptaylor ["input.txt"]
+  with 
+  | Failure msg -> Log.error_str msg; []
+  | Parsing.Parse_error -> Log.error_str "Parsing error"; []
+  |_ ->  Log.error_str "Unknown error"; []
 
 class type js_msg_type = object
   method input : Js.js_string Js.t Js.readonly_prop
