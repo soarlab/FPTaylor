@@ -1,19 +1,32 @@
 const classes = {1: 'stdout', 2: 'stderr'};
 
-const workers = [];
+const workers = new Set();
 
-function onClear() {
+function clearOutput() {
   const output = document.getElementById('output');
   output.innerHTML = '';
 }
 
-function onStop() {
+function stopAllWorkers() {
   workers.forEach(worker => worker.terminate());
-  workers = [];
+  workers.clear();
 }
 
-function callFPTaylor() {
+function onRunButton() {
+  const runButton = document.getElementById('run');
+  if (workers.size) {
+    stopAllWorkers();
+    runButton.innerText = 'Run'
+  }
+  else {
+    runFPTaylor(() => !workers.size && (runButton.innerText = 'Run'));
+    runButton.innerText = 'Stop';
+  }
+}
+
+function runFPTaylor(onFinished) {
   const worker = new Worker('fptaylor.js');
+  workers.add(worker);
   const output = document.getElementById('output');
 
   const input = document.getElementById('input').value;
@@ -21,7 +34,9 @@ function callFPTaylor() {
   
   worker.onmessage = function(e) {
     if (Array.isArray(e.data)) {
-      console.log(e.data);
+      // Final results
+      workers.delete(worker);
+      if (onFinished) onFinished(e.data);
     }
     else {
       const {ty, str} = e.data;
@@ -30,8 +45,6 @@ function callFPTaylor() {
   };
 
   output.innerHTML = '';
-
   worker.postMessage({input, config});
-  workers.push(worker);
 }
 

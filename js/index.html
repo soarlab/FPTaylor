@@ -3,7 +3,8 @@
           "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
-    <title>Js_of_ocaml - Hello</title>
+    <title>FPTaylor JS</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <script type="text/javascript" src="main.js"></script>
     <style>
       .stdout {
@@ -13,27 +14,102 @@
         color: #d9534f;
       }
 
+      html {
+        box-sizing: border-box;
+        height: 100%;
+      }
+
+      *, *::before, *::after {
+        box-sizing: inherit;
+      }
+
+      body {
+        display: flex;
+        height: 100%;
+        margin: 0;
+      }
+
+      #output-panel {
+        flex: 1;
+        overflow: auto;
+        height: 100%;
+        padding: 0px 10px 10px 10px;
+        border: 2px solid gray;
+        /* background-color: black;
+        color: #eee; */
+      }
+
+      #input-panel {
+        flex: 1;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+      }
+
+      #output {
+        font-family: monospace;
+      }
+
+      textarea {
+        resize: none;
+        outline: none;
+        font-family: monospace;
+        margin: 0;
+        border: 2px solid gray;
+      }
+
+      #input {
+        width: 100%;
+        flex: 3;
+        padding: 5px;
+        background-color: bisque;
+      }
+
+      #config {
+        width: 100%;
+        flex: 2;
+        padding: 5px;
+        background-color: lightblue;
+        border-top: none;
+      }
+
+      button {
+        font-size: 16pt;
+      }
+
+      .controls-container {
+        display: flex;
+        /* margin: 5px; */
+      }
+
+      #run {
+        flex: 1;
+      }
+
+      #clear {
+        flex: 1;
+      }
+
     </style>
   </head>
   <body>
-    <div style="width: 50%; float: left;">
-      <p id="output" style="background-color: beige;">
-        Init
-      </p>
+    <div id="output-panel">
+      <pre id="output">Output</pre>
     </div>
-    <div style="float: right; width: 50%;">
-      <textarea id="input" style="background-color: bisque; height: 300px; width: 100%;">
+    <div id="input-panel">
+      <textarea id="input">
 Variables
   real x in [0, 20];
 
 Expressions
   r rnd64= x + x;</textarea>
-      <textarea id="config" style="background-color: rgb(149, 221, 177); height: 300px; width: 100%;">
+      <textarea id="config">
 verbosity = 2
       </textarea>
-      <button id="run" onclick="callFPTaylor()">Run</button>
-      <button id="stop" onclick="onStop()">Stop</button>
-      <button id="clear" onclick="onClear()">Clear</button>
+      <div class="controls-container">
+        <button id="run" onclick="onRunButton()">Run</button>
+        <button id="clear" onclick="clearOutput()">Clear</button>
+      </div>
     </div>
   </body>
 </html>
