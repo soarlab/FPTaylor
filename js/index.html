@@ -6,6 +6,7 @@
     <title>FPTaylor JS</title>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <link href="style.css" rel="stylesheet">
+    <link href="style-dark.css" rel="stylesheet">
     <script type="text/javascript" src="examples.js"></script>
     <script type="text/javascript" src="main.js"></script>
   </head>
@@ -14,14 +15,20 @@
       <pre id="output">Output</pre>
     </div>
     <div id="input-panel">
-      <div class="examples-container">
-        <label for="input-examples">Input examples</label>
-        <select id="input-examples" name="input-examples"></select>
+      <div id="title-input" class="title">
+        <span>Input</span>
+        <div>
+          <label for="input-examples">Examples</label>
+          <select id="input-examples" name="input-examples"></select>
+        </div>
       </div>
       <textarea id="input" spellcheck="false"></textarea>
-      <div class="examples-container">
-        <label for="config-examples">Configuration examples</label>
-        <select id="config-examples" name="config-examples"></select>
+      <div id="title-config" class="title">
+        <span>Configuration</span>
+        <div>
+          <label for="config-examples">Examples</label>
+          <select id="config-examples" name="config-examples"></select>
+        </div>
       </div>
       <textarea id="config" spellcheck="false"></textarea>
       <div class="controls-container">

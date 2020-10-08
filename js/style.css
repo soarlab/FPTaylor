@@ -73,9 +73,15 @@ button {
   flex: 1;
 }
 
-.examples-container {
+.title {
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
+  /* align-content: space-between; */
+  /* justify-content: flex-end; */
+}
+
+.title > span {
+  margin-left: 5px;
 }
 
 label {

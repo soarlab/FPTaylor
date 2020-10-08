@@ -17,6 +17,7 @@ let init_fs () =
 
 let run_fptaylor () =
   try
+    Log.report `Main "FPTaylor, version %s" Version.version;
     Config.init ["user.cfg"];
     Fptaylor.fptaylor ["input.txt"]
   with 
