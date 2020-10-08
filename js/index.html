@@ -12,30 +12,36 @@
     <script type="text/javascript" src="main.js"></script>
   </head>
   <body>
-    <div id="output-panel">
-      <pre id="output">Output</pre>
-    </div>
-    <div id="input-panel">
-      <div id="title-input" class="title">
-        <span>Input</span>
-        <div>
-          <label for="input-examples">Examples</label>
-          <select id="input-examples" name="input-examples"></select>
+    <header>
+      <h4>FPTaylor JS</h4>
+      <a href="">Switch</a>
+    </header>
+    <main>
+      <div id="output-panel">
+        <pre id="output">Output</pre>
+      </div>
+      <div id="input-panel">
+        <div id="title-input" class="title">
+          <span>Input</span>
+          <div>
+            <label for="input-examples">Examples</label>
+            <select id="input-examples" name="input-examples"></select>
+          </div>
+        </div>
+        <textarea id="input" spellcheck="false"></textarea>
+        <div id="title-config" class="title">
+          <span>Configuration</span>
+          <div>
+            <label for="config-examples">Examples</label>
+            <select id="config-examples" name="config-examples"></select>
+          </div>
+        </div>
+        <textarea id="config" spellcheck="false"></textarea>
+        <div class="controls-container">
+          <button id="run" onclick="onRunButton()">Run</button>
+          <button id="clear" onclick="clearOutput()">Clear</button>
         </div>
       </div>
-      <textarea id="input" spellcheck="false"></textarea>
-      <div id="title-config" class="title">
-        <span>Configuration</span>
-        <div>
-          <label for="config-examples">Examples</label>
-          <select id="config-examples" name="config-examples"></select>
-        </div>
-      </div>
-      <textarea id="config" spellcheck="false"></textarea>
-      <div class="controls-container">
-        <button id="run" onclick="onRunButton()">Run</button>
-        <button id="clear" onclick="clearOutput()">Clear</button>
-      </div>
-    </div>
+    </main>
   </body>
 </html>

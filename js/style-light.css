@@ -4,15 +4,25 @@ body {
   font-family: Arial, sans-serif;
 }
 
+
+h4 {
+  /* background-color: #ced4da;
+  line-height: 20px; */
+  margin-left: 10px;
+  text-align: center;
+}
+
 #output-panel {
   margin: 10px;
-  height: calc(100% - 20px);
+  margin-top: 0;
+  height: calc(100% - 10px);
   background-color: white;
   border-color: #ced4da;
 }
 
 #input-panel {
   padding: 10px;
+  padding-top: 0;
   padding-left: 0;
 }
 

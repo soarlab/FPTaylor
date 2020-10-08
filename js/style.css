@@ -9,8 +9,38 @@ html {
 
 body {
   display: flex;
+  flex-direction: column;
   height: 100%;
   margin: 0;
+}
+
+header {
+  display: flex;
+  padding: 10px;
+  line-height: 1.5em;
+  width: 100%;
+  justify-content: space-between;
+  /* background-color: burlywood; */
+}
+
+h4 {
+  margin: 0;
+  /* background-color: cadetblue; */
+}
+
+/* header > a {
+  position: fixed;
+  top: 0;
+} */
+
+/* header > span {
+  line-height: 1.5em;
+} */
+
+main {
+  display: flex;
+  flex: 1;
+  width: 100%;
 }
 
 #output-panel {
