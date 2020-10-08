@@ -1,0 +1,40 @@
+body {
+  background-color: #e9ecef;
+  color: #343a40;
+  font-family: Arial, sans-serif;
+}
+
+#output-panel {
+  margin: 10px;
+  height: calc(100% - 20px);
+  background-color: white;
+  border-color: #ced4da;
+}
+
+#input-panel {
+  padding: 10px;
+  padding-left: 0;
+}
+
+#input {
+  background-color: white;
+  border-color: #ced4da;
+}
+
+#config {
+  background-color: white;
+  border-color: #ced4da;
+}
+
+.title {
+  /* background-color:gray; */
+  /* background-color: #262729; */
+  background-color: #ced4da;
+  /* background-color: #f1f3f5; */
+  padding: 5px;
+  line-height: 1.5em;
+}
+
+#title-config {
+  margin-top: 10px;
+}
