@@ -48,24 +48,41 @@ function runFPTaylor(onFinished) {
   worker.postMessage({input, config});
 }
 
-function populateSelect(examples, selectId, inputId) {
+function populateSelect(examples, selectId, inputId, localId) {
   const select = document.getElementById(selectId);
   const input = document.getElementById(inputId);
-  select.onchange = function(e) {
-    input.value = e.target.value;
-  };
-  examples.forEach(example => {
+  function addOption(example) {
     const opt = document.createElement('option');
     opt.textContent = example.name;
     opt.value = example.data.trim();
     select.appendChild(opt);
-  });
-  if (!input.value) {
+  }
+  addOption({name: '--', data: ''});
+  examples.forEach(addOption);
+  select.onchange = function(e) {
+    if (e.target.value) input.value = e.target.value;
+  };
+  input.oninput = function() {
+    select[0].selected = true;
+  }
+  input.onchange = function() {
+    if (localId) {
+      localStorage.setItem(localId, input.value);
+    }
+  }
+
+  const userInput = localId ? localStorage.getItem(localId) : null;
+  if (userInput) {
+    select[0].selected = true;
+    input.value = userInput;
+  }
+  else {
+    select[1].selected = true;
     input.value = examples[0].data;
   }
 }
 
 window.onload = function() {
-  populateSelect(inputExamples, 'input-examples', 'input');
-  populateSelect(configExamples, 'config-examples', 'config');
+  populateSelect(inputExamples, 'input-examples', 'input', 'user-input');
+  populateSelect(configExamples, 'config-examples', 'config', 'user-config');
 }

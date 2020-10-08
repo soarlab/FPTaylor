@@ -4,6 +4,7 @@ const configExamples = [
     data: `fp-power2-model = true
 opt-exact = true
 opt-approx = false
+print-precision = 7
 verbosity = 1
 `
   },
@@ -12,9 +13,21 @@ verbosity = 1
     data: `fp-power2-model = false
 opt-exact = true
 opt-approx = false
+print-precision = 7
 verbosity = 1
 `
-  }
+  },
+  {
+    name: 'Relative Error',
+    data: `fp-power2-model = true
+opt-exact = true
+opt-approx = false
+rel-error = true
+abs-error = false
+print-precision = 7
+verbosity = 1
+`
+  },
 ];
 
 const inputExamples = [
