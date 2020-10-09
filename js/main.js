@@ -82,6 +82,17 @@ function populateSelect(examples, selectId, inputId, localId) {
   }
 }
 
+function switchTheme() {
+  const root = document.documentElement;
+  const dark = root.hasAttribute('dark');
+  if (dark) {
+    root.removeAttribute('dark');
+  }
+  else {
+    root.setAttribute('dark', '');
+  }
+}
+
 window.onload = function() {
   populateSelect(inputExamples, 'input-examples', 'input', 'user-input');
   populateSelect(configExamples, 'config-examples', 'config', 'user-config');

@@ -1,3 +1,14 @@
+:root {
+  --bg-color: #e9ecef;
+  --font-color: #343a40;
+  --border-color: #ced4da;
+  --title-bg-color: var(--border-color);
+  --output-bg-color: #fff;
+  --input-bg-color: var(--output-bg-color);
+  --config-bg-color: var(--output-bg-color);
+  font-family: Arial, sans-serif;
+}
+
 html {
   box-sizing: border-box;
   height: 100%;
@@ -7,7 +18,16 @@ html {
   box-sizing: inherit;
 }
 
+html[dark] {
+  --bg-color: #303133;
+  --font-color: #efefef;
+  --border-color: #444;
+  --output-bg-color: #131414;
+}
+
 body {
+  background-color: var(--bg-color);
+  color: var(--font-color);
   display: flex;
   flex-direction: column;
   height: 100%;
@@ -25,6 +45,8 @@ header {
 
 h4 {
   margin: 0;
+  margin-left: 10px;
+  text-align: center;
   /* background-color: cadetblue; */
 }
 
@@ -45,24 +67,26 @@ main {
 
 #output-panel {
   flex: 1;
+  margin: 0px 10px 10px 10px;
   overflow: auto;
-  height: 100%;
+  height: calc(100% - 10px);
   padding: 0px 10px 10px 10px;
-  border: 2px solid gray;
-  /* background-color: black;
-  color: #eee; */
-}
-
-#input-panel {
-  flex: 1;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
+  border: 2px solid var(--border-color);
+  background-color: var(--output-bg-color);
 }
 
 #output {
   font-family: monospace;
   font-size: 14px;
+  color: var(--font-color);
+}
+
+#input-panel {
+  flex: 1;
+  padding: 0px 10px 10px 0px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 textarea {
@@ -70,21 +94,33 @@ textarea {
   outline: none;
   font-family: monospace;
   margin: 0;
-  border: 2px solid gray;
+  border: 2px solid var(--border-color);
 }
 
 #input {
   width: 100%;
   flex: 3;
   padding: 5px;
-  background-color: bisque;
+  background-color: var(--input-bg-color);
+  color: var(--font-color);
 }
 
 #config {
   width: 100%;
   flex: 2;
   padding: 5px;
-  background-color: lightblue;
+  background-color: var(--config-bg-color);
+  color: var(--font-color);
+}
+
+.title {
+  background-color: var(--title-bg-color);
+  padding: 5px;
+  line-height: 1.5em;
+}
+
+#title-config {
+  margin-top: 10px;
 }
 
 button {
