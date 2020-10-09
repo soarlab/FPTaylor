@@ -8,6 +8,8 @@
   --config-bg-color: var(--output-bg-color);
   --tab-active-bg-color: #eee;
   --tab-selected-bg-color: #bbb;
+  --table-th-bg-color: khaki;
+  --table-even-bg-color: #eee;
   --light-icon-visibility: hidden;
   --dark-icon-visibility: visible;
   font-family: Arial, sans-serif;
@@ -29,6 +31,9 @@ html[dark] {
   --output-bg-color: #131414;
   --tab-active-bg-color: #222;
   --tab-selected-bg-color: #333;
+  /* --table-th-bg-color: rebeccapurple; */
+  --table-th-bg-color: darkslateblue;
+  --table-even-bg-color: #333;
   --light-icon-visibility: visible;
   --dark-icon-visibility: hidden;
 }
@@ -104,13 +109,14 @@ main {
 #output-container {
   overflow: auto;
   flex: 1;
-  padding: 0px 10px 10px 10px;
+  /* padding: 0px 10px 10px 10px; */
   border: 2px solid var(--border-color);
   background-color: var(--output-bg-color);
 }
 
 #output {
   font-family: monospace;
+  padding: 0px 10px 10px 10px;
   font-size: 14px;
   color: var(--font-color);
 }
@@ -220,4 +226,23 @@ button {
 
 .stderr {
   color: #d9534f;
+}
+
+table {
+  width: 100%;
+  border: none;
+  border-collapse: collapse;
+}
+
+th {
+  background-color: var(--table-th-bg-color);
+}
+
+th, td {
+  text-align: left;
+  padding: 5px;
+}
+
+tr:nth-child(even) {
+  background-color: var(--table-even-bg-color);
 }
