@@ -5,7 +5,7 @@ const workers = new Set();
 function clearOutput() {
   const output = document.getElementById('output');
   output.innerHTML = '';
-  const results = document.getElementById('results');
+  const results = document.getElementById('results-tbody');
   results.innerHTML = '';
 }
 
@@ -26,6 +26,22 @@ function onRunButton() {
   }
 }
 
+function displayResults(data) {
+  const results = document.getElementById('results-tbody');
+  function addCell(row, value) {
+    row.insertCell().appendChild(document.createTextNode(value || '-'));
+  }
+  for (const res of data) {
+    const row = results.insertRow();
+    addCell(row, res.name);
+    addCell(row, (res.absErrorExact || res.absErrorApprox || [])[1]);
+    addCell(row, (res.relErrorExact || res.relErrorApprox || [])[1]);
+    addCell(row, (res.ulpErrorExact || res.ulpErrorApprox || [])[1]);
+    addCell(row, res.elapsedTime.toFixed(2) + 's');
+    // console.log(res);
+  }
+}
+
 function runFPTaylor(onFinished) {
   const worker = new Worker('fptaylor.js');
   workers.add(worker);
@@ -37,6 +53,7 @@ function runFPTaylor(onFinished) {
   worker.onmessage = function(e) {
     if (Array.isArray(e.data)) {
       // Final results
+      displayResults(e.data);
       workers.delete(worker);
       if (onFinished) onFinished(e.data);
     }
