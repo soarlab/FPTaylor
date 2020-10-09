@@ -6,6 +6,8 @@
   --output-bg-color: #fff;
   --input-bg-color: var(--output-bg-color);
   --config-bg-color: var(--output-bg-color);
+  --light-icon-visibility: hidden;
+  --dark-icon-visibility: visible;
   font-family: Arial, sans-serif;
 }
 
@@ -23,6 +25,8 @@ html[dark] {
   --font-color: #efefef;
   --border-color: #444;
   --output-bg-color: #131414;
+  --light-icon-visibility: visible;
+  --dark-icon-visibility: hidden;
 }
 
 body {
@@ -48,6 +52,24 @@ h4 {
   margin-left: 10px;
   text-align: center;
   /* background-color: cadetblue; */
+}
+
+#light-theme-icon {
+  position: absolute;
+  right: 10px;
+  top: 10px;
+  visibility: var(--light-icon-visibility);
+}
+
+#dark-theme-icon {
+  position: absolute;
+  visibility: var(--dark-icon-visibility);
+  right: 10px;
+  top: 10px;
+}
+
+.icon-class {
+  fill: var(--font-color);
 }
 
 /* header > a {
