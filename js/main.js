@@ -34,9 +34,9 @@ function displayResults(data) {
   for (const res of data) {
     const row = results.insertRow();
     addCell(row, res.name);
-    addCell(row, (res.absErrorExact || res.absErrorApprox || [])[1]);
-    addCell(row, (res.relErrorExact || res.relErrorApprox || [])[1]);
-    addCell(row, (res.ulpErrorExact || res.ulpErrorApprox || [])[1]);
+    addCell(row, res.absErrorExactStr || res.absErrorApproxStr);
+    addCell(row, res.relErrorExactStr || res.relErrorApproxStr);
+    addCell(row, res.ulpErrorExactStr || res.ulpErrorApproxStr);
     addCell(row, res.elapsedTime.toFixed(2) + 's');
     // console.log(res);
   }

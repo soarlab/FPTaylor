@@ -36,6 +36,13 @@ let js_array_of_interval x =
 let js_opt_array_of_interval = function
 | Some x -> Js.some (js_array_of_interval x)
 | None -> Js.null
+
+let js_string_of_high prec x =
+  Js.string (More_num.string_of_float_hi prec x.Interval.high)
+
+let js_opt_string_of_high prec = function
+| Some x -> Js.some (js_string_of_high prec x)
+| None -> Js.null
   
 let process (msg : js_msg_type Js.t) =
   let input = msg##.input |> Js.to_string in
@@ -43,6 +50,7 @@ let process (msg : js_msg_type Js.t) =
   Sys_js.update_file "input.txt" input;
   Sys_js.update_file "user.cfg" config;
   let results = run_fptaylor () in
+  let prec = Config.get_int_option "print-precision" in
   let res_msg = results
     |> List.map (fun res ->
       let open Fptaylor in
@@ -51,11 +59,17 @@ let process (msg : js_msg_type Js.t) =
         val elapsedTime = res.elapsed_time
         val realBounds = js_array_of_interval res.real_bounds
         val absErrorApprox = js_opt_array_of_interval res.abs_error_approx
+        val absErrorApproxStr = js_opt_string_of_high prec res.abs_error_approx
         val absErrorExact = js_opt_array_of_interval res.abs_error_exact
+        val absErrorExactStr = js_opt_string_of_high prec res.abs_error_exact
         val relErrorApprox = js_opt_array_of_interval res.rel_error_approx
+        val relErrorApproxStr = js_opt_string_of_high prec res.rel_error_approx
         val relErrorExact = js_opt_array_of_interval res.rel_error_exact
+        val relErrorExactStr = js_opt_string_of_high prec res.rel_error_exact
         val ulpErrorApprox = js_opt_array_of_interval res.ulp_error_approx
+        val ulpErrorApproxStr = js_opt_string_of_high prec res.ulp_error_approx
         val ulpErrorExact = js_opt_array_of_interval res.ulp_error_exact
+        val ulpErrorExactStr = js_opt_string_of_high prec res.ulp_error_exact
       end)
     |> Array.of_list
     |> Js.array in
