@@ -58,8 +58,9 @@ Expressions
 `
   },
   {
-    name: 'doppler1',
+    name: 'doppler',
     data: `
+{
 Variables
   real u in [-100, 100];
   real v in [20, 20000];
@@ -72,11 +73,8 @@ Definitions
 
 Expressions
   doppler1 = r;
-`
-  },
-  {
-    name: 'doppler2',
-    data: `
+}
+{
 Variables
   real u in [-125, 125];
   real v in [15, 25000];
@@ -88,12 +86,9 @@ Definitions
   
 Expressions
   doppler2 = r;
-`
-  },
-  {
-    name: 'doppler3',
-    data: `
-Variables
+}
+{
+  Variables
   real u in [-30, 120];
   real v in [320, 20300];
   real T in [-50, 30];
@@ -102,26 +97,9 @@ Definitions
   t1 rnd64= 331.4 + 0.6 * T;
   r rnd64= (-t1 * v) / ((t1 + u) * (t1 + u));
   
-
 Expressions
   doppler3 = r;
-`
-  },
-  {
-    name: 'doppler3',
-    data: `
-Variables
-  real u in [-30, 120];
-  real v in [320, 20300];
-  real T in [-50, 30];
-
-Definitions
-  t1 rnd64= 331.4 + 0.6 * T;
-  r rnd64= (-t1 * v) / ((t1 + u) * (t1 + u));
-  
-
-Expressions
-  doppler3 = r;
+}
 `
   },
   {

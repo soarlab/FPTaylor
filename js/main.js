@@ -5,6 +5,8 @@ const workers = new Set();
 function clearOutput() {
   const output = document.getElementById('output');
   output.innerHTML = '';
+  const results = document.getElementById('results');
+  results.innerHTML = '';
 }
 
 function stopAllWorkers() {
