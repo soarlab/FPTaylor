@@ -9,6 +9,7 @@ type expr' =
   | U_op' of u_op_type * expr'
   | Bin_op' of bin_op_type * expr' * expr'
   | Gen_op' of gen_op_type * expr' list
+  | Ulp_op' of int * int * expr'
 
 let expr'_of_expr var_index =
   let rec of_expr = function
@@ -25,6 +26,8 @@ let expr'_of_expr var_index =
     else
       Pown (of_expr arg1, n)
   | Bin_op (op, arg1, arg2) -> Bin_op' (op, of_expr arg1, of_expr arg2)
+  | Gen_op (Op_ulp, [Const p; Const e; arg]) ->
+    Ulp_op' (Const.to_int p, Const.to_int e, of_expr arg)
   | Gen_op (op, args) -> Gen_op' (op, List.map of_expr args)
   in
   of_expr
@@ -33,6 +36,7 @@ let rec eval_expr' arr = function
 | Const' c -> c
 | Var' v -> arr.(v)
 | Pown (arg, n) -> pow_I_i (eval_expr' arr arg) n
+| Ulp_op' (p, e, arg) -> Func.goldberg_ulp_I (p, e) (eval_expr' arr arg)
 | U_op' (op, arg) ->
   begin
     let x = eval_expr' arr arg in
