@@ -90,6 +90,8 @@ main {
 }
 
 #output-panel {
+  display: flex;
+  flex-direction: column;
   width: 50%;
   height: 100%;
   padding: 0px 5px 10px 10px;
@@ -97,7 +99,7 @@ main {
 
 #output-container {
   overflow: auto;
-  height: 100%;
+  flex: 1;
   padding: 0px 10px 10px 10px;
   border: 2px solid var(--border-color);
   background-color: var(--output-bg-color);
@@ -121,6 +123,7 @@ textarea {
   resize: none;
   outline: none;
   font-family: monospace;
+  font-size: 14px;
   margin: 0;
   border: 2px solid var(--border-color);
 }
@@ -142,13 +145,52 @@ textarea {
 }
 
 .title {
+  width: 100%;
   background-color: var(--title-bg-color);
   padding: 5px;
   line-height: 1.5em;
+  height: 2em;
+  display: flex;
+  justify-content: space-between;
+}
+
+.title > span {
+  margin-left: 5px;
+}
+
+label {
+  margin-right: 5pt;
 }
 
 #title-config {
   margin-top: 10px;
+}
+
+.tabs {
+  display: flex;
+  overflow: hidden;
+  height: 2em;
+  background-color: var(--title-bg-color);
+}
+
+.tabs button {
+  font-size: 12pt;
+  border: none;
+  outline: none;
+  padding: 0px 10px;
+  background-color: inherit;
+}
+
+.tabs button:hover {
+  background-color: #bbb;
+}
+
+.tabs button.active {
+  background-color: #eee;
+}
+
+.tabcontent {
+  display: none;
 }
 
 button {
@@ -166,21 +208,6 @@ button {
 
 #clear {
   flex: 1;
-}
-
-.title {
-  display: flex;
-  justify-content: space-between;
-  /* align-content: space-between; */
-  /* justify-content: flex-end; */
-}
-
-.title > span {
-  margin-left: 5px;
-}
-
-label {
-  margin-right: 5pt;
 }
 
 .stdout {

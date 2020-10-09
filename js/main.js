@@ -93,7 +93,19 @@ function switchTheme() {
   }
 }
 
+function openTab(event, tabId) {
+  const tabs = document.getElementsByClassName('tabcontent');
+  for (const element of document.getElementsByClassName('tabcontent')) {
+    element.style.display = element.id === tabId ? 'block' : 'none';
+  }
+  for (const element of document.getElementsByClassName('tablink')) {
+    element.classList.remove('active');
+  }
+  event.currentTarget.classList.add('active');
+}
+
 window.onload = function() {
   populateSelect(inputExamples, 'input-examples', 'input', 'user-input');
   populateSelect(configExamples, 'config-examples', 'config', 'user-config');
+  document.getElementById('output-tablink').click();
 }
