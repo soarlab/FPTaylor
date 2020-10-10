@@ -2,12 +2,7 @@
   open Input_parser
   open Lexing
 
-  let incr_lineno lexbuf =
-    let pos = lexbuf.lex_curr_p in
-    lexbuf.lex_curr_p <- { pos with
-      pos_lnum = pos.pos_lnum + 1;
-      pos_bol = pos.pos_cnum;
-    }
+  exception SyntaxError of string
 
   let resolve_id =
     let table = Hashtbl.create 100 in
@@ -95,6 +90,8 @@
 
 }
 
+let ws = [' ' '\t']+
+let newline = '\n' | '\r' | "\r\n"
 let digit = ['0'-'9']
 let hex_digit = ['0'-'9' 'a'-'f' 'A'-'F']
 let alpha = ['a'-'z' 'A'-'Z' '_' '$']
@@ -107,8 +104,8 @@ let single_numeral = numeral 'f'
 
 rule token = parse
   | "//" [^ '\n']*
-  | [' ' '\t'] { token lexbuf }
-  | '\n' { incr_lineno lexbuf; token lexbuf }
+  | ws { token lexbuf }
+  | newline { Lexing.new_line lexbuf; token lexbuf }
   | single_numeral as str { SINGLE_NUMERAL (String.sub str 0 (String.length str - 1)) }
   | double_numeral as str { DOUBLE_NUMERAL (String.sub str 0 (String.length str - 1)) }
   | numeral as str { NUMBER str }
@@ -134,5 +131,5 @@ rule token = parse
   | "+/-" { PLUS_MINUS }
   | "%e" { E_CONST }
   | id as str { resolve_id str }
-  | _ { token lexbuf }
+  | _ { raise (SyntaxError ("Unexpected char: " ^ Lexing.lexeme lexbuf)) }
   | eof { EOF }
