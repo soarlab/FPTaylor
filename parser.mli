@@ -16,6 +16,6 @@ val parse_raw_expr : string -> Input_parser_env.raw_expr
 
 val parse_expr : string -> Expr.expr
 
-val parse_string : string -> Task.task list
+val parse_string : ?fname:string -> string -> Task.task list
 
 val parse_file : string -> Task.task list
