@@ -166,6 +166,13 @@ let starts_with str ~prefix =
   else
     String.sub str 0 n = prefix
 
+let slice str ?last ~first =
+  let n = String.length str in
+  let last = match last with None -> n | Some v -> v in
+  if last <= first || first < 0 || first >= n then ""
+  else
+    String.sub str first (min last n - first)
+
 let rec concat_env_paths paths =
   match paths with
   | [] -> ""

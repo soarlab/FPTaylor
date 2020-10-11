@@ -12,6 +12,8 @@ log = common.get_log()
 def parse_args():
     parser = argparse.ArgumentParser(
         description='Runs FPTaylor tests')
+    parser.add_argument('--config', nargs='+', default=[],
+        help='override test options with options from the given configuration files and options')
     parser.add_argument('-r', action='store_true',
         help='recursively run tests in all subdirectories')
     parser.add_argument('path',
@@ -40,13 +42,16 @@ def main():
         base_path = os.path.dirname(test_file)
         files = [FPTaylorFile(f, base_path=base_path) for f in tests['files']]
         config = Config(tests.get('config', []), base_path=base_path)
+        for cfg in args.config:
+            # base_path = ''
+            config.add(cfg)
         for f in files:
             f_passed, f_failed = f.run_tests(config.args)
             passed += f_passed
             failed += f_failed
     
     print()
-    print(f'Passed: {passed} / {passed + failed}', flush=True)
+    print(f'Passed: {passed} / {passed + failed}\n', flush=True)
     if failed:
         sys.exit(1)
 

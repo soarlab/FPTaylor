@@ -84,7 +84,13 @@ let gen_bb_opt_code (pars : Opt_common.opt_pars) max_only fmt =
     nl(); *)
     p "let f_X input_array = ";
     vars 0 var_names;
-    Out.print_fmt fmt e;
+    let es = expr_ref_list_of_expr e in
+    let n = List.length es in
+    es |> List.iteri (fun i expr ->
+      if i < n - 1 then 
+        Format.fprintf fmt "  let ref_%d = %a in@." i (Out.print_fmt ~margin:max_int) expr
+      else
+        Format.fprintf fmt "  %a@." (Out.print_fmt ~margin:max_int) expr);
     nl() in
 
   fun (cs, e) ->

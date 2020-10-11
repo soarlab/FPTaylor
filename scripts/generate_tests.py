@@ -13,7 +13,7 @@ def parse_args():
     parser = argparse.ArgumentParser(
         description='Generates FPTaylor tests')
     parser.add_argument('--config', nargs='+', default=[],
-        help='configuration files for generating tests')
+        help='configuration files (and options) for generating tests')
     parser.add_argument('--config-name', default='_tests.cfg',
         help='name of the output configuration file for generated tests')
     parser.add_argument('--test-file', default='_tests.yml',

@@ -80,6 +80,8 @@ val explode : string -> string list
 
 val print_list : ('a -> unit) -> (unit -> 'b) -> 'a list -> unit
 
+val slice : string -> ?last:int -> first:int -> string
+
 val starts_with : string -> prefix:string -> bool
 
 val concat_env_paths : string list -> string
