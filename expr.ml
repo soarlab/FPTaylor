@@ -170,6 +170,14 @@ let rec eq_expr e1 e2 =
     Lib.itlist (fun (a1, a2) x -> eq_expr a1 a2 && x) (Lib.zip as1 as2) true
   | _ -> false
 
+module ExprHashtbl = Hashtbl.Make (
+  struct
+    type t = expr
+    let equal e1 e2 = eq_expr e1 e2
+    (* TODO: is it possible that eq_expr e1 e2 = true but hashes are different? *)
+    let hash e = Hashtbl.hash e
+  end)
+
 let rec vars_in_expr e =
   match e with
   | Var v -> [v]
@@ -197,12 +205,12 @@ let index_of_ref_var = function
 (* Finds common subexpressions and returns a list of expressions
    with references *)
 let expr_ref_list_of_expr ex =
-  let hc = Hashtbl.create 128 in
-  let hi = Hashtbl.create 128 in
-  let get_count ex = try Hashtbl.find hc ex with Not_found -> 0 in
-  let incr_count ex = Hashtbl.replace hc ex (1 + get_count ex) in
-  let get_index ex = try Hashtbl.find hi ex with Not_found -> -1 in
-  let set_index ex i = Hashtbl.add hi ex i in
+  let hc = ExprHashtbl.create 128 in
+  let hi = ExprHashtbl.create 128 in
+  let get_count ex = try ExprHashtbl.find hc ex with Not_found -> 0 in
+  let incr_count ex = ExprHashtbl.replace hc ex (1 + get_count ex) in
+  let get_index ex = try ExprHashtbl.find hi ex with Not_found -> -1 in
+  let set_index ex i = ExprHashtbl.add hi ex i in
   let rec count ex =
     incr_count ex;
     match ex with

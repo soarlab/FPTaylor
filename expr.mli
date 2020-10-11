@@ -123,6 +123,8 @@ val gen_op_name : gen_op_type -> string
 
 val eq_expr : expr -> expr -> bool
 
+module ExprHashtbl : Hashtbl.S with type key = expr
+
 val vars_in_expr : expr -> string list
 
 val is_ref_var : expr -> bool

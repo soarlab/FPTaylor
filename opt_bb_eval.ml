@@ -97,8 +97,8 @@ let rec eval_expr'_list refs vars i = function
 
 let min_max_expr (pars : Opt_common.opt_pars) max_only (cs : constraints) e =
   (* ExprOut.(
-    let es = expr_ref_list_of_expr e in
     Log.report `Main "Testing: %s" (Info.print_str e);
+    let es = expr_ref_list_of_expr e in
     es |> List.iteri (fun i e -> Log.report `Main "%d: %s" i (Info.print_str e));
     Log.report `Main "---"); *)
   if Config.debug () then
