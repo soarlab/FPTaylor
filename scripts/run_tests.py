@@ -12,7 +12,7 @@ log = common.get_log()
 def parse_args():
     parser = argparse.ArgumentParser(
         description='Runs FPTaylor tests')
-    parser.add_argument('--config', nargs='+',
+    parser.add_argument('--config', nargs='+', default=[],
         help='override test options with options from the given configuration files and options')
     parser.add_argument('-r', action='store_true',
         help='recursively run tests in all subdirectories')

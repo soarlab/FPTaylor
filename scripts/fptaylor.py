@@ -23,7 +23,6 @@ class Config:
             self.args.append(os.path.join(base_path, arg))
 
 
-
 class FPTaylorExpression:
     patterns = [
         ('abs-error', r'Absolute error [^:]*: ([-+\de.]+)'),
