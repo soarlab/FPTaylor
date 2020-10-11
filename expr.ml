@@ -173,9 +173,9 @@ let rec eq_expr e1 e2 =
 module ExprHashtbl = Hashtbl.Make (
   struct
     type t = expr
-    let equal e1 e2 = eq_expr e1 e2
+    let equal = eq_expr
     (* TODO: is it possible that eq_expr e1 e2 = true but hashes are different? *)
-    let hash e = Hashtbl.hash e
+    let hash = Hashtbl.hash
   end)
 
 let rec vars_in_expr e =
@@ -241,7 +241,7 @@ let expr_ref_list_of_expr ex =
             let acc, arg = find_common acc arg in acc, arg :: args) 
             (acc, []) args in
           acc, Gen_op (op, List.rev args)
-        | _ -> failwith "Impossible" in
+        | Const _ | Var _ -> failwith "Impossible" in
       let i = get_index ex in
       if i >= 0 then
         acc, mk_ref_var i
