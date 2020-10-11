@@ -129,6 +129,7 @@ module OCamlIntervalPrinter : PrinterType = struct
     | Const c ->
         let v = Const.to_interval c in
         fprintf fmt "{low = %.20e; high = %.20e}" v.low v.high
+    | Var v when is_ref_var expr -> fprintf fmt "ref_%d" (index_of_ref_var expr)
     | Var v -> fprintf fmt "var_%s" (fix_name v)
     | Rounding (rnd, arg) ->
        let rnd_str = Rounding.rounding_to_string rnd in

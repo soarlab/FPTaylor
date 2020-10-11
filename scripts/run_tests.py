@@ -51,7 +51,7 @@ def main():
             failed += f_failed
     
     print()
-    print(f'Passed: {passed} / {passed + failed}', flush=True)
+    print(f'Passed: {passed} / {passed + failed}\n', flush=True)
     if failed:
         sys.exit(1)
 
