@@ -124,3 +124,8 @@ val gen_op_name : gen_op_type -> string
 val eq_expr : expr -> expr -> bool
 
 val vars_in_expr : expr -> string list
+
+val is_ref_var : expr -> bool
+val index_of_ref_var : expr -> int
+
+val expr_ref_list_of_expr : expr -> expr list

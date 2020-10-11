@@ -183,3 +183,68 @@ let rec vars_in_expr e =
     let vs = List.map vars_in_expr args in
     Lib.itlist Lib.union vs []
   | _ -> []
+
+let is_ref_var = function
+| Var v when Lib.starts_with v "ref~" -> true
+| _ -> false
+
+let mk_ref_var i = Var ("ref~" ^ string_of_int i)
+
+let index_of_ref_var = function
+| Var v when Lib.starts_with v "ref~" -> int_of_string (Lib.slice v 4)
+| _ -> failwith "ref_var_index: not a reference"
+
+(* Finds common subexpressions and returns a list of expressions
+   with references *)
+let expr_ref_list_of_expr ex =
+  let hc = Hashtbl.create 128 in
+  let hi = Hashtbl.create 128 in
+  let get_count ex = try Hashtbl.find hc ex with Not_found -> 0 in
+  let incr_count ex = Hashtbl.replace hc ex (1 + get_count ex) in
+  let get_index ex = try Hashtbl.find hi ex with Not_found -> -1 in
+  let set_index ex i = Hashtbl.add hi ex i in
+  let rec count ex =
+    incr_count ex;
+    match ex with
+    | Rounding (_, arg) -> count arg
+    | U_op (_, arg) -> count arg
+    | Bin_op (_, arg1, arg2) -> count arg1; count arg2
+    | Gen_op (_, args) -> List.iter count args
+    | _ -> ()
+  in
+  let rec find_common acc ex =
+    match ex with
+    | Const _ | Var _ -> acc, ex
+    | _ ->
+      let acc, ex' =
+        match ex with
+        | Rounding (rnd, arg) ->
+          let acc, arg = find_common acc arg in
+          acc, Rounding (rnd, arg)
+        | U_op (op, arg) ->
+          let acc, arg = find_common acc arg in
+          acc, U_op (op, arg)
+        | Bin_op (op, arg1, arg2) ->
+          let acc, arg1 = find_common acc arg1 in
+          let acc, arg2 = find_common acc arg2 in
+          acc, Bin_op (op, arg1, arg2)
+        | Gen_op (op, args) ->
+          let acc, args = List.fold_left (fun (acc, args) arg ->
+            let acc, arg = find_common acc arg in acc, arg :: args) 
+            (acc, []) args in
+          acc, Gen_op (op, List.rev args)
+        | _ -> failwith "Impossible" in
+      let i = get_index ex in
+      if i >= 0 then
+        acc, mk_ref_var i
+      else if get_count ex < 2 then
+        acc, ex'
+      else begin
+        let i = List.length acc in
+        set_index ex i;
+        ex' :: acc, mk_ref_var i
+      end
+    in
+    count ex;
+    let acc, ex = find_common [] ex in
+    List.rev (ex :: acc)
