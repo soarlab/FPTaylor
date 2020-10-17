@@ -4,72 +4,101 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <title>Js_of_ocaml - Hello</title>
-    <script type="text/javascript" src="main.js"></script>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <!-- <script type="text/javascript" src="main.js"></script> -->
     <style>
-      .stdout {
-      }
-
-      .stderr {
-        color: #d9534f;
-      }
-
-.container > div {
-  border-radius: 5px;
-  background-color: rgb(207,232,220);
-  border: 2px solid rgb(79,185,227);
-  height: 100%;
-  flex: 1;
-  font-size: xx-large;
-  overflow: auto;
- }
-
-/* html {
-  min-height: 100%;
-} */
 
 html {
   box-sizing: border-box;
-  background-color: beige;
   height: 100%;
-}
-
-body {
-  height: 100%;
-  margin: 0;
 }
 
 *, *::before, *::after {
   box-sizing: inherit;
 }
 
-/* body {
+body {
+  display: block;
   height: 100%;
-} */
- 
-.container {
-  display: flex;
-  height: 100%;
-  width: 100%;
+  background-color: azure;
   margin: 0;
-  background-color: blue;
 }
 
-    </style>
+.header {
+  display: flex;
+  background-color: blanchedalmond;
+  width: 100%;
+  height: 2.5em;
+  align-items: center;
+}
+
+main {
+  display: flex;
+  height: calc(100% - 2.5em);
+  width: 100%;
+}
+
+.left {
+  padding: 10px;
+  background-color: burlywood;
+  width: 50%;
+  max-width: 50%;
+  height: 100%;
+  flex: none;
+}
+
+.right {
+  background-color: lightgoldenrodyellow;
+  width: 50%;
+  max-width: 50%;
+  height: 100%;
+  flex: none;
+}
+
+pre {
+  border: 2px solid red;
+  overflow: auto;
+  height: 100%;
+  margin: 0px 10px ;
+}
+
+</style>
   </head>
   <body>
-    <div class="container">
-      <div>One</div>
-      <div>
-        Brahms's father, Johann Jakob Brahms (1806–72), was from the town of Heide in Holstein. The family name was also sometimes spelt 'Brahmst' or 'Brams', and derives from 'Bram', the German word for the shrub broom.[1] Against the family's will, Johann Jakob pursued a career in music, arriving in Hamburg in 1826, where he found work as a jobbing musician and a string and wind player. In 1830, he married Johanna Henrika Christiane Nissen (1789–1865), a seamstress 17 years older than he was. In the same year he was appointed as a horn player in the Hamburg militia.[2] Eventually he became a double-bass player in the Stadttheater Hamburg and the Hamburg Philharmonic Society. As Johann Jakob prospered, the family moved over the years to ever better accommodation in Hamburg.[3] Johannes Brahms was born in 1833; his sister Elisabeth (Elise) had been born in 1831 and a younger brother Fritz Friedrich (Fritz) was born in 1835.[4] Fritz also became a pianist; overshadowed by his brother, he emigrated to Caracas in 1867, and later returned to Hamburg as a teacher.[5]
-
-        Johann Jakob gave his son his first musical training; Johannes also learnt to play the violin and the basics of playing the cello. From 1840 he studied piano with Otto Friedrich Willibald Cossel (1813–1865). Cossel complained in 1842 that Brahms "could be such a good player, but he will not stop his never-ending composing." At the age of 10, Brahms made his debut as a performer in a private concert including Beethoven's quintet for piano and winds Op. 16 and a piano quartet by Mozart. He also played as a solo work an étude of Henri Herz. By 1845 he had written a piano sonata in G minor.[6] His parents disapproved of his early efforts as a composer, feeling that he had better career prospects as a performer.[7]
-        
-        From 1845 to 1848 Brahms studied with Cossel's teacher, the pianist and composer Eduard Marxsen (1806–1887). Marxsen had been a personal acquaintance of Beethoven and Schubert, admired the works of Mozart and Haydn, and was a devotee of the music of J. S. Bach. Marxsen conveyed to Brahms the tradition of these composers and ensured that Brahms's own compositions were grounded in that tradition.[8] In 1847 Brahms made his first public appearance as a solo pianist in Hamburg, playing a fantasy by Sigismund Thalberg. His first full piano recital, in 1848, included a fugue by Bach as well as works by Marxsen and contemporary virtuosi such as Jacob Rosenhain. A second recital in April 1849 included Beethoven's Waldstein sonata and a waltz fantasia of his own composition, and garnered favourable newspaper reviews.[9]
-        
-        Brahms's compositions at this period are known to have included piano music, chamber music and works for male voice choir. Under the pseudonym 'G. W. Marks', some piano arrangements and fantasies were published by the Hamburg firm of Cranz in 1849. The earliest of Brahms's works which he acknowledged (his Scherzo Op. 4 and the song Heimkehr Op. 7 no. 6) date from 1851. However Brahms was later assiduous in eliminating all his early works; even as late as 1880 he wrote to his friend Elise Giesemann to send him his manuscripts of choral music so that they could be destroyed.[10]
-        
-        Persistent stories of the impoverished adolescent Brahms playing in bars and brothels have only anecdotal provenance,[11] and many modern scholars dismiss them; the Brahms family was relatively prosperous, and Hamburg legislation very strictly forbade music in, or the admittance of minors to, brothels.
-      </div>
+    <div class="header">
+      <h1 style="font-size: 1em;">Header</h1>
+      <h5 style="margin-left: auto;">About</h5>
     </div>
+    <main>
+      <div class="left">
+        <pre>
+          Brahms's father, Johann Jakob Brahms (1806–72), 
+          was from the town of Heide in Holstein. 
+          The family name was also sometimes spelt 'Brahmst' or 'Brams', 
+          and derives from 'Bram', the German word for the shrub broom.[1] 
+          Against the family's will, Johann Jakob pursued a career in music, 
+          arriving in Hamburg in 1826, where he found work as a 
+          jobbing musician and a string and wind player. 
+          In 1830, he married Johanna Henrika 
+          Christiane Nissen (1789–1865), 
+          a seamstress 17 years older than he was. 
+          In the same year he was appointed as a horn player 
+          in the Hamburg militia.[2] Eventually 
+          he became a double-bass player in the 
+          Stadttheater Hamburg and the Hamburg 
+          Philharmonic Society. 
+          As Johann Jakob prospered, the family 
+          moved over the years to ever better 
+          accommodation in Hamburg.[3] Johannes Brahms was born in 1833; his sister Elisabeth (Elise) had been born in 1831 and a younger brother Fritz Friedrich (Fritz) was born in 1835.[4] Fritz also became a pianist; overshadowed by his brother, he emigrated to Caracas in 1867, and later returned to Hamburg as a teacher.[5]
+          Johann Jakob gave his son his first musical training; Johannes also learnt to play the violin and the basics of playing the cello. From 1840 he studied piano with Otto Friedrich Willibald Cossel (1813–1865). Cossel complained in 1842 that Brahms "could be such a good player, but he will not stop his never-ending composing." At the age of 10, Brahms made his debut as a performer in a private concert including Beethoven's quintet for piano and winds Op. 16 and a piano quartet by Mozart. He also played as a solo work an étude of Henri Herz. By 1845 he had written a piano sonata in G minor.[6] His parents disapproved of his early efforts as a composer, feeling that he had better career prospects as a performer.[7]
+          From 1845 to 1848 Brahms studied with Cossel's teacher, the pianist and composer Eduard Marxsen (1806–1887). Marxsen had been a personal acquaintance of Beethoven and Schubert, admired the works of Mozart and Haydn, and was a devotee of the music of J. S. Bach. Marxsen conveyed to Brahms the tradition of these composers and ensured that Brahms's own compositions were grounded in that tradition.[8] In 1847 Brahms made his first public appearance as a solo pianist in Hamburg, playing a fantasy by Sigismund Thalberg. His first full piano recital, in 1848, included a fugue by Bach as well as works by Marxsen and contemporary virtuosi such as Jacob Rosenhain. A second recital in April 1849 included Beethoven's Waldstein sonata and a waltz fantasia of his own composition, and garnered favourable newspaper reviews.[9]
+          Brahms's compositions at this period are known to have included piano music, chamber music and works for male voice choir. Under the pseudonym 'G. W. Marks', some piano arrangements and fantasies were published by the Hamburg firm of Cranz in 1849. The earliest of Brahms's works which he acknowledged (his Scherzo Op. 4 and the song Heimkehr Op. 7 no. 6) date from 1851. However Brahms was later assiduous in eliminating all his early works; even as late as 1880 he wrote to his friend Elise Giesemann to send him his manuscripts of choral music so that they could be destroyed.[10]
+          Persistent stories of the impoverished adolescent Brahms playing in bars and brothels have only anecdotal provenance,[11] and many modern scholars dismiss them; the Brahms family was relatively prosperous, and Hamburg legislation very strictly forbade music in, or the admittance of minors to, brothels.
+        </pre>
+      </div>
+      <div class="right">
+        <p>Right</p>
+      </div>
+    </main>
   </body>
 </html>

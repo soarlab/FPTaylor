@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
+          "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <title>Test W3.CSS</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+    <link rel="stylesheet" href="https://www.w3schools.com/lib/w3-colors-flat.css">
+    <link rel="stylesheet" href="https://www.w3schools.com/lib/w3-theme-blue-grey.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <script type="text/javascript" src="examples.js"></script>
+    <script type="text/javascript" src="main.js"></script>
+    <style>
+html {
+  height: 100%;
+}
+
+body {
+  height: 100%;
+  /* -moz-osx-font-smoothing: grayscale; */
+  font-family: "Lato", "Helvetica Neue", "Helvetica", Arial, sans-serif;
+}
+
+header {
+  height: 2.5em;
+}
+
+header .header-item {
+  line-height: 2.5em;
+  padding: 0px 16px;
+}
+
+main {
+  height: calc(100% - 2.5em);
+}
+
+.height-all {
+  height: 100%;
+}
+
+.height-half {
+  height: 50%;
+}
+
+.flex-col {
+  display: flex;
+  flex-direction: column;
+}
+
+.flex1 {
+  flex: 1;
+}
+
+.section-container-left {
+  padding: 8px 8px 8px 10px;
+}
+
+.section-container-right {
+  padding: 8px 10px 8px 4px;
+}
+
+textarea {
+  resize: none;
+  width: 100%;
+  padding: 5px;
+  border: none;
+  outline: none;
+  font-family: monospace;
+  font-size: 14px;
+}
+
+/* .tab-item {
+  border-left: 1px solid #ccc !important;
+}
+
+.tab-item:first-child {
+  border-left: none !important;
+}
+
+.tab-item:last-child {
+  border-right: 1px solid #ccc !important;
+} */
+
+.tab-active {
+  /* border-left: 1px solid #ccc !important;
+  border-right: 1px solid #ccc !important;
+  border-top: 1px solid #ccc !important; */
+  background-color: white;
+}
+
+pre {
+  margin: 0;
+  overflow: auto;
+}
+
+    </style>
+  </head>
+  <body>
+    <header class="w3-bar w3-theme">
+      <span class="w3-left header-item">FPTaylor JS</span>
+      <i class="w3-right header-item fa fa-bars"></i>
+    </header>
+
+    <main class="w3-row w3-theme-light">
+      <!-- Output -->
+      <section class="w3-half height-all section-container-left">
+        <div class="w3-white w3-card height-all flex-col">
+          <div class="w3-theme-l4 w3-bar">
+            <button class="w3-bar-item w3-button tab-item tab-active">Output</button>
+            <button class="w3-bar-item w3-button tab-item">Results</button>
+          </div>
+          <pre id="output" class="tabcontent w3-padding-small flex1"></pre>
+          <!-- <div id="results" class="tabcontent">
+            <table class="w3-table w3-striped w3-hoverable">
+              <thead>
+                <tr>
+                  <th>Name</th><th>Abs Error</th><th>Rel Error</th><th>Ulp Error</th><th>Time</th>
+                </tr>
+              </thead>
+              <tbody id="results-tbody">
+                <tr>
+                  <td>dopple</td>
+                  <td>1.3e-3</td>
+                  <td>1.3e-3</td>
+                  <td>1.3e-3</td>
+                  <td>3s</td>
+                </tr>
+                <tr>
+                  <td>dopple</td>
+                  <td>1.3e-3</td>
+                  <td>1.3e-3</td>
+                  <td>1.3e-3</td>
+                  <td>3s</td>
+                </tr>
+              </tbody>
+            </table>
+          </div> -->
+        </div>
+      </section>
+  
+      <!-- Input -->
+      <section class="w3-half height-all flex-col">
+        <div class="flex1 section-container-right">
+          <div class="w3-white w3-card height-all flex-col">
+            <div class="w3-theme-l4 w3-bar">
+              <span class="w3-bar-item">Input</span>
+              <div class="w3-bar-item w3-right">
+                <label for="input-examples">Examples</label>
+                <select id="input-examples"></select>
+              </div>
+            </div>
+            <textarea id="input" class="flex1"></textarea>
+          </div>
+        </div>
+        <div class="flex1 section-container-right">
+          <div class="w3-white w3-card height-all flex-col">
+            <div class="w3-theme-l4 w3-bar">
+              <span class="w3-bar-item">Configuration</span>
+              <div class="w3-bar-item w3-right">
+                <label for="config-examples">Examples</label>
+                <select id="config-examples"></select>
+              </div>
+            </div>
+            <textarea id="config" class="flex1"></textarea>
+          </div>
+        </div>
+        <div class="w3-bar w3-padding">
+          <button id="run" class="w3-button w3-green w3-round-large w3-hover-teal">Run</button>
+          <button id="clear" class="w3-button w3-blue w3-round-large w3-hover-indigo">Clear</button>
+        </div>
+      </section>
+    </main>
+
+
+  </body>
+</html>

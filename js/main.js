@@ -126,5 +126,9 @@ function openTab(event, tabId) {
 window.onload = function() {
   populateSelect(inputExamples, 'input-examples', 'input', 'user-input');
   populateSelect(configExamples, 'config-examples', 'config', 'user-config');
-  document.getElementById('output-tablink').click();
+
+  document.getElementById('run').onclick = onRunButton;
+  document.getElementById('clear').onclick = clearOutput;
+
+  // document.getElementById('output-tablink').click();
 }
