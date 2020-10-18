@@ -7,12 +7,15 @@
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
-    <link rel="stylesheet" href="https://www.w3schools.com/lib/w3-colors-flat.css">
     <link rel="stylesheet" href="https://www.w3schools.com/lib/w3-theme-blue-grey.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
     <script type="text/javascript" src="examples.js"></script>
     <script type="text/javascript" src="main.js"></script>
     <style>
+.stderr {
+  color: #d9534f;
+}
+
 html {
   height: 100%;
 }
@@ -95,6 +98,18 @@ pre {
   overflow: auto;
 }
 
+.tabcontent {
+  display: none;
+}
+
+#run, #clear {
+  width: 70px;
+}
+
+button {
+  outline: none;
+}
+
     </style>
   </head>
   <body>
@@ -107,12 +122,12 @@ pre {
       <!-- Output -->
       <section class="w3-half height-all section-container-left">
         <div class="w3-white w3-card height-all flex-col">
-          <div class="w3-theme-l4 w3-bar">
-            <button class="w3-bar-item w3-button tab-item tab-active">Output</button>
-            <button class="w3-bar-item w3-button tab-item">Results</button>
+          <div class="tabs w3-theme-l4 w3-bar">
+            <button id="tab-output" class="w3-bar-item w3-button tab-item tab-active">Output</button>
+            <button id="tab-results" class="w3-bar-item w3-button tab-item">Results</button>
           </div>
           <pre id="output" class="tabcontent w3-padding-small flex1"></pre>
-          <!-- <div id="results" class="tabcontent">
+          <div id="results" class="tabcontent">
             <table class="w3-table w3-striped w3-hoverable">
               <thead>
                 <tr>
@@ -120,23 +135,9 @@ pre {
                 </tr>
               </thead>
               <tbody id="results-tbody">
-                <tr>
-                  <td>dopple</td>
-                  <td>1.3e-3</td>
-                  <td>1.3e-3</td>
-                  <td>1.3e-3</td>
-                  <td>3s</td>
-                </tr>
-                <tr>
-                  <td>dopple</td>
-                  <td>1.3e-3</td>
-                  <td>1.3e-3</td>
-                  <td>1.3e-3</td>
-                  <td>3s</td>
-                </tr>
               </tbody>
             </table>
-          </div> -->
+          </div>
         </div>
       </section>
   
@@ -151,7 +152,7 @@ pre {
                 <select id="input-examples"></select>
               </div>
             </div>
-            <textarea id="input" class="flex1"></textarea>
+            <textarea id="input" class="flex1" spellcheck="false"></textarea>
           </div>
         </div>
         <div class="flex1 section-container-right">
@@ -163,12 +164,12 @@ pre {
                 <select id="config-examples"></select>
               </div>
             </div>
-            <textarea id="config" class="flex1"></textarea>
+            <textarea id="config" class="flex1" spellcheck="false"></textarea>
           </div>
         </div>
         <div class="w3-bar w3-padding">
-          <button id="run" class="w3-button w3-green w3-round-large w3-hover-teal">Run</button>
-          <button id="clear" class="w3-button w3-blue w3-round-large w3-hover-indigo">Clear</button>
+          <button id="run" class="w3-button w3-green w3-round-large">Run</button>
+          <button id="clear" class="w3-button w3-blue w3-round-large">Clear</button>
         </div>
       </section>
     </main>

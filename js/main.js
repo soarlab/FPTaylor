@@ -16,13 +16,18 @@ function stopAllWorkers() {
 
 function onRunButton() {
   const runButton = document.getElementById('run');
+  function restoreRunButton() {
+    runButton.innerText = 'Run';
+    runButton.classList.remove('w3-red');
+  }
   if (workers.size) {
     stopAllWorkers();
-    runButton.innerText = 'Run'
+    restoreRunButton();
   }
   else {
-    runFPTaylor(() => !workers.size && (runButton.innerText = 'Run'));
+    runFPTaylor(() => !workers.size && restoreRunButton());
     runButton.innerText = 'Stop';
+    runButton.classList.add('w3-red');
   }
 }
 
@@ -112,23 +117,38 @@ function switchTheme() {
   }
 }
 
-function openTab(event, tabId) {
-  const tabs = document.getElementsByClassName('tabcontent');
-  for (const element of document.getElementsByClassName('tabcontent')) {
-    element.style.display = element.id === tabId ? 'block' : 'none';
+function openTab(tabs, tabId) {
+  for (const {tab, content} of tabs) {
+    if (tab.id === tabId) {
+      if (content) content.style.display = 'block';
+      tab.classList.add('tab-active');
+    }
+    else {
+      if (content) content.style.display = 'none';
+      tab.classList.remove('tab-active');
+    }
   }
-  for (const element of document.getElementsByClassName('tablink')) {
-    element.classList.remove('active');
+}
+
+function initTabs(tabsContainer) {
+  const tabs = [];
+  for (const tab of tabsContainer.getElementsByClassName('tab-item')) {
+    const content = document.getElementById(tab.id.slice(4));
+    tab.onclick = () => openTab(tabs, tab.id);
+    tabs.push({tab, content});
   }
-  event.currentTarget.classList.add('active');
 }
 
 window.onload = function() {
   populateSelect(inputExamples, 'input-examples', 'input', 'user-input');
   populateSelect(configExamples, 'config-examples', 'config', 'user-config');
 
+  for (const el of document.getElementsByClassName("tabs")) {
+    initTabs(el);
+  }
+
   document.getElementById('run').onclick = onRunButton;
   document.getElementById('clear').onclick = clearOutput;
 
-  // document.getElementById('output-tablink').click();
+  document.getElementById('tab-output').click();
 }
