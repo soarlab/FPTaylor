@@ -196,7 +196,7 @@ label {
   background-color: var(--tab-selected-bg-color);
 }
 
-.tabs button.active {
+.tabs button.tab-active {
   background-color: var(--tab-active-bg-color);
 }
 
