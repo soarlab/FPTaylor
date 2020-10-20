@@ -1,4 +1,4 @@
-const classes = {1: 'stdout', 2: 'stderr'};
+const classes = {1: 'stdout', 2: 'stderr text-danger'};
 
 const workers = new Set();
 
@@ -19,6 +19,7 @@ function onRunButton() {
   function restoreRunButton() {
     runButton.innerText = 'Run';
     runButton.classList.remove('w3-red');
+    runButton.classList.remove('btn-danger');
   }
   if (workers.size) {
     stopAllWorkers();
@@ -27,6 +28,7 @@ function onRunButton() {
   else {
     runFPTaylor(() => !workers.size && restoreRunButton());
     runButton.innerText = 'Stop';
+    runButton.classList.add('btn-danger');
     runButton.classList.add('w3-red');
   }
 }
@@ -150,5 +152,6 @@ window.onload = function() {
   document.getElementById('run').onclick = onRunButton;
   document.getElementById('clear').onclick = clearOutput;
 
-  document.getElementById('tab-output').click();
+  let el = document.getElementById('tab-output');
+  if (el) el.click();
 }
