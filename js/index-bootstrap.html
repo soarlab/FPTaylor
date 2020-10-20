@@ -34,10 +34,37 @@
       }
     </style>
   </head>
+  <!-- Header -->
   <body class="bg-light">
     <nav class="navbar navbar-dark bg-dark py-0">
-      <a class="navbar-brand my-0 py-0" href="#">FPTaylor JS</a>
+      <a class="navbar-brand my-0 py-0" href="#fptaylor-js-info" data-toggle="modal">FPTaylor JS</a>
     </nav>
+    <!-- Modal dialog -->
+    <div class="modal fade" id="fptaylor-js-info" tabindex="-1">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">FPTaylor JS</h5>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <div class="modal-body">
+            <p>A JavaScript version of 
+              <a href="https://github.com/soarlab/FPTaylor" target="_blank">FPTaylor</a>
+              compiled with <a href="https://ocsigen.org/js_of_ocaml" target="_blank">Js_of_ocaml</a>.
+            </p>
+            <p>The site is created with <a href="https://getbootstrap.com" target="_blank">Bootstrap</a>.</p>
+            <hr/>
+            <p>FPTaylor <a href="https://github.com/soarlab/FPTaylor/blob/develop/REFERENCE.md" target="_blank">reference</a>.</p>
+            <p>Note: trigonometric functions are not supported because the 
+              <a href="https://github.com/monadius/ocaml_simple_interval" target="_blank">OCaml interval arithmetic library</a>
+              does not implement them.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Main content -->
     <main class="container-fluid py-3">
       <div class="row px-3 h-100">
         <!-- Output section -->
