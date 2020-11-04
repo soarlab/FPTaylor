@@ -43,6 +43,12 @@ let js_string_of_high prec x =
 let js_opt_string_of_high prec = function
 | Some x -> Js.some (js_string_of_high prec x)
 | None -> Js.null
+
+let js_opt_string_of_opt_expr = function
+| None -> Js.null
+| Some expr ->
+  let str = ExprOut.Info.print_str expr in
+  Js.some (Js.string str)
   
 let process (msg : js_msg_type Js.t) =
   let input = msg##.input |> Js.to_string in
@@ -58,6 +64,8 @@ let process (msg : js_msg_type Js.t) =
         val name = Js.string res.name
         val elapsedTime = res.elapsed_time
         val realBounds = js_array_of_interval res.real_bounds
+        val absErrorModel = js_opt_string_of_opt_expr res.abs_error_model
+        val relErrorModel = js_opt_string_of_opt_expr res.rel_error_model
         val absErrorApprox = js_opt_array_of_interval res.abs_error_approx
         val absErrorApproxStr = js_opt_string_of_high prec res.abs_error_approx
         val absErrorExact = js_opt_array_of_interval res.abs_error_exact

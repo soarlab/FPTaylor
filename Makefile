@@ -132,15 +132,15 @@ fptaylor-simple-interval2: compile-simple-interval compile-byte
 	chmod +x $(OPT_DIR)/compile.sh	
 
 fptaylor-js: INCLUDE=$(SIMPLE_INTERVAL_DIR)
-fptaylor-js: ML=ocamlc -g
+# fptaylor-js: ML=ocamlc -g
 
 fptaylor-js: compile-simple-interval compile-byte default.cmo main_js.cmo
-	ocamlfind ocamlc -g -o fptaylor.bytes -I $(OPT_DIR) -I $(SIMPLE_INTERVAL_DIR) \
+	ocamlfind ocamlc -o fptaylor.bytes -I $(OPT_DIR) -I $(SIMPLE_INTERVAL_DIR) \
 		-package js_of_ocaml,js_of_ocaml-ppx,unix,str,num -linkpkg \
 		$(SIMPLE_INTERVAL_DIR)/interval.cma \
 		$(filter-out main.cmo, $(SRC:.ml=.cmo)) default.cmo main_js.cmo
-	js_of_ocaml --pretty -o js/fptaylor.js fptaylor.bytes
-	# js_of_ocaml --opt 3 fptaylor.bytes
+	# js_of_ocaml --pretty -o js/fptaylor.js fptaylor.bytes
+	js_of_ocaml --opt 3 fptaylor.bytes
 
 compile-interval:
 	cd $(INTERVAL_DIR); $(MAKE)

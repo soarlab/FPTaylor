@@ -1,6 +1,8 @@
 type result = {
   name : string;
   real_bounds : Interval.interval;
+  abs_error_model : Expr.expr option;
+  rel_error_model : Expr.expr option;
   (* Lower bounds of error intervals represent lower bounds
      returned by a global optimization procedure.
      low = neg_infinity if a lower bound is not returned. *)

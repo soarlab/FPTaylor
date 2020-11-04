@@ -18,6 +18,8 @@ open Taylor_form
 type result = {
   name : string;
   real_bounds : interval;
+  abs_error_model : expr option;
+  rel_error_model : expr option;
   (* Lower bounds of error intervals represent lower bounds
      returned by a global optimization procedure.
      low = neg_infinity if a lower bound is not returned. *)
@@ -33,6 +35,8 @@ type result = {
 let default_result = {
   name = "NONE";
   real_bounds = {low = neg_infinity; high = infinity};
+  abs_error_model = None;
+  rel_error_model = None;
   abs_error_approx = None;
   abs_error_exact = None;
   rel_error_approx = None;
@@ -271,8 +275,8 @@ let absolute_errors task tf =
         Some total_i
       end
   in
-  let err_exact =
-    if not (Config.get_bool_option "opt-exact") then None
+  let err_exact, model_expr =
+    if not (Config.get_bool_option "opt-exact") then None, None
     else
       begin
         Log.report `Important "\nSolving the exact optimization problem";
@@ -298,14 +302,14 @@ let absolute_errors task tf =
           end
           else
             total1_i +$ total2_i in
+        let model_expr = mk_add (mk_mul (mk_float_const (Rounding.get_eps exp)) full_expr)
+                                (mk_float_const total2_i.high) in
 
         let () = try
-          let out_expr = mk_add (mk_mul (mk_float_const (Rounding.get_eps exp)) full_expr)
-                                (mk_float_const total2_i.high) in
           let name = task.Task.name in
             Out_error_bounds.generate_data_functions
               (get_file_formatter "data") task
-              [name, out_expr;
+              [name, model_expr;
                name ^ "-total2", mk_float_const total2_i.high;
                name ^ "-opt-bound", mk_float_const total_i.high]
           with Not_found -> () in
@@ -314,10 +318,10 @@ let absolute_errors task tf =
         Log.report `Important "total2: %s" (bound_info total2_i);
         Log.report `Important "exact total: %s" (bound_info total_i);
         error2_warning total1_i.high total2_i.high;
-        Some total_i
+        Some total_i, Some model_expr
       end
   in
-  err_approx, err_exact
+  err_approx, err_exact, model_expr
 
 let relative_errors task tf (f_min, f_max) =
   Log.report `Important "\nComputing relative errors";
@@ -327,7 +331,7 @@ let relative_errors task tf (f_min, f_max) =
   if (abs_I f_int).low < rel_tol then begin
     Log.warning "\nCannot compute the relative error: \
                  values of the function are close to zero";
-    None, None
+    None, None, None
   end
   else
     let v1, v2 = split_error_terms tf.v1 in
@@ -356,8 +360,8 @@ let relative_errors task tf (f_min, f_max) =
           Some total_i          
         end
     in
-    let err_exact =
-      if not (Config.get_bool_option "opt-exact") then None
+    let err_exact, model_expr =
+      if not (Config.get_bool_option "opt-exact") then None, None
       else
         begin
           Log.report `Important "\nSolving the exact optimization problem";
@@ -374,14 +378,14 @@ let relative_errors task tf (f_min, f_max) =
             {low = r.Opt_common.lower_bound; high = r.Opt_common.result} in
           let total1_i = Rounding.get_eps exp *.$ bound in
           let total_i = total1_i +$ b2_i in
+          let model_expr = mk_add (mk_mul (mk_float_const (Rounding.get_eps exp)) full_expr)
+                                  (mk_float_const b2_i.high) in
 
           let () = try
-            let out_expr = mk_add (mk_mul (mk_float_const (Rounding.get_eps exp)) full_expr)
-                                  (mk_float_const b2_i.high) in
             let name = task.Task.name in
               Out_error_bounds.generate_data_functions
                 (get_file_formatter "data") task
-                [name, out_expr;
+                [name, model_expr;
                  name ^ "-total2", mk_float_const b2_i.high;
                  name ^ "-opt-bound", mk_float_const total_i.high]
             with Not_found -> () in
@@ -390,10 +394,10 @@ let relative_errors task tf (f_min, f_max) =
           Log.report `Important "total2: %s" (bound_info b2_i);
           Log.report `Important "exact total-rel: %s" (bound_info total_i);
           error2_warning total1_i.high b2_i.high;
-          Some total_i
+          Some total_i, Some model_expr
         end
     in
-    err_approx, err_exact
+    err_approx, err_exact, model_expr
 
 let ulp_errors task tf (f_min, f_max) =
   Log.report `Important "\nComputing ULP errors";
@@ -481,22 +485,24 @@ let errors task tform =
   let result = { default_result with real_bounds = {low = f_min; high = f_max} } in
   let result =
     if Config.get_bool_option "opt-approx" || Config.get_bool_option "opt-exact" then
-      let abs_approx, abs_exact = 
+      let abs_approx, abs_exact, abs_model_expr = 
         if Config.get_bool_option "abs-error" then
           absolute_errors task tform
         else
-          None, None in
-      let rel_approx, rel_exact = 
+          None, None, None in
+      let rel_approx, rel_exact, rel_model_expr = 
         if Config.get_bool_option "rel-error" then
           relative_errors task tform (f_min, f_max)
         else
-          None, None in
+          None, None, None in
       let ulp_approx, ulp_exact = 
         if Config.get_bool_option "ulp-error" then
           ulp_errors task tform (f_min, f_max)
         else
           None, None in
       {result with
+       abs_error_model = abs_model_expr;
+       rel_error_model = rel_model_expr;
        abs_error_approx = abs_approx;
        abs_error_exact = abs_exact;
        rel_error_approx = rel_approx;
