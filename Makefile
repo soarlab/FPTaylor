@@ -4,7 +4,7 @@ INTERVAL_DIR = INTERVAL
 SIMPLE_INTERVAL_DIR = simple_interval
 OPT_DIR = b_and_b
 
-SRC=	version.mli\
+SRC = version.mli\
 	version.ml\
 	lib.mli\
 	lib.ml\

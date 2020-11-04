@@ -16,7 +16,7 @@ open Task
 open Taylor_form
 
 type result = {
-  name : string;
+  task : task;
   real_bounds : interval;
   abs_error_model : expr option;
   rel_error_model : expr option;
@@ -32,8 +32,8 @@ type result = {
   elapsed_time : float;
 }
 
-let default_result = {
-  name = "NONE";
+let mk_result task = {
+  task = task;
   real_bounds = {low = neg_infinity; high = infinity};
   abs_error_model = None;
   rel_error_model = None;
@@ -77,7 +77,7 @@ let get_problem_absolute_error result =
     e2 = Lib.option_default ~default:entire result.abs_error_exact in
   min e1.high e2.high
 
-let print_result result =
+let print_result (result : result) =
   let hex = Config.get_bool_option "print-hex-floats" in
   let prec = Config.get_int_option "print-precision" in
   let print_upper_bound width str = function
@@ -125,7 +125,7 @@ let print_result result =
   in
   Log.report `Main
     "-------------------------------------------------------------------------------";
-  Log.report `Main "Problem: %s\n" result.name;
+  Log.report `Main "Problem: %s\n" result.task.name;
   if Config.get_bool_option "print-opt-lower-bounds" then begin
     let abs_approx_str = "The absolute error model (approximate):" in
     let abs_exact_str = "The absolute error model (exact):" in
@@ -482,7 +482,7 @@ let errors task tform =
     else
       neg_infinity, infinity in
   Log.report `Important "bounds: [%e, %e]" f_min f_max;
-  let result = { default_result with real_bounds = {low = f_min; high = f_max} } in
+  let result = { (mk_result task) with real_bounds = {low = f_min; high = f_max} } in
   let result =
     if Config.get_bool_option "opt-approx" || Config.get_bool_option "opt-exact" then
       let abs_approx, abs_exact, abs_model_expr = 
@@ -555,10 +555,10 @@ let compute_form task =
       print_form `Info form;
       Log.report `Info "";
       let result = errors task form in
-      { result with name = task.Task.name }, form
+      result, form
     with Failure msg ->
       Log.error_str msg;
-      { default_result with name = task.Task.name }, dummy_tform
+      mk_result task, dummy_tform
   in
   let stop = Unix.gettimeofday() in
   Log.report `Info "Elapsed time: %.5f" (stop -. start);
@@ -566,8 +566,8 @@ let compute_form task =
     if Config.proof_flag () then
       begin
         let proof_dir = Config.get_string_option "proof-dir" in
-        Log.report `Important "Saving a proof certificate for %s (in %s)" result.name proof_dir;
-        Proof.save_proof proof_dir (result.name ^ ".proof")
+        Log.report `Important "Saving a proof certificate for %s (in %s)" result.task.name proof_dir;
+        Proof.save_proof proof_dir (result.task.name ^ ".proof")
       end
   in
   { result with elapsed_time = stop -. start }, tform
@@ -587,7 +587,7 @@ let approximate_constraint task (name, c) =
   Log.report `Important "Constraint form";
   let r, tform = compute_form c_task in
   let err = get_problem_absolute_error r in
-  Log.report `Important "\n%s error: %e\n" r.name err;
+  Log.report `Important "\n%s error: %e\n" r.task.name err;
   name, Le (tform.v0, mk_float_const err)
 
 let process_task (task : task) =

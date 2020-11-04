@@ -1,5 +1,5 @@
 type result = {
-  name : string;
+  task : Task.task;
   real_bounds : Interval.interval;
   abs_error_model : Expr.expr option;
   rel_error_model : Expr.expr option;
