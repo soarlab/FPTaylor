@@ -1,5 +1,7 @@
 open Js_of_ocaml
 
+module Out = ExprOut.Make(ExprOut.JavaScriptPrinter)
+
 let init_out ty chan =
   let flush s = 
     let obj = object%js
@@ -47,7 +49,7 @@ let js_opt_string_of_high prec = function
 let js_opt_string_of_opt_expr = function
 | None -> Js.null
 | Some expr ->
-  let str = ExprOut.Info.print_str expr in
+  let str = Out.print_str expr in
   Js.some (Js.string str)
   
 let process (msg : js_msg_type Js.t) =
