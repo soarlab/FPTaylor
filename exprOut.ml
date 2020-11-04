@@ -528,5 +528,132 @@ module GelpiaPrinter : PrinterType = struct
       end
 end
 
+module JavaScriptPrinter : PrinterType = struct
+  open Expr
+  open Format
+  
+  let rec print fmt expr =
+    match expr with
+    | Const c ->
+        let v = Const.to_interval c in
+        fprintf fmt "interval(%.20e, %.20e)" v.low v.high
+    | Var v when is_ref_var expr -> fprintf fmt "ref_%d" (index_of_ref_var expr)
+    | Var v -> fprintf fmt "var_%s" (fix_name v)
+    | Rounding (rnd, arg) ->
+       let rnd_str = Rounding.rounding_to_string rnd in
+       failwith ("JavaScript: rounding is not allowed: " ^ rnd_str)
+    | U_op (op, arg) -> begin
+        match op with
+        | Op_neg -> fprintf fmt "(-(%a))" print arg
+        | Op_abs -> fprintf fmt "Math.abs(%a)" print arg
+        | Op_inv -> fprintf fmt "1/(%a)" print arg
+        | Op_sqrt -> fprintf fmt "Math.sqrt(%a)" print arg
+        | Op_exp -> fprintf fmt "Math.exp(%a)" print arg
+        | Op_log -> fprintf fmt "Math.log(%a)" print arg
+        | Op_sin -> fprintf fmt "Math.sin(%a)" print arg
+        | Op_cos -> fprintf fmt "Math.cos(%a)" print arg
+        | Op_tan -> fprintf fmt "Math.tan(%a)" print arg
+        | Op_asin -> fprintf fmt "Math.asin(%a)" print arg
+        | Op_acos -> fprintf fmt "Math.acos(%a)" print arg
+        | Op_atan -> fprintf fmt "Math.atan(%a)" print arg
+        | Op_sinh -> fprintf fmt "Math.sinh(%a)" print arg
+        | Op_cosh -> fprintf fmt "Math.cosh(%a)" print arg
+        | Op_tanh -> fprintf fmt "Math.tanh(%a)" print arg                       
+        | Op_asinh -> fprintf fmt "Math.asinh(%a)" print arg
+        | Op_acosh -> fprintf fmt "Math.acosh(%a)" print arg
+        | Op_atanh -> fprintf fmt "Math.atanh(%a)" print arg
+        | Op_floor_power2 -> fprintf fmt "floor_power2(%a)" print arg
+      end
+    | Bin_op (op, arg1, arg2) -> begin
+        match op with
+        | Op_min -> fprintf fmt "Math.min(%a, %a)" print arg1 print arg2
+        | Op_max -> fprintf fmt "Math.max(%a, %a)" print arg1 print arg2
+        | Op_add -> fprintf fmt "(%a + %a)" print arg1 print arg2
+        | Op_sub -> fprintf fmt "(%a - %a)" print arg1 print arg2
+        | Op_mul -> fprintf fmt "(%a * %a)" print arg1 print arg2
+        | Op_div -> fprintf fmt "(%a / %a)" print arg1 print arg2
+        | Op_abs_err -> fprintf fmt "abs_err(%a, %a)" print arg1 print arg2
+        | Op_sub2 -> fprintf fmt "sub2(%a, %a)" print arg1 print arg2
+        | Op_nat_pow -> begin
+            match arg2 with
+            | Const (Const.Rat n) when Num.is_integer_num n ->
+               fprintf fmt "Math.pow(%a, %s)" print arg1 (Num.string_of_num n)
+            | _ ->
+               failwith "JavaScript: Op_nat_pow: non-integer exponent"
+          end
+      end
+    | Gen_op (op, args) -> begin
+        match (op, args) with
+        | Op_ulp, [Const p; Const e; arg] ->
+          fprintf fmt "goldberg_ulp(%d, %d, %a)" 
+            (Const.to_int p) (Const.to_int e) print arg
+        | _ ->
+           failwith ("JavaScript: unknown general operation: " ^ gen_op_name op)
+      end
+end
+
+module JavaScriptIntervalPrinter : PrinterType = struct
+  open Expr
+  open Format
+  
+  let rec print fmt expr =
+    match expr with
+    | Const c ->
+        let v = Const.to_interval c in
+        fprintf fmt "[%.20e, %.20e]" v.low v.high
+    | Var v when is_ref_var expr -> fprintf fmt "ref_%d" (index_of_ref_var expr)
+    | Var v -> fprintf fmt "var_%s" (fix_name v)
+    | Rounding (rnd, arg) ->
+       let rnd_str = Rounding.rounding_to_string rnd in
+       failwith ("JavaScriptInterval: rounding is not allowed: " ^ rnd_str)
+    | U_op (op, arg) -> begin
+        match op with
+        | Op_neg -> fprintf fmt "negI(%a)" print arg
+        | Op_abs -> fprintf fmt "absI(%a)" print arg
+        | Op_inv -> fprintf fmt "invI(%a)" print arg
+        | Op_sqrt -> fprintf fmt "sqrtI(%a)" print arg
+        | Op_exp -> fprintf fmt "expI(%a)" print arg
+        | Op_log -> fprintf fmt "logI(%a)" print arg
+        | Op_sin -> fprintf fmt "sinI(%a)" print arg
+        | Op_cos -> fprintf fmt "cosI(%a)" print arg
+        | Op_tan -> fprintf fmt "tanI(%a)" print arg
+        | Op_asin -> fprintf fmt "asinI(%a)" print arg
+        | Op_acos -> fprintf fmt "acosI(%a)" print arg
+        | Op_atan -> fprintf fmt "atanI(%a)" print arg
+        | Op_sinh -> fprintf fmt "sinhI(%a)" print arg
+        | Op_cosh -> fprintf fmt "coshI(%a)" print arg
+        | Op_tanh -> fprintf fmt "tanhI(%a)" print arg                       
+        | Op_asinh -> fprintf fmt "asinhI(%a)" print arg
+        | Op_acosh -> fprintf fmt "acoshI(%a)" print arg
+        | Op_atanh -> fprintf fmt "atanhI(%a)" print arg
+        | Op_floor_power2 -> fprintf fmt "floor_power2I(%a)" print arg
+      end
+    | Bin_op (op, arg1, arg2) -> begin
+        match op with
+        | Op_min -> fprintf fmt "minI(%a, %a)" print arg1 print arg2
+        | Op_max -> fprintf fmt "maxI(%a, %a)" print arg1 print arg2
+        | Op_add -> fprintf fmt "addI(%a, %a)" print arg1 print arg2
+        | Op_sub -> fprintf fmt "subI(%a, %a)" print arg1 print arg2
+        | Op_mul -> fprintf fmt "mulI(%a, %a)" print arg1 print arg2
+        | Op_div -> fprintf fmt "divI(%a, %a)" print arg1 print arg2
+        | Op_abs_err -> fprintf fmt "abs_errI(%a, %a)" print arg1 print arg2
+        | Op_sub2 -> fprintf fmt "sub2I(%a, %a)" print arg1 print arg2
+        | Op_nat_pow -> begin
+            match arg2 with
+            | Const (Const.Rat n) when Num.is_integer_num n ->
+               fprintf fmt "powI(%a, %s)" print arg1 (Num.string_of_num n)
+            | _ ->
+               failwith "JavaScriptInterval: Op_nat_pow: non-integer exponent"
+          end
+      end
+    | Gen_op (op, args) -> begin
+        match (op, args) with
+        | Op_ulp, [Const p; Const e; arg] ->
+          fprintf fmt "goldberg_ulpI(%d, %d, %a)" 
+            (Const.to_int p) (Const.to_int e) print arg
+        | _ ->
+           failwith ("JavaScriptInterval: unknown general operation: " ^ gen_op_name op)
+      end
+end
 
 module Info = Make(InfoPrinter)

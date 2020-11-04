@@ -61,7 +61,7 @@ let process (msg : js_msg_type Js.t) =
     |> List.map (fun res ->
       let open Fptaylor in
       object%js
-        val name = Js.string res.name
+        val name = Js.string res.task.name
         val elapsedTime = res.elapsed_time
         val realBounds = js_array_of_interval res.real_bounds
         val absErrorModel = js_opt_string_of_opt_expr res.abs_error_model
