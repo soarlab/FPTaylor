@@ -46,12 +46,33 @@ let js_opt_string_of_high prec = function
 | Some x -> Js.some (js_string_of_high prec x)
 | None -> Js.null
 
-let js_opt_string_of_opt_expr = function
+let js_expr_obj_of_opt_expr task = function
 | None -> Js.null
 | Some expr ->
-  let str = Out.print_str expr in
-  Js.some (Js.string str)
-  
+  let var_names = Expr.vars_in_expr expr in
+  let var_intervals = List.map (Task.variable_interval task) var_names in
+  if List.length var_names > 1 then Js.null
+  else
+    let var_names = List.map (fun v -> "var_" ^ ExprOut.fix_name v) var_names in
+    let es = Expr.expr_ref_list_of_expr expr in
+    let n = List.length es in
+    let body = es 
+      |> List.mapi (fun i e ->
+          if i < n - 1 then 
+            Format.sprintf "var ref_%d = %s;" i (Out.print_str e)
+          else
+            Format.sprintf "return %s;" (Out.print_str e))
+      |> String.concat "\n" in
+    let str = Format.sprintf "function(%s) {\n%s\n}"
+      (String.concat ", " var_names) body in
+    Js.some (object%js
+      val expr = Js.string str
+      val dom =
+        match var_intervals with
+        | [x] -> Js.some (js_array_of_interval x)
+        | _ -> Js.null
+    end)
+
 let process (msg : js_msg_type Js.t) =
   let input = msg##.input |> Js.to_string in
   let config = msg##.config |> Js.to_string in
@@ -66,8 +87,8 @@ let process (msg : js_msg_type Js.t) =
         val name = Js.string res.task.name
         val elapsedTime = res.elapsed_time
         val realBounds = js_array_of_interval res.real_bounds
-        val absErrorModel = js_opt_string_of_opt_expr res.abs_error_model
-        val relErrorModel = js_opt_string_of_opt_expr res.rel_error_model
+        val absErrorModel = js_expr_obj_of_opt_expr res.task res.abs_error_model
+        val relErrorModel = js_expr_obj_of_opt_expr res.task res.rel_error_model
         val absErrorApprox = js_opt_array_of_interval res.abs_error_approx
         val absErrorApproxStr = js_opt_string_of_high prec res.abs_error_approx
         val absErrorExact = js_opt_array_of_interval res.abs_error_exact

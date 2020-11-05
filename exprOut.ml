@@ -534,9 +534,7 @@ module JavaScriptPrinter : PrinterType = struct
   
   let rec print fmt expr =
     match expr with
-    | Const c ->
-        let v = Const.to_interval c in
-        fprintf fmt "interval(%.20e, %.20e)" v.low v.high
+    | Const c -> fprintf fmt "(%.20e)" (Const.to_float c)
     | Var v when is_ref_var expr -> fprintf fmt "ref_%d" (index_of_ref_var expr)
     | Var v -> fprintf fmt "var_%s" (fix_name v)
     | Rounding (rnd, arg) ->
