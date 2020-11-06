@@ -39,8 +39,11 @@ let js_opt_array_of_interval = function
 | Some x -> Js.some (js_array_of_interval x)
 | None -> Js.null
 
+let js_string_of_number_hi prec x =
+  Js.string (More_num.string_of_float_hi prec x)
+
 let js_string_of_high prec x =
-  Js.string (More_num.string_of_float_hi prec x.Interval.high)
+  js_string_of_number_hi prec x.Interval.high
 
 let js_opt_string_of_high prec = function
 | Some x -> Js.some (js_string_of_high prec x)
@@ -87,6 +90,9 @@ let process (msg : js_msg_type Js.t) =
         val name = Js.string res.task.name
         val elapsedTime = res.elapsed_time
         val realBounds = js_array_of_interval res.real_bounds
+        val realBoundsStr = [|res.real_bounds.low; res.real_bounds.high|] 
+          |> Array.map (js_string_of_number_hi prec)
+          |> Js.array
         val absErrorModel = js_expr_obj_of_opt_expr res.task res.abs_error_model
         val relErrorModel = js_expr_obj_of_opt_expr res.task res.rel_error_model
         val absErrorApprox = js_opt_array_of_interval res.abs_error_approx
