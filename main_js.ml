@@ -12,7 +12,7 @@ let init_out ty chan =
   Sys_js.set_channel_flusher chan flush
 
 let init_fs () =
-  Sys_js.create_file "./default.cfg" Default.default_cfg;
+  Sys_js.create_file "./default.cfg" "";
   Sys_js.create_file "user.cfg" "verbosity = 1";
   Sys_js.create_file "input.txt" "";
   ()
@@ -25,10 +25,11 @@ let run_fptaylor () =
   with 
   | Failure msg -> Log.error_str msg; []
   | Parsing.Parse_error -> Log.error_str "Parsing error"; []
-  |_ ->  Log.error_str "Unknown error"; []
+  | _ ->  Log.error_str "Unknown error"; []
 
 class type js_msg_type = object
   method input : Js.js_string Js.t Js.readonly_prop
+  method defaultcfg : Js.js_string Js.t Js.readonly_prop
   method config : Js.js_string Js.t Js.readonly_prop
 end
 
@@ -78,8 +79,10 @@ let js_expr_obj_of_opt_expr task = function
 
 let process (msg : js_msg_type Js.t) =
   let input = msg##.input |> Js.to_string in
+  let default_config = msg##.defaultcfg |> Js.to_string in
   let config = msg##.config |> Js.to_string in
   Sys_js.update_file "input.txt" input;
+  Sys_js.update_file "./default.cfg" default_config;
   Sys_js.update_file "user.cfg" config;
   let results = run_fptaylor () in
   let prec = Config.get_int_option "print-precision" in

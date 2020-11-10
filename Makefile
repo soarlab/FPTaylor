@@ -1,5 +1,6 @@
 ML = ocamlc
 OPT_ML = ocamlopt
+JSML = js_of_ocaml --opt 3
 INTERVAL_DIR = INTERVAL
 SIMPLE_INTERVAL_DIR = simple_interval
 OPT_DIR = b_and_b
@@ -132,15 +133,24 @@ fptaylor-simple-interval2: compile-simple-interval compile-byte
 	chmod +x $(OPT_DIR)/compile.sh	
 
 fptaylor-js: INCLUDE=$(SIMPLE_INTERVAL_DIR)
-# fptaylor-js: ML=ocamlc -g
+fptaylor-js-debug: ML=ocamlc -g
+fptaylor-js-debug: JSML=js_of_ocaml --pretty
 
-fptaylor-js: compile-simple-interval compile-byte default.cmo main_js.cmo
-	ocamlfind ocamlc -o fptaylor.bytes -I $(OPT_DIR) -I $(SIMPLE_INTERVAL_DIR) \
+fptaylor-js: compile-simple-interval compile-byte default_config.js main_js.cmo
+	ocamlfind $(ML) -o fptaylor.bytes -I $(OPT_DIR) -I $(SIMPLE_INTERVAL_DIR) \
 		-package js_of_ocaml,js_of_ocaml-ppx,unix,str,num -linkpkg \
 		$(SIMPLE_INTERVAL_DIR)/interval.cma \
-		$(filter-out main.cmo, $(SRC:.ml=.cmo)) default.cmo main_js.cmo
-	# js_of_ocaml --pretty -o js/fptaylor.js fptaylor.bytes
-	js_of_ocaml --opt 3 fptaylor.bytes
+		$(filter-out main.cmo, $(SRC:.ml=.cmo)) main_js.cmo
+	$(JSML) -o fptaylor.js fptaylor.bytes
+
+fptaylor-js-debug: fptaylor-js
+	cp fptaylor.js js/
+	cat default_config.js | sed -e 's/^export const/const/' > js/default_config.js
+
+default_config.js: default.cfg
+	echo "export const default_config = \`" > default_config.js
+	cat default.cfg | sed -e 's/\`/\\\`/g; s/^opt[ ]*=.*/opt = bb-eval/; s/^log-base-dir[ ]*=.*/log-base-dir =/; s/^tmp-base-dir[ ]*=.*/tmp-base-dir =/' >> default_config.js
+	echo "\`" >> default_config.js
 
 compile-interval:
 	cd $(INTERVAL_DIR); $(MAKE)
@@ -159,12 +169,6 @@ input_lexer.ml: input_lexer.mll
 
 input_parser.ml input_parser.mli: input_parser.mly
 	ocamlyacc input_parser.mly
-
-default.cmo: default.cfg
-	echo "let default_cfg = \"" > default.ml
-	cat default.cfg | sed -e 's/^opt[ ]*=.*/opt = bb-eval/; s/^log-base-dir[ ]*=.*/log-base-dir =/; s/^tmp-base-dir[ ]*=.*/tmp-base-dir =/' >> default.ml
-	echo "\"" >> default.ml
-	$(ML) -c default.ml
 
 main_js.cmo: main_js.ml
 	ocamlfind ocamlc -c -I $(OPT_DIR) -I $(INCLUDE) \

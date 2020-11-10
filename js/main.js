@@ -57,6 +57,13 @@ function runFPTaylor(onFinished) {
   const input = document.getElementById('input').value;
   const config = document.getElementById('config').value;
   
+  worker.onerror = function(e) {
+    console.log(e);
+    workers.delete(worker);
+    if (onFinished) onFinished(null);
+    output.innerHTML += `<div class="${classes[2]}">Unexpected error: ${e}</div>`;
+  }
+
   worker.onmessage = function(e) {
     if (Array.isArray(e.data)) {
       // Final results
@@ -71,7 +78,7 @@ function runFPTaylor(onFinished) {
   };
 
   output.innerHTML = '';
-  worker.postMessage({input, config});
+  worker.postMessage({input, config, defaultcfg: default_config});
 }
 
 function populateSelect(examples, selectId, inputId, localId) {

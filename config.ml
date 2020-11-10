@@ -193,7 +193,7 @@ let clear_all () =
   input_files_ref := []
 
 (* Loads the main configuration file and parses arguments *)
-(* Parameters from the given config_files override paramters from command line arguments *)
+(* Parameters from the given config_files override parameters from command line arguments *)
 let init ~config_files =
   clear_all ();
   base_dir_ref := get_base_dir ();
