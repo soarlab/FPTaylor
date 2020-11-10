@@ -560,7 +560,7 @@ module JavaScriptPrinter : PrinterType = struct
         | Op_asinh -> fprintf fmt "Math.asinh(%a)" print arg
         | Op_acosh -> fprintf fmt "Math.acosh(%a)" print arg
         | Op_atanh -> fprintf fmt "Math.atanh(%a)" print arg
-        | Op_floor_power2 -> fprintf fmt "floor_power2(%a)" print arg
+        | Op_floor_power2 -> fprintf fmt "M.floor_power2(%a)" print arg
       end
     | Bin_op (op, arg1, arg2) -> begin
         match op with
@@ -570,8 +570,8 @@ module JavaScriptPrinter : PrinterType = struct
         | Op_sub -> fprintf fmt "(%a - %a)" print arg1 print arg2
         | Op_mul -> fprintf fmt "(%a * %a)" print arg1 print arg2
         | Op_div -> fprintf fmt "(%a / %a)" print arg1 print arg2
-        | Op_abs_err -> fprintf fmt "abs_err(%a, %a)" print arg1 print arg2
-        | Op_sub2 -> fprintf fmt "sub2(%a, %a)" print arg1 print arg2
+        | Op_abs_err -> fprintf fmt "M.abs_err(%a, %a)" print arg1 print arg2
+        | Op_sub2 -> fprintf fmt "M.sub2(%a, %a)" print arg1 print arg2
         | Op_nat_pow -> begin
             match arg2 with
             | Const (Const.Rat n) when Num.is_integer_num n ->
@@ -583,7 +583,7 @@ module JavaScriptPrinter : PrinterType = struct
     | Gen_op (op, args) -> begin
         match (op, args) with
         | Op_ulp, [Const p; Const e; arg] ->
-          fprintf fmt "goldberg_ulp(%d, %d, %a)" 
+          fprintf fmt "M.goldberg_ulp(%d, %d, %a)" 
             (Const.to_int p) (Const.to_int e) print arg
         | _ ->
            failwith ("JavaScript: unknown general operation: " ^ gen_op_name op)
@@ -606,40 +606,40 @@ module JavaScriptIntervalPrinter : PrinterType = struct
        failwith ("JavaScriptInterval: rounding is not allowed: " ^ rnd_str)
     | U_op (op, arg) -> begin
         match op with
-        | Op_neg -> fprintf fmt "negI(%a)" print arg
-        | Op_abs -> fprintf fmt "absI(%a)" print arg
-        | Op_inv -> fprintf fmt "invI(%a)" print arg
-        | Op_sqrt -> fprintf fmt "sqrtI(%a)" print arg
-        | Op_exp -> fprintf fmt "expI(%a)" print arg
-        | Op_log -> fprintf fmt "logI(%a)" print arg
-        | Op_sin -> fprintf fmt "sinI(%a)" print arg
-        | Op_cos -> fprintf fmt "cosI(%a)" print arg
-        | Op_tan -> fprintf fmt "tanI(%a)" print arg
-        | Op_asin -> fprintf fmt "asinI(%a)" print arg
-        | Op_acos -> fprintf fmt "acosI(%a)" print arg
-        | Op_atan -> fprintf fmt "atanI(%a)" print arg
-        | Op_sinh -> fprintf fmt "sinhI(%a)" print arg
-        | Op_cosh -> fprintf fmt "coshI(%a)" print arg
-        | Op_tanh -> fprintf fmt "tanhI(%a)" print arg                       
-        | Op_asinh -> fprintf fmt "asinhI(%a)" print arg
-        | Op_acosh -> fprintf fmt "acoshI(%a)" print arg
-        | Op_atanh -> fprintf fmt "atanhI(%a)" print arg
-        | Op_floor_power2 -> fprintf fmt "floor_power2I(%a)" print arg
+        | Op_neg -> fprintf fmt "M.negI(%a)" print arg
+        | Op_abs -> fprintf fmt "M.absI(%a)" print arg
+        | Op_inv -> fprintf fmt "M.invI(%a)" print arg
+        | Op_sqrt -> fprintf fmt "M.sqrtI(%a)" print arg
+        | Op_exp -> fprintf fmt "M.expI(%a)" print arg
+        | Op_log -> fprintf fmt "M.logI(%a)" print arg
+        | Op_sin -> fprintf fmt "M.sinI(%a)" print arg
+        | Op_cos -> fprintf fmt "M.cosI(%a)" print arg
+        | Op_tan -> fprintf fmt "M.tanI(%a)" print arg
+        | Op_asin -> fprintf fmt "M.asinI(%a)" print arg
+        | Op_acos -> fprintf fmt "M.acosI(%a)" print arg
+        | Op_atan -> fprintf fmt "M.atanI(%a)" print arg
+        | Op_sinh -> fprintf fmt "M.sinhI(%a)" print arg
+        | Op_cosh -> fprintf fmt "M.coshI(%a)" print arg
+        | Op_tanh -> fprintf fmt "M.tanhI(%a)" print arg                       
+        | Op_asinh -> fprintf fmt "M.asinhI(%a)" print arg
+        | Op_acosh -> fprintf fmt "M.acoshI(%a)" print arg
+        | Op_atanh -> fprintf fmt "M.atanhI(%a)" print arg
+        | Op_floor_power2 -> fprintf fmt "M.floor_power2I(%a)" print arg
       end
     | Bin_op (op, arg1, arg2) -> begin
         match op with
-        | Op_min -> fprintf fmt "minI(%a, %a)" print arg1 print arg2
-        | Op_max -> fprintf fmt "maxI(%a, %a)" print arg1 print arg2
-        | Op_add -> fprintf fmt "addI(%a, %a)" print arg1 print arg2
-        | Op_sub -> fprintf fmt "subI(%a, %a)" print arg1 print arg2
-        | Op_mul -> fprintf fmt "mulI(%a, %a)" print arg1 print arg2
-        | Op_div -> fprintf fmt "divI(%a, %a)" print arg1 print arg2
-        | Op_abs_err -> fprintf fmt "abs_errI(%a, %a)" print arg1 print arg2
-        | Op_sub2 -> fprintf fmt "sub2I(%a, %a)" print arg1 print arg2
+        | Op_min -> fprintf fmt "M.minI(%a, %a)" print arg1 print arg2
+        | Op_max -> fprintf fmt "M.maxI(%a, %a)" print arg1 print arg2
+        | Op_add -> fprintf fmt "M.addI(%a, %a)" print arg1 print arg2
+        | Op_sub -> fprintf fmt "M.subI(%a, %a)" print arg1 print arg2
+        | Op_mul -> fprintf fmt "M.mulI(%a, %a)" print arg1 print arg2
+        | Op_div -> fprintf fmt "M.divI(%a, %a)" print arg1 print arg2
+        | Op_abs_err -> fprintf fmt "M.abs_errI(%a, %a)" print arg1 print arg2
+        | Op_sub2 -> fprintf fmt "M.sub2I(%a, %a)" print arg1 print arg2
         | Op_nat_pow -> begin
             match arg2 with
             | Const (Const.Rat n) when Num.is_integer_num n ->
-               fprintf fmt "powI(%a, %s)" print arg1 (Num.string_of_num n)
+               fprintf fmt "M.powI(%a, %s)" print arg1 (Num.string_of_num n)
             | _ ->
                failwith "JavaScriptInterval: Op_nat_pow: non-integer exponent"
           end
@@ -647,7 +647,7 @@ module JavaScriptIntervalPrinter : PrinterType = struct
     | Gen_op (op, args) -> begin
         match (op, args) with
         | Op_ulp, [Const p; Const e; arg] ->
-          fprintf fmt "goldberg_ulpI(%d, %d, %a)" 
+          fprintf fmt "M.goldberg_ulpI(%d, %d, %a)" 
             (Const.to_int p) (Const.to_int e) print arg
         | _ ->
            failwith ("JavaScriptInterval: unknown general operation: " ^ gen_op_name op)
