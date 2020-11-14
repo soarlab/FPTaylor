@@ -98,6 +98,7 @@ let process (msg : js_msg_type Js.t) =
           |> Js.array
         val absErrorModel = js_expr_obj_of_opt_expr res.task res.abs_error_model
         val relErrorModel = js_expr_obj_of_opt_expr res.task res.rel_error_model
+        val ulpErrorModel = js_expr_obj_of_opt_expr res.task res.ulp_error_model
         val absErrorApprox = js_opt_array_of_interval res.abs_error_approx
         val absErrorApproxStr = js_opt_string_of_high prec res.abs_error_approx
         val absErrorExact = js_opt_array_of_interval res.abs_error_exact

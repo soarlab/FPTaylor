@@ -33,6 +33,6 @@ scripts/**/out*
 scripts/**/images*
 scripts/**/\[old\]*
 .DS_Store
-default.ml
 fptaylor.js
+default_config.js
 *.bytes

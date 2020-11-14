@@ -20,6 +20,7 @@ type result = {
   real_bounds : interval;
   abs_error_model : expr option;
   rel_error_model : expr option;
+  ulp_error_model : expr option;
   (* Lower bounds of error intervals represent lower bounds
      returned by a global optimization procedure.
      low = neg_infinity if a lower bound is not returned. *)
@@ -37,6 +38,7 @@ let mk_result task = {
   real_bounds = {low = neg_infinity; high = infinity};
   abs_error_model = None;
   rel_error_model = None;
+  ulp_error_model = None;
   abs_error_approx = None;
   abs_error_exact = None;
   rel_error_approx = None;
@@ -412,7 +414,7 @@ let ulp_errors task tf (f_min, f_max) =
   if (abs_I f_int).low <= 0. then begin
     Log.warning "\nCannot compute the ULP error: \
                  values of the function are close to zero";
-    None, None
+    None, None, None
   end
   else
     let v1, v2 = split_error_terms tf.v1 in
@@ -436,8 +438,8 @@ let ulp_errors task tf (f_min, f_max) =
           Some total_i          
         end
     in
-    let err_exact =
-      if not (Config.get_bool_option "opt-exact") then None
+    let err_exact, model_expr =
+      if not (Config.get_bool_option "opt-exact") then None, None
       else
         begin
           Log.report `Important "\nSolving the exact optimization problem";
@@ -451,14 +453,14 @@ let ulp_errors task tf (f_min, f_max) =
             {low = r.Opt_common.lower_bound; high = r.Opt_common.result} in
           let total1_i = Rounding.get_eps exp *.$ bound in
           let total_i = total1_i +$ b2_i in
+          let model_expr = mk_add (mk_mul (mk_float_const (Rounding.get_eps exp)) full_expr)
+                                  (mk_float_const b2_i.high) in
 
           let () = try
-            let out_expr = mk_add (mk_mul (mk_float_const (Rounding.get_eps exp)) full_expr)
-                                  (mk_float_const b2_i.high) in
             let name = task.Task.name in
               Out_error_bounds.generate_data_functions
                 (get_file_formatter "data") task
-                [name, out_expr;
+                [name, model_expr;
                  name ^ "-total2", mk_float_const b2_i.high;
                  name ^ "-opt-bound", mk_float_const total_i.high]
             with Not_found -> () in
@@ -467,10 +469,10 @@ let ulp_errors task tf (f_min, f_max) =
           Log.report `Important "total2: %s" (bound_info b2_i);
           Log.report `Important "exact total-ulp: %s" (bound_info total_i);
           error2_warning total1_i.high b2_i.high;
-          Some total_i
+          Some total_i, Some model_expr
         end
     in
-    err_approx, err_exact
+    err_approx, err_exact, model_expr
 
 let errors task tform =
   let cs = constraints_of_task task in
@@ -495,14 +497,15 @@ let errors task tform =
           relative_errors task tform (f_min, f_max)
         else
           None, None, None in
-      let ulp_approx, ulp_exact = 
+      let ulp_approx, ulp_exact, ulp_model_expr = 
         if Config.get_bool_option "ulp-error" then
           ulp_errors task tform (f_min, f_max)
         else
-          None, None in
+          None, None, None in
       {result with
        abs_error_model = abs_model_expr;
        rel_error_model = rel_model_expr;
+       ulp_error_model = ulp_model_expr;
        abs_error_approx = abs_approx;
        abs_error_exact = abs_exact;
        rel_error_approx = rel_approx;
