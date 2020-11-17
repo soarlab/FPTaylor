@@ -44,7 +44,7 @@ The following command will build FPTaylor and the interval computation library:
     make all
 
 If you encounter a problem during the build process then you may try
-steps described in the next section (alternative interval arithmetic library).  
+steps described in the next section (alternative interval arithmetic library).
 The executable FPTaylor file is called `fptaylor`. It is recommended to
 create the environment variable `FPTAYLOR_BASE` which contains the
 path to the base FPTaylor directory.  If this environment variable is

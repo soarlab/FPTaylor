@@ -13,8 +13,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v1
-    - name: Setup opam and ocaml
-      uses: fangyi-zhou/actions-ocaml@v1
+    - name: Setup opam and OCaml
+      uses: avsm/setup-ocaml@v1
       with:
         ocaml_version: ${{ matrix.ocaml }}
     - name: Install num
