@@ -16,7 +16,7 @@ jobs:
     - name: Setup opam and OCaml
       uses: avsm/setup-ocaml@v1
       with:
-        ocaml_version: ${{ matrix.ocaml }}
+        ocaml-version: ${{ matrix.ocaml }}
     - name: Install num
       if: startsWith(matrix.ocaml, '4.09')
       run: opam install -y num
