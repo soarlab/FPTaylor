@@ -16,4 +16,6 @@ type result = {
   elapsed_time : float;
 }
 
+val validate_options : unit -> unit
+
 val fptaylor : input_files:string list -> result list

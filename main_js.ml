@@ -17,10 +17,24 @@ let init_fs () =
   Sys_js.create_file "input.txt" "";
   ()
 
+let validate_options_js () =
+  let open Config in
+  if get_bool_option "proof-record" then begin
+    Log.warning "FPTaylorJS: Proof certificates cannot be created";
+    set_option "proof-record" "false"
+  end;
+  if get_string_option "opt" <> "bb-eval" then begin
+    Log.warning "FPTaylorJS: the optimization option '%s' is not supported" (get_string_option "opt");
+    set_option "opt" "bb-eval"
+  end;
+  ()
+
 let run_fptaylor () =
   try
     Log.report `Main "FPTaylor, version %s" Version.version;
     Config.init ["user.cfg"];
+    validate_options_js ();
+    Fptaylor.validate_options ();
     Fptaylor.fptaylor ["input.txt"]
   with 
   | Failure msg -> Log.error_str msg; []
