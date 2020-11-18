@@ -16,8 +16,11 @@ open Task
 open Taylor_form
 
 type result = {
-  name : string;
+  task : task;
   real_bounds : interval;
+  abs_error_model : expr option;
+  rel_error_model : expr option;
+  ulp_error_model : expr option;
   (* Lower bounds of error intervals represent lower bounds
      returned by a global optimization procedure.
      low = neg_infinity if a lower bound is not returned. *)
@@ -30,9 +33,12 @@ type result = {
   elapsed_time : float;
 }
 
-let default_result = {
-  name = "NONE";
+let mk_result task = {
+  task = task;
   real_bounds = {low = neg_infinity; high = infinity};
+  abs_error_model = None;
+  rel_error_model = None;
+  ulp_error_model = None;
   abs_error_approx = None;
   abs_error_exact = None;
   rel_error_approx = None;
@@ -73,7 +79,7 @@ let get_problem_absolute_error result =
     e2 = Lib.option_default ~default:entire result.abs_error_exact in
   min e1.high e2.high
 
-let print_result result =
+let print_result (result : result) =
   let hex = Config.get_bool_option "print-hex-floats" in
   let prec = Config.get_int_option "print-precision" in
   let print_upper_bound width str = function
@@ -121,7 +127,7 @@ let print_result result =
   in
   Log.report `Main
     "-------------------------------------------------------------------------------";
-  Log.report `Main "Problem: %s\n" result.name;
+  Log.report `Main "Problem: %s\n" result.task.name;
   if Config.get_bool_option "print-opt-lower-bounds" then begin
     let abs_approx_str = "The absolute error model (approximate):" in
     let abs_exact_str = "The absolute error model (exact):" in
@@ -205,7 +211,7 @@ let add2_symbolic (e1, exp1) (e2, exp2) =
 let sum_symbolic s = Lib.itlist add2_symbolic s (const_0, 0)
 
 let compute_bound cs (expr, err) =
-  let r = Opt.find_max_abs Opt_common.default_opt_pars cs expr in
+  let r = Opt.find_max_abs (Opt_common.default_opt_pars ()) cs expr in
   let bound = {low = r.Opt_common.lower_bound; high = r.Opt_common.result} in
   Log.report `Info "%d: exp = %d: %s" err.index err.exp (bound_info bound);
   bound, err.exp 
@@ -271,8 +277,8 @@ let absolute_errors task tf =
         Some total_i
       end
   in
-  let err_exact =
-    if not (Config.get_bool_option "opt-exact") then None
+  let err_exact, model_expr =
+    if not (Config.get_bool_option "opt-exact") then None, None
     else
       begin
         Log.report `Important "\nSolving the exact optimization problem";
@@ -284,11 +290,11 @@ let absolute_errors task tf =
           else
             full_expr', exp in
         let bound =
-          let r = Opt.find_max Opt_common.default_opt_pars cs full_expr in
+          let r = Opt.find_max (Opt_common.default_opt_pars ()) cs full_expr in
           {low = r.Opt_common.lower_bound; high = r.Opt_common.result} in
         let total1_i = Rounding.get_eps exp *.$ bound in
         let total_i = 
-          if Config.proof_flag then begin
+          if Config.proof_flag () then begin
             let e' = Rounding.get_eps exp in
             let e = if e' = 0.0 then 1.0 else e' in
             let bound = make_stronger_i (bound +$ total2_i /$. e) in
@@ -298,14 +304,14 @@ let absolute_errors task tf =
           end
           else
             total1_i +$ total2_i in
+        let model_expr = mk_add (mk_mul (mk_float_const (Rounding.get_eps exp)) full_expr)
+                                (mk_float_const total2_i.high) in
 
         let () = try
-          let out_expr = mk_add (mk_mul (mk_float_const (Rounding.get_eps exp)) full_expr)
-                                (mk_float_const total2_i.high) in
           let name = task.Task.name in
             Out_error_bounds.generate_data_functions
               (get_file_formatter "data") task
-              [name, out_expr;
+              [name, model_expr;
                name ^ "-total2", mk_float_const total2_i.high;
                name ^ "-opt-bound", mk_float_const total_i.high]
           with Not_found -> () in
@@ -314,10 +320,10 @@ let absolute_errors task tf =
         Log.report `Important "total2: %s" (bound_info total2_i);
         Log.report `Important "exact total: %s" (bound_info total_i);
         error2_warning total1_i.high total2_i.high;
-        Some total_i
+        Some total_i, Some model_expr
       end
   in
-  err_approx, err_exact
+  err_approx, err_exact, model_expr
 
 let relative_errors task tf (f_min, f_max) =
   Log.report `Important "\nComputing relative errors";
@@ -327,7 +333,7 @@ let relative_errors task tf (f_min, f_max) =
   if (abs_I f_int).low < rel_tol then begin
     Log.warning "\nCannot compute the relative error: \
                  values of the function are close to zero";
-    None, None
+    None, None, None
   end
   else
     let v1, v2 = split_error_terms tf.v1 in
@@ -356,8 +362,8 @@ let relative_errors task tf (f_min, f_max) =
           Some total_i          
         end
     in
-    let err_exact =
-      if not (Config.get_bool_option "opt-exact") then None
+    let err_exact, model_expr =
+      if not (Config.get_bool_option "opt-exact") then None, None
       else
         begin
           Log.report `Important "\nSolving the exact optimization problem";
@@ -370,18 +376,18 @@ let relative_errors task tf (f_min, f_max) =
             else
               full_expr', exp in
           let bound =
-            let r = Opt.find_max Opt_common.default_opt_pars cs full_expr in
+            let r = Opt.find_max (Opt_common.default_opt_pars ()) cs full_expr in
             {low = r.Opt_common.lower_bound; high = r.Opt_common.result} in
           let total1_i = Rounding.get_eps exp *.$ bound in
           let total_i = total1_i +$ b2_i in
+          let model_expr = mk_add (mk_mul (mk_float_const (Rounding.get_eps exp)) full_expr)
+                                  (mk_float_const b2_i.high) in
 
           let () = try
-            let out_expr = mk_add (mk_mul (mk_float_const (Rounding.get_eps exp)) full_expr)
-                                  (mk_float_const b2_i.high) in
             let name = task.Task.name in
               Out_error_bounds.generate_data_functions
                 (get_file_formatter "data") task
-                [name, out_expr;
+                [name, model_expr;
                  name ^ "-total2", mk_float_const b2_i.high;
                  name ^ "-opt-bound", mk_float_const total_i.high]
             with Not_found -> () in
@@ -390,10 +396,10 @@ let relative_errors task tf (f_min, f_max) =
           Log.report `Important "total2: %s" (bound_info b2_i);
           Log.report `Important "exact total-rel: %s" (bound_info total_i);
           error2_warning total1_i.high b2_i.high;
-          Some total_i
+          Some total_i, Some model_expr
         end
     in
-    err_approx, err_exact
+    err_approx, err_exact, model_expr
 
 let ulp_errors task tf (f_min, f_max) =
   Log.report `Important "\nComputing ULP errors";
@@ -408,7 +414,7 @@ let ulp_errors task tf (f_min, f_max) =
   if (abs_I f_int).low <= 0. then begin
     Log.warning "\nCannot compute the ULP error: \
                  values of the function are close to zero";
-    None, None
+    None, None, None
   end
   else
     let v1, v2 = split_error_terms tf.v1 in
@@ -432,8 +438,8 @@ let ulp_errors task tf (f_min, f_max) =
           Some total_i          
         end
     in
-    let err_exact =
-      if not (Config.get_bool_option "opt-exact") then None
+    let err_exact, model_expr =
+      if not (Config.get_bool_option "opt-exact") then None, None
       else
         begin
           Log.report `Important "\nSolving the exact optimization problem";
@@ -443,18 +449,18 @@ let ulp_errors task tf (f_min, f_max) =
             let full_expr' = mk_div sum_expr (mk_abs (mk_ulp (prec, min_exp) tf.v0)) in
             full_expr', exp in
           let bound =
-            let r = Opt.find_max Opt_common.default_opt_pars cs full_expr in
+            let r = Opt.find_max (Opt_common.default_opt_pars ()) cs full_expr in
             {low = r.Opt_common.lower_bound; high = r.Opt_common.result} in
           let total1_i = Rounding.get_eps exp *.$ bound in
           let total_i = total1_i +$ b2_i in
+          let model_expr = mk_add (mk_mul (mk_float_const (Rounding.get_eps exp)) full_expr)
+                                  (mk_float_const b2_i.high) in
 
           let () = try
-            let out_expr = mk_add (mk_mul (mk_float_const (Rounding.get_eps exp)) full_expr)
-                                  (mk_float_const b2_i.high) in
             let name = task.Task.name in
               Out_error_bounds.generate_data_functions
                 (get_file_formatter "data") task
-                [name, out_expr;
+                [name, model_expr;
                  name ^ "-total2", mk_float_const b2_i.high;
                  name ^ "-opt-bound", mk_float_const total_i.high]
             with Not_found -> () in
@@ -463,10 +469,10 @@ let ulp_errors task tf (f_min, f_max) =
           Log.report `Important "total2: %s" (bound_info b2_i);
           Log.report `Important "exact total-ulp: %s" (bound_info total_i);
           error2_warning total1_i.high b2_i.high;
-          Some total_i
+          Some total_i, Some model_expr
         end
     in
-    err_approx, err_exact
+    err_approx, err_exact, model_expr
 
 let errors task tform =
   let cs = constraints_of_task task in
@@ -474,29 +480,32 @@ let errors task tform =
     if Config.get_bool_option "rel-error" ||
        Config.get_bool_option "ulp-error" || 
        Config.get_bool_option "find-bounds" then
-      Opt.find_min_max Opt_common.default_opt_pars cs tform.v0
+      Opt.find_min_max (Opt_common.default_opt_pars ()) cs tform.v0
     else
       neg_infinity, infinity in
   Log.report `Important "bounds: [%e, %e]" f_min f_max;
-  let result = { default_result with real_bounds = {low = f_min; high = f_max} } in
+  let result = { (mk_result task) with real_bounds = {low = f_min; high = f_max} } in
   let result =
     if Config.get_bool_option "opt-approx" || Config.get_bool_option "opt-exact" then
-      let abs_approx, abs_exact = 
+      let abs_approx, abs_exact, abs_model_expr = 
         if Config.get_bool_option "abs-error" then
           absolute_errors task tform
         else
-          None, None in
-      let rel_approx, rel_exact = 
+          None, None, None in
+      let rel_approx, rel_exact, rel_model_expr = 
         if Config.get_bool_option "rel-error" then
           relative_errors task tform (f_min, f_max)
         else
-          None, None in
-      let ulp_approx, ulp_exact = 
+          None, None, None in
+      let ulp_approx, ulp_exact, ulp_model_expr = 
         if Config.get_bool_option "ulp-error" then
           ulp_errors task tform (f_min, f_max)
         else
-          None, None in
+          None, None, None in
       {result with
+       abs_error_model = abs_model_expr;
+       rel_error_model = rel_model_expr;
+       ulp_error_model = ulp_model_expr;
        abs_error_approx = abs_approx;
        abs_error_exact = abs_exact;
        rel_error_approx = rel_approx;
@@ -516,7 +525,7 @@ let safety_check task =
     let msg =
       Format.sprintf "\nPotential exception detected: %s at:\n%s"
         str (ExprOut.Info.print_str e0) in
-    if Config.fail_on_exception then
+    if Config.fail_on_exception () then
       failwith msg
     else
       (Log.warning_str msg; zero_I)
@@ -524,7 +533,7 @@ let safety_check task =
 let compute_form task =
   Log.report `Info "\n*************************************";
   Log.report `Info "Taylor form for: %s" (ExprOut.Info.print_str task.expression);
-  if Config.proof_flag then Proof.new_proof task;
+  if Config.proof_flag () then Proof.new_proof task;
   let start = Unix.gettimeofday() in
   let result, tform = 
     try
@@ -549,19 +558,19 @@ let compute_form task =
       print_form `Info form;
       Log.report `Info "";
       let result = errors task form in
-      { result with name = task.Task.name }, form
+      result, form
     with Failure msg ->
       Log.error_str msg;
-      { default_result with name = task.Task.name }, dummy_tform
+      mk_result task, dummy_tform
   in
   let stop = Unix.gettimeofday() in
   Log.report `Info "Elapsed time: %.5f" (stop -. start);
   let () = 
-    if Config.proof_flag then
+    if Config.proof_flag () then
       begin
         let proof_dir = Config.get_string_option "proof-dir" in
-        Log.report `Important "Saving a proof certificate for %s (in %s)" result.name proof_dir;
-        Proof.save_proof proof_dir (result.name ^ ".proof")
+        Log.report `Important "Saving a proof certificate for %s (in %s)" result.task.name proof_dir;
+        Proof.save_proof proof_dir (result.task.name ^ ".proof")
       end
   in
   { result with elapsed_time = stop -. start }, tform
@@ -581,7 +590,7 @@ let approximate_constraint task (name, c) =
   Log.report `Important "Constraint form";
   let r, tform = compute_form c_task in
   let err = get_problem_absolute_error r in
-  Log.report `Important "\n%s error: %e\n" r.name err;
+  Log.report `Important "\n%s error: %e\n" r.task.name err;
   name, Le (tform.v0, mk_float_const err)
 
 let process_task (task : task) =
@@ -641,18 +650,22 @@ let process_input fname =
   Config.print_options `Debug;
   let tasks = Parser.parse_file fname in
   Log.report `Debug "|tasks| = %d" (List.length tasks);
-  if Config.is_option_defined "fpcore-out" then begin
-    Log.report `Main "Exporting to the FPCore format";
-    let fmt = get_file_formatter "fpcore-out" in
-    List.iter (Out_fpcore.generate_fpcore fmt) tasks
-  end 
-  else begin
-    let results = List.map process_task tasks in
-    Log.report `Info "*************************************\n";
-    List.iter (fun (r, tf) -> print_result r) results
-  end;
+  let results =
+    if Config.is_option_defined "fpcore-out" then begin
+      Log.report `Main "Exporting to the FPCore format";
+      let fmt = get_file_formatter "fpcore-out" in
+      List.iter (Out_fpcore.generate_fpcore fmt) tasks;
+      []
+    end 
+    else begin
+      let results = List.map process_task tasks in
+      Log.report `Info "*************************************\n";
+      List.iter (fun (r, tf) -> print_result r) results;
+      results
+    end in
   Log.close ();
-  Log.report `Main ""
+  Log.report `Main "";
+  results
 
 let validate_options () =
   let open Config in
@@ -691,37 +704,22 @@ let validate_options () =
     validate_other ();
   end
 
-let main () =
-  Log.report `Main "FPTaylor, version %s" Version.version;
-  if Config.input_files = [] then
-    begin
-      let prog_name = Sys.argv.(0) in
-      Printf.printf
-        "\nUsage: %s [--opt_name opt_value ...] [-c config1 ...] \
-         input_file1 [input_file2 ...]\n\n\
-         Run '%s --help' to see a list of available options.\n\n"
-        prog_name prog_name;
-      exit 1
+let fptaylor ~input_files =
+  if Config.is_option_defined "fpcore-out" then begin
+    open_file "fpcore-out" (Config.get_string_option "fpcore-out")
+  end;
+  if Config.is_option_defined "export-options" then begin
+    let out_name = Config.get_string_option "export-options" in
+    if out_name <> "" then begin
+      Log.report `Important "Exporting options into: %s" out_name;
+      open_file "config-out" out_name;
+      Config.export_options (get_file_formatter "config-out");
+      close_file "config-out"
     end
-  else
-    begin
-      validate_options ();
-      if Config.is_option_defined "fpcore-out" then begin
-        open_file "fpcore-out" (Config.get_string_option "fpcore-out")
-      end;
-      if Config.is_option_defined "export-options" then begin
-        let out_name = Config.get_string_option "export-options" in
-        if out_name <> "" then begin
-          Log.report `Important "Exporting options into: %s" out_name;
-          open_file "config-out" out_name;
-          Config.export_options (get_file_formatter "config-out");
-          close_file "config-out"
-        end
-      end;
-      Log.report `Main "";
-      List.iter process_input Config.input_files;
-      close_all ();
-      exit 0
-    end
-
-let () = main ()
+  end;
+  Log.report `Main "";
+  let results = input_files
+    |> List.fold_left (fun rs fname -> rs @ process_input fname) []
+    |> List.map fst in
+  close_all ();
+  results

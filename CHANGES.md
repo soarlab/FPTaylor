@@ -18,6 +18,12 @@ FPTaylor 0.9.3
 - [FEATURE] bb-eval optimization: the same as bb but does not require
   an OCaml compiler to be installed.
 
+- ExprOut printer for JavaScript.
+
+- find-bounds = false by default.
+
+- bb and bb-eval: evaluate common subexpressions only once.
+
 FPTaylor 0.9.2
 --------------
 

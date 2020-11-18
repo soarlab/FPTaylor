@@ -33,8 +33,8 @@ let gen_bb_opt_code (pars : Opt_common.opt_pars) max_only fmt =
     p (Format.sprintf "  let x_tol = size_max_X start_interval *. %e +. %e in"
                       pars.x_rel_tol pars.x_abs_tol);
     p (Format.sprintf 
-	 "  let upper_bound, lower_bound, c = Opt0.opt f_X start_interval x_tol (%e) (%e) (%d) in" 
-	 pars.f_rel_tol pars.f_abs_tol pars.max_iters);
+     "  let upper_bound, lower_bound, c = Opt0.opt f_X start_interval x_tol (%e) (%e) (%d) in" 
+     pars.f_rel_tol pars.f_abs_tol pars.max_iters);
     p "  let () = Printf.printf \"iter_max = %d\\n\" c in";
     p "  let () = Printf.printf \"max = %0.20e\\n\" upper_bound in";
     p "  let () = Printf.printf \"lower_max = %0.20e\\n\" lower_bound in";
@@ -47,8 +47,8 @@ let gen_bb_opt_code (pars : Opt_common.opt_pars) max_only fmt =
     else
       begin
         p (Format.sprintf 
-	     "  let upper_bound, lower_bound, c = Opt0.opt (fun x -> ~-$ (f_X x)) start_interval x_tol (%e) (%e) (%d) in" 
-	     pars.f_rel_tol pars.f_abs_tol pars.max_iters);
+         "  let upper_bound, lower_bound, c = Opt0.opt (fun x -> ~-$ (f_X x)) start_interval x_tol (%e) (%e) (%d) in" 
+         pars.f_rel_tol pars.f_abs_tol pars.max_iters);
         p "  let () = Printf.printf \"iter_min = %d\\n\" c in";
         p "  let () = Printf.printf \"min = %0.20e\\n\" (-. upper_bound) in";
         p "  let () = Printf.printf \"lower_min = %0.20e\\n\" (-. lower_bound) in";
@@ -58,11 +58,10 @@ let gen_bb_opt_code (pars : Opt_common.opt_pars) max_only fmt =
   let start_interval var_bounds =
     let rec bounds i strs =
       match strs with
-	| [] ->
-	  p "| _ -> failwith \"Out of boundaries\"";
-	| str :: rest ->
-	  p (Format.sprintf "| %d -> %s" i str);
-	  bounds (i + 1) rest in
+      | [] -> p "| _ -> failwith \"Out of boundaries\"";
+      | str :: rest ->
+        p (Format.sprintf "| %d -> %s" i str);
+        bounds (i + 1) rest in
     let n = List.length var_bounds in
     let strs = List.map 
       (fun b -> Format.sprintf "{low = %.20e; high = %.20e}" b.low b.high) var_bounds in
@@ -75,17 +74,23 @@ let gen_bb_opt_code (pars : Opt_common.opt_pars) max_only fmt =
   let expr var_names e = 
     let rec vars i vs =
       match vs with
-	| [] -> ()
-	| v :: rest ->
-	  p (Format.sprintf "  let var_%s = input_array.(%d) in" (ExprOut.fix_name v) i);
-	  vars (i + 1) rest in
+      | [] -> ()
+      | v :: rest ->
+        p (Format.sprintf "  let var_%s = input_array.(%d) in" (ExprOut.fix_name v) i);
+        vars (i + 1) rest in
 (*    p "let f_x input_array = ";
     vars 0 var_names;
     OutFloat.print_fmt fmt e;
     nl(); *)
     p "let f_X input_array = ";
     vars 0 var_names;
-    Out.print_fmt fmt e;
+    let es = expr_ref_list_of_expr e in
+    let n = List.length es in
+    es |> List.iteri (fun i expr ->
+      if i < n - 1 then 
+        Format.fprintf fmt "  let ref_%d = %a in@." i (Out.print_fmt ~margin:max_int) expr
+      else
+        Format.fprintf fmt "  %a@." (Out.print_fmt ~margin:max_int) expr);
     nl() in
 
   fun (cs, e) ->
@@ -101,10 +106,10 @@ let gen_bb_opt_code (pars : Opt_common.opt_pars) max_only fmt =
 let counter = ref 0
 
 let min_max_expr (pars : Opt_common.opt_pars) max_only (cs : constraints) e =
-  if Config.debug then
+  if Config.debug () then
     Log.report `Debug "bb_opt: x_abs_tol = %e, f_rel_tol = %e, f_abs_tol = %e, iters = %d"
-	       pars.x_abs_tol pars.f_rel_tol pars.f_abs_tol pars.max_iters;
-  let base = Config.base_dir in
+         pars.x_abs_tol pars.f_rel_tol pars.f_abs_tol pars.max_iters;
+  let base = Config.base_dir () in
   let tmp = Lib.get_tmp_dir () in
   let in_name = 
     let name = incr counter; Format.sprintf "bb_%d.ml" !counter in
@@ -139,7 +144,7 @@ let min_max_expr (pars : Opt_common.opt_pars) max_only (cs : constraints) e =
       iters = iter_max;
       time = 0.;
     } in
-  if Config.debug then begin
+  if Config.debug () then begin
       let opt, subopt =
         if abs_float fmin > abs_float fmax then
           abs_float fmin, abs_float (fmin -. lower_min)

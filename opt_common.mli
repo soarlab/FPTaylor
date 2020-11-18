@@ -28,6 +28,6 @@ type opt_result = {
 
 val empty_result : opt_result
 
-val default_opt_pars : opt_pars
+val default_opt_pars : unit -> opt_pars
   
 val get_float : ?default:float -> string list -> string -> float

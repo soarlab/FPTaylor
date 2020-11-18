@@ -3,16 +3,19 @@ open Expr
 open Opt_common
 
 type expr' =
+  | Ref' of int
   | Const' of interval
   | Var' of int
   | Pown of expr' * int
   | U_op' of u_op_type * expr'
   | Bin_op' of bin_op_type * expr' * expr'
   | Gen_op' of gen_op_type * expr' list
+  | Ulp_op' of int * int * expr'
 
 let expr'_of_expr var_index =
   let rec of_expr = function
   | Const c -> Const' (Const.to_interval c)
+  | Var v as ex when is_ref_var ex -> Ref' (index_of_ref_var ex)
   | Var v -> Var' (var_index v)
   | Rounding _ -> failwith "Rounding is not supported"
   | U_op (op, arg) -> U_op' (op, of_expr arg)
@@ -25,17 +28,21 @@ let expr'_of_expr var_index =
     else
       Pown (of_expr arg1, n)
   | Bin_op (op, arg1, arg2) -> Bin_op' (op, of_expr arg1, of_expr arg2)
+  | Gen_op (Op_ulp, [Const p; Const e; arg]) ->
+    Ulp_op' (Const.to_int p, Const.to_int e, of_expr arg)
   | Gen_op (op, args) -> Gen_op' (op, List.map of_expr args)
   in
   of_expr
 
-let rec eval_expr' arr = function
+let rec eval_expr' refs arr = function
+| Ref' i -> refs.(i)
 | Const' c -> c
 | Var' v -> arr.(v)
-| Pown (arg, n) -> pow_I_i (eval_expr' arr arg) n
+| Pown (arg, n) -> pow_I_i (eval_expr' refs arr arg) n
+| Ulp_op' (p, e, arg) -> Func.goldberg_ulp_I (p, e) (eval_expr' refs arr arg)
 | U_op' (op, arg) ->
   begin
-    let x = eval_expr' arr arg in
+    let x = eval_expr' refs arr arg in
     match op with
     | Op_neg -> ~-$ x
     | Op_abs -> abs_I x
@@ -59,8 +66,8 @@ let rec eval_expr' arr = function
   end
 | Bin_op' (op, arg1, arg2) ->
   begin
-    let x1 = eval_expr' arr arg1 in
-    let x2 = eval_expr' arr arg2 in
+    let x1 = eval_expr' refs arr arg1 in
+    let x2 = eval_expr' refs arr arg2 in
     match op with
     | Op_add -> x1 +$ x2
     | Op_sub -> x1 -$ x2
@@ -74,15 +81,27 @@ let rec eval_expr' arr = function
   end
 | Gen_op' (op, args) ->
   begin
-    let xs = List.map (eval_expr' arr) args in
+    let xs = List.map (eval_expr' refs arr) args in
     match (op, xs) with
     | (Op_fma, [a;b;c]) -> (a *$ b) +$ c
     | _ -> failwith ("eval_expr': Unsupported general operation: " 
                      ^ gen_op_name op)
   end
 
+let rec eval_expr'_list refs vars i = function
+| [] -> failwith "eval_expr'_list: empty list"
+| [ex] -> eval_expr' refs vars ex
+| ex :: exs ->
+  refs.(i) <- eval_expr' refs vars ex;
+  eval_expr'_list refs vars (i + 1) exs
+
 let min_max_expr (pars : Opt_common.opt_pars) max_only (cs : constraints) e =
-  if Config.debug then
+  (* ExprOut.(
+    Log.report `Main "Testing: %s" (Info.print_str e);
+    let es = expr_ref_list_of_expr e in
+    es |> List.iteri (fun i e -> Log.report `Main "%d: %s" i (Info.print_str e));
+    Log.report `Main "---"); *)
+  if Config.debug () then
     Log.report `Debug "bb-eval_opt: x_abs_tol = %e, f_rel_tol = %e, f_abs_tol = %e, iters = %d"
          pars.x_abs_tol pars.f_rel_tol pars.f_abs_tol pars.max_iters;
   let var_names = vars_in_expr e in
@@ -92,15 +111,17 @@ let min_max_expr (pars : Opt_common.opt_pars) max_only (cs : constraints) e =
   let x_tol = size_max_X start_interval *. pars.x_rel_tol +. pars.x_abs_tol in
   let h_vars = Hashtbl.create 8 in
   var_names |> List.iteri (fun i v -> Hashtbl.add h_vars v i);
-  let e' = expr'_of_expr (Hashtbl.find h_vars) e in
-  let f arr = eval_expr' arr e' in
+  let es' = e |> expr_ref_list_of_expr |> List.map (expr'_of_expr (Hashtbl.find h_vars)) in
+  let refs = Array.make (List.length es' - 1) Interval.zero_I in
+  let f arr = eval_expr'_list refs arr 0 es' in
   let fmax, lower_max, iter_max = 
     Opt0.opt f start_interval x_tol pars.f_rel_tol pars.f_abs_tol pars.max_iters in
   let fmin, lower_min, iter_min =
     if max_only then 0., 0., 0
     else
-      let f_min arr = ~-$ (eval_expr' arr e') in
-      Opt0.opt f_min start_interval x_tol pars.f_rel_tol pars.f_abs_tol pars.max_iters in
+      let f_min arr = ~-$ (eval_expr'_list refs arr 0 es') in
+      let fm, lm, i = Opt0.opt f_min start_interval x_tol pars.f_rel_tol pars.f_abs_tol pars.max_iters in
+      -.fm, -.lm, i in
   let rmin = {
     result = fmin;
     lower_bound = lower_min;

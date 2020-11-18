@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
+          "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <title>Test Bootstrap 4</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.5.3/dist/css/bootstrap.min.css" integrity="sha384-TX8t27EcRE3e/ihU7zmQxVncDAy5uIKz4rEkgIXeMed4M0jlfIDPvg6uqKI2xXr2" crossorigin="anonymous">    <!-- jQuery library -->
+    <style>
+    </style>
+  </head>
+  <body>
+    <div class="container-fluid p-3 border bg-primary text-white">
+      <h1>My First Bootstrap Page</h1>
+      <p>This is some text.</p>
+    </div>
+    <div class="container-fluid">
+      <div class="row">
+        <div class="col-md-4 text-muted">
+          <p>Column 1</p>
+          <table class="table table-striped table-hover table-borderless">
+            <thead class="thead-dark">
+              <tr>
+                <th>Firstname</th>
+                <th>Lastname</th>
+                <th>Email</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>John</td>
+                <td>Doe</td>
+                <td>john@example.com</td>
+              </tr>
+              <tr>
+                <td>Mary</td>
+                <td>Moe</td>
+                <td>mary@example.com</td>
+              </tr>
+              <tr>
+                <td>July</td>
+                <td>Dooley</td>
+                <td>july@example.com</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="col-md-2 text-primary"><a href="#">Column 2</a>
+        </div>
+        <div class="col-md-4 text-secondary">
+          Column 3
+          <div class="card">
+            <div class="card-header">Header</div>
+            <div class="card-body">Basic card</div>
+          </div>
+        </div>
+        <div class="col-md-2 bg-light text-body">Column 4
+          <div class="alert alert-warning alert-dismissible fade show" role="alert">
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+            <strong>Alert</strong> 
+          </div>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-6">
+          <p>Left</p>
+          <div class="btn-group">
+            <button type="button" class="btn btn-primary">Success</button>
+            <button type="button" class="btn btn-outline-primary">Stop</button>
+            <button type="button" class="btn btn-outline-primary">Run</button>
+          </div>
+          <button class="btn btn-primary" data-toggle="collapse" data-target="#demo">Collapsible</button>
+          <div id="demo" class="collapse">
+            Lorem ipsum dolor text....
+          </div>
+          <div>Text</div>
+        </div>
+        <div class="col-6">
+          <p>Right</p>
+          <button type="button" class="btn btn-success">Success</button>
+          <button type="button" class="btn btn-outline-danger">Stop</button>
+          <button type="button" class="btn btn-outline-success">Run</button>
+          <hr/>
+          <div class="progress">
+            <div class="progress-bar progress-bar-striped" style="width:70%">70%</div>
+          </div>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-6">
+          <ul class="nav nav-tabs">
+            <li class="nav-item">
+              <a class="nav-link active" data-toggle="tab" href="#tab1">Link</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" data-toggle="tab" href="#tab2">Link</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" data-toggle="tab" href="#tab3">Link</a>
+            </li>
+          </ul>
+          <div class="tab-content">
+            <div class="tab-pane container active" id="tab1">Tab 1</div>
+            <div class="tab-pane container fade" id="tab2">Tab 2</div>
+            <div class="tab-pane container" id="tab3">Tab 3</div>
+          </div>
+
+        </div>
+        <div class="col-6">
+
+          
+
+        </div>
+        
+      </div>
+    </div>
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js" integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-ho+j7jyWK8fNQe+A12Hb8AhRq26LrZ/JpcUGGOn+Y7RsweNrtN/tE3MoK7ZeZDyx" crossorigin="anonymous"></script>
+  </body>
+</html>

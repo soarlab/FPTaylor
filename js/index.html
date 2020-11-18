@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
+          "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <title>FPTaylor JS</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.5.3/dist/css/bootstrap.min.css" integrity="sha384-TX8t27EcRE3e/ihU7zmQxVncDAy5uIKz4rEkgIXeMed4M0jlfIDPvg6uqKI2xXr2" crossorigin="anonymous">
+    <script type="text/javascript" src="default_config.js"></script>
+    <script type="text/javascript" src="examples.js"></script>
+    <script type="text/javascript" src="main.js"></script>
+    <style>
+      html {
+        height: 100%;
+      }
+
+      body {
+        height: 100%;
+      }
+
+      nav {
+        height: 2.5rem;
+      }
+
+      main {
+        height: calc(100% - 2.5rem);
+      }
+
+      textarea {
+        resize: none;
+        border: none;
+        outline: none;
+        font-size: 87%;
+      }
+    </style>
+  </head>
+  <!-- Header -->
+  <body class="bg-light">
+    <nav class="navbar navbar-dark bg-dark py-0">
+      <a class="navbar-brand my-0 py-0" href="#fptaylor-js-info" data-toggle="modal">FPTaylor JS</a>
+    </nav>
+    <!-- Modal dialog -->
+    <div class="modal fade" id="fptaylor-js-info" tabindex="-1">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">FPTaylor JS</h5>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <div class="modal-body">
+            <p>A JavaScript version of 
+              <a href="https://github.com/soarlab/FPTaylor" target="_blank">FPTaylor</a>
+              compiled with <a href="https://ocsigen.org/js_of_ocaml" target="_blank">Js_of_ocaml</a>.
+            </p>
+            <p>The site is created with <a href="https://getbootstrap.com" target="_blank">Bootstrap</a>.</p>
+            <hr/>
+            <p>FPTaylor <a href="https://github.com/soarlab/FPTaylor/blob/develop/REFERENCE.md" target="_blank">reference</a>.</p>
+            <p>Note: trigonometric functions are not supported because the 
+              <a href="https://github.com/monadius/ocaml_simple_interval" target="_blank">OCaml interval arithmetic library</a>
+              does not implement them.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Main content -->
+    <main class="container-fluid py-3">
+      <div class="row px-3 h-100">
+        <!-- Output section -->
+        <section class="col-md-6 order-2 order-md-1 pt-2 py-md-0 px-0 pl-md-0 pr-md-2 h-100">
+          <div class="card h-100">
+            <div class="card-header">
+              <ul class="nav nav-tabs card-header-tabs">
+                <li class="nav-item">
+                  <a class="nav-link active" data-toggle="tab" href="#output">Output</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" data-toggle="tab" href="#results">Results</a>
+                </li>
+              </ul>
+            </div>
+            <div class="card-body tab-content p-0">
+              <!-- Console output -->
+              <pre id="output" class="tab-pane active p-2 h-100 overflow-auto">
+              </pre>
+              <!-- Results -->
+              <div id="results" class="tab-pane h-100 overflow-auto">
+                <table class="table table-hover table-striped table-borderless">
+                  <thead>
+                    <tr>
+                      <th>Name</th><th>Abs Error</th><th>Rel Error</th><th>Ulp Error</th><th>Time</th>
+                    </tr>
+                  </thead>
+                  <tbody id="results-tbody">
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </section>
+        <!-- Input section -->
+        <section class="col-md-6 order-1 order-md-2 px-0 pr-md-0 pl-md-2 h-100">
+          <div class="d-flex flex-column h-100">
+            <!-- Input file -->
+            <div class="card mb-1" style="flex: 3;">
+              <div class="card-header py-1 pr-1">
+                <div class="form-inline">
+                  <span>Input</span>
+                  <label class="ml-auto mr-2" for="input-examples">Examples</label>
+                  <select id="input-examples" class="custom-select custom-select-sm">
+                  </select>
+                </div>
+              </div>
+              <div class="card-body p-0">
+                <textarea id="input" class="text-monospace p-2 h-100 w-100" spellcheck="false"></textarea>
+              </div>
+            </div>
+            <!-- Config file -->
+            <div class="card my-1" style="flex: 2;">
+              <div class="card-header py-1 pr-1">
+                <div class="form-inline">
+                  <span>Configuration</span>
+                  <label class="ml-auto mr-2" for="input-examples">Examples</label>
+                  <select id="config-examples" class="custom-select custom-select-sm">
+                  </select>
+                </div>
+              </div>
+              <div class="card-body p-0">
+                <textarea id="config" class="text-monospace p-2 h-100 w-100" spellcheck="false"></textarea>
+              </div>
+            </div>
+            <div>
+              <button id="run" type="button" class="btn btn-success w-25">Run</button>
+              <button id="clear" type="button" class="btn btn-primary w-25">Clear</button>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js" integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-ho+j7jyWK8fNQe+A12Hb8AhRq26LrZ/JpcUGGOn+Y7RsweNrtN/tE3MoK7ZeZDyx" crossorigin="anonymous"></script>
+  </body>
+</html>

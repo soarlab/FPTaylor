@@ -94,7 +94,7 @@ let num_of_float x =
   match classify_float x with
   | FP_nan | FP_infinite ->
      let msg = Printf.sprintf "num_of_float: %e" x in
-     if Config.fail_on_exception then
+     if Config.fail_on_exception () then
        failwith msg
      else
        (Log.warning_str msg; Int 0)

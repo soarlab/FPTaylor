@@ -69,7 +69,7 @@ let ( +^ ) = Fpu.fadd_high and
   ( *^ ) = Fpu.fmul_high
 
 let make_stronger f =
-  if Config.proof_flag then
+  if Config.proof_flag () then
     if f = 0.0 then
       0.0
     else
@@ -78,7 +78,7 @@ let make_stronger f =
     f
 
 let make_stronger_i v =
-  if Config.proof_flag then {
+  if Config.proof_flag () then {
     low = More_num.prev_float v.low;
     high = More_num.next_float v.high;
   }
@@ -90,7 +90,7 @@ let estimate_expr, reset_estimate_cache =
   let estimate (cs : constraints) e =
     if Config.get_bool_option "intermediate-opt" then
       let () = Log.report `Debug "Estimating: %s" (ExprOut.Info.print_str e) in
-      let min, max = Opt.find_min_max Opt_common.default_opt_pars cs e in
+      let min, max = Opt.find_min_max (Opt_common.default_opt_pars ()) cs e in
       Log.report `Debug "Estimation result: [%f, %f]" min max;
       {low = min; high = max}
     else
@@ -255,7 +255,7 @@ let const_rnd_form rnd e =
         let _, p2_exp = frexp p2 in
         let m2' =
           (* TODO: do not add d for constants in the normal range *)
-          if Config.proof_flag then
+          if Config.proof_flag () then
             p2 +^ (get_eps rnd.delta_exp /. get_eps rnd.eps_exp)
           else
             p2 in
@@ -304,7 +304,7 @@ let var_rnd_form cs rnd e =
   Log.report `Debug "var_rnd_form";
   match e with
   | Var v -> 
-    if Config.proof_flag then
+    if Config.proof_flag () then
       let form_index = next_form_index() in
       let bound = (abs_I (cs.var_interval v)).high in
       let p2 = Func.floor_power2 bound in
@@ -477,14 +477,14 @@ let inv_form cs f =
       (xi *$. x) +$ s) x1 zero_I in
   let m1 = make_stronger (abs_I s1).high in
   let d =
-    if Config.proof_flag then
+    if Config.proof_flag () then
       pow_I_i (x0_int +$ {low = -.m1; high = m1}) 3
     else
       pow_I_i (x0_int +$ s1) 3 in
   let _ = 
     if (abs_I d).low <= 0.0 then
       let msg = "inv_form: division by zero" in
-      if Config.fail_on_exception then
+      if Config.fail_on_exception () then
         failwith msg
       else
         Log.warning_str msg
@@ -522,7 +522,7 @@ let sqrt_form cs f =
       (xi *$. x) +$ s) x1 zero_I in
   let m1 = make_stronger (abs_I s1).high in
   let d =
-    if Config.proof_flag then
+    if Config.proof_flag () then
       let t = (x0_int +$ {low = -.m1; high = m1}) in
       sqrt_I t *$ t
     else
@@ -556,7 +556,7 @@ let sin_form cs f =
       (xi *$. x) +$ s) x1 zero_I in
   let m1 = make_stronger (abs_I s1).high in
   let d = 
-    if Config.proof_flag then
+    if Config.proof_flag () then
       sin_I (x0_int +$ {low = -.m1; high = m1})
     else
       sin_I (x0_int +$ s1) in
@@ -589,7 +589,7 @@ let cos_form cs f =
       (xi *$. x) +$ s) x1 zero_I in
   let m1 = make_stronger (abs_I s1).high in
   let d = 
-    if Config.proof_flag then
+    if Config.proof_flag () then
       cos_I (x0_int +$ {low = -.m1; high = m1})
     else
       cos_I (x0_int +$ s1) in
@@ -647,7 +647,7 @@ let asin_form cs f =
   let m1 = make_stronger (abs_I s1).high in
   let d =
     let xi =
-      if Config.proof_flag then
+      if Config.proof_flag () then
         x0_int +$ {low = -.m1; high = m1}
       else
         x0_int +$ s1 in
@@ -682,7 +682,7 @@ let acos_form cs f =
   let m1 = make_stronger (abs_I s1).high in
   let d =
     let xi =
-      if Config.proof_flag then
+      if Config.proof_flag () then
         x0_int +$ {low = -.m1; high = m1}
       else
         x0_int +$ s1 in
@@ -716,7 +716,7 @@ let atan_form cs f =
   let m1 = make_stronger (abs_I s1).high in
   let d =
     let xi =
-      if Config.proof_flag then
+      if Config.proof_flag () then
         x0_int +$ {low = -.m1; high = m1}
       else
         x0_int +$ s1 in
@@ -749,7 +749,7 @@ let exp_form cs f =
       (xi *$. x) +$ s) x1 zero_I in
   let m1 = make_stronger (abs_I s1).high in
   let d =
-    if Config.proof_flag then
+    if Config.proof_flag () then
       exp_I (x0_int +$ {low = -.m1; high = m1})
     else
       exp_I (x0_int +$ s1) in
@@ -781,7 +781,7 @@ let log_form cs f =
       (xi *$. x) +$ s) x1 zero_I in
   let m1 = make_stronger (abs_I s1).high in
   let d = 
-    if Config.proof_flag then
+    if Config.proof_flag () then
       inv_I (pow_I_i (x0_int +$ {low = -.m1; high = m1}) 2)
     else
       inv_I (pow_I_i (x0_int +$ s1) 2) in
@@ -815,7 +815,7 @@ let sinh_form cs f =
   let m1 = make_stronger (abs_I s1).high in
   let d =
     let xi =
-      if Config.proof_flag then
+      if Config.proof_flag () then
         x0_int +$ {low = -.m1; high = m1}
       else
         x0_int +$ s1 in
@@ -850,7 +850,7 @@ let cosh_form cs f =
   let m1 = make_stronger (abs_I s1).high in
   let d =
     let xi =
-      if Config.proof_flag then
+      if Config.proof_flag () then
         x0_int +$ {low = -.m1; high = m1}
       else
         x0_int +$ s1 in
@@ -885,7 +885,7 @@ let tanh_form cs f =
   let m1 = make_stronger (abs_I s1).high in
   let d =
     let xi =
-      if Config.proof_flag then
+      if Config.proof_flag () then
         x0_int +$ {low = -.m1; high = m1}
       else
         x0_int +$ s1 in
@@ -921,7 +921,7 @@ let asinh_form cs f =
   let m1 = make_stronger (abs_I s1).high in
   let d =
     let xi =
-      if Config.proof_flag then
+      if Config.proof_flag () then
         x0_int +$ {low = -.m1; high = m1}
       else
         x0_int +$ s1 in
@@ -956,7 +956,7 @@ let acosh_form cs f =
   let m1 = make_stronger (abs_I s1).high in
   let d =
     let xi =
-      if Config.proof_flag then
+      if Config.proof_flag () then
         x0_int +$ {low = -.m1; high = m1}
       else
         x0_int +$ s1 in
@@ -991,7 +991,7 @@ let atanh_form cs f =
   let m1 = make_stronger (abs_I s1).high in
   let d =
     let xi =
-      if Config.proof_flag then
+      if Config.proof_flag () then
         x0_int +$ {low = -.m1; high = m1}
       else
         x0_int +$ s1 in

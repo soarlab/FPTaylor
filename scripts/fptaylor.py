@@ -11,13 +11,16 @@ class Config:
     def __init__(self, lst, base_path=''):
         self.args = []
         for arg in lst:
-            if '=' in arg:
-                lhs, rhs = arg.split('=')
-                self.args.append('--' + lhs.strip())
-                self.args.append(rhs.lstrip())
-            else:
-                self.args.append('-c')
-                self.args.append(os.path.join(base_path, arg))
+            self.add(arg, base_path=base_path)
+
+    def add(self, arg, base_path=''):
+        if '=' in arg:
+            lhs, rhs = arg.split('=')
+            self.args.append('--' + lhs.strip())
+            self.args.append(rhs.lstrip())
+        else:
+            self.args.append('-c')
+            self.args.append(os.path.join(base_path, arg))
 
 
 class FPTaylorExpression:

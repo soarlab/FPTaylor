@@ -36,5 +36,9 @@ module OCamlFloatPrinter : PrinterType
 module Z3PythonPrinter : PrinterType
 
 module GelpiaPrinter : PrinterType
-                         
+
+module JavaScriptPrinter : PrinterType
+
+module JavaScriptIntervalPrinter : PrinterType
+
 module Info : P

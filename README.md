@@ -1,6 +1,9 @@
 FPTaylor: A Tool for Rigorous Estimation of Round-off Floating-point Errors
 ===========================================================================
 
+You can run FPTaylor without installation at 
+[FPTaylor JS's website](https://monadius.github.io/FPTaylorJS).
+
 Publications
 ------------
 
@@ -30,18 +33,19 @@ Requirements
 - (Optional) [Maxima](http://maxima.sourceforge.net), a Computer Algebra System
   The easiest way to install Maxima on Ubuntu is `sudo apt-get install maxima`
 
-Linux Setup
------------
+macOS and Linux Setup
+---------------------
 
-Steps below have been tested on Ubuntu 12.04, Ubuntu 14.04, and Ubuntu 16.04.
+Steps below have been tested on Ubuntu 12.04, Ubuntu 14.04, Ubuntu 16.04, macOS 10.14, 
+and macOS 10.15.
 
 The following command will build FPTaylor and the interval computation library:
 
     make all
 
 If you encounter a problem during the build process then you may try
-steps described in the next section (macOS and Linux Setup).  The
-executable FPTaylor file is called `fptaylor`. It is recommended to
+steps described in the next section (alternative interval arithmetic library).
+The executable FPTaylor file is called `fptaylor`. It is recommended to
 create the environment variable `FPTAYLOR_BASE` which contains the
 path to the base FPTaylor directory.  If this environment variable is
 created, then it will be possible to copy `fptaylor` to different
@@ -50,13 +54,12 @@ can be created with the following commands (in bash):
 
     export FPTAYLOR_BASE=$(pwd)
     echo "export FPTAYLOR_BASE=$(pwd)" >> ~/.bashrc
-	
-macOS and Linux Setup
----------------------
 
-The main issue with macOS (and some newer versions of Linux) is that
-the interval computation library [INTERVAL](INTERVAL) cannot be
-compiled on this system. There is an alternative interval arithmetic
+Alternative Interval Arithmetic Library
+---------------------------------------
+
+The interval computation library [INTERVAL](INTERVAL) may be incompatible with
+some operating systems and processors. There is an alternative interval arithmetic
 library distributed with FPTaylor (see [simple_interval](simple_interval)).
 This library is under development so it does not support all functions
 of the [INTERVAL](INTERVAL) library. In particular, trigonometric
@@ -66,7 +69,7 @@ The following command will build FPTaylor with the simple interval
 library:
 
     make fptaylor-simple-interval
-	
+
 Benchmarks and Examples
 -----------------------
 
@@ -93,8 +96,47 @@ Formal Verification of FPTaylor Results in HOL Light
 See the [formal](formal) directory for corresponding HOL Light
 theories and procedures.
 
-VirtualBox Image
-----------------
+JavaScript
+----------
 
-An old version of FPTaylor is available as a VirtualBox image at
-[https://sites.google.com/site/fptaylordemo/installation](https://sites.google.com/site/fptaylordemo/installation)
+FPTaylor can be compiled to JavaScript with [Js_of_ocaml](https://ocsigen.org/js_of_ocaml).
+
+Install Js_of_ocaml and ocamlfind:
+
+```
+opam install js_of_ocaml js_of_ocaml-ppx js_of_ocaml-lwt ocamlfind
+```
+
+Then run
+
+```
+make clean
+make fptaylor-js
+```
+
+The file `fptaylor.js` will be created in the project directory. 
+This command also creates `default_config.js` which exports a string representation
+of the default config file (with some required modifications).
+
+It is also possible to create a debug version of `fptaylor.js`:
+
+```
+make clean
+make fptaylor-js-debug
+```
+
+JavaScript Examples
+-------------------
+
+Copy `fptaylor.js` and `default_config.js` to the [js](js) directory.
+Delete the `export` statement from `js/default_config.js`.
+Then start a local server:
+
+```
+cd js
+python3 -m http.server
+```
+
+Now open `localhost:8000` in your browser.
+
+A full-featured [website](https://monadius.github.io/FPTaylorJS) is also available.

@@ -1,0 +1,248 @@
+:root {
+  --bg-color: #e9ecef;
+  --font-color: #343a40;
+  --border-color: #ced4da;
+  --title-bg-color: var(--border-color);
+  --output-bg-color: #fff;
+  --input-bg-color: var(--output-bg-color);
+  --config-bg-color: var(--output-bg-color);
+  --tab-active-bg-color: #eee;
+  --tab-selected-bg-color: #bbb;
+  --table-th-bg-color: khaki;
+  --table-even-bg-color: #eee;
+  --light-icon-visibility: hidden;
+  --dark-icon-visibility: visible;
+  font-family: Arial, sans-serif;
+}
+
+html {
+  box-sizing: border-box;
+  height: 100%;
+}
+
+*, *::before, *::after {
+  box-sizing: inherit;
+}
+
+html[dark] {
+  --bg-color: #303133;
+  --font-color: #efefef;
+  --border-color: #444;
+  --output-bg-color: #131414;
+  --tab-active-bg-color: #222;
+  --tab-selected-bg-color: #333;
+  /* --table-th-bg-color: rebeccapurple; */
+  --table-th-bg-color: darkslateblue;
+  --table-even-bg-color: #333;
+  --light-icon-visibility: visible;
+  --dark-icon-visibility: hidden;
+}
+
+body {
+  background-color: var(--bg-color);
+  color: var(--font-color);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  margin: 0;
+}
+
+header {
+  display: flex;
+  padding: 10px;
+  line-height: 1.5em;
+  width: 100%;
+  justify-content: space-between;
+  /* background-color: burlywood; */
+}
+
+h4 {
+  margin: 0;
+  margin-left: 10px;
+  text-align: center;
+  /* background-color: cadetblue; */
+}
+
+#light-theme-icon {
+  position: absolute;
+  right: 10px;
+  top: 10px;
+  visibility: var(--light-icon-visibility);
+}
+
+#dark-theme-icon {
+  position: absolute;
+  visibility: var(--dark-icon-visibility);
+  right: 10px;
+  top: 10px;
+}
+
+.icon-class {
+  fill: var(--font-color);
+}
+
+/* header > a {
+  position: fixed;
+  top: 0;
+} */
+
+/* header > span {
+  line-height: 1.5em;
+} */
+
+main {
+  display: flex;
+  flex: 1;
+  width: 100%;
+  /* height: 90%; */
+  overflow: hidden;
+}
+
+#output-panel {
+  display: flex;
+  flex-direction: column;
+  width: 50%;
+  height: 100%;
+  padding: 0px 5px 10px 10px;
+}
+
+#output-container {
+  overflow: auto;
+  flex: 1;
+  /* padding: 0px 10px 10px 10px; */
+  border: 2px solid var(--border-color);
+  background-color: var(--output-bg-color);
+}
+
+#output {
+  font-family: monospace;
+  padding: 0px 10px 10px 10px;
+  font-size: 14px;
+  color: var(--font-color);
+}
+
+#input-panel {
+  width: 50%;
+  padding: 0px 10px 10px 5px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+textarea {
+  resize: none;
+  outline: none;
+  font-family: monospace;
+  font-size: 14px;
+  margin: 0;
+  border: 2px solid var(--border-color);
+}
+
+#input {
+  width: 100%;
+  flex: 3;
+  padding: 5px;
+  background-color: var(--input-bg-color);
+  color: var(--font-color);
+}
+
+#config {
+  width: 100%;
+  flex: 2;
+  padding: 5px;
+  background-color: var(--config-bg-color);
+  color: var(--font-color);
+}
+
+.title {
+  width: 100%;
+  background-color: var(--title-bg-color);
+  padding: 5px;
+  line-height: 1.5em;
+  height: 2em;
+  display: flex;
+  justify-content: space-between;
+}
+
+.title > span {
+  margin-left: 5px;
+}
+
+label {
+  margin-right: 5pt;
+}
+
+#title-config {
+  margin-top: 10px;
+}
+
+.tabs {
+  display: flex;
+  overflow: hidden;
+  height: 2em;
+  background-color: var(--title-bg-color);
+}
+
+.tabs button {
+  font-size: 12pt;
+  border: none;
+  outline: none;
+  padding: 0px 10px;
+  background-color: inherit;
+  color: var(--font-color);
+}
+
+.tabs button:hover {
+  background-color: var(--tab-selected-bg-color);
+}
+
+.tabs button.tab-active {
+  background-color: var(--tab-active-bg-color);
+}
+
+.tabcontent {
+  display: none;
+}
+
+button {
+  font-size: 16pt;
+}
+
+.controls-container {
+  display: flex;
+  /* margin: 5px; */
+}
+
+#run {
+  flex: 1;
+}
+
+#clear {
+  flex: 1;
+}
+
+.stdout {
+}
+
+.stderr {
+  color: #d9534f;
+}
+
+table {
+  width: 100%;
+  border: none;
+  border-collapse: collapse;
+}
+
+th {
+  background-color: var(--table-th-bg-color);
+}
+
+th, td {
+  text-align: left;
+  padding: 5px;
+}
+
+tr:nth-child(even) {
+  background-color: var(--table-even-bg-color);
+}
