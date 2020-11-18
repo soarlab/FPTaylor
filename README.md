@@ -116,7 +116,7 @@ make fptaylor-js
 
 The file `fptaylor.js` will be created in the project directory. 
 This command also creates `default_config.js` which exports a string representation
-of the default config file with some required modifications.
+of the default config file (with some required modifications).
 
 It is also possible to create a debug version of `fptaylor.js`:
 
@@ -129,7 +129,7 @@ JavaScript Examples
 -------------------
 
 Copy `fptaylor.js` and `default_config.js` to the [js](js) directory.
-Delete the `export` statement from `js.default_config.js`.
+Delete the `export` statement from `js/default_config.js`.
 Then start a local server:
 
 ```
