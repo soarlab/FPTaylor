@@ -22,6 +22,8 @@ FPTaylor 0.9.3
 
 - find-bounds = false by default.
 
+- bb and bb-eval: evaluate common subexpressions only once.
+
 FPTaylor 0.9.2
 --------------
 
