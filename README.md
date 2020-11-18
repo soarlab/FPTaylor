@@ -128,7 +128,9 @@ make fptaylor-js-debug
 JavaScript Examples
 -------------------
 
-Copy `fptaylor.js` to the [js](js) directory. Then start a local server:
+Copy `fptaylor.js` and `default_config.js` to the [js](js) directory.
+Delete the `export` statement from `js.default_config.js`.
+Then start a local server:
 
 ```
 cd js
