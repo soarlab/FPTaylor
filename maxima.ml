@@ -45,7 +45,7 @@ let maxima_expr task str =
 
 let simplify task e =
   try
-    let str = "factor(" ^ ExprOut.Info.print_str e ^ ")" in
+    let str = "ratexpand(" ^ ExprOut.Info.print_str e ^ ")" in
     maxima_expr task str
   with 
     | Failure msg -> 

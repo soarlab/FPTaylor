@@ -24,6 +24,8 @@ FPTaylor 0.9.3
 
 - bb and bb-eval: evaluate common subexpressions only once.
 
+- Maxima: the simplificaiton function is `ratexpand` now.
+
 FPTaylor 0.9.2
 --------------
 
