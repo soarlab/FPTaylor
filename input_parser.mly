@@ -171,9 +171,17 @@ expr:
   | ID { Identifier $1 }
   | NUMBER { Numeral (More_num.num_of_float_string $1) }
   | SINGLE_NUMERAL
-    { Raw_rounding (string_to_rounding "rnd32", Numeral (More_num.num_of_float_string $1)) }
+    { 
+      let rnd = string_to_rounding "rnd32" in
+      let v = More_num.num_of_float_string $1 in
+      Numeral (Binary_float.round_num rnd v)
+    }
   | DOUBLE_NUMERAL 
-    { Raw_rounding (string_to_rounding "rnd64", Numeral (More_num.num_of_float_string $1)) }
+    { 
+      let rnd = string_to_rounding "rnd64" in
+      let v = More_num.num_of_float_string $1 in
+      Numeral (Binary_float.round_num rnd v)
+    }
   | rnd LPAREN expr RPAREN { Raw_rounding ($1, $3) }
   | expr PLUS expr { Raw_bin_op ("+", $1, $3) }
   | expr MINUS expr { Raw_bin_op ("-", $1, $3) }
