@@ -1,0 +1,5 @@
+Variables
+  float32 x in [0.01, 0.5];
+
+Expressions
+  exp1x_32 rnd32= ((exp(x) - 1) / x);

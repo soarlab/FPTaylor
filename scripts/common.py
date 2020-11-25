@@ -64,9 +64,9 @@ def get_hash(input_file, args):
     args = sorted(args)
     m = hashlib.md5()
     with open(input_file, 'r') as f:
-        m.update(f.read())
+        m.update(f.read().encode('utf-8'))
     for arg in args:
-        m.update(arg)
+        m.update(arg.encode('utf-8'))
     return m.hexdigest()
 
 

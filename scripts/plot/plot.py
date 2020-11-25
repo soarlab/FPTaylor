@@ -28,7 +28,7 @@ fptaylor_log = os.path.join(tmp_path, "log_fptaylor")
 fptaylor = os.path.join(fptaylor_base, "fptaylor")
 
 error_bounds_path = os.path.normpath(
-    os.path.join(base_path, "..", "..", "ErrorBounds"))
+    os.path.join(base_path, "..", "..", "..", "..", "ErrorBounds"))
 racket_plot = os.path.join(error_bounds_path, "racket", "plot-data.rkt")
 
 fpbench_path = os.path.normpath(
@@ -709,6 +709,6 @@ for input_file in args.input:
             plot_tasks[task].add_error_file(data_file, style="lines")
 
     # plot-fptaylor.rkt
-    for task in plot_tasks.itervalues():
+    for task in plot_tasks.values():
         task.plot()
 
