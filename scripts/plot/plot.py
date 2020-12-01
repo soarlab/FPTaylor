@@ -32,7 +32,7 @@ error_bounds_path = os.path.normpath(
 racket_plot = os.path.join(error_bounds_path, "racket", "plot-data.rkt")
 
 fpbench_path = os.path.normpath(
-    os.path.join(base_path, "..", "..", "forks", "FPBench", "tools"))
+    os.path.join(base_path, "..", "..", "..", "FPBench", "src"))
 core2fptaylor = os.path.join(fpbench_path, "core2fptaylor.rkt")
 
 racket = "racket"

@@ -285,9 +285,10 @@ let absolute_errors task tf =
         let abs_exprs = List.map (fun (e, err) -> mk_abs e, err.exp) v1 in
         let full_expr, exp =
           let full_expr', exp = sum_symbolic abs_exprs in
-          if Config.get_bool_option "maxima-simplification" then
+          (* FIXME: Incorrect simplification results for horner50.txt if the following lines are uncommented *)
+          (* if Config.get_bool_option "maxima-simplification" then
             Maxima.simplify task full_expr', exp
-          else
+          else *)
             full_expr', exp in
         let bound =
           let r = Opt.find_max (Opt_common.default_opt_pars ()) cs full_expr in
