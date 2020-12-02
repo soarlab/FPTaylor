@@ -26,6 +26,8 @@ FPTaylor 0.9.3
 
 - Maxima: the simplificaiton function is `ratexpand` now.
 
+- FPCore export: context annotations for mixed precision benchmarks.
+
 FPTaylor 0.9.2
 --------------
 

@@ -55,9 +55,6 @@ Example:
 fptaylor --fpcore-out test.fpcore input_file1 input_file2
 ```
 
-Not all features of FPTaylor are supported by the FPCore format. For instance,
-mixed precision computations cannot be translated into FPCore.
-
 ## Input file format
 
 Each **FPTaylor** input files consists of several sections:

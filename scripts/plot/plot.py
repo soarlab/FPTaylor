@@ -562,7 +562,6 @@ class FPTaylorTask:
         cmd = [fptaylor] + self.input_files + cfg_args + args + self.extra_args
         common.run(cmd, log=log)
 
-
 class InputFileTask:
     def __init__(self, input_file):
         self.input_file = input_file
