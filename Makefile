@@ -5,15 +5,13 @@ INTERVAL_DIR = INTERVAL
 SIMPLE_INTERVAL_DIR = simple_interval
 OPT_DIR = b_and_b
 
-SRC = version.mli\
+BASE_SRC = version.mli\
 	version.ml\
 	lib.mli\
 	lib.ml\
 	func.ml\
 	log.mli\
 	log.ml\
-	config.mli\
-	config.ml\
 	more_num.mli\
 	more_num.ml\
 	rounding.mli\
@@ -29,16 +27,24 @@ SRC = version.mli\
 	eval.ml\
 	task.mli\
 	task.ml\
+	config.mli\
+	config.ml\
 	input_parser_env.mli\
 	input_parser_env.ml\
 	input_parser.mli\
 	input_parser.ml\
 	input_lexer.ml\
 	parser.mli\
-	parser.ml\
+	parser.ml
+
+SRC = $(BASE_SRC)\
+	out_fpcore.mli\
+	out_fpcore.ml\
 	proof_base.mli\
 	proof_base.ml\
 	proof.ml\
+	rounding_simpl.mli\
+	rounding_simpl.ml\
 	maxima.mli\
 	maxima.ml\
 	opt_common.mli\
@@ -58,10 +64,6 @@ SRC = version.mli\
 	opt.mli\
 	opt.ml\
 	out_test.ml\
-	rounding_simpl.mli\
-	rounding_simpl.ml\
-	out_fpcore.mli\
-	out_fpcore.ml\
 	out_error_bounds.mli\
 	out_error_bounds.ml\
 	taylor_form.mli\
@@ -74,8 +76,13 @@ PROOF_SRC= lib.ml\
 	   proof_base.ml\
 	   proof_to_text.ml
 
+EXPORT_SRC=$(BASE_SRC)\
+	out_fpcore.mli\
+	out_fpcore.ml\
+	export_main.ml
+
 TEST_DIR=benchmarks/tests
-TESTS=	test01_sum3.txt\
+TESTS= test01_sum3.txt\
 	test02_sum8.txt\
 	test03_nonlin2.txt\
 	test05_nonlin1.txt\
@@ -86,6 +93,8 @@ OBJ_BYTE = $(OBJ_BYTE0:.mli=.cmi)
 OBJ_NATIVE = $(OBJ_BYTE:.cmo=.cmx)
 
 OBJ_PROOF_SRC = $(PROOF_SRC:.ml=.cmo)
+OBJ_EXPORT0 = $(EXPORT_SRC:.ml=.cmo)
+OBJ_EXPORT = $(OBJ_EXPORT0:.mli=.cmi)
 
 TEST = $(addprefix $(TEST_DIR)/,$(TESTS))
 
@@ -95,6 +104,14 @@ all: fptaylor-interval
 
 proof-tool: $(OBJ_PROOF_SRC)
 	$(ML) -o proof_to_text unix.cma str.cma nums.cma $(OBJ_PROOF_SRC)
+
+export-tool: INCLUDE=$(INTERVAL_DIR)
+
+export-tool: $(OBJ_EXPORT)
+	$(ML) -o export -I $(INTERVAL_DIR) \
+		unix.cma str.cma nums.cma \
+		$(INTERVAL_DIR)/chcw.o $(INTERVAL_DIR)/interval.cma \
+		$(EXPORT_SRC:.ml=.cmo)
 
 test:
 	./fptaylor $(TEST)

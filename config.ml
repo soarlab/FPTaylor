@@ -6,13 +6,6 @@
 (*      This file is distributed under the terms of the MIT license           *)
 (* ========================================================================== *)
 
-let usage_msg =
-  Printf.sprintf "\nUsage: %s [--opt_name opt_value ...] [-c config1 ...] \
-                  input_file1 [input_file2 ...]\n\n\
-                  See default.cfg for a complete list of available \
-                  options and their values.\n"
-                 Sys.argv.(0)
-       
 let param_table = Hashtbl.create 100 
 
 let short_names = Hashtbl.create 100
@@ -194,13 +187,20 @@ let clear_all () =
 
 (* Loads the main configuration file and parses arguments *)
 (* Parameters from the given config_files override parameters from command line arguments *)
-let init ~config_files =
+let init ?(main_cfg_fname = "default.cfg") ?usage config_files =
+  let usage_msg =
+    match usage with Some msg -> msg | None ->
+      Printf.sprintf "\nUsage: %s [--opt_name opt_value ...] [-c config1 ...] \
+                      input_file1 [input_file2 ...]\n\n\
+                      See default.cfg for a complete list of available \
+                      options and their values.\n"
+                    Sys.argv.(0) in
   clear_all ();
   base_dir_ref := get_base_dir ();
   let files = ref [] in
   let add_file name = files := name :: !files in
   let parse_config_arg name = ignore (parse_config_file ~init:false name) in
-  let main_cfg = Filename.concat !base_dir_ref "default.cfg" in
+  let main_cfg = Filename.concat !base_dir_ref main_cfg_fname in
   input_files_ref := begin
     try
       let c_arg = ("-c", Arg.String parse_config_arg, 
@@ -217,7 +217,7 @@ let init ~config_files =
       Log.error_str msg;
       exit 2
     | _ ->
-      Log.error "Cannot open default.cfg: %s" main_cfg;
+      Log.error "Cannot open %s: %s" main_cfg_fname main_cfg;
       exit 2
   end;
   let verbosity = get_int_option "verbosity" in
