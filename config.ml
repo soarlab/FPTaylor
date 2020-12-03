@@ -205,9 +205,7 @@ let init ?(main_cfg_fname = "default.cfg") ?usage config_files =
     try
       let c_arg = ("-c", Arg.String parse_config_arg, 
                   "filename Load options from a file.") in 
-      let fpcore_arg = ("--fpcore-out", Arg.String (set_option ~init:true "fpcore-out"), 
-                        "filename Exports tasks to the FPCore format") in
-      let args = c_arg :: fpcore_arg :: parse_config_file main_cfg ~init:true in
+      let args = c_arg :: parse_config_file main_cfg ~init:true in
       let args = Arg.align args in
       Arg.parse args add_file usage_msg;
       List.iter parse_config_arg config_files;

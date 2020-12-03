@@ -14,7 +14,7 @@ let main () =
   Log.report `Main "FPTaylor's Export Tool, version %s" Version.version;
   let usage = 
     Printf.sprintf "\nUsage: %s [--opt_name opt_value ...] [-c config1 ...] \
-        input_file1 [input_file2 ...] \n\n\
+        [-o output_file] input_file1 [input_file2 ...] \n\n\
         See export.cfg for a complete list of available \
         options and their values.\n"
       Sys.argv.(0) in

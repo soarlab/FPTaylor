@@ -38,8 +38,6 @@ BASE_SRC = version.mli\
 	parser.ml
 
 SRC = $(BASE_SRC)\
-	out_fpcore.mli\
-	out_fpcore.ml\
 	proof_base.mli\
 	proof_base.ml\
 	proof.ml\
