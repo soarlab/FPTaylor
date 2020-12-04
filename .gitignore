@@ -17,6 +17,7 @@ vm_instructions.html
 fptaylor
 !FPTaylor/
 proof_to_text
+export
 ocamlfpu
 *~
 *.proof

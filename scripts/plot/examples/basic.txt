@@ -1,0 +1,5 @@
+Variables
+  float64 x in [1, 100];
+
+Expressions
+  prod3 rnd64= 3 * x;

@@ -94,10 +94,11 @@ let num_of_float x =
   match classify_float x with
   | FP_nan | FP_infinite ->
      let msg = Printf.sprintf "num_of_float: %e" x in
-     if Config.fail_on_exception () then
+     failwith msg
+    (* if Config.fail_on_exception () then
        failwith msg
      else
-       (Log.warning_str msg; Int 0)
+       (Log.warning_str msg; Int 0) *)
   | FP_zero -> Int 0
   | FP_normal | FP_subnormal ->
      let m, e = frexp x in
@@ -216,7 +217,7 @@ let is_exact str =
   let f = float_of_string str in
   let n0 = num_of_float_string str in
   let n1 = num_of_float f in
-  (n0 -/ n1) =/ Int 0
+  n0 =/ n1
 
 let is_power_of_two n =
   let n = abs_num n in

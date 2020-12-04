@@ -31,6 +31,8 @@ val real_type : value_type
 
 val string_to_value_type : string -> value_type
 
+val value_type_to_string : value_type -> string
+
 val is_subtype : value_type -> value_type -> bool
 
 val is_no_rnd : rnd_info -> bool

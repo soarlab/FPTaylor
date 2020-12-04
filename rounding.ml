@@ -41,6 +41,11 @@ let string_to_value_type str =
   | "real" -> real_type
   | _ -> failwith ("Unknown type: " ^ str)
 
+let value_type_to_string ty =
+  if ty.bits = max_int || ty.bits <= 0 then "real"
+  else
+    Printf.sprintf "float%d" ty.bits
+
 (* Returns true if type1 is a subtype of type2 *)
 let is_subtype type1 type2 =
   type1.bits <= type2.bits

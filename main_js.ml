@@ -39,7 +39,7 @@ let run_fptaylor () =
   with 
   | Failure msg -> Log.error_str msg; []
   | Parsing.Parse_error -> Log.error_str "Parsing error"; []
-  | _ ->  Log.error_str "Unknown error"; []
+  | e ->  Log.error_str "Unknown error"; raise e
 
 class type js_msg_type = object
   method input : Js.js_string Js.t Js.readonly_prop

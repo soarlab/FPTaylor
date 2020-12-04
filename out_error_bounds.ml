@@ -98,6 +98,12 @@ let translate_mpfr env =
             | Op_sub -> fprintf fmt "  mpfr_sub(%s, %s, %s, MPFR_RNDN);@." name a1 a2
             | Op_mul -> fprintf fmt "  mpfr_mul(%s, %s, %s, MPFR_RNDN);@." name a1 a2
             | Op_div -> fprintf fmt "  mpfr_div(%s, %s, %s, MPFR_RNDN);@." name a1 a2
+            | Op_nat_pow -> begin
+                match arg2 with
+                | Const (Const.Rat n) when Num.is_integer_num n ->
+                  fprintf fmt "mpfr_pow_ui(%s, %s, %s, MPFR_RNDN);@." name a1 (Num.string_of_num n)
+                | _ -> failwith "translate_mpfr: Op_nat_pow: non-integer exponent"
+              end
             | _ -> failwith ("translate_mpfr: unsupported binary operation: " ^ bin_op_name op)
           end
         | _ -> failwith ("translate_mpfr: unsupported operation") in
@@ -139,6 +145,12 @@ let translate_mpfi env =
             | Op_mul -> fprintf fmt "  mpfi_mul(%s, %s, %s);@." name a1 a2
             | Op_div -> fprintf fmt "  mpfi_div(%s, %s, %s);@." name a1 a2
             | Op_sub2 -> fprintf fmt "  mpfi_sub2(%s, %s, %s);@." name a1 a2
+            | Op_nat_pow -> begin
+                match arg2 with
+                | Const (Const.Rat n) when Num.is_integer_num n ->
+                  fprintf fmt "  mpfi_pow_ui(%s, %s, %s);@." name a1 (Num.string_of_num n)
+                | _ -> failwith "translate_mpfi: Op_nat_pow: non-integer exponent"
+              end
             | _ -> failwith ("translate_mpfi: unsupported binary operation: " ^ bin_op_name op)
           end
         | Gen_op (Op_ulp, [Const p; Const e; arg]) ->

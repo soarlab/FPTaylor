@@ -1,6 +1,6 @@
 let main () =
   Log.report `Main "FPTaylor, version %s" Version.version;
-  Config.init ~config_files:[];
+  Config.init [];
   let input_files = Config.input_files () in
   if input_files = [] then begin
     let prog_name = Sys.argv.(0) in

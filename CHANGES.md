@@ -24,6 +24,12 @@ FPTaylor 0.9.3
 
 - bb and bb-eval: evaluate common subexpressions only once.
 
+- Maxima: the simplificaiton function is `ratexpand` now.
+
+- FPCore export: context annotations for mixed precision benchmarks.
+
+- export: A separate tool for exporting FPCore benchmarks.
+
 FPTaylor 0.9.2
 --------------
 

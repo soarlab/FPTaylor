@@ -10,4 +10,4 @@
 (* FPCore output for FPTaylor tasks                                           *)
 (* -------------------------------------------------------------------------- *)
 
-val generate_fpcore : Format.formatter -> Task.task -> unit
+val generate_fpcore : Format.formatter -> ?var_type:Rounding.value_type -> Task.task -> unit

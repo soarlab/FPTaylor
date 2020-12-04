@@ -81,8 +81,17 @@ FPBench Support
 [FPBench](http://fpbench.org/) is a benchmark suite and a collection of tools for
 the floating-point research community. FPBench supports FPTaylor and it has a tool
 for converting FPCore benchmarks into FPTaylor input files. This works in the other 
-direction as well: FPTaylor can translate its input files into FPCore benchmarks 
-(see FPTaylor's reference manual).
+direction as well: FPTaylor can translate its input files into FPCore benchmarks.
+This translation is done with the export tool which can be built with the following
+command:
+
+    make export-tool
+
+Then it is possible to run
+
+    ./export -o output_file.fpcore input_file
+
+See [Reference](REFERENCE.md#creating-fpcore-benchmarks) for additional information.
 
 Reference
 ---------
