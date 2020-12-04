@@ -20,7 +20,6 @@ val is_option_defined : string -> bool
 
 val debug : unit -> bool
 val fail_on_exception : unit -> bool
-val proof_flag : unit -> bool
 
 val export_options : Format.formatter -> unit
 

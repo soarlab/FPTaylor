@@ -81,6 +81,10 @@ In order to restart HOL Light with all loaded libraries, it is enough to type
 Verification of FPTaylor Certificates
 -------------------------------------
 
+Note: proof recording is not available in the current version of FPTaylor.
+You need [FPTaylor v0.9.3](https://github.com/soarlab/FPTaylor/releases/tag/v0.9.3) 
+to produce proof certificates.
+
 First of all, it is necessary to prepare FPTaylor proof certificates. Go to `FPTaylor/benchmarks/proofs` and run the commands
 
     make tests

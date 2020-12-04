@@ -165,7 +165,6 @@ let base_dir () = !base_dir_ref
 let input_files () = !input_files_ref
 
 let debug () = get_bool_option "debug"
-let proof_flag () = get_bool_option "proof-record"
 let fail_on_exception () = get_bool_option "fail-on-exception"
 
 (* Returns the base directory *)

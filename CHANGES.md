@@ -1,3 +1,8 @@
+FPTaylor 0.9.4
+--------------
+
+- Removed proof recording. Use FPTaylor v0.9.3 for recording proofs.
+
 FPTaylor 0.9.3
 --------------
 
@@ -23,6 +28,8 @@ FPTaylor 0.9.3
 - find-bounds = false by default.
 
 - bb and bb-eval: evaluate common subexpressions only once.
+
+- JavaScript version of FPTaylor and FPTaylor's website.
 
 - Maxima: the simplificaiton function is `ratexpand` now.
 
