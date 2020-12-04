@@ -201,8 +201,12 @@ let rec remove_no_rnd expr =
   | Bin_op (op, a, b) -> Bin_op (op, remove_no_rnd a, remove_no_rnd b)
   | Gen_op (op, args) -> Gen_op (op, List.map remove_no_rnd args)
 
-let generate_fpcore fmt task =
+let generate_fpcore fmt ?var_type task =
   let var_names = all_variables task in
+  let variable_type task =
+    match var_type with
+    | None -> variable_type task
+    | Some ty -> fun _ -> ty in
   let var_types = List.map (variable_type task) var_names in
   let base_rnd = select_precision var_types in
   let print_arg fmt var =

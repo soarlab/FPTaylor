@@ -1,7 +1,11 @@
 let export_file fmt fname =
   Log.report `Main "Exporting: %s" fname;
   let tasks = Parser.parse_file fname in
-  List.iter (Out_fpcore.generate_fpcore fmt) tasks;
+  let var_type = Config.get_string_option "var-type" in
+  let vt = 
+    if String.length var_type = 0 then None 
+    else Some (Rounding.string_to_value_type var_type) in
+  List.iter (Out_fpcore.generate_fpcore ?var_type:vt fmt) tasks;
   Format.pp_print_flush fmt ()
 
 let export output input_files =

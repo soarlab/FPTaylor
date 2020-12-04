@@ -45,15 +45,33 @@ FPTaylor options.
 
 ## Creating FPCore Benchmarks
 
-FPTaylor can create [FPCore](http://fpbench.org/) benchmarks with the command
-line option `--fpcore-out file_name`. Here, `file_name` specifies a file
-where all translated FPCore benchmarks are saved. If this option is given then 
-FPTaylor will not produce any error estimation results.
+FPTaylor can create [FPCore](http://fpbench.org/) benchmarks with the export tool.
+This tool can be compiled with the command:
 
-Example:
-```
-fptaylor --fpcore-out test.fpcore input_file1 input_file2
-```
+    make export-tool
+
+Basic usage:
+
+    ./export -o output_file input_file [input_file ...]
+
+If the output file is not given then all results are written to stdout (along
+with some log messages).
+
+### Export Tool options
+
+- `--var-type`. Possible values: `float16`, `float32`, `float64`, and `float128`.
+  If this options is given then it overrides types of all variables in all benchmarks.
+  This option is useful for creating FPCore files from FPTaylor benchmarks with 
+  real input variables because many FPBench compilers do not support real computations.
+
+  Example:
+  ```
+  ./export --var-type float64 -o out.fpcore benchmarks/toplas/FPTaylor/jet.txt
+  ```
+
+- `--default-var-type`. This option specify the type of variables without explicit type declarations.
+
+- `--default-rnd-typ`. This options specify the default rounding operation (`rnd`).
 
 ## Input file format
 
