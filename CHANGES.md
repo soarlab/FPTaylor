@@ -28,6 +28,8 @@ FPTaylor 0.9.3
 
 - FPCore export: context annotations for mixed precision benchmarks.
 
+- export: A separate tool for exporting FPCore benchmarks.
+
 FPTaylor 0.9.2
 --------------
 
