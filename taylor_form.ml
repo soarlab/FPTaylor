@@ -108,8 +108,35 @@ let abs_eval_v1 cs = List.map (fun (ex, err) -> abs_eval cs ex, err.exp)
 let eval_v1_i cs v1 =
   List.map (fun (e, err) -> estimate_expr cs e, err.exp) v1
 
-let simplify_form cs f =
-  let rec add_adjacent s =
+let rec merge cs v1 v2 =
+  match v1, v2 with
+  | [], _ -> v2
+  | _, [] -> v1
+  | (ex1, {index = -1; exp = exp1}) :: v1s, (ex2, {index = -1; exp = exp2}) :: v2s ->
+    let f1 = abs_eval cs ex1 in
+    let f2 = abs_eval cs ex2 in
+    let f, exp = add2 (f1, exp1) (f2, exp2) in
+    let err = mk_err_var (-1) exp in
+    (mk_float_const f, err) :: merge cs v1s v2s
+  | ((ex1, err1) as h1) :: v1s, ((ex2, err2) as h2) :: v2s ->
+    if err1.index = err2.index then begin
+      if err1.exp <> err2.exp then (
+        Log.error "index1 = %d, index2 = %d; exp1 = %d, exp2 = %d" 
+                  err1.index err2.index err1.exp err2.exp;
+        Log.error "expr1 = %s\nexpr2=%s\n" 
+          (ExprOut.Info.print_str ex1)
+          (ExprOut.Info.print_str ex2);
+        failwith "merge: Incompatible exponents"
+      );
+      (mk_add ex1 ex2, err1) :: merge cs v1s v2s
+    end
+    else if err1.index < err2.index then
+      h1 :: merge cs v1s v2
+    else
+      h2 :: merge cs v1 v2s
+
+let simplify_form cs f = f
+  (* let rec add_adjacent s =
     match s with
     | (ex1, err1) :: (ex2, err2) :: t when err1.index = -1 && err2.index = -1 ->
       let f1, exp1 = abs_eval cs ex1, err1.exp and
@@ -128,7 +155,7 @@ let simplify_form cs f =
     | _ -> s in
   let v1 = List.sort (fun (_, err1) (_, err2) -> compare err1.index err2.index) f.v1 in
   let v1_new = add_adjacent v1 in
-  {f with v1 = v1_new}
+  {f with v1 = v1_new} *)
 
 let find_index, expr_for_index, reset_index_counter, current_index =
   let counter = ref 0 in
@@ -291,11 +318,10 @@ let rounded_form cs original_expr rnd f =
       else
         mk_mul (mk_float_const rnd.coefficient) r', rnd.coefficient *^ m2' in
     let r_err = mk_err_var i rnd.eps_exp and
-      m2_err = mk_err_var (-1) rnd.eps_exp in
+        m2_err = mk_err_var (-1) rnd.eps_exp in
     {
       v0 = f.v0;
-      v1 = ((r, r_err) :: f.v1) @ 
-           [mk_float_const m2, m2_err];
+      v1 = merge cs [mk_float_const m2, m2_err; r, r_err] f.v1
     }
 
 (* negation *)
@@ -307,19 +333,19 @@ let neg_form f =
   }
 
 (* addition *)
-let add_form f1 f2 = 
+let add_form cs f1 f2 = 
   Log.report `Debug "add_form";
   {
     v0 = mk_add f1.v0 f2.v0;
-    v1 = f1.v1 @ f2.v1;
+    v1 = merge cs f1.v1 f2.v1;
   }
 
 (* subtraction *)
-let sub_form f1 f2 =
+let sub_form cs f1 f2 =
   Log.report `Debug "sub_form";
   {
     v0 = mk_sub f1.v0 f2.v0;
-    v1 = f1.v1 @ List.map (fun (e, err) -> mk_neg e, err) f2.v1;
+    v1 = merge cs f1.v1 (List.map (fun (e, err) -> mk_neg e, err) f2.v1);
   }
 
 (* rounded subtraction *)
@@ -340,7 +366,7 @@ let rounded_sub_form cs original_expr rnd f1 f2 =
   let r_err = mk_err_var i rnd.eps_exp in
   {
     v0 = mk_sub f1.v0 f2.v0;
-    v1 = (r, r_err) :: (f1.v1 @ List.map (fun (e, err) -> mk_neg e, err) f2.v1);
+    v1 = merge cs [r, r_err] (merge cs f1.v1 (List.map (fun (e, err) -> mk_neg e, err) f2.v1));
   }
 
 (* rounded addition *)
@@ -360,7 +386,7 @@ let mul_form =
     let m2_err = mk_err_var (-1) m2_exp in
     {
       v0 = mk_mul f1.v0 f2.v0;
-      v1 = mul1 f1.v0 f2.v1 @ mul1 f2.v0 f1.v1 @ [mk_float_const m2, m2_err];
+      v1 = merge cs [mk_float_const m2, m2_err] (merge cs (mul1 f1.v0 f2.v1) (mul1 f2.v0 f1.v1));
     }
 
 (* reciprocal *)
@@ -387,8 +413,8 @@ let inv_form cs f =
   let m3_err = mk_err_var (-1) m2_exp in
   {
     v0 = mk_div const_1 f.v0;
-    v1 = List.map (fun (e, err) -> mk_neg (mk_div e (mk_mul f.v0 f.v0)), err) f.v1
-         @ [mk_float_const m3, m3_err];
+    v1 = merge cs [mk_float_const m3, m3_err] 
+            (List.map (fun (e, err) -> mk_neg (mk_div e (mk_mul f.v0 f.v0)), err) f.v1);
   }
 
 (* division *)
@@ -415,8 +441,8 @@ let sqrt_form cs f =
   let sqrt_v0 = mk_sqrt f.v0 in 
   {
     v0 = sqrt_v0;
-    v1 = List.map (fun (e, err) -> mk_div e (mk_mul const_2 sqrt_v0), err) f.v1
-         @ [mk_float_const m3, m3_err];
+    v1 = merge cs [mk_float_const m3, m3_err] 
+            (List.map (fun (e, err) -> mk_div e (mk_mul const_2 sqrt_v0), err) f.v1);
   }
 
 (* sine *)
@@ -883,8 +909,8 @@ let build_form (cs : constraints) =
           let arg1_form = build arg1 and
           arg2_form = build arg2 in
           match op with
-          | Op_add -> add_form arg1_form arg2_form
-          | Op_sub -> sub_form arg1_form arg2_form
+          | Op_add -> add_form cs arg1_form arg2_form
+          | Op_sub -> sub_form cs arg1_form arg2_form
           | Op_mul -> mul_form cs arg1_form arg2_form
           | Op_div -> div_form cs arg1_form arg2_form
           | Op_max -> max_form cs arg1_form arg2_form
@@ -896,7 +922,7 @@ let build_form (cs : constraints) =
         begin
           let arg_forms = List.map build args in
           match (op, arg_forms) with
-          | (Op_fma, [a;b;c]) -> add_form (mul_form cs a b) c
+          | (Op_fma, [a;b;c]) -> add_form cs (mul_form cs a b) c
           | _ -> failwith
                   ("build_form: unsupported general operation " ^ gen_op_name op)
         end

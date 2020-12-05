@@ -30,6 +30,14 @@ let is_rat = function
   | Rat _ -> true
   | Interval _ -> false
 
+let low_bound = function
+  | Rat n -> More_num.float_of_num_lo n
+  | Interval v -> v.low
+
+let high_bound = function
+  | Rat n -> More_num.float_of_num_hi n
+  | Interval v -> v.high
+
 let is_interval = function
   | Rat _ -> false
   | Interval _ -> true
