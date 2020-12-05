@@ -132,16 +132,22 @@ let simplify_form cs f =
 
 let find_index, expr_for_index, reset_index_counter, current_index =
   let counter = ref 0 in
-  let exprs = ref [] in
+  let cache = ExprHashtbl.create 100 in
+  let inv_cache = Hashtbl.create 100 in
   let find_index expr =
     let unique_flag = Config.get_bool_option "unique-indices" in
-    let i = Lib.assocd_eq eq_expr (-1) expr !exprs in
-    if i > 0 && (not unique_flag) then i else
-      let _ = counter := !counter + 1 in
-      let _ = exprs := (expr, !counter) :: !exprs in
-      !counter 
-  and expr_for_index i = Lib.rev_assoc i !exprs
-  and reset_index_counter () = exprs := []; counter := 0
+    let i = try ExprHashtbl.find cache expr with Not_found -> -1 in
+    if i > 0 && (not unique_flag) then i else begin
+      incr counter;
+      ExprHashtbl.add cache expr !counter;
+      Hashtbl.add inv_cache !counter expr;
+      !counter
+    end
+  and expr_for_index i = Hashtbl.find inv_cache i
+  and reset_index_counter () = 
+    ExprHashtbl.clear cache;
+    Hashtbl.clear inv_cache;
+    counter := 0  
   and current_index () = !counter
   in
   find_index, expr_for_index, reset_index_counter, current_index
@@ -823,78 +829,84 @@ let min_form cs f1 f2 =
 
 (* Builds a Taylor form *)
 let build_form (cs : constraints) =
-  let rec build e = 
-    match e with
-    | Const _ -> const_form e
-    | Var _ -> var_form cs e
-    | Rounding (rnd, Const c) when Const.is_rat c 
-      (* when not Config.proof_flag *) -> const_rnd_form rnd (Const c)
-    | Rounding (rnd, Var v) 
-      (* when not Config.proof_flag *) -> var_rnd_form cs rnd (Var v)
-    | Rounding (rnd, Bin_op (Op_add, arg1, arg2)) 
-      when rnd.special_flag 
-        && Config.get_bool_option "fp-power2-model" 
-        && Config.get_bool_option "develop" ->
-      rounded_add_form cs e rnd (build arg1) (build arg2)
-    | Rounding (rnd, Bin_op (Op_sub, arg1, arg2))
-      when rnd.special_flag 
-        && Config.get_bool_option "fp-power2-model" 
-        && Config.get_bool_option "develop" ->
-      rounded_sub_form cs e rnd (build arg1) (build arg2)
-    | Rounding (rnd, arg) -> 
-      let arg_form = build arg in
-      rounded_form cs e rnd arg_form
-    | U_op (op, arg) ->
-      begin
+  let cache = ExprHashtbl.create 100 in
+  let rec build e =
+    try ExprHashtbl.find cache e with Not_found ->
+    let tf =
+      match e with
+      | Const _ -> const_form e
+      | Var _ -> var_form cs e
+      | Rounding (rnd, Const c) when Const.is_rat c 
+        (* when not Config.proof_flag *) -> const_rnd_form rnd (Const c)
+      | Rounding (rnd, Var v) 
+        (* when not Config.proof_flag *) -> var_rnd_form cs rnd (Var v)
+      | Rounding (rnd, Bin_op (Op_add, arg1, arg2)) 
+        when rnd.special_flag 
+          && Config.get_bool_option "fp-power2-model" 
+          && Config.get_bool_option "develop" ->
+        rounded_add_form cs e rnd (build arg1) (build arg2)
+      | Rounding (rnd, Bin_op (Op_sub, arg1, arg2))
+        when rnd.special_flag 
+          && Config.get_bool_option "fp-power2-model" 
+          && Config.get_bool_option "develop" ->
+        rounded_sub_form cs e rnd (build arg1) (build arg2)
+      | Rounding (rnd, arg) -> 
         let arg_form = build arg in
-        match op with
-        | Op_neg -> neg_form arg_form
-        | Op_abs -> abs_form cs arg_form
-        | Op_inv -> inv_form cs arg_form
-        | Op_sqrt -> sqrt_form cs arg_form
-        | Op_sin -> sin_form cs arg_form
-        | Op_cos -> cos_form cs arg_form
-        | Op_tan -> tan_form cs arg_form
-        | Op_asin -> asin_form cs arg_form
-        | Op_acos -> acos_form cs arg_form
-        | Op_atan -> atan_form cs arg_form
-        | Op_exp -> exp_form cs arg_form
-        | Op_log -> log_form cs arg_form
-        | Op_sinh -> sinh_form cs arg_form
-        | Op_cosh -> cosh_form cs arg_form
-        | Op_tanh -> tanh_form cs arg_form
-        | Op_asinh -> asinh_form cs arg_form
-        | Op_acosh -> acosh_form cs arg_form
-        | Op_atanh -> atanh_form cs arg_form
-        | _ -> failwith 
-                 ("build_form: unsupported unary operation " ^ u_op_name op)
-      end
-    | Bin_op (op, arg1, arg2) ->
-      begin
-        let arg1_form = build arg1 and
-        arg2_form = build arg2 in
-        match op with
-        | Op_add -> add_form arg1_form arg2_form
-        | Op_sub -> sub_form arg1_form arg2_form
-        | Op_mul -> mul_form cs arg1_form arg2_form
-        | Op_div -> div_form cs arg1_form arg2_form
-        | Op_max -> max_form cs arg1_form arg2_form
-        | Op_min -> min_form cs arg1_form arg2_form
-        | _ -> failwith
-                 ("build_form: unsupported binary operation " ^ bin_op_name op)
-      end
-    | Gen_op (op, args) ->
-      begin
-        let arg_forms = List.map build args in
-        match (op, arg_forms) with
-        | (Op_fma, [a;b;c]) -> add_form (mul_form cs a b) c
-        | _ -> failwith
-                 ("build_form: unsupported general operation " ^ gen_op_name op)
-      end
+        rounded_form cs e rnd arg_form
+      | U_op (op, arg) ->
+        begin
+          let arg_form = build arg in
+          match op with
+          | Op_neg -> neg_form arg_form
+          | Op_abs -> abs_form cs arg_form
+          | Op_inv -> inv_form cs arg_form
+          | Op_sqrt -> sqrt_form cs arg_form
+          | Op_sin -> sin_form cs arg_form
+          | Op_cos -> cos_form cs arg_form
+          | Op_tan -> tan_form cs arg_form
+          | Op_asin -> asin_form cs arg_form
+          | Op_acos -> acos_form cs arg_form
+          | Op_atan -> atan_form cs arg_form
+          | Op_exp -> exp_form cs arg_form
+          | Op_log -> log_form cs arg_form
+          | Op_sinh -> sinh_form cs arg_form
+          | Op_cosh -> cosh_form cs arg_form
+          | Op_tanh -> tanh_form cs arg_form
+          | Op_asinh -> asinh_form cs arg_form
+          | Op_acosh -> acosh_form cs arg_form
+          | Op_atanh -> atanh_form cs arg_form
+          | _ -> failwith 
+                  ("build_form: unsupported unary operation " ^ u_op_name op)
+        end
+      | Bin_op (op, arg1, arg2) ->
+        begin
+          let arg1_form = build arg1 and
+          arg2_form = build arg2 in
+          match op with
+          | Op_add -> add_form arg1_form arg2_form
+          | Op_sub -> sub_form arg1_form arg2_form
+          | Op_mul -> mul_form cs arg1_form arg2_form
+          | Op_div -> div_form cs arg1_form arg2_form
+          | Op_max -> max_form cs arg1_form arg2_form
+          | Op_min -> min_form cs arg1_form arg2_form
+          | _ -> failwith
+                  ("build_form: unsupported binary operation " ^ bin_op_name op)
+        end
+      | Gen_op (op, args) ->
+        begin
+          let arg_forms = List.map build args in
+          match (op, arg_forms) with
+          | (Op_fma, [a;b;c]) -> add_form (mul_form cs a b) c
+          | _ -> failwith
+                  ("build_form: unsupported general operation " ^ gen_op_name op)
+        end
+    in
+    ExprHashtbl.add cache e tf; tf
   in
   fun e ->
-    let _ = reset_estimate_cache() in
-    let _ = reset_index_counter() in
+    ExprHashtbl.clear cache;
+    reset_estimate_cache ();
+    reset_index_counter ();
     build e
 
 
