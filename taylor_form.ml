@@ -454,8 +454,8 @@ let sin_form cs f =
   let cos_v0 = mk_cos f.v0 in 
   {
     v0 = sin_v0;
-    v1 = List.map (fun (e, err) -> mk_mul cos_v0 e, err) f.v1
-         @ [mk_float_const m3, m3_err];
+    v1 = merge cs (List.map (fun (e, err) -> mk_mul cos_v0 e, err) f.v1)
+                  [mk_float_const m3, m3_err];
   }
 
 (* cosine *)
@@ -476,8 +476,8 @@ let cos_form cs f =
   let cos_v0 = mk_cos f.v0 in 
   {
     v0 = cos_v0;
-    v1 = List.map (fun (e, err) -> mk_neg (mk_mul sin_v0 e), err) f.v1
-         @ [mk_float_const m3, m3_err];
+    v1 = merge cs (List.map (fun (e, err) -> mk_neg (mk_mul sin_v0 e), err) f.v1)
+                  [mk_float_const m3, m3_err];
   }
 
 (* tangent *)
@@ -497,8 +497,8 @@ let tan_form cs f =
   let v1_0 = mk_mul (mk_cos f.v0) (mk_cos f.v0) in
   {
     v0 = mk_tan f.v0;
-    v1 = List.map (fun (e, err) -> mk_div e v1_0, err) f.v1
-         @ [mk_float_const m2, mk_err_var (-1) m2_exp];
+    v1 = merge cs (List.map (fun (e, err) -> mk_div e v1_0, err) f.v1)
+                  [mk_float_const m2, mk_err_var (-1) m2_exp];
   }
 
 (* arcsine *)
@@ -520,8 +520,8 @@ let asin_form cs f =
   let v1_0 = mk_sqrt (mk_sub const_1 (mk_mul f.v0 f.v0)) in
   {
     v0 = mk_asin f.v0;
-    v1 = List.map (fun (e, err) -> mk_div e v1_0, err) f.v1
-         @ [mk_float_const m3, m3_err];
+    v1 = merge cs (List.map (fun (e, err) -> mk_div e v1_0, err) f.v1)
+                  [mk_float_const m3, m3_err];
   }
 
 (* arccosine *)
@@ -543,8 +543,8 @@ let acos_form cs f =
   let v1_0 = mk_sqrt (mk_sub const_1 (mk_mul f.v0 f.v0)) in
   {
     v0 = mk_acos f.v0;
-    v1 = List.map (fun (e, err) -> mk_neg (mk_div e v1_0), err) f.v1
-         @ [mk_float_const m3, m3_err];
+    v1 = merge cs (List.map (fun (e, err) -> mk_neg (mk_div e v1_0), err) f.v1)
+                  [mk_float_const m3, m3_err];
   }
 
 (* arctangent *)
@@ -566,8 +566,8 @@ let atan_form cs f =
   let v1_0 = mk_add (mk_mul f.v0 f.v0) const_1 in
   {
     v0 = mk_atan f.v0;
-    v1 = List.map (fun (e, err) -> mk_div e v1_0, err) f.v1
-         @ [mk_float_const m3, m3_err];
+    v1 = merge cs (List.map (fun (e, err) -> mk_div e v1_0, err) f.v1)
+                  [mk_float_const m3, m3_err];
   }
 
 (* exp *)
@@ -587,8 +587,8 @@ let exp_form cs f =
   let exp_v0 = mk_exp f.v0 in 
   {
     v0 = exp_v0;
-    v1 = List.map (fun (e, err) -> mk_mul exp_v0 e, err) f.v1
-         @ [mk_float_const m3, m3_err];
+    v1 = merge cs (List.map (fun (e, err) -> mk_mul exp_v0 e, err) f.v1)
+                  [mk_float_const m3, m3_err];
   }
 
 (* log *)
@@ -608,8 +608,8 @@ let log_form cs f =
   let log_v0 = mk_log f.v0 in 
   {
     v0 = log_v0;
-    v1 = List.map (fun (e, err) -> mk_div e f.v0, err) f.v1
-         @ [mk_float_const m3, m3_err];
+    v1 = merge cs (List.map (fun (e, err) -> mk_div e f.v0, err) f.v1)
+                  [mk_float_const m3, m3_err];
   }
 
 (* sinh *)
@@ -631,8 +631,8 @@ let sinh_form cs f =
   let v1_0 = mk_cosh f.v0 in
   {
     v0 = mk_sinh f.v0;
-    v1 = List.map (fun (e, err) -> mk_mul v1_0 e, err) f.v1
-         @ [mk_float_const m3, m3_err];
+    v1 = merge cs (List.map (fun (e, err) -> mk_mul v1_0 e, err) f.v1)
+                  [mk_float_const m3, m3_err];
   }
 
 (* cosh *)
@@ -654,8 +654,8 @@ let cosh_form cs f =
   let v1_0 = mk_sinh f.v0 in
   {
     v0 = mk_cosh f.v0;
-    v1 = List.map (fun (e, err) -> mk_mul v1_0 e, err) f.v1
-         @ [mk_float_const m3, m3_err];
+    v1 = merge cs (List.map (fun (e, err) -> mk_mul v1_0 e, err) f.v1)
+                  [mk_float_const m3, m3_err];
   }
 
 (* tanh *)
@@ -677,8 +677,8 @@ let tanh_form cs f =
   let v1_0 = mk_mul (mk_cosh f.v0) (mk_cosh f.v0) in
   {
     v0 = mk_tanh f.v0;
-    v1 = List.map (fun (e, err) -> mk_div e v1_0, err) f.v1
-         @ [mk_float_const m3, m3_err];
+    v1 = merge cs (List.map (fun (e, err) -> mk_div e v1_0, err) f.v1)
+                  [mk_float_const m3, m3_err];
   }
 
 
@@ -701,8 +701,8 @@ let asinh_form cs f =
   let v1_0 = mk_sqrt (mk_add const_1 (mk_mul f.v0 f.v0)) in
   {
     v0 = mk_asinh f.v0;
-    v1 = List.map (fun (e, err) -> mk_div e v1_0, err) f.v1
-         @ [mk_float_const m3, m3_err];
+    v1 = merge cs (List.map (fun (e, err) -> mk_div e v1_0, err) f.v1)
+                  [mk_float_const m3, m3_err];
   }
 
 (* arcosh *)
@@ -724,8 +724,8 @@ let acosh_form cs f =
   let v1_0 = mk_sqrt (mk_sub (mk_mul f.v0 f.v0) const_1) in
   {
     v0 = mk_acosh f.v0;
-    v1 = List.map (fun (e, err) -> mk_div e v1_0, err) f.v1
-         @ [mk_float_const m3, m3_err];
+    v1 = merge cs (List.map (fun (e, err) -> mk_div e v1_0, err) f.v1)
+                  [mk_float_const m3, m3_err];
   }
 
 (* artanh *)
@@ -749,8 +749,8 @@ let atanh_form cs f =
   let v1_0 = mk_sub const_1 (mk_mul f.v0 f.v0) in
   {
     v0 = mk_atanh f.v0;
-    v1 = List.map (fun (e, err) -> mk_div e v1_0, err) f.v1
-         @ [mk_float_const m3, m3_err];
+    v1 = merge cs (List.map (fun (e, err) -> mk_div e v1_0, err) f.v1)
+                  [mk_float_const m3, m3_err];
   }
 
 (* absolute value *)
@@ -814,8 +814,8 @@ let max_form cs f1 f2 =
   let err2 = mk_mul (mk_float_const 0.5) (mk_sub const_1 (mk_abs_err t x_sub_y)) in
   {
     v0 = mk_max f1.v0 f2.v0;
-    v1 = List.map (fun (e, err) -> mk_mul err1 e, err) f1.v1
-         @ List.map (fun (e, err) -> mk_mul err2 e, err) f2.v1;
+    v1 = merge cs (List.map (fun (e, err) -> mk_mul err1 e, err) f1.v1)
+                  (List.map (fun (e, err) -> mk_mul err2 e, err) f2.v1);
   }
 
 (* minimum of two values *)
@@ -840,8 +840,8 @@ let min_form cs f1 f2 =
   let err2 = mk_mul (mk_float_const 0.5) (mk_add const_1 (mk_abs_err t x_sub_y)) in
   {
     v0 = mk_min f1.v0 f2.v0;
-    v1 = List.map (fun (e, err) -> mk_mul err1 e, err) f1.v1
-         @ List.map (fun (e, err) -> mk_mul err2 e, err) f2.v1;
+    v1 = merge cs (List.map (fun (e, err) -> mk_mul err1 e, err) f1.v1)
+                  (List.map (fun (e, err) -> mk_mul err2 e, err) f2.v1);
   }
 
 (* Builds a Taylor form *)
