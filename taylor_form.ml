@@ -44,12 +44,13 @@ let mk_sym_interval_const f =
   let v = {low = -.t; high = t} in
   mk_interval_const v
 
-let ( +^ ) = Fpu.fadd_high and
-  ( *^ ) = Fpu.fmul_high
+let ( +^ ) = Fpu.fadd_high
+let ( *^ ) = Fpu.fmul_high
 
-let estimate_expr, reset_estimate_cache =
-  let cache = ExprHashtbl.create 100 in
+let estimate_expr, reset_estimate_cache, estimate_cache_stats =
+  let cache = ExprHashtbl.create (1 lsl 16) in
   let reset () = ExprHashtbl.clear cache in
+  let stats () = ExprHashtbl.stats cache in
   let estimate (cs : constraints) e =
     if Config.get_bool_option "intermediate-opt" then
       let () = Log.report `Debug "Estimating: %s" (ExprOut.Info.print_str e) in
@@ -57,7 +58,7 @@ let estimate_expr, reset_estimate_cache =
       Log.report `Debug "Estimation result: [%f, %f]" min max;
       {low = min; high = max}
     else
-      Eval.eval_interval_expr cs.var_interval e in
+      Eval.eval_interval_expr ~cache cs.var_interval e in
   let estimate_and_cache cs e =
     try ExprHashtbl.find cache e
     with Not_found ->
@@ -65,7 +66,7 @@ let estimate_expr, reset_estimate_cache =
       ExprHashtbl.add cache e interval;
       interval
   in
-  estimate_and_cache, reset
+  estimate_and_cache, reset, stats
 
 let add2 (x1, e1) (x2, e2) =
   (* Swap if e1 > e2 *)
@@ -845,7 +846,7 @@ let min_form cs f1 f2 =
 
 (* Builds a Taylor form *)
 let build_form (cs : constraints) =
-  let cache = ExprHashtbl.create 100 in
+  let cache = ExprHashtbl.create 1024 in
   let rec build e =
     try ExprHashtbl.find cache e with Not_found ->
     let tf =
@@ -919,14 +920,17 @@ let build_form (cs : constraints) =
     in
     ExprHashtbl.add cache e tf; tf
   in
+  let print_cache_stats title (stats : Hashtbl.statistics) =
+    Log.report `Debug "%s stats: num_bindings = %d, num_buckets = %d, max_bucket_length = %d"
+      title stats.num_bindings stats.num_buckets stats.max_bucket_length
+  in
   fun e ->
     ExprHashtbl.clear cache;
     reset_estimate_cache ();
     reset_index_counter ();
     let r = build e in
-    let stats = ExprHashtbl.stats cache in
-    Log.report `Debug "Cache stats: num_bindings = %d, num_buckets = %d, max_bucket_length = %d"
-      stats.num_bindings stats.num_buckets stats.max_bucket_length;
+    print_cache_stats "Taylor forms cache" (ExprHashtbl.stats cache);
+    print_cache_stats "Expr cache" (estimate_cache_stats ());
     r
 
 
