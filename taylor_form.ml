@@ -48,8 +48,8 @@ let ( +^ ) = Fpu.fadd_high and
   ( *^ ) = Fpu.fmul_high
 
 let estimate_expr, reset_estimate_cache =
-  let cache = ref [] in
-  let reset () = (cache := []) in
+  let cache = ExprHashtbl.create 100 in
+  let reset () = ExprHashtbl.clear cache in
   let estimate (cs : constraints) e =
     if Config.get_bool_option "intermediate-opt" then
       let () = Log.report `Debug "Estimating: %s" (ExprOut.Info.print_str e) in
@@ -59,10 +59,10 @@ let estimate_expr, reset_estimate_cache =
     else
       Eval.eval_interval_expr cs.var_interval e in
   let estimate_and_cache cs e =
-    try Lib.assoc_eq eq_expr e !cache
+    try ExprHashtbl.find cache e
     with Not_found ->
       let interval = estimate cs e in
-      let _ = (cache := (e, interval) :: !cache) in
+      ExprHashtbl.add cache e interval;
       interval
   in
   estimate_and_cache, reset
@@ -90,7 +90,6 @@ let sum2_high s1 s2 = Lib.itlist
     s1 (0.0, 0)
 
 let abs_eval cs ex = 
-  (*  let v = Eval.eval_interval_expr cs ex in *)
   let v = estimate_expr cs ex in
   (abs_I v).high
 

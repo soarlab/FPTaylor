@@ -172,7 +172,7 @@ let rec eq_expr e1 e2 =
 
 let rec hash_expr = function
 | Const (Rat n) -> Hashtbl.hash (Num.string_of_num n)
-| Const (Interval v) -> (Float.hash v.low lxor Float.hash v.high) + 12434327
+| Const (Interval v) -> (Hashtbl.hash v.low lxor Hashtbl.hash v.high) + 12434327
 | Var v -> Hashtbl.hash v
 | Rounding (r, a) -> 541 * hash_expr a + 1012324
 | U_op (op, a) -> (Hashtbl.hash (u_op_name op) lxor hash_expr a) + 1013435
