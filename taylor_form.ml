@@ -89,15 +89,6 @@ let sum2_high s1 s2 = Lib.itlist
        add2 s s0) 
     s1 (0.0, 0)
 
-(* TODO: call (simplify_form f) before sum_i (eval_v1_i cs f.v1) *)
-(* A better solution: insert new error terms in such a way that the form is always simplified *)
-let sum_i s =
-  let mul (x, e) =
-    let eps = get_eps e in
-    x *$ {low = -.eps; high = eps} in
-  let vs = List.map mul s in
-  Lib.itlist (+$) vs zero_I
-
 let abs_eval cs ex = 
   (*  let v = Eval.eval_interval_expr cs ex in *)
   let v = estimate_expr cs ex in
