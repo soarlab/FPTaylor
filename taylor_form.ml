@@ -50,21 +50,29 @@ let ( *^ ) = Fpu.fmul_high
 let estimate_expr, reset_estimate_cache, estimate_cache_stats =
   let cache = ExprHashtbl.create (1 lsl 16) in
   let reset () = ExprHashtbl.clear cache in
-  let stats () = ExprHashtbl.stats cache in
-  let estimate (cs : constraints) e =
-    if Config.get_bool_option "intermediate-opt" then
-      let () = Log.report `Debug "Estimating: %s" (ExprOut.Info.print_str e) in
-      let min, max = Opt.find_min_max (Opt_common.default_opt_pars ()) cs e in
-      Log.report `Debug "Estimation result: [%f, %f]" min max;
-      {low = min; high = max}
-    else
-      Eval.eval_interval_expr ~cache cs.var_interval e in
+  let stats () =
+    (* let tmp = Hashtbl.create 1000 in
+    let add h e =
+      Hashtbl.replace tmp h (e :: (try Hashtbl.find tmp h with Not_found -> [])) in
+    ExprHashtbl.iter (fun e _ -> let h = hash_expr e in add h e) cache;
+    let es = Hashtbl.fold (fun a es xs ->
+      if List.length es > List.length xs then es else xs) tmp [] in
+    es |> List.iter (fun e -> Printf.printf "%s\n" (ExprOut.Info.print_str e)); *)
+    ExprHashtbl.stats cache in
+  let estimate_opt (cs : constraints) e =
+    Log.report `Debug "Estimating: %s" (ExprOut.Info.print_str e);
+    let min, max = Opt.find_min_max (Opt_common.default_opt_pars ()) cs e in
+    Log.report `Debug "Estimation result: [%f, %f]" min max;
+    {low = min; high = max} in
   let estimate_and_cache cs e =
-    try ExprHashtbl.find cache e
-    with Not_found ->
-      let interval = estimate cs e in
-      ExprHashtbl.add cache e interval;
-      interval
+    if Config.get_bool_option "intermediate-opt" then
+      try ExprHashtbl.find cache e
+      with Not_found ->
+        let interval = estimate_opt cs e in
+        ExprHashtbl.add cache e interval;
+        interval
+    else
+      Eval.eval_interval_expr ~cache cs.var_interval e
   in
   estimate_and_cache, reset, stats
 

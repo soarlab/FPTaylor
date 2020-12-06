@@ -134,9 +134,12 @@ let eval_num_const_expr =
 let eval_interval_expr ?cache vars =
   let rec eval expr =
     match cache with
-    | Some cache -> 
-      let r = try ExprHashtbl.find cache expr with Not_found -> eval' expr in
-      ExprHashtbl.add cache expr r; r
+    | Some cache -> begin
+        try ExprHashtbl.find cache expr 
+        with Not_found ->
+          let r = eval' expr in
+          ExprHashtbl.add cache expr r; r
+      end
     | None -> eval' expr
   and eval' = function
   | Const c -> Const.to_interval c
