@@ -1,3 +1,15 @@
+(* ========================================================================== *)
+(*      FPTaylor: A Tool for Rigorous Estimation of Round-off Errors          *)
+(*                                                                            *)
+(*      Author: Alexey Solovyev, University of Utah                           *)
+(*                                                                            *)
+(*      This file is distributed under the terms of the MIT license           *)
+(* ========================================================================== *)
+
+(* -------------------------------------------------------------------------- *)
+(* FPTaylor's Export Tool                                                     *)
+(* -------------------------------------------------------------------------- *)
+
 let export_file fmt fname =
   Log.report `Main "Exporting: %s" fname;
   let tasks = Parser.parse_file fname in
