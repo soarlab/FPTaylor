@@ -924,7 +924,11 @@ let build_form (cs : constraints) =
     ExprHashtbl.clear cache;
     reset_estimate_cache ();
     reset_index_counter ();
-    build e
+    let r = build e in
+    let stats = ExprHashtbl.stats cache in
+    Log.report `Debug "Cache stats: num_bindings = %d, num_buckets = %d, max_bucket_length = %d"
+      stats.num_bindings stats.num_buckets stats.max_bucket_length;
+    r
 
 
 (*

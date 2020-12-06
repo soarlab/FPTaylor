@@ -170,12 +170,20 @@ let rec eq_expr e1 e2 =
     Lib.itlist (fun (a1, a2) x -> eq_expr a1 a2 && x) (Lib.zip as1 as2) true
   | _ -> false
 
+let rec hash_expr = function
+| Const (Rat n) -> Hashtbl.hash (Num.string_of_num n)
+| Const (Interval v) -> (Float.hash v.low lxor Float.hash v.high) + 12434327
+| Var v -> Hashtbl.hash v
+| Rounding (r, a) -> 541 * hash_expr a + 1012324
+| U_op (op, a) -> (Hashtbl.hash (u_op_name op) lxor hash_expr a) + 1013435
+| Bin_op (op, a, b) -> (Hashtbl.hash (bin_op_name op) lxor hash_expr a lxor hash_expr b) + 101343561
+| Gen_op (op, a) -> Hashtbl.hash (gen_op_name op) lxor (List.fold_left (fun h x -> h lxor hash_expr x) 0 a)
+
 module ExprHashtbl = Hashtbl.Make (
   struct
     type t = expr
     let equal = eq_expr
-    (* TODO: is it possible that eq_expr e1 e2 = true but hashes are different? *)
-    let hash = Hashtbl.hash
+    let hash = hash_expr
   end)
 
 let rec vars_in_expr e =
