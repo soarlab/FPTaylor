@@ -388,33 +388,39 @@ let mul_form =
       v1 = merge cs [mk_float_const m2, m2_err] (merge cs (mul1 f1.v0 f2.v1) (mul1 f2.v0 f1.v1));
     }
 
-(* reciprocal *)
-let inv_form cs f = 
-  Log.report `Debug "inv_form";
+let uop_form name f_high mk_v0 mk_v1 cs f =
+  Log.report `Debug name;
   let x0_int = estimate_expr cs f.v0 in
   let x1 = abs_eval_v1 cs f.v1 in
   let s1 = List.fold_left (fun s (x, x_exp) -> 
       let eps = get_eps x_exp in
       let xi = {low = -. eps; high = eps} in
       (xi *$. x) +$ s) zero_I x1 in
-  let d = pow_I_i (x0_int +$ s1) 3 in
-  let _ = 
+  let b_high = f_high x0_int s1 in
+  let m2, m2_exp = sum2_high x1 x1 in
+  let m3 = b_high *^ m2 in
+  let m3_err = mk_err_var (-1) m2_exp in
+  {
+    v0 = mk_v0 f.v0;
+    v1 = merge cs [mk_float_const m3, m3_err] 
+            (List.map (fun (e, err) -> mk_v1 f.v0 e, err) f.v1);
+  }
+
+(* reciprocal *)
+let inv_form =
+  let f_high x0_int s1 =
+    let d = pow_I_i (x0_int +$ s1) 3 in
     if (abs_I d).low <= 0.0 then
       let msg = "inv_form: division by zero" in
       if Config.fail_on_exception () then
         failwith msg
       else
         Log.warning_str msg
-    else () in
-  let b_high = (abs_I (inv_I d)).high in
-  let m2, m2_exp = sum2_high x1 x1 in
-  let m3 = b_high *^ m2 in
-  let m3_err = mk_err_var (-1) m2_exp in
-  {
-    v0 = mk_div const_1 f.v0;
-    v1 = merge cs [mk_float_const m3, m3_err] 
-            (List.map (fun (e, err) -> mk_neg (mk_div e (mk_mul f.v0 f.v0)), err) f.v1);
-  }
+    else ();
+    (abs_I (inv_I d)).high in
+  let mk_v0 v0 = mk_div const_1 v0 in
+  let mk_v1 v0 e = mk_neg (mk_div e (mk_mul v0 v0)) in
+  uop_form "inv_form" f_high mk_v0 mk_v1
 
 (* division *)
 let div_form cs f1 f2 =  
@@ -422,344 +428,174 @@ let div_form cs f1 f2 =
   mul_form cs f1 (inv_form cs f2)
 
 (* square root *)
-let sqrt_form cs f = 
-  Log.report `Debug "sqrt_form";
-  let x0_int = estimate_expr cs f.v0 in
-  let x1 = abs_eval_v1 cs f.v1 in
-  let s1 = List.fold_left (fun s (x, x_exp) -> 
-      let eps = get_eps x_exp in
-      let xi = {low = -. eps; high = eps} in
-      (xi *$. x) +$ s) zero_I x1 in
-  let d =
+let sqrt_form =
+  let f_high x0_int s1 =
+    let d =
       let t = (x0_int +$ s1) in
       sqrt_I t *$ t in
-  let b_high = 0.125 *^ (abs_I (inv_I d)).high in
-  let m2, m2_exp = sum2_high x1 x1 in
-  let m3 = b_high *^ m2 in
-  let m3_err = mk_err_var (-1) m2_exp in
-  let sqrt_v0 = mk_sqrt f.v0 in 
-  {
-    v0 = sqrt_v0;
-    v1 = merge cs [mk_float_const m3, m3_err] 
-            (List.map (fun (e, err) -> mk_div e (mk_mul const_2 sqrt_v0), err) f.v1);
-  }
+    0.125 *^ (abs_I (inv_I d)).high in
+  let mk_v0 v0 = mk_sqrt v0 in
+  let mk_v1 v0 e = mk_div e (mk_mul const_2 (mk_sqrt v0)) in
+  uop_form "sqrt_form" f_high mk_v0 mk_v1
 
 (* sine *)
-let sin_form cs f =
-  Log.report `Debug "sin_form";
-  let x0_int = estimate_expr cs f.v0 in
-  let x1 = abs_eval_v1 cs f.v1 in
-  let s1 = List.fold_left (fun s (x, x_exp) -> 
-      let eps = get_eps x_exp in
-      let xi = {low = -. eps; high = eps} in
-      (xi *$. x) +$ s) zero_I x1 in
-  let d = sin_I (x0_int +$ s1) in
-  let b_high = 0.5 *^ (abs_I d).high in
-  let m2, m2_exp = sum2_high x1 x1 in
-  let m3 = b_high *^ m2 in
-  let m3_err = mk_err_var (-1) m2_exp in
-  let sin_v0 = mk_sin f.v0 in
-  let cos_v0 = mk_cos f.v0 in 
-  {
-    v0 = sin_v0;
-    v1 = merge cs (List.map (fun (e, err) -> mk_mul cos_v0 e, err) f.v1)
-                  [mk_float_const m3, m3_err];
-  }
+let sin_form =
+  let f_high x0_int s1 =
+    let d = sin_I (x0_int +$ s1) in
+    0.5 *^ (abs_I d).high in
+  let mk_v0 v0 = mk_sin v0 in
+  let mk_v1 v0 e = mk_mul (mk_cos v0) e in
+  uop_form "sin_form" f_high mk_v0 mk_v1
 
 (* cosine *)
-let cos_form cs f =
-  Log.report `Debug "cos_form";
-  let x0_int = estimate_expr cs f.v0 in
-  let x1 = abs_eval_v1 cs f.v1 in
-  let s1 = List.fold_left (fun s (x, x_exp) -> 
-      let eps = get_eps x_exp in
-      let xi = {low = -. eps; high = eps} in
-      (xi *$. x) +$ s) zero_I x1 in
-  let d = cos_I (x0_int +$ s1) in
-  let b_high = 0.5 *^ (abs_I d).high in
-  let m2, m2_exp = sum2_high x1 x1 in
-  let m3 = b_high *^ m2 in
-  let m3_err = mk_err_var (-1) m2_exp in
-  let sin_v0 = mk_sin f.v0 in
-  let cos_v0 = mk_cos f.v0 in 
-  {
-    v0 = cos_v0;
-    v1 = merge cs (List.map (fun (e, err) -> mk_neg (mk_mul sin_v0 e), err) f.v1)
-                  [mk_float_const m3, m3_err];
-  }
+let cos_form =
+  let f_high x0_int s1 =
+    let d = cos_I (x0_int +$ s1) in
+    0.5 *^ (abs_I d).high in
+  let mk_v0 v0 = mk_cos v0 in
+  let mk_v1 v0 e = mk_neg (mk_mul (mk_sin v0) e) in
+  uop_form "cos_form" f_high mk_v0 mk_v1
 
 (* tangent *)
-let tan_form cs f =
-  Log.report `Debug "tan_form";
-  let x0_int = estimate_expr cs f.v0 in
-  let x1 = abs_eval_v1 cs f.v1 in
-  let s1 = List.fold_left (fun s (x, x_exp) -> 
-      let eps = get_eps x_exp in
-      let xi = {low = -. eps; high = eps} in
-      (xi *$. x) +$ s) zero_I x1 in
-  let xi = x0_int +$ s1 in
-  let d = tan_I xi /$ pow_I_i (cos_I xi) 2 in
-  let r_high = (abs_I d).high in
-  let m2', m2_exp = sum2_high x1 x1 in
-  let m2 = r_high *^ m2' in
-  let v1_0 = mk_mul (mk_cos f.v0) (mk_cos f.v0) in
-  {
-    v0 = mk_tan f.v0;
-    v1 = merge cs (List.map (fun (e, err) -> mk_div e v1_0, err) f.v1)
-                  [mk_float_const m2, mk_err_var (-1) m2_exp];
-  }
+let tan_form =
+  let f_high x0_int s1 =
+    let xi = x0_int +$ s1 in
+    let d = tan_I xi /$ pow_I_i (cos_I xi) 2 in
+    (abs_I d).high in
+  let mk_v0 v0 = mk_tan v0 in
+  let mk_v1 v0 e = mk_div e (mk_mul (mk_cos v0) (mk_cos v0)) in
+  uop_form "tan_form" f_high mk_v0 mk_v1
 
 (* arcsine *)
-let asin_form cs f =
-  Log.report `Debug "asin_form";
-  let x0_int = estimate_expr cs f.v0 in
-  let x1 = abs_eval_v1 cs f.v1 in
-  let s1 = List.fold_left (fun s (x, x_exp) -> 
-      let eps = get_eps x_exp in
-      let xi = {low = -. eps; high = eps} in
-      (xi *$. x) +$ s) zero_I x1 in
-  let d =
-    let xi = x0_int +$ s1 in
-    xi /$ sqrt_I (pow_I_i (one_I -$ pow_I_i xi 2) 3) in 
-  let b_high = 0.5 *^ (abs_I d).high in
-  let m2, m2_exp = sum2_high x1 x1 in
-  let m3 = b_high *^ m2 in
-  let m3_err = mk_err_var (-1) m2_exp in
-  let v1_0 = mk_sqrt (mk_sub const_1 (mk_mul f.v0 f.v0)) in
-  {
-    v0 = mk_asin f.v0;
-    v1 = merge cs (List.map (fun (e, err) -> mk_div e v1_0, err) f.v1)
-                  [mk_float_const m3, m3_err];
-  }
+let asin_form =
+  let f_high x0_int s1 =
+    let d =
+      let xi = x0_int +$ s1 in
+      xi /$ sqrt_I (pow_I_i (one_I -$ pow_I_i xi 2) 3) in 
+    0.5 *^ (abs_I d).high in
+  let mk_v0 v0 = mk_asin v0 in
+  let mk_v1 v0 e =
+    let v1_0 = mk_sqrt (mk_sub const_1 (mk_mul v0 v0)) in
+    mk_div e v1_0 in
+  uop_form "asin_form" f_high mk_v0 mk_v1
 
 (* arccosine *)
-let acos_form cs f =
-  Log.report `Debug "acos_form";
-  let x0_int = estimate_expr cs f.v0 in
-  let x1 = abs_eval_v1 cs f.v1 in
-  let s1 = List.fold_left (fun s (x, x_exp) -> 
-      let eps = get_eps x_exp in
-      let xi = {low = -. eps; high = eps} in
-      (xi *$. x) +$ s) zero_I x1 in
-  let d =
-    let xi = x0_int +$ s1 in
-    ~-$ (xi /$ sqrt_I (pow_I_i (one_I -$ pow_I_i xi 2) 3)) in 
-  let b_high = 0.5 *^ (abs_I d).high in
-  let m2, m2_exp = sum2_high x1 x1 in
-  let m3 = b_high *^ m2 in
-  let m3_err = mk_err_var (-1) m2_exp in
-  let v1_0 = mk_sqrt (mk_sub const_1 (mk_mul f.v0 f.v0)) in
-  {
-    v0 = mk_acos f.v0;
-    v1 = merge cs (List.map (fun (e, err) -> mk_neg (mk_div e v1_0), err) f.v1)
-                  [mk_float_const m3, m3_err];
-  }
+let acos_form =
+  let f_high x0_int s1 =
+    let d =
+      let xi = x0_int +$ s1 in
+      ~-$ (xi /$ sqrt_I (pow_I_i (one_I -$ pow_I_i xi 2) 3)) in 
+    0.5 *^ (abs_I d).high in
+  let mk_v0 v0 = mk_acos v0 in
+  let mk_v1 v0 e =
+    let v1_0 = mk_sqrt (mk_sub const_1 (mk_mul v0 v0)) in
+    mk_neg (mk_div e v1_0) in
+  uop_form "acos_form" f_high mk_v0 mk_v1
 
 (* arctangent *)
-let atan_form cs f =
-  Log.report `Debug "atan_form";
-  let x0_int = estimate_expr cs f.v0 in
-  let x1 = abs_eval_v1 cs f.v1 in
-  let s1 = List.fold_left (fun s (x, x_exp) -> 
-      let eps = get_eps x_exp in
-      let xi = {low = -. eps; high = eps} in
-      (xi *$. x) +$ s) zero_I x1 in
-  let d =
-    let xi = x0_int +$ s1 in
-    ~-$ (xi /$ pow_I_i (pow_I_i xi 2 +$ one_I) 2) in
-  let b_high = (abs_I d).high in
-  let m2, m2_exp = sum2_high x1 x1 in
-  let m3 = b_high *^ m2 in
-  let m3_err = mk_err_var (-1) m2_exp in
-  let v1_0 = mk_add (mk_mul f.v0 f.v0) const_1 in
-  {
-    v0 = mk_atan f.v0;
-    v1 = merge cs (List.map (fun (e, err) -> mk_div e v1_0, err) f.v1)
-                  [mk_float_const m3, m3_err];
-  }
+let atan_form =
+  let f_high x0_int s1 =
+    let d =
+      let xi = x0_int +$ s1 in
+      ~-$ (xi /$ pow_I_i (pow_I_i xi 2 +$ one_I) 2) in
+    (abs_I d).high in
+  let mk_v0 v0 = mk_atan v0 in
+  let mk_v1 v0 e =
+    let v1_0 = mk_add (mk_mul v0 v0) const_1 in
+    mk_div e v1_0 in
+  uop_form "atan_form" f_high mk_v0 mk_v1
 
 (* exp *)
-let exp_form cs f =
-  Log.report `Debug "exp_form";
-  let x0_int = estimate_expr cs f.v0 in
-  let x1 = abs_eval_v1 cs f.v1 in
-  let s1 = List.fold_left (fun s (x, x_exp) -> 
-      let eps = get_eps x_exp in
-      let xi = {low = -. eps; high = eps} in
-      (xi *$. x) +$ s) zero_I x1 in
-  let d = exp_I (x0_int +$ s1) in
-  let b_high = 0.5 *^ (abs_I d).high in
-  let m2, m2_exp = sum2_high x1 x1 in
-  let m3 = b_high *^ m2 in
-  let m3_err = mk_err_var (-1) m2_exp in
-  let exp_v0 = mk_exp f.v0 in 
-  {
-    v0 = exp_v0;
-    v1 = merge cs (List.map (fun (e, err) -> mk_mul exp_v0 e, err) f.v1)
-                  [mk_float_const m3, m3_err];
-  }
+let exp_form =
+  let f_high x0_int s1 =
+    let d = exp_I (x0_int +$ s1) in
+    0.5 *^ (abs_I d).high in
+  let mk_v0 v0 = mk_exp v0 in
+  let mk_v1 v0 e = mk_mul (mk_exp v0) e in
+  uop_form "exp_form" f_high mk_v0 mk_v1
 
 (* log *)
-let log_form cs f =
-  Log.report `Debug "log_form";
-  let x0_int = estimate_expr cs f.v0 in
-  let x1 = abs_eval_v1 cs f.v1 in
-  let s1 = List.fold_left (fun s (x, x_exp) -> 
-      let eps = get_eps x_exp in
-      let xi = {low = -. eps; high = eps} in
-      (xi *$. x) +$ s) zero_I x1 in
-  let d = inv_I (pow_I_i (x0_int +$ s1) 2) in
-  let b_high = 0.5 *^ (abs_I d).high in
-  let m2, m2_exp = sum2_high x1 x1 in
-  let m3 = b_high *^ m2 in
-  let m3_err = mk_err_var (-1) m2_exp in
-  let log_v0 = mk_log f.v0 in 
-  {
-    v0 = log_v0;
-    v1 = merge cs (List.map (fun (e, err) -> mk_div e f.v0, err) f.v1)
-                  [mk_float_const m3, m3_err];
-  }
+let log_form =
+  let f_high x0_int s1 =
+    let d = inv_I (pow_I_i (x0_int +$ s1) 2) in
+    0.5 *^ (abs_I d).high in
+  let mk_v0 v0 = mk_log v0 in
+  let mk_v1 v0 e = mk_div e v0 in
+  uop_form "log_form" f_high mk_v0 mk_v1
 
 (* sinh *)
-let sinh_form cs f =
-  Log.report `Debug "sinh_form";
-  let x0_int = estimate_expr cs f.v0 in
-  let x1 = abs_eval_v1 cs f.v1 in
-  let s1 = List.fold_left (fun s (x, x_exp) -> 
-      let eps = get_eps x_exp in
-      let xi = {low = -. eps; high = eps} in
-      (xi *$. x) +$ s) zero_I x1 in
-  let d =
-    let xi = x0_int +$ s1 in
-    sinh_I xi in
-  let b_high = 0.5 *^ (abs_I d).high in
-  let m2, m2_exp = sum2_high x1 x1 in
-  let m3 = b_high *^ m2 in
-  let m3_err = mk_err_var (-1) m2_exp in
-  let v1_0 = mk_cosh f.v0 in
-  {
-    v0 = mk_sinh f.v0;
-    v1 = merge cs (List.map (fun (e, err) -> mk_mul v1_0 e, err) f.v1)
-                  [mk_float_const m3, m3_err];
-  }
+let sinh_form =
+  let f_high x0_int s1 =
+    let d =
+      let xi = x0_int +$ s1 in
+      sinh_I xi in
+    0.5 *^ (abs_I d).high in
+  let mk_v0 v0 = mk_sinh v0 in
+  let mk_v1 v0 e = mk_mul (mk_cosh v0) e in
+  uop_form "sinh_form" f_high mk_v0 mk_v1
 
 (* cosh *)
-let cosh_form cs f =
-  Log.report `Debug "cosh_form";
-  let x0_int = estimate_expr cs f.v0 in
-  let x1 = abs_eval_v1 cs f.v1 in
-  let s1 = List.fold_left (fun s (x, x_exp) -> 
-      let eps = get_eps x_exp in
-      let xi = {low = -. eps; high = eps} in
-      (xi *$. x) +$ s) zero_I x1 in
-  let d =
-    let xi = x0_int +$ s1 in
-    cosh_I xi in
-  let b_high = 0.5 *^ (abs_I d).high in
-  let m2, m2_exp = sum2_high x1 x1 in
-  let m3 = b_high *^ m2 in
-  let m3_err = mk_err_var (-1) m2_exp in
-  let v1_0 = mk_sinh f.v0 in
-  {
-    v0 = mk_cosh f.v0;
-    v1 = merge cs (List.map (fun (e, err) -> mk_mul v1_0 e, err) f.v1)
-                  [mk_float_const m3, m3_err];
-  }
+let cosh_form =
+  let f_high x0_int s1 =
+    let d =
+      let xi = x0_int +$ s1 in
+      cosh_I xi in
+    0.5 *^ (abs_I d).high in
+  let mk_v0 v0 = mk_cosh v0 in
+  let mk_v1 v0 e = mk_mul (mk_sinh v0) e in
+  uop_form "cosh_form" f_high mk_v0 mk_v1
 
 (* tanh *)
-let tanh_form cs f =
-  Log.report `Debug "tanh_form";
-  let x0_int = estimate_expr cs f.v0 in
-  let x1 = abs_eval_v1 cs f.v1 in
-  let s1 = List.fold_left (fun s (x, x_exp) -> 
-      let eps = get_eps x_exp in
-      let xi = {low = -. eps; high = eps} in
-      (xi *$. x) +$ s) zero_I x1 in
-  let d =
-    let xi = x0_int +$ s1 in
-    ~-$ (tanh_I xi /$ pow_I_i (cosh_I xi) 2) in
-  let b_high = (abs_I d).high in
-  let m2, m2_exp = sum2_high x1 x1 in
-  let m3 = b_high *^ m2 in
-  let m3_err = mk_err_var (-1) m2_exp in
-  let v1_0 = mk_mul (mk_cosh f.v0) (mk_cosh f.v0) in
-  {
-    v0 = mk_tanh f.v0;
-    v1 = merge cs (List.map (fun (e, err) -> mk_div e v1_0, err) f.v1)
-                  [mk_float_const m3, m3_err];
-  }
-
+let tanh_form =
+  let f_high x0_int s1 =
+    let d =
+      let xi = x0_int +$ s1 in
+      ~-$ (tanh_I xi /$ pow_I_i (cosh_I xi) 2) in
+    (abs_I d).high in
+  let mk_v0 v0 = mk_tanh v0 in
+  let mk_v1 v0 e =
+    let v1_0 = mk_mul (mk_cosh v0) (mk_cosh v0) in
+    mk_div e v1_0 in
+  uop_form "tanh_form" f_high mk_v0 mk_v1
 
 (* arsinh *)
-let asinh_form cs f =
-  Log.report `Debug "asinh_form";
-  let x0_int = estimate_expr cs f.v0 in
-  let x1 = abs_eval_v1 cs f.v1 in
-  let s1 = List.fold_left (fun s (x, x_exp) -> 
-      let eps = get_eps x_exp in
-      let xi = {low = -. eps; high = eps} in
-      (xi *$. x) +$ s) zero_I x1 in
-  let d =
-    let xi = x0_int +$ s1 in
-    ~-$ (xi /$ sqrt_I (pow_I_i (one_I +$ pow_I_i xi 2) 3)) in 
-  let b_high = 0.5 *^ (abs_I d).high in
-  let m2, m2_exp = sum2_high x1 x1 in
-  let m3 = b_high *^ m2 in
-  let m3_err = mk_err_var (-1) m2_exp in
-  let v1_0 = mk_sqrt (mk_add const_1 (mk_mul f.v0 f.v0)) in
-  {
-    v0 = mk_asinh f.v0;
-    v1 = merge cs (List.map (fun (e, err) -> mk_div e v1_0, err) f.v1)
-                  [mk_float_const m3, m3_err];
-  }
+let asinh_form =
+  let f_high x0_int s1 =
+    let d =
+      let xi = x0_int +$ s1 in
+      ~-$ (xi /$ sqrt_I (pow_I_i (one_I +$ pow_I_i xi 2) 3)) in 
+    0.5 *^ (abs_I d).high in
+  let mk_v0 v0 = mk_asinh v0 in
+  let mk_v1 v0 e =
+    let v1_0 = mk_sqrt (mk_add const_1 (mk_mul v0 v0)) in
+    mk_div e v1_0 in
+  uop_form "asinh_form" f_high mk_v0 mk_v1
 
 (* arcosh *)
-let acosh_form cs f =
-  Log.report `Debug "acosh_form";
-  let x0_int = estimate_expr cs f.v0 in
-  let x1 = abs_eval_v1 cs f.v1 in
-  let s1 = List.fold_left (fun s (x, x_exp) -> 
-      let eps = get_eps x_exp in
-      let xi = {low = -. eps; high = eps} in
-      (xi *$. x) +$ s) zero_I x1 in
-  let d =
-    let xi = x0_int +$ s1 in
-    ~-$ (xi /$ sqrt_I (pow_I_i (pow_I_i xi 2 -$ one_I) 3)) in 
-  let b_high = 0.5 *^ (abs_I d).high in
-  let m2, m2_exp = sum2_high x1 x1 in
-  let m3 = b_high *^ m2 in
-  let m3_err = mk_err_var (-1) m2_exp in
-  let v1_0 = mk_sqrt (mk_sub (mk_mul f.v0 f.v0) const_1) in
-  {
-    v0 = mk_acosh f.v0;
-    v1 = merge cs (List.map (fun (e, err) -> mk_div e v1_0, err) f.v1)
-                  [mk_float_const m3, m3_err];
-  }
+let acosh_form =
+  let f_high x0_int s1 =
+    let d =
+      let xi = x0_int +$ s1 in
+      ~-$ (xi /$ sqrt_I (pow_I_i (pow_I_i xi 2 -$ one_I) 3)) in 
+    0.5 *^ (abs_I d).high in
+  let mk_v0 v0 = mk_acosh v0 in
+  let mk_v1 v0 e =
+    let v1_0 = mk_sqrt (mk_sub (mk_mul v0 v0) const_1) in
+    mk_div e v1_0 in
+  uop_form "acosh_form" f_high mk_v0 mk_v1
 
 (* artanh *)
-let atanh_form cs f =
-  Log.report `Debug "atanh_form";
-  let x0_int = estimate_expr cs f.v0 in
-  let x1 = abs_eval_v1 cs f.v1 in
-  let s1 = List.fold_left (fun s (x, x_exp) -> 
-      let eps = get_eps x_exp in
-      let xi = {low = -. eps; high = eps} in
-      (xi *$. x) +$ s) zero_I x1 in
-  let d =
-    let xi = x0_int +$ s1 in
-    xi /$ pow_I_i (one_I -$ pow_I_i xi 2) 2 in
-  let b_high = (abs_I d).high in
-  let m2, m2_exp = sum2_high x1 x1 in
-  let m3 = b_high *^ m2 in
-  let m3_err = mk_err_var (-1) m2_exp in
-  (* let _ = Proof.add_atn_step form_index f.form_index
-      m1 m2 m2_exp b_high m3 m3_err.proof_index in *)
-  let v1_0 = mk_sub const_1 (mk_mul f.v0 f.v0) in
-  {
-    v0 = mk_atanh f.v0;
-    v1 = merge cs (List.map (fun (e, err) -> mk_div e v1_0, err) f.v1)
-                  [mk_float_const m3, m3_err];
-  }
+let atanh_form =
+  let f_high x0_int s1 =
+    let d =
+      let xi = x0_int +$ s1 in
+      xi /$ pow_I_i (one_I -$ pow_I_i xi 2) 2 in
+    (abs_I d).high in
+  let mk_v0 v0 = mk_atanh v0 in
+  let mk_v1 v0 e =
+    let v1_0 = mk_sub const_1 (mk_mul v0 v0) in
+    mk_div e v1_0 in
+  uop_form "atanh_form" f_high mk_v0 mk_v1
 
 (* absolute value *)
 (* |x + e| = |x| + abs_err(t, x) * e where
