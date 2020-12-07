@@ -148,32 +148,39 @@ let print_result (result : result) =
     | (s, None) :: rest -> max_length rest
     | (s, Some _) :: rest -> max (String.length s) (max_length rest)
   in
+  let report title err_name err_select print result =
+    let names = List.map (fun r -> err_name r.error_type) result.errors in
+    let w = result.errors
+              |> List.map2 (fun name r -> name, err_select r) names
+              |> max_length in
+    if w > 0 && String.length title > 0 then Log.report `Main "%s" title;
+    List.iter2 (fun name r -> print w name (err_select r)) names result.errors;
+    Log.report `Main ""
+  in
   Log.report `Main
     "-------------------------------------------------------------------------------";
   Log.report `Main "Problem: %s\n" result.task.name;
-  if Config.get_bool_option "print-opt-lower-bounds" then begin
-    let w = result.errors
-              |> List.map (fun r -> "The " ^ error_type_name r.error_type ^ " model:", r.error)
-              |> max_length in
-    if w > 0 then
-      Log.report `Main "Optimization lower bounds for error models:";
-    result.errors
-      |> List.iter (fun r -> 
-          let str = "The " ^ error_type_name r.error_type ^ " model:" in
-          print_lower_bound w str r.error);
-    Log.report `Main "";
-  end;
+  if Config.get_bool_option "print-opt-lower-bounds" then
+    report "Optimization lower bounds for error models:"
+           (fun ty -> "The " ^ error_type_name ty ^ " model:")
+           (fun r -> r.error) 
+           print_lower_bound
+           result;
+  if Config.get_bool_option "print-second-order-errors" then
+    report "Second order error bounds:"
+           (fun ty -> "Second order " ^ error_type_name ty ^ ":")
+           (fun r -> r.total2) 
+           print_upper_bound
+           result;
   Log.report `Main "Bounds (without rounding): %s" (string_of_interval result.real_bounds);
   print_bounds result;
   Log.report `Main "";
-  let w = result.errors
-            |> List.map (fun r -> error_type_name r.error_type ^ ":", r.error)
-            |> max_length in
-  result.errors 
-    |> List.iter (fun r ->
-        let str = String.capitalize_ascii (error_type_name r.error_type) ^ ":" in
-        print_upper_bound w str r.error);
-  Log.report `Main "\nElapsed time: %.2f\n" result.elapsed_time
+  report "" 
+        (fun ty -> String.capitalize_ascii (error_type_name ty) ^ ":")
+        (fun r -> r.error)
+        print_upper_bound
+        result;
+  Log.report `Main "Elapsed time: %.2f\n" result.elapsed_time
 
 let print_form level f =
   Log.report level "v0 = %s" (ExprOut.Info.print_str f.v0);

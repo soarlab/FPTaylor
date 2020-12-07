@@ -1,6 +1,8 @@
 FPTaylor 0.9.4
 --------------
 
+- [FEATURE] --print-second-order-errors: an option for printing second order errors.
+
 - The performance of Taylor forms generation for large expressions is improved.
 
 - Removed proof recording. Use FPTaylor v0.9.3 for recording proofs.
