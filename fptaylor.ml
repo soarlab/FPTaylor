@@ -55,7 +55,7 @@ let open_file, close_file, close_all, get_file_formatter =
       failwith ("File with the same id is already open: " ^ id)
     else
       let oc = open_out fname in
-      let fmt = Format.make_formatter (output_substring oc) (fun () -> flush oc) in
+      let fmt = Format.formatter_of_out_channel oc in
       Hashtbl.add files id (oc, fmt) in
   let close_file id =
     try
@@ -208,7 +208,10 @@ let add2_symbolic (e1, exp1) (e2, exp2) =
     let eps = Rounding.get_eps (exp1 - exp2) in
     (mk_add (mk_mul (mk_float_const eps) e1) e2, exp2)
 
-let sum_symbolic s = Lib.itlist add2_symbolic s (const_0, 0)
+(* If List.fold_left is used here then ocamlopt (opt = bb) will take significantly
+   more time on some benchmarks:
+   80 seconds with fold_right and 96 seconds with fold_left for poly50 *)
+let sum_symbolic s = List.fold_right add2_symbolic s (const_0, 0)
 
 let compute_bound cs (expr, err) =
   let r = Opt.find_max_abs (Opt_common.default_opt_pars ()) cs expr in

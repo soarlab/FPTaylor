@@ -10,19 +10,7 @@
 (* Operations on lists.                                                 *)
 (* -------------------------------------------------------------------------- *)
 
-val itlist : ('a -> 'b -> 'b) -> 'a list -> 'b -> 'b
-
-val rev_itlist : ('a -> 'b -> 'b) -> 'a list -> 'b -> 'b
-
-val end_itlist : ('a -> 'a -> 'a) -> 'a list -> 'a
-
-val itlist2 : ('a -> 'b -> 'c -> 'c) -> 'a list -> 'b list -> 'c -> 'c
-
-val rev_itlist2 : ('a -> 'b -> 'c -> 'c) -> 'a list -> 'b list -> 'c -> 'c
-
 val last : 'a list -> 'a
-
-val mem : 'a -> 'a list -> bool
 
 val insert : 'a -> 'a list -> 'a list
 
@@ -34,8 +22,6 @@ val intersect : 'a list -> 'a list -> 'a list
 
 val subtract : 'a list -> 'a list -> 'a list
 
-val assoc : 'a -> ('a * 'b) list -> 'b
-
 val rev_assoc : 'b -> ('a * 'b) list -> 'a
 
 val assoc_eq : ('a -> 'a -> bool) -> 'a -> ('a * 'b) list -> 'b
@@ -43,10 +29,6 @@ val assoc_eq : ('a -> 'a -> bool) -> 'a -> ('a * 'b) list -> 'b
 val assocd : 'b -> 'a -> ('a * 'b) list -> 'b
 
 val assocd_eq : ('a -> 'a -> bool) -> 'b -> 'a -> ('a * 'b) list -> 'b
-
-val zip : 'a list -> 'b list -> ('a * 'b) list
-
-val unzip : ('a * 'b) list -> 'a list * 'b list
 
 val (--) : int -> int -> int list
 

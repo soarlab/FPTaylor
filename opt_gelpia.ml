@@ -49,8 +49,8 @@ let gen_gelpia_code fmt =
   fun (pars, cs, expr) ->
     let var_names = vars_in_expr expr in
     let var_bounds = List.map cs.var_interval var_names in
-    let domain_size = Lib.itlist (fun b r -> max r (abs_float (b.high -. b.low)))
-                                 var_bounds 0.0 in
+    let domain_size = List.fold_left (fun r b -> max r (abs_float (b.high -. b.low)))
+                                 0.0 var_bounds in
     let x_tol = domain_size *. pars.x_rel_tol +. pars.x_abs_tol in
     parameters pars x_tol;
     func expr (List.map (fun name -> "var_" ^ name) var_names) var_bounds

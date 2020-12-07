@@ -167,7 +167,7 @@ let rec eq_expr e1 e2 =
   | (Bin_op (t1, a1, b1), Bin_op (t2, a2, b2)) when t1 = t2 ->
     eq_expr a1 a2 && eq_expr b1 b2
   | (Gen_op (t1, as1), Gen_op (t2, as2)) when t1 = t2 ->
-    Lib.itlist (fun (a1, a2) x -> eq_expr a1 a2 && x) (Lib.zip as1 as2) true
+    List.for_all2 (fun a1 a2 -> eq_expr a1 a2) as1 as2
   | _ -> false
 
 let rec hash_expr = function
@@ -197,7 +197,7 @@ let rec vars_in_expr e =
     Lib.union (vars_in_expr a1) (vars_in_expr a2)
   | Gen_op (_, args) ->
     let vs = List.map vars_in_expr args in
-    Lib.itlist Lib.union vs []
+    List.fold_left Lib.union [] vs
   | _ -> []
 
 let is_ref_var = function

@@ -90,13 +90,13 @@ let add2 (x1, e1) (x2, e2) =
     let eps = get_eps (e1 - e2) in
     ((x1 *^ eps) +^ x2, e2)
 
-let sum_high s = Lib.itlist add2 s (0., 0)
+let sum_high s = List.fold_left add2 (0., 0) s
 
-let sum2_high s1 s2 = Lib.itlist 
-    (fun (x,x_exp) s ->
-       let s0 = sum_high (List.map (fun (y,y_exp) -> x *^ y, x_exp + y_exp) s2) in
+let sum2_high s1 s2 = List.fold_left
+    (fun s (x, x_exp) ->
+       let s0 = sum_high (List.map (fun (y, y_exp) -> x *^ y, x_exp + y_exp) s2) in
        add2 s s0) 
-    s1 (0.0, 0)
+    (0.0, 0) s1
 
 let abs_eval cs ex = 
   let v = estimate_expr cs ex in
@@ -393,10 +393,10 @@ let inv_form cs f =
   Log.report `Debug "inv_form";
   let x0_int = estimate_expr cs f.v0 in
   let x1 = abs_eval_v1 cs f.v1 in
-  let s1 = Lib.itlist (fun (x,x_exp) s -> 
+  let s1 = List.fold_left (fun s (x, x_exp) -> 
       let eps = get_eps x_exp in
       let xi = {low = -. eps; high = eps} in
-      (xi *$. x) +$ s) x1 zero_I in
+      (xi *$. x) +$ s) zero_I x1 in
   let d = pow_I_i (x0_int +$ s1) 3 in
   let _ = 
     if (abs_I d).low <= 0.0 then
@@ -426,10 +426,10 @@ let sqrt_form cs f =
   Log.report `Debug "sqrt_form";
   let x0_int = estimate_expr cs f.v0 in
   let x1 = abs_eval_v1 cs f.v1 in
-  let s1 = Lib.itlist (fun (x,x_exp) s -> 
+  let s1 = List.fold_left (fun s (x, x_exp) -> 
       let eps = get_eps x_exp in
       let xi = {low = -. eps; high = eps} in
-      (xi *$. x) +$ s) x1 zero_I in
+      (xi *$. x) +$ s) zero_I x1 in
   let d =
       let t = (x0_int +$ s1) in
       sqrt_I t *$ t in
@@ -449,10 +449,10 @@ let sin_form cs f =
   Log.report `Debug "sin_form";
   let x0_int = estimate_expr cs f.v0 in
   let x1 = abs_eval_v1 cs f.v1 in
-  let s1 = Lib.itlist (fun (x,x_exp) s -> 
+  let s1 = List.fold_left (fun s (x, x_exp) -> 
       let eps = get_eps x_exp in
       let xi = {low = -. eps; high = eps} in
-      (xi *$. x) +$ s) x1 zero_I in
+      (xi *$. x) +$ s) zero_I x1 in
   let d = sin_I (x0_int +$ s1) in
   let b_high = 0.5 *^ (abs_I d).high in
   let m2, m2_exp = sum2_high x1 x1 in
@@ -471,10 +471,10 @@ let cos_form cs f =
   Log.report `Debug "cos_form";
   let x0_int = estimate_expr cs f.v0 in
   let x1 = abs_eval_v1 cs f.v1 in
-  let s1 = Lib.itlist (fun (x,x_exp) s -> 
+  let s1 = List.fold_left (fun s (x, x_exp) -> 
       let eps = get_eps x_exp in
       let xi = {low = -. eps; high = eps} in
-      (xi *$. x) +$ s) x1 zero_I in
+      (xi *$. x) +$ s) zero_I x1 in
   let d = cos_I (x0_int +$ s1) in
   let b_high = 0.5 *^ (abs_I d).high in
   let m2, m2_exp = sum2_high x1 x1 in
@@ -493,10 +493,10 @@ let tan_form cs f =
   Log.report `Debug "tan_form";
   let x0_int = estimate_expr cs f.v0 in
   let x1 = abs_eval_v1 cs f.v1 in
-  let s1 = Lib.itlist (fun (x,x_exp) s -> 
+  let s1 = List.fold_left (fun s (x, x_exp) -> 
       let eps = get_eps x_exp in
       let xi = {low = -. eps; high = eps} in
-      (xi *$. x) +$ s) x1 zero_I in
+      (xi *$. x) +$ s) zero_I x1 in
   let xi = x0_int +$ s1 in
   let d = tan_I xi /$ pow_I_i (cos_I xi) 2 in
   let r_high = (abs_I d).high in
@@ -514,10 +514,10 @@ let asin_form cs f =
   Log.report `Debug "asin_form";
   let x0_int = estimate_expr cs f.v0 in
   let x1 = abs_eval_v1 cs f.v1 in
-  let s1 = Lib.itlist (fun (x,x_exp) s -> 
+  let s1 = List.fold_left (fun s (x, x_exp) -> 
       let eps = get_eps x_exp in
       let xi = {low = -. eps; high = eps} in
-      (xi *$. x) +$ s) x1 zero_I in
+      (xi *$. x) +$ s) zero_I x1 in
   let d =
     let xi = x0_int +$ s1 in
     xi /$ sqrt_I (pow_I_i (one_I -$ pow_I_i xi 2) 3) in 
@@ -537,10 +537,10 @@ let acos_form cs f =
   Log.report `Debug "acos_form";
   let x0_int = estimate_expr cs f.v0 in
   let x1 = abs_eval_v1 cs f.v1 in
-  let s1 = Lib.itlist (fun (x,x_exp) s -> 
+  let s1 = List.fold_left (fun s (x, x_exp) -> 
       let eps = get_eps x_exp in
       let xi = {low = -. eps; high = eps} in
-      (xi *$. x) +$ s) x1 zero_I in
+      (xi *$. x) +$ s) zero_I x1 in
   let d =
     let xi = x0_int +$ s1 in
     ~-$ (xi /$ sqrt_I (pow_I_i (one_I -$ pow_I_i xi 2) 3)) in 
@@ -560,10 +560,10 @@ let atan_form cs f =
   Log.report `Debug "atan_form";
   let x0_int = estimate_expr cs f.v0 in
   let x1 = abs_eval_v1 cs f.v1 in
-  let s1 = Lib.itlist (fun (x,x_exp) s -> 
+  let s1 = List.fold_left (fun s (x, x_exp) -> 
       let eps = get_eps x_exp in
       let xi = {low = -. eps; high = eps} in
-      (xi *$. x) +$ s) x1 zero_I in
+      (xi *$. x) +$ s) zero_I x1 in
   let d =
     let xi = x0_int +$ s1 in
     ~-$ (xi /$ pow_I_i (pow_I_i xi 2 +$ one_I) 2) in
@@ -583,10 +583,10 @@ let exp_form cs f =
   Log.report `Debug "exp_form";
   let x0_int = estimate_expr cs f.v0 in
   let x1 = abs_eval_v1 cs f.v1 in
-  let s1 = Lib.itlist (fun (x,x_exp) s -> 
+  let s1 = List.fold_left (fun s (x, x_exp) -> 
       let eps = get_eps x_exp in
       let xi = {low = -. eps; high = eps} in
-      (xi *$. x) +$ s) x1 zero_I in
+      (xi *$. x) +$ s) zero_I x1 in
   let d = exp_I (x0_int +$ s1) in
   let b_high = 0.5 *^ (abs_I d).high in
   let m2, m2_exp = sum2_high x1 x1 in
@@ -604,10 +604,10 @@ let log_form cs f =
   Log.report `Debug "log_form";
   let x0_int = estimate_expr cs f.v0 in
   let x1 = abs_eval_v1 cs f.v1 in
-  let s1 = Lib.itlist (fun (x,x_exp) s -> 
+  let s1 = List.fold_left (fun s (x, x_exp) -> 
       let eps = get_eps x_exp in
       let xi = {low = -. eps; high = eps} in
-      (xi *$. x) +$ s) x1 zero_I in
+      (xi *$. x) +$ s) zero_I x1 in
   let d = inv_I (pow_I_i (x0_int +$ s1) 2) in
   let b_high = 0.5 *^ (abs_I d).high in
   let m2, m2_exp = sum2_high x1 x1 in
@@ -625,10 +625,10 @@ let sinh_form cs f =
   Log.report `Debug "sinh_form";
   let x0_int = estimate_expr cs f.v0 in
   let x1 = abs_eval_v1 cs f.v1 in
-  let s1 = Lib.itlist (fun (x,x_exp) s -> 
+  let s1 = List.fold_left (fun s (x, x_exp) -> 
       let eps = get_eps x_exp in
       let xi = {low = -. eps; high = eps} in
-      (xi *$. x) +$ s) x1 zero_I in
+      (xi *$. x) +$ s) zero_I x1 in
   let d =
     let xi = x0_int +$ s1 in
     sinh_I xi in
@@ -648,10 +648,10 @@ let cosh_form cs f =
   Log.report `Debug "cosh_form";
   let x0_int = estimate_expr cs f.v0 in
   let x1 = abs_eval_v1 cs f.v1 in
-  let s1 = Lib.itlist (fun (x,x_exp) s -> 
+  let s1 = List.fold_left (fun s (x, x_exp) -> 
       let eps = get_eps x_exp in
       let xi = {low = -. eps; high = eps} in
-      (xi *$. x) +$ s) x1 zero_I in
+      (xi *$. x) +$ s) zero_I x1 in
   let d =
     let xi = x0_int +$ s1 in
     cosh_I xi in
@@ -671,10 +671,10 @@ let tanh_form cs f =
   Log.report `Debug "tanh_form";
   let x0_int = estimate_expr cs f.v0 in
   let x1 = abs_eval_v1 cs f.v1 in
-  let s1 = Lib.itlist (fun (x,x_exp) s -> 
+  let s1 = List.fold_left (fun s (x, x_exp) -> 
       let eps = get_eps x_exp in
       let xi = {low = -. eps; high = eps} in
-      (xi *$. x) +$ s) x1 zero_I in
+      (xi *$. x) +$ s) zero_I x1 in
   let d =
     let xi = x0_int +$ s1 in
     ~-$ (tanh_I xi /$ pow_I_i (cosh_I xi) 2) in
@@ -695,10 +695,10 @@ let asinh_form cs f =
   Log.report `Debug "asinh_form";
   let x0_int = estimate_expr cs f.v0 in
   let x1 = abs_eval_v1 cs f.v1 in
-  let s1 = Lib.itlist (fun (x,x_exp) s -> 
+  let s1 = List.fold_left (fun s (x, x_exp) -> 
       let eps = get_eps x_exp in
       let xi = {low = -. eps; high = eps} in
-      (xi *$. x) +$ s) x1 zero_I in
+      (xi *$. x) +$ s) zero_I x1 in
   let d =
     let xi = x0_int +$ s1 in
     ~-$ (xi /$ sqrt_I (pow_I_i (one_I +$ pow_I_i xi 2) 3)) in 
@@ -718,10 +718,10 @@ let acosh_form cs f =
   Log.report `Debug "acosh_form";
   let x0_int = estimate_expr cs f.v0 in
   let x1 = abs_eval_v1 cs f.v1 in
-  let s1 = Lib.itlist (fun (x,x_exp) s -> 
+  let s1 = List.fold_left (fun s (x, x_exp) -> 
       let eps = get_eps x_exp in
       let xi = {low = -. eps; high = eps} in
-      (xi *$. x) +$ s) x1 zero_I in
+      (xi *$. x) +$ s) zero_I x1 in
   let d =
     let xi = x0_int +$ s1 in
     ~-$ (xi /$ sqrt_I (pow_I_i (pow_I_i xi 2 -$ one_I) 3)) in 
@@ -741,10 +741,10 @@ let atanh_form cs f =
   Log.report `Debug "atanh_form";
   let x0_int = estimate_expr cs f.v0 in
   let x1 = abs_eval_v1 cs f.v1 in
-  let s1 = Lib.itlist (fun (x,x_exp) s -> 
+  let s1 = List.fold_left (fun s (x, x_exp) -> 
       let eps = get_eps x_exp in
       let xi = {low = -. eps; high = eps} in
-      (xi *$. x) +$ s) x1 zero_I in
+      (xi *$. x) +$ s) zero_I x1 in
   let d =
     let xi = x0_int +$ s1 in
     xi /$ pow_I_i (one_I -$ pow_I_i xi 2) 2 in
