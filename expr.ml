@@ -158,6 +158,7 @@ let gen_op_name = function
 
 let rec eq_expr e1 e2 =
   match (e1, e2) with
+  | _ when e1 == e2 -> true
   | (Const c1, Const c2) -> Const.eq_c c1 c2
   | (Var v1, Var v2) -> v1 = v2
   | (Rounding (r1, a1), Rounding (r2, a2)) when r1 = r2 -> 
