@@ -15,38 +15,61 @@ open Expr
 open Task
 open Taylor_form
 
-type result = {
-  task : task;
-  real_bounds : interval;
-  abs_error_model : expr option;
-  rel_error_model : expr option;
-  ulp_error_model : expr option;
+type error_type = 
+  Err_abs_approx | Err_abs_exact | 
+  Err_rel_approx | Err_rel_exact |
+  Err_ulp_approx | Err_ulp_exact
+
+type error_result = {
+  error_type : error_type;
+  (* Total error *)
   (* Lower bounds of error intervals represent lower bounds
      returned by a global optimization procedure.
      low = neg_infinity if a lower bound is not returned. *)
-  abs_error_approx : interval option;
-  abs_error_exact : interval option;
-  rel_error_approx : interval option;
-  rel_error_exact : interval option;
-  ulp_error_approx : interval option;
-  ulp_error_exact : interval option;
+  error : Interval.interval option;
+  (* Second order error *)
+  total2 : Interval.interval option;
+  (* Error model *)
+  error_model : Expr.expr option;
+}
+
+type result = {
+  task : Task.task;
+  real_bounds : Interval.interval;
+  errors : error_result list;
   elapsed_time : float;
 }
 
-let mk_result task = {
+let mk_empty_error_result ty = {
+  error_type = ty;
+  error = None;
+  total2 = None;
+  error_model = None;
+}
+
+let mk_empty_result task = {
   task = task;
   real_bounds = {low = neg_infinity; high = infinity};
-  abs_error_model = None;
-  rel_error_model = None;
-  ulp_error_model = None;
-  abs_error_approx = None;
-  abs_error_exact = None;
-  rel_error_approx = None;
-  rel_error_exact = None;
-  ulp_error_approx = None;
-  ulp_error_exact = None;
+  errors = [];
   elapsed_time = 0.0;
 }
+
+let error_type_name = function
+| Err_abs_approx -> "absolute error (approximate)"
+| Err_abs_exact -> "absolute error (exact)"
+| Err_rel_approx -> "relative error (approximate)"
+| Err_rel_exact -> "relative error (exact)"
+| Err_ulp_approx -> "ULP error (approximate)"
+| Err_ulp_exact -> "ULP error (exact)"
+
+let find_error_result ty result =
+  List.find (fun r -> r.error_type = ty) result.errors
+
+let find_error ty default result =
+  try
+    let r = find_error_result ty result in
+    Lib.option_default ~default r.error
+  with Not_found -> default
 
 let open_file, close_file, close_all, get_file_formatter =
   let files = Hashtbl.create 5 in
@@ -75,8 +98,8 @@ let open_file, close_file, close_all, get_file_formatter =
 
 let get_problem_absolute_error result =
   let entire = {low = neg_infinity; high = infinity} in
-  let e1 = Lib.option_default ~default:entire result.abs_error_approx and
-    e2 = Lib.option_default ~default:entire result.abs_error_exact in
+  let e1 = find_error Err_abs_approx entire result in
+  let e2 = find_error Err_abs_exact entire result in
   min e1.high e2.high
 
 let print_result (result : result) =
@@ -129,49 +152,27 @@ let print_result (result : result) =
     "-------------------------------------------------------------------------------";
   Log.report `Main "Problem: %s\n" result.task.name;
   if Config.get_bool_option "print-opt-lower-bounds" then begin
-    let abs_approx_str = "The absolute error model (approximate):" in
-    let abs_exact_str = "The absolute error model (exact):" in
-    let rel_approx_str = "The relative error model (approximate):" in
-    let rel_exact_str = "The relative error model (exact):" in
-    let ulp_approx_str = "The ULP error model (approximate):" in
-    let ulp_exact_str = "The ULP error model (exact):" in
-    let w = max_length [abs_approx_str, result.abs_error_approx;
-                        abs_exact_str, result.abs_error_exact;
-                        rel_approx_str, result.rel_error_approx;
-                        rel_exact_str, result.rel_error_exact;
-                        ulp_approx_str, result.ulp_error_approx;
-                        ulp_exact_str, result.ulp_error_exact] in
+    let w = result.errors
+              |> List.map (fun r -> "The " ^ error_type_name r.error_type ^ " model:", r.error)
+              |> max_length in
     if w > 0 then
       Log.report `Main "Optimization lower bounds for error models:";
-    print_lower_bound w abs_approx_str result.abs_error_approx;
-    print_lower_bound w abs_exact_str result.abs_error_exact;
-    print_lower_bound w rel_approx_str result.rel_error_approx;
-    print_lower_bound w rel_exact_str result.rel_error_exact;
-    print_lower_bound w ulp_approx_str result.ulp_error_approx;
-    print_lower_bound w ulp_exact_str result.ulp_error_exact;
+    result.errors
+      |> List.iter (fun r -> 
+          let str = "The " ^ error_type_name r.error_type ^ " model:" in
+          print_lower_bound w str r.error);
     Log.report `Main "";
   end;
   Log.report `Main "Bounds (without rounding): %s" (string_of_interval result.real_bounds);
   print_bounds result;
   Log.report `Main "";
-  let abs_approx_str = "Absolute error (approximate):" in
-  let abs_exact_str = "Absolute error (exact):" in
-  let rel_approx_str = "Relative error (approximate):" in
-  let rel_exact_str = "Relative error (exact):" in
-  let ulp_approx_str = "ULP error (approximate):" in
-  let ulp_exact_str = "ULP error (exact):" in
-  let w = max_length [abs_approx_str, result.abs_error_approx;
-                      abs_exact_str, result.abs_error_exact;
-                      rel_approx_str, result.rel_error_approx;
-                      rel_exact_str, result.rel_error_exact;
-                      ulp_approx_str, result.ulp_error_approx;
-                      ulp_exact_str, result.ulp_error_exact] in
-  print_upper_bound w abs_approx_str result.abs_error_approx;
-  print_upper_bound w abs_exact_str result.abs_error_exact;
-  print_upper_bound w rel_approx_str result.rel_error_approx;
-  print_upper_bound w rel_exact_str result.rel_error_exact;
-  print_upper_bound w ulp_approx_str result.ulp_error_approx;
-  print_upper_bound w ulp_exact_str result.ulp_error_exact;
+  let w = result.errors
+            |> List.map (fun r -> error_type_name r.error_type ^ ":", r.error)
+            |> max_length in
+  result.errors 
+    |> List.iter (fun r ->
+        let str = String.capitalize_ascii (error_type_name r.error_type) ^ ":" in
+        print_upper_bound w str r.error);
   Log.report `Main "\nElapsed time: %.2f\n" result.elapsed_time
 
 let print_form level f =
@@ -255,59 +256,62 @@ let absolute_errors task tf =
   let bounds2 = List.map (compute_bound cs) v2 in
   let total2_i = sum_err_bounds bounds2 in
   let err_approx =
-    if not (Config.get_bool_option "opt-approx") then None
-    else
-      begin
-        Log.report `Important "\nSolving the approximate optimization problem";
-        Log.report `Important "\nAbsolute errors:";
-        let bounds1 = List.map (compute_bound cs) v1 in
-        let total1_i = sum_err_bounds bounds1 in
-        let total_i = total1_i +$ total2_i in
-        Log.report `Important "total1: %s" (bound_info total1_i);
-        Log.report `Important "total2: %s" (bound_info total2_i);
-        Log.report `Important "total: %s" (bound_info total_i);
-        error2_warning total1_i.high total2_i.high;
-        Some total_i
-      end
+    if not (Config.get_bool_option "opt-approx") then []
+    else begin
+      Log.report `Important "\nSolving the approximate optimization problem";
+      Log.report `Important "\nAbsolute errors:";
+      let bounds1 = List.map (compute_bound cs) v1 in
+      let total1_i = sum_err_bounds bounds1 in
+      let total_i = total1_i +$ total2_i in
+      Log.report `Important "total1: %s" (bound_info total1_i);
+      Log.report `Important "total2: %s" (bound_info total2_i);
+      Log.report `Important "total: %s" (bound_info total_i);
+      error2_warning total1_i.high total2_i.high;
+      [{ (mk_empty_error_result Err_abs_approx) with
+         error = Some total_i;
+         total2 = Some total2_i }]
+    end
   in
-  let err_exact, model_expr =
-    if not (Config.get_bool_option "opt-exact") then None, None
-    else
-      begin
-        Log.report `Important "\nSolving the exact optimization problem";
-        let abs_exprs = List.map (fun (e, err) -> mk_abs e, err.exp) v1 in
-        let full_expr, exp =
-          let full_expr', exp = sum_symbolic abs_exprs in
-          (* FIXME: Incorrect simplification results for horner50.txt if the following lines are uncommented *)
-          (* if Config.get_bool_option "maxima-simplification" then
-            Maxima.simplify task full_expr', exp
-          else *)
-            full_expr', exp in
-        let bound =
-          let r = Opt.find_max (Opt_common.default_opt_pars ()) cs full_expr in
-          {low = r.Opt_common.lower_bound; high = r.Opt_common.result} in
-        let total1_i = Rounding.get_eps exp *.$ bound in
-        let total_i = total1_i +$ total2_i in
-        let model_expr = mk_add (mk_mul (mk_float_const (Rounding.get_eps exp)) full_expr)
-                                (mk_float_const total2_i.high) in
+  let err_exact =
+    if not (Config.get_bool_option "opt-exact") then []
+    else begin
+      Log.report `Important "\nSolving the exact optimization problem";
+      let abs_exprs = List.map (fun (e, err) -> mk_abs e, err.exp) v1 in
+      let full_expr, exp =
+        let full_expr', exp = sum_symbolic abs_exprs in
+        (* FIXME: Incorrect simplification results for horner50.txt if the following lines are uncommented *)
+        (* if Config.get_bool_option "maxima-simplification" then
+          Maxima.simplify task full_expr', exp
+        else *)
+          full_expr', exp in
+      let bound =
+        let r = Opt.find_max (Opt_common.default_opt_pars ()) cs full_expr in
+        {low = r.Opt_common.lower_bound; high = r.Opt_common.result} in
+      let total1_i = Rounding.get_eps exp *.$ bound in
+      let total_i = total1_i +$ total2_i in
+      let model_expr = mk_add (mk_mul (mk_float_const (Rounding.get_eps exp)) full_expr)
+                              (mk_float_const total2_i.high) in
 
-        let () = try
-          let name = task.Task.name in
-            Out_error_bounds.generate_data_functions
-              (get_file_formatter "data") task
-              [name, model_expr;
-               name ^ "-total2", mk_float_const total2_i.high;
-               name ^ "-opt-bound", mk_float_const total_i.high]
-          with Not_found -> () in
+      let () = try
+        let name = task.Task.name in
+          Out_error_bounds.generate_data_functions
+            (get_file_formatter "data") task
+            [name, model_expr;
+             name ^ "-total2", mk_float_const total2_i.high;
+             name ^ "-opt-bound", mk_float_const total_i.high]
+        with Not_found -> () in
 
-        Log.report `Important "exact bound (exp = %d): %s" exp (bound_info bound);
-        Log.report `Important "total2: %s" (bound_info total2_i);
-        Log.report `Important "exact total: %s" (bound_info total_i);
-        error2_warning total1_i.high total2_i.high;
-        Some total_i, Some model_expr
-      end
+      Log.report `Important "exact bound (exp = %d): %s" exp (bound_info bound);
+      Log.report `Important "total2: %s" (bound_info total2_i);
+      Log.report `Important "exact total: %s" (bound_info total_i);
+      error2_warning total1_i.high total2_i.high;
+      [{ (mk_empty_error_result Err_abs_exact) with
+        error = Some total_i;
+        total2 = Some total2_i;
+        error_model = Some model_expr; }]
+    end
   in
-  err_approx, err_exact, model_expr
+  err_approx @ err_exact
 
 let relative_errors task tf (f_min, f_max) =
   Log.report `Important "\nComputing relative errors";
@@ -317,7 +321,7 @@ let relative_errors task tf (f_min, f_max) =
   if (abs_I f_int).low < rel_tol then begin
     Log.warning "\nCannot compute the relative error: \
                  values of the function are close to zero";
-    None, None, None
+    []
   end
   else
     let v1, v2 = split_error_terms tf.v1 in
@@ -325,65 +329,68 @@ let relative_errors task tf (f_min, f_max) =
     let total2_i = sum_err_bounds bounds2 in
     let b2_i = total2_i /$ abs_I f_int in
     let err_approx =
-      if not (Config.get_bool_option "opt-approx") then None
-      else
-        begin
-          let v1_rel = List.map (fun (e, err) -> mk_div e tf.v0, err) v1 in
-          let v1_rel = 
-            if Config.get_bool_option "maxima-simplification" then
+      if not (Config.get_bool_option "opt-approx") then []
+      else begin
+        let v1_rel = List.map (fun (e, err) -> mk_div e tf.v0, err) v1 in
+        let v1_rel = 
+          if Config.get_bool_option "maxima-simplification" then
             List.map (fun (e, err) -> Maxima.simplify task e, err) v1_rel
-            else
-              v1_rel in
-          Log.report `Important "\nSolving the approximate optimization probelm";
-          Log.report `Important "\nRelative errors:";
-          let bounds1 = List.map (compute_bound cs) v1_rel in
-          let total1_i = sum_err_bounds bounds1 in
-          let total_i = total1_i +$ b2_i in
-          Log.report `Important "rel-total1: %s" (bound_info total1_i);
-          Log.report `Important "rel-total2: %s" (bound_info b2_i);
-          Log.report `Important "rel-total: %s" (bound_info total_i);
-          error2_warning total1_i.high b2_i.high;
-          Some total_i          
-        end
+          else
+            v1_rel in
+        Log.report `Important "\nSolving the approximate optimization probelm";
+        Log.report `Important "\nRelative errors:";
+        let bounds1 = List.map (compute_bound cs) v1_rel in
+        let total1_i = sum_err_bounds bounds1 in
+        let total_i = total1_i +$ b2_i in
+        Log.report `Important "rel-total1: %s" (bound_info total1_i);
+        Log.report `Important "rel-total2: %s" (bound_info b2_i);
+        Log.report `Important "rel-total: %s" (bound_info total_i);
+        error2_warning total1_i.high b2_i.high;
+        [{ (mk_empty_error_result Err_rel_approx) with
+           error = Some total_i;
+           total2 = Some b2_i; }]
+      end
     in
-    let err_exact, model_expr =
-      if not (Config.get_bool_option "opt-exact") then None, None
-      else
-        begin
-          Log.report `Important "\nSolving the exact optimization problem";
-          let full_expr, exp =
-            let abs_exprs = List.map (fun (e, err) -> mk_abs e, err.exp) v1 in
-            let sum_expr, exp = sum_symbolic abs_exprs in
-            let full_expr' = mk_div sum_expr (mk_abs tf.v0) in
-            if Config.get_bool_option "maxima-simplification" then
-              Maxima.simplify task full_expr', exp
-            else
-              full_expr', exp in
-          let bound =
-            let r = Opt.find_max (Opt_common.default_opt_pars ()) cs full_expr in
-            {low = r.Opt_common.lower_bound; high = r.Opt_common.result} in
-          let total1_i = Rounding.get_eps exp *.$ bound in
-          let total_i = total1_i +$ b2_i in
-          let model_expr = mk_add (mk_mul (mk_float_const (Rounding.get_eps exp)) full_expr)
-                                  (mk_float_const b2_i.high) in
+    let err_exact =
+      if not (Config.get_bool_option "opt-exact") then []
+      else begin
+        Log.report `Important "\nSolving the exact optimization problem";
+        let full_expr, exp =
+          let abs_exprs = List.map (fun (e, err) -> mk_abs e, err.exp) v1 in
+          let sum_expr, exp = sum_symbolic abs_exprs in
+          let full_expr' = mk_div sum_expr (mk_abs tf.v0) in
+          if Config.get_bool_option "maxima-simplification" then
+            Maxima.simplify task full_expr', exp
+          else
+            full_expr', exp in
+        let bound =
+          let r = Opt.find_max (Opt_common.default_opt_pars ()) cs full_expr in
+          {low = r.Opt_common.lower_bound; high = r.Opt_common.result} in
+        let total1_i = Rounding.get_eps exp *.$ bound in
+        let total_i = total1_i +$ b2_i in
+        let model_expr = mk_add (mk_mul (mk_float_const (Rounding.get_eps exp)) full_expr)
+                                (mk_float_const b2_i.high) in
 
-          let () = try
-            let name = task.Task.name in
-              Out_error_bounds.generate_data_functions
-                (get_file_formatter "data") task
-                [name, model_expr;
-                 name ^ "-total2", mk_float_const b2_i.high;
-                 name ^ "-opt-bound", mk_float_const total_i.high]
-            with Not_found -> () in
+        let () = try
+          let name = task.Task.name in
+            Out_error_bounds.generate_data_functions
+              (get_file_formatter "data") task
+              [name, model_expr;
+               name ^ "-total2", mk_float_const b2_i.high;
+               name ^ "-opt-bound", mk_float_const total_i.high]
+          with Not_found -> () in
 
-          Log.report `Important "exact bound-rel (exp = %d): %s" exp (bound_info bound);
-          Log.report `Important "total2: %s" (bound_info b2_i);
-          Log.report `Important "exact total-rel: %s" (bound_info total_i);
-          error2_warning total1_i.high b2_i.high;
-          Some total_i, Some model_expr
-        end
+        Log.report `Important "exact bound-rel (exp = %d): %s" exp (bound_info bound);
+        Log.report `Important "total2: %s" (bound_info b2_i);
+        Log.report `Important "exact total-rel: %s" (bound_info total_i);
+        error2_warning total1_i.high b2_i.high;
+        [{ (mk_empty_error_result Err_rel_exact) with
+           error = Some total_i;
+           total2 = Some b2_i;
+           error_model = Some model_expr; }]
+      end
     in
-    err_approx, err_exact, model_expr
+    err_approx @ err_exact
 
 let ulp_errors task tf (f_min, f_max) =
   Log.report `Important "\nComputing ULP errors";
@@ -398,7 +405,7 @@ let ulp_errors task tf (f_min, f_max) =
   if (abs_I f_int).low <= 0. then begin
     Log.warning "\nCannot compute the ULP error: \
                  values of the function are close to zero";
-    None, None, None
+    []
   end
   else
     let v1, v2 = split_error_terms tf.v1 in
@@ -406,57 +413,60 @@ let ulp_errors task tf (f_min, f_max) =
     let total2_i = sum_err_bounds bounds2 in
     let b2_i = total2_i /$ abs_I f_int in
     let err_approx =
-      if not (Config.get_bool_option "opt-approx") then None
-      else
-        begin
-          let v1_rel = List.map (fun (e, err) -> mk_div e (mk_ulp (prec, min_exp) tf.v0), err) v1 in
-          Log.report `Important "\nSolving the approximate optimization probelm";
-          Log.report `Important "\nULP errors:";
-          let bounds1 = List.map (compute_bound cs) v1_rel in
-          let total1_i = sum_err_bounds bounds1 in
-          let total_i = total1_i +$ b2_i in
-          Log.report `Important "ulp-total1: %s" (bound_info total1_i);
-          Log.report `Important "ulp-total2: %s" (bound_info b2_i);
-          Log.report `Important "ulp-total: %s" (bound_info total_i);
-          error2_warning total1_i.high b2_i.high;
-          Some total_i          
-        end
+      if not (Config.get_bool_option "opt-approx") then []
+      else begin
+        let v1_rel = List.map (fun (e, err) -> mk_div e (mk_ulp (prec, min_exp) tf.v0), err) v1 in
+        Log.report `Important "\nSolving the approximate optimization probelm";
+        Log.report `Important "\nULP errors:";
+        let bounds1 = List.map (compute_bound cs) v1_rel in
+        let total1_i = sum_err_bounds bounds1 in
+        let total_i = total1_i +$ b2_i in
+        Log.report `Important "ulp-total1: %s" (bound_info total1_i);
+        Log.report `Important "ulp-total2: %s" (bound_info b2_i);
+        Log.report `Important "ulp-total: %s" (bound_info total_i);
+        error2_warning total1_i.high b2_i.high;
+        [{ (mk_empty_error_result Err_ulp_approx) with
+           error = Some total_i;
+           total2 = Some b2_i; }]
+      end
     in
-    let err_exact, model_expr =
-      if not (Config.get_bool_option "opt-exact") then None, None
-      else
-        begin
-          Log.report `Important "\nSolving the exact optimization problem";
-          let full_expr, exp =
-            let abs_exprs = List.map (fun (e, err) -> mk_abs e, err.exp) v1 in
-            let sum_expr, exp = sum_symbolic abs_exprs in
-            let full_expr' = mk_div sum_expr (mk_abs (mk_ulp (prec, min_exp) tf.v0)) in
-            full_expr', exp in
-          let bound =
-            let r = Opt.find_max (Opt_common.default_opt_pars ()) cs full_expr in
-            {low = r.Opt_common.lower_bound; high = r.Opt_common.result} in
-          let total1_i = Rounding.get_eps exp *.$ bound in
-          let total_i = total1_i +$ b2_i in
-          let model_expr = mk_add (mk_mul (mk_float_const (Rounding.get_eps exp)) full_expr)
-                                  (mk_float_const b2_i.high) in
+    let err_exact =
+      if not (Config.get_bool_option "opt-exact") then []
+      else begin
+        Log.report `Important "\nSolving the exact optimization problem";
+        let full_expr, exp =
+          let abs_exprs = List.map (fun (e, err) -> mk_abs e, err.exp) v1 in
+          let sum_expr, exp = sum_symbolic abs_exprs in
+          let full_expr' = mk_div sum_expr (mk_abs (mk_ulp (prec, min_exp) tf.v0)) in
+          full_expr', exp in
+        let bound =
+          let r = Opt.find_max (Opt_common.default_opt_pars ()) cs full_expr in
+          {low = r.Opt_common.lower_bound; high = r.Opt_common.result} in
+        let total1_i = Rounding.get_eps exp *.$ bound in
+        let total_i = total1_i +$ b2_i in
+        let model_expr = mk_add (mk_mul (mk_float_const (Rounding.get_eps exp)) full_expr)
+                                (mk_float_const b2_i.high) in
 
-          let () = try
-            let name = task.Task.name in
-              Out_error_bounds.generate_data_functions
-                (get_file_formatter "data") task
-                [name, model_expr;
-                 name ^ "-total2", mk_float_const b2_i.high;
-                 name ^ "-opt-bound", mk_float_const total_i.high]
-            with Not_found -> () in
+        let () = try
+          let name = task.Task.name in
+            Out_error_bounds.generate_data_functions
+              (get_file_formatter "data") task
+              [name, model_expr;
+               name ^ "-total2", mk_float_const b2_i.high;
+               name ^ "-opt-bound", mk_float_const total_i.high]
+          with Not_found -> () in
 
-          Log.report `Important "exact bound-ulp (exp = %d): %s" exp (bound_info bound);
-          Log.report `Important "total2: %s" (bound_info b2_i);
-          Log.report `Important "exact total-ulp: %s" (bound_info total_i);
-          error2_warning total1_i.high b2_i.high;
-          Some total_i, Some model_expr
-        end
+        Log.report `Important "exact bound-ulp (exp = %d): %s" exp (bound_info bound);
+        Log.report `Important "total2: %s" (bound_info b2_i);
+        Log.report `Important "exact total-ulp: %s" (bound_info total_i);
+        error2_warning total1_i.high b2_i.high;
+        [{ (mk_empty_error_result Err_ulp_exact) with
+           error = Some total_i;
+          total2 = Some b2_i;
+          error_model = Some model_expr; }]
+      end
     in
-    err_approx, err_exact, model_expr
+    err_approx @ err_exact
 
 let errors task tform =
   let cs = constraints_of_task task in
@@ -468,35 +478,22 @@ let errors task tform =
     else
       neg_infinity, infinity in
   Log.report `Important "bounds: [%e, %e]" f_min f_max;
-  let result = { (mk_result task) with real_bounds = {low = f_min; high = f_max} } in
+  let result = { (mk_empty_result task) with real_bounds = {low = f_min; high = f_max} } in
   let result =
     if Config.get_bool_option "opt-approx" || Config.get_bool_option "opt-exact" then
-      let abs_approx, abs_exact, abs_model_expr = 
+      let abs_errors = 
         if Config.get_bool_option "abs-error" then
           absolute_errors task tform
-        else
-          None, None, None in
-      let rel_approx, rel_exact, rel_model_expr = 
+        else [] in
+      let rel_errors =
         if Config.get_bool_option "rel-error" then
           relative_errors task tform (f_min, f_max)
-        else
-          None, None, None in
-      let ulp_approx, ulp_exact, ulp_model_expr = 
+        else [] in
+      let ulp_errors =
         if Config.get_bool_option "ulp-error" then
           ulp_errors task tform (f_min, f_max)
-        else
-          None, None, None in
-      {result with
-       abs_error_model = abs_model_expr;
-       rel_error_model = rel_model_expr;
-       ulp_error_model = ulp_model_expr;
-       abs_error_approx = abs_approx;
-       abs_error_exact = abs_exact;
-       rel_error_approx = rel_approx;
-       rel_error_exact = rel_exact;
-       ulp_error_approx = ulp_approx;
-       ulp_error_exact = ulp_exact
-      }
+        else [] in
+      { result with errors = abs_errors @ rel_errors @ ulp_errors }
     else
       result in
   Log.report `Important "";
@@ -543,7 +540,7 @@ let compute_form task =
       result, form
     with Failure msg ->
       Log.error_str msg;
-      mk_result task, dummy_tform
+      mk_empty_result task, dummy_tform
   in
   let stop = Unix.gettimeofday() in
   Log.report `Info "Elapsed time: %.5f" (stop -. start);
