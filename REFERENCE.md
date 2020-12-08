@@ -494,9 +494,13 @@ support exact optimization problems.
 
 ### `opt`
 
-Possible values: `bb`, `bb-eval`, `z3`, `gelpia`, and `nlopt`
+Possible values: `auto`, `bb`, `bb-eval`, `z3`, `gelpia`, and `nlopt`
 
 Specifies the optimization backend of FPTaylor.
+
+- `auto` automatically select an optimization method. The current heuristic
+  checks the number of variables and selects `bb-eval` for problems with 0, 1, or 2
+  variables and selects `bb` for all other problems.
 
 - `bb` is the default optimization backend implemented in FPTaylor. It
   supports all FPTaylor operations and the improved rounding

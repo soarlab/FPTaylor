@@ -1,6 +1,8 @@
 FPTaylor 0.9.4
 --------------
 
+- [FEATURE] opt = auto: automatically select bb or bb-eval.
+
 - [FEATURE] --print-second-order-errors: an option for printing second order errors.
 
 - The performance of Taylor forms generation for large expressions is improved.
