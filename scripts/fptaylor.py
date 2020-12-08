@@ -1,6 +1,7 @@
 import re
 import os
 from decimal import Decimal
+from math import isclose
 import logging
 import common
 import config
@@ -77,7 +78,7 @@ class FPTaylorExpression:
         if 'time' in vals:
             self.time = float(vals['time'])
 
-    def check(self, output):
+    def check(self, output, rel_tol=0.0):
         print(f'  {self.name}: ', end='', flush=True)
         vals = self.parse_output(self.select_output_lines(output))
         passed = True
@@ -93,7 +94,13 @@ class FPTaylorExpression:
                 passed = False
         if self.exact_value is not None:
             v = vals['abs-error-hex']
-            if v != self.exact_value:
+            if rel_tol > 0:
+                actual = common.hex_to_float(v)
+                expected = common.hex_to_float(self.exact_value)
+                if not isclose(actual, expected, rel_tol=rel_tol):
+                    _log.error(f'Incorrect exact value (with rel-tol={rel_tol}): actual = {actual} != expected = {expected}')
+                    passed = False
+            elif v != self.exact_value:
                 _log.error(f'Incorrect exact value: actual = {v} != expected = {self.exact_value}')
                 passed = False
         print('PASSED' if passed else 'FAILED')
@@ -145,12 +152,14 @@ class FPTaylorFile:
                 expr.generate(output)
                 self.expressions.append(expr)
 
-    def run_tests(self, args=[]):
+    def run_tests(self, args=[], rel_tol=0.0):
         print(f'Testing: {self.name}', flush=True)
+        if rel_tol > 0:
+            print(f'rel-tol = {rel_tol}')
         output = self.run(args, silent=True)
         passed, failed = 0, 0
         for expr in self.expressions:
-            if expr.check(output):
+            if expr.check(output, rel_tol=rel_tol):
                 passed += 1
             else:
                 failed += 1

@@ -5,6 +5,11 @@ GENERATE_B = $(PYTHON) generate_tests.py --config plot/config-b.cfg --config-nam
 
 RUN = $(PYTHON) run_tests.py
 
+.PHONY: empty generate-basic generate-micro generate-core generate-trans run-all
+
+empty:
+	echo "Select target explicitly"
+
 generate-basic:
 	$(GENERATE) ../tests/basic
 	$(GENERATE_B) ../tests/basic
