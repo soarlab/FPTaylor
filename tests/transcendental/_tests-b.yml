@@ -4,24 +4,28 @@ files:
 - name: azimuth.txt
   expressions:
   - name: azimuth
-    upper-bound: '1.300036e-14'
-    exact-value: 0x1.d463132e9459p-47
-    time: 28.99
+    upper-bound: '1.300055e-14'
+    exact-value: 0x1.d464d8a28fff7p-47
+    total2: 0x1.c0d454c995311p-83
+    time: 1.98
 - name: hartman3.txt
   expressions:
   - name: hartman3
     upper-bound: '5.889160e-15'
-    exact-value: 0x1.a85bcfb97cba1p-48
-    time: 81.62
+    exact-value: 0x1.a85bcfb97cb9fp-48
+    total2: 0x1.c4b04caea84e4p-89
+    time: 12.7
 - name: logexp.txt
   expressions:
   - name: logexp
     upper-bound: '2.516050e-15'
     exact-value: 0x1.6a99da677998bp-49
-    time: 1.42
+    total2: 0x1.d3115604fd25p-78
+    time: 0.01
 - name: sphere.txt
   expressions:
   - name: sphere
     upper-bound: '1.081879e-14'
     exact-value: 0x1.85c9b28358c91p-47
-    time: 3.06
+    total2: 0x1.46b33b0bcb98ep-97
+    time: 1.39

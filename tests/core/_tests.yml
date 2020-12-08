@@ -6,118 +6,138 @@ files:
   - name: carbon_gas
     upper-bound: '4.962322e-9'
     exact-value: 0x1.5502137b3d1cp-28
-    time: 1.8
+    total2: 0x1.14ac37ca71a91p-80
+    time: 0.03
 - name: doppler1.txt
   expressions:
   - name: doppler1
-    upper-bound: '1.217872e-13'
-    exact-value: 0x1.123d81be377bbp-43
-    time: 2.15
+    upper-bound: '1.217604e-13'
+    exact-value: 0x1.122e128a686f8p-43
+    total2: 0x1.1ab4fdb1d24b6p-90
+    time: 1.12
 - name: doppler2.txt
   expressions:
   - name: doppler2
-    upper-bound: '2.226718e-13'
-    exact-value: 0x1.f56981bf6a505p-43
-    time: 2.28
+    upper-bound: '2.226041e-13'
+    exact-value: 0x1.f5427e2adfbe2p-43
+    total2: 0x1.fdec1dfe80b76p-89
+    time: 0.8
 - name: doppler3.txt
   expressions:
   - name: doppler3
-    upper-bound: '6.629687e-14'
-    exact-value: 0x1.2a9314312edc3p-44
-    time: 2.3
+    upper-bound: '6.627360e-14'
+    exact-value: 0x1.2a78418bb1ed3p-44
+    total2: 0x1.25fd9f86a43d3p-92
+    time: 0.79
 - name: himmilbeau.txt
   expressions:
   - name: himmilbeau
     upper-bound: '1.000089e-12'
-    exact-value: 0x1.1980000000002p-40
-    time: 1.07
+    exact-value: 0x1.1980000000005p-40
+    total2: 0x1.1d80000000005p-92
+    time: 0.02
 - name: jet.txt
   expressions:
   - name: jet
-    upper-bound: '1.030448e-11'
-    exact-value: 0x1.6a8e771d0ca66p-37
-    time: 2.44
+    upper-bound: '1.028348e-11'
+    exact-value: 0x1.69d149b7c8473p-37
+    total2: 0x1.f38d0b7e000cap-71
+    time: 0.39
 - name: kepler0.txt
   expressions:
   - name: kepler0
     upper-bound: '7.469401e-14'
     exact-value: 0x1.506451eb851f1p-44
-    time: 3.69
+    total2: 0x1.3800000000001p-98
+    time: 1.92
 - name: kepler1.txt
   expressions:
   - name: kepler1
     upper-bound: '2.863120e-13'
     exact-value: 0x1.425bcd3ac7113p-42
-    time: 2.35
+    total2: 0x1.9f6666666666fp-95
+    time: 1.22
 - name: kepler2.txt
   expressions:
   - name: kepler2
     upper-bound: '1.578175e-12'
     exact-value: 0x1.bc37795810634p-40
-    time: 1.33
+    total2: 0x1.35851eb851ebfp-92
+    time: 1.08
 - name: predatorPrey.txt
   expressions:
   - name: predatorPrey
     upper-bound: '1.585754e-16'
     exact-value: 0x1.6da66478b6b76p-53
-    time: 1.08
+    total2: 0x1.341fba1842f31p-105
+    time: 0.03
 - name: rigidBody1.txt
   expressions:
   - name: rigidBody1
     upper-bound: '2.948753e-13'
     exact-value: 0x1.4c00000000001p-42
-    time: 1.17
+    total2: 0x1.8000000000002p-99
+    time: 0.59
 - name: rigidBody2.txt
   expressions:
   - name: rigidBody2
     upper-bound: '3.606627e-11'
     exact-value: 0x1.3d3e000000001p-35
-    time: 1.32
+    total2: 0x1.15c0000000005p-89
+    time: 0.59
 - name: sine.txt
   expressions:
   - name: sine
     upper-bound: '4.430439e-16'
     exact-value: 0x1.fecb73da24faap-52
-    time: 1.47
+    total2: 0x1.b8a756b12c232p-106
+    time: 0.04
 - name: sineOrder3.txt
   expressions:
   - name: sineOrder3
     upper-bound: '5.937466e-16'
     exact-value: 0x1.564587875263dp-51
-    time: 1.03
+    total2: 0x1.ef5f360e7c8d9p-106
+    time: 0.02
 - name: sqroot.txt
   expressions:
   - name: sqroot
     upper-bound: '5.016453e-16'
     exact-value: 0x1.212dc42800001p-51
-    time: 1.05
+    total2: 0x1.0c00000000004p-108
+    time: 0.03
 - name: t_div_t1.txt
   expressions:
   - name: t_div_t1
     upper-bound: '2.216154e-16'
-    exact-value: 0x1.ff02a190977dfp-53
-    time: 1.12
+    exact-value: 0x1.ff02a190977ep-53
+    total2: 0x1.f3c0000000bb9p-77
+    time: 0.04
 - name: turbine1.txt
   expressions:
   - name: turbine1
     upper-bound: '1.669516e-14'
     exact-value: 0x1.2cc0d37caf85ap-46
-    time: 1.23
+    total2: 0x1.2bf30ea914bc3p-94
+    time: 1.21
 - name: turbine2.txt
   expressions:
   - name: turbine2
     upper-bound: '2.000935e-14'
     exact-value: 0x1.6874cea775451p-46
-    time: 1.29
+    total2: 0x1.9fbe71ab8900dp-94
+    time: 1.26
 - name: turbine3.txt
   expressions:
   - name: turbine3
     upper-bound: '9.574075e-15'
     exact-value: 0x1.58f13f6b7f5a4p-47
-    time: 1.78
+    total2: 0x1.aa10b567f999cp-95
+    time: 1.18
 - name: verhulst.txt
   expressions:
   - name: verhulst
     upper-bound: '2.470696e-16'
     exact-value: 0x1.1cda0fa47a8adp-52
-    time: 1.03
+    total2: 0x1.1abf1ef0cccf2p-104
+    time: 0.02
