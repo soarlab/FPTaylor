@@ -1,20 +1,41 @@
-type result = {
-  task : Task.task;
-  real_bounds : Interval.interval;
-  abs_error_model : Expr.expr option;
-  rel_error_model : Expr.expr option;
-  ulp_error_model : Expr.expr option;
+(* ========================================================================== *)
+(*      FPTaylor: A Tool for Rigorous Estimation of Round-off Errors          *)
+(*                                                                            *)
+(*      Author: Alexey Solovyev, University of Utah                           *)
+(*                                                                            *)
+(*      This file is distributed under the terms of the MIT license           *)
+(* ========================================================================== *)
+
+(* -------------------------------------------------------------------------- *)
+(* Main FPTaylor functions                                                    *)
+(* -------------------------------------------------------------------------- *)
+
+type error_type = 
+  Err_abs_approx | Err_abs_exact | 
+  Err_rel_approx | Err_rel_exact |
+  Err_ulp_approx | Err_ulp_exact
+
+type error_result = {
+  error_type : error_type;
+  (* Total error *)
   (* Lower bounds of error intervals represent lower bounds
      returned by a global optimization procedure.
      low = neg_infinity if a lower bound is not returned. *)
-  abs_error_approx : Interval.interval option;
-  abs_error_exact : Interval.interval option;
-  rel_error_approx : Interval.interval option;
-  rel_error_exact : Interval.interval option;
-  ulp_error_approx : Interval.interval option;
-  ulp_error_exact : Interval.interval option;
+  error : Interval.interval option;
+  (* Second order error *)
+  total2 : Interval.interval option;
+  (* Error model *)
+  error_model : Expr.expr option;
+}
+
+type result = {
+  task : Task.task;
+  real_bounds : Interval.interval;
+  errors : error_result list;
   elapsed_time : float;
 }
+
+val error_type_name : error_type -> string
 
 val validate_options : unit -> unit
 

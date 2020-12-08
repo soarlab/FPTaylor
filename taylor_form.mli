@@ -12,8 +12,6 @@
 
 (* Describes an error variable *)
 type error_info = {
-  (* Unique index for proofs *)
-  proof_index : int;
   (* Error variables with the same index are the same *)
   index : int;
   (* The upper bound of the error is 2^exp *)
@@ -21,16 +19,11 @@ type error_info = {
 }
 
 type taylor_form = {
-  form_index : int;
   v0 : Expr.expr;
   v1 : (Expr.expr * error_info) list;
 }
 
 val dummy_tform : taylor_form
-
-val make_stronger : float -> float
-
-val make_stronger_i : Interval.interval -> Interval.interval
 
 val sum_high : (float * int) list -> float * int
 

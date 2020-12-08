@@ -5,55 +5,66 @@ files:
   expressions:
   - name: f1
     upper-bound: '2.216154e-16'
-    exact-value: 0x1.ff029667d4b1ep-53
-    time: 2.27
+    exact-value: 0x1.ff029667d4b1fp-53
+    total2: 0x1.f4000000005dfp-80
+    time: 0.04
   - name: f1_mixed
     upper-bound: '5.849589e-7'
     exact-value: 0x1.3a0c21f70e545p-21
-    time: 1.78
+    total2: 0x1.f38bb52ed89c6p-22
+    time: 0.01
 - name: micro.txt
   expressions:
   - name: sum
     upper-bound: '2.220447e-15'
     exact-value: 0x1.4p-49
-    time: 2.68
+    total2: 0x0p+0
+    time: 1.25
   - name: nonlin1
     upper-bound: '1.666951e-16'
-    exact-value: 0x1.805f63f0d55f7p-53
-    time: 2.01
+    exact-value: 0x1.805f63f0d55f8p-53
+    total2: 0x1.f3800000005dep-79
+    time: 0.03
   - name: nonlin2
     upper-bound: '3.729979e-13'
     exact-value: 0x1.a3f551ffb2c7ap-42
-    time: 2.52
+    total2: 0x1.162eae06137b2p-70
+    time: 0.02
 - name: sqrt_add.txt
   expressions:
   - name: sqrt_add
     upper-bound: '1.336774e-16'
     exact-value: 0x1.343d2cc258774p-53
-    time: 2.31
+    total2: 0x1.6c501668ec3f6p-91
+    time: 0.02
 - name: sqrt_sub.txt
   expressions:
   - name: sqrt_sub
     upper-bound: '5.437964e-15'
     exact-value: 0x1.87d8b7b48f4b8p-48
-    time: 3.86
+    total2: 0x1.3504f333f9fb8p-90
+    time: 0.02
 - name: sub.txt
   expressions:
   - name: sub
     upper-bound: '1.788140e-7'
     exact-value: 0x1.8000000000001p-23
-    time: 2.22
+    total2: 0x1p-126
+    time: 0.01
 - name: sub_sub.txt
   expressions:
   - name: e_add32
     upper-bound: '1.013279e-6'
     exact-value: 0x1.1p-20
-    time: 1.83
+    total2: 0x0p+0
+    time: 0.01
   - name: e_add64
     upper-bound: '1.887380e-15'
     exact-value: 0x1.1p-49
-    time: 2.44
+    total2: 0x0p+0
+    time: 0.01
   - name: e_sub_add32
     upper-bound: '8.940697e-7'
     exact-value: 0x1.ep-21
-    time: 1.87
+    total2: 0x0p+0
+    time: 0.11

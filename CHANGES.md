@@ -1,3 +1,14 @@
+FPTaylor 0.9.4
+--------------
+
+- [FEATURE] opt = auto: automatically select bb or bb-eval.
+
+- [FEATURE] --print-second-order-errors: an option for printing second order errors.
+
+- The performance of Taylor forms generation for large expressions is improved.
+
+- Removed proof recording. Use FPTaylor v0.9.3 for recording proofs.
+
 FPTaylor 0.9.3
 --------------
 
@@ -23,6 +34,8 @@ FPTaylor 0.9.3
 - find-bounds = false by default.
 
 - bb and bb-eval: evaluate common subexpressions only once.
+
+- JavaScript version of FPTaylor and FPTaylor's website.
 
 - Maxima: the simplificaiton function is `ratexpand` now.
 

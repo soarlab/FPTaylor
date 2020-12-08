@@ -85,7 +85,7 @@ let gen_z3py_opt_code (pars : Opt_common.opt_pars) max_only bounds fmt =
     else
       let eq_vars, neq_vars = List.partition
           (fun (name, (low, high)) -> low =/ high)
-          (Lib.zip var_names var_bounds) in
+          (List.combine var_names var_bounds) in
 
       let eqs = List.map
           (fun (name, (low, high)) ->

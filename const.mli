@@ -23,6 +23,10 @@ val of_float : float -> t
 
 val of_interval : interval -> t
 
+val low_bound : t -> float
+
+val high_bound : t -> float
+
 val to_interval : t -> interval
 
 val is_rat : t -> bool

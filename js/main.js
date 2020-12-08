@@ -33,6 +33,10 @@ function onRunButton() {
   }
 }
 
+function getError(errors, name) {
+  return errors.find(e => e.errorName === name) || {};
+}
+
 function displayResults(data) {
   const results = document.getElementById('results-tbody');
   function addCell(row, value) {
@@ -41,9 +45,10 @@ function displayResults(data) {
   for (const res of data) {
     const row = results.insertRow();
     addCell(row, res.name);
-    addCell(row, res.absErrorExactStr || res.absErrorApproxStr);
-    addCell(row, res.relErrorExactStr || res.relErrorApproxStr);
-    addCell(row, res.ulpErrorExactStr || res.ulpErrorApproxStr);
+    for (const err of ['absolute error', 'relative error', 'ULP error']) {
+      addCell(row, getError(res.errors, err + ' (exact)').errorStr ||
+                   getError(res.errors, err + ' (approximate)').errorStr);
+    }
     addCell(row, res.elapsedTime.toFixed(2) + 's');
     // console.log(res);
   }

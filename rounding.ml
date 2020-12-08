@@ -138,7 +138,7 @@ let rounding_table = [
 ]
 
 let string_to_rounding name =
-  try Lib.assoc name rounding_table
+  try List.assoc name rounding_table
   with Not_found ->
     failwith ("Rounding mode " ^ name ^ " is not defined")
 

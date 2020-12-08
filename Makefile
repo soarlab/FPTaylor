@@ -38,9 +38,6 @@ BASE_SRC = version.mli\
 	parser.ml
 
 SRC = $(BASE_SRC)\
-	proof_base.mli\
-	proof_base.ml\
-	proof.ml\
 	rounding_simpl.mli\
 	rounding_simpl.ml\
 	maxima.mli\
@@ -70,10 +67,6 @@ SRC = $(BASE_SRC)\
 	fptaylor.ml\
 	main.ml
 
-PROOF_SRC= lib.ml\
-	   proof_base.ml\
-	   proof_to_text.ml
-
 EXPORT_SRC=$(BASE_SRC)\
 	out_fpcore.mli\
 	out_fpcore.ml\
@@ -90,7 +83,6 @@ OBJ_BYTE0 = $(SRC:.ml=.cmo)
 OBJ_BYTE = $(OBJ_BYTE0:.mli=.cmi)
 OBJ_NATIVE = $(OBJ_BYTE:.cmo=.cmx)
 
-OBJ_PROOF_SRC = $(PROOF_SRC:.ml=.cmo)
 OBJ_EXPORT0 = $(EXPORT_SRC:.ml=.cmo)
 OBJ_EXPORT = $(OBJ_EXPORT0:.mli=.cmi)
 
@@ -99,9 +91,6 @@ TEST = $(addprefix $(TEST_DIR)/,$(TESTS))
 .PHONY: clean clean-tmp clean-interval clean-simple-interval compile-interval compile-simple-interval
 
 all: fptaylor-interval
-
-proof-tool: $(OBJ_PROOF_SRC)
-	$(ML) -o proof_to_text unix.cma str.cma nums.cma $(OBJ_PROOF_SRC)
 
 export-tool: INCLUDE=$(INTERVAL_DIR)
 

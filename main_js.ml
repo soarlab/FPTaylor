@@ -1,3 +1,15 @@
+(* ========================================================================== *)
+(*      FPTaylor: A Tool for Rigorous Estimation of Round-off Errors          *)
+(*                                                                            *)
+(*      Author: Alexey Solovyev, University of Utah                           *)
+(*                                                                            *)
+(*      This file is distributed under the terms of the MIT license           *)
+(* ========================================================================== *)
+
+(* -------------------------------------------------------------------------- *)
+(* FPTaylor JS's main functions                                               *)
+(* -------------------------------------------------------------------------- *)
+
 open Js_of_ocaml
 
 module Out = ExprOut.Make(ExprOut.JavaScriptPrinter)
@@ -100,6 +112,16 @@ let process (msg : js_msg_type Js.t) =
   Sys_js.update_file "user.cfg" config;
   let results = run_fptaylor () in
   let prec = Config.get_int_option "print-precision" in
+  let js_of_error_result task r =
+    let open Fptaylor in
+    object%js
+      val errorName = error_type_name r.error_type |> Js.string
+      val error = js_opt_array_of_interval r.error
+      val errorStr = js_opt_string_of_high prec r.error
+      val total2 = js_opt_array_of_interval r.total2
+      val total2Str = js_opt_string_of_high prec r.total2
+      val errorModel = js_expr_obj_of_opt_expr task r.error_model
+    end in
   let res_msg = results
     |> List.map (fun res ->
       let open Fptaylor in
@@ -110,21 +132,10 @@ let process (msg : js_msg_type Js.t) =
         val realBoundsStr = [|res.real_bounds.low; res.real_bounds.high|] 
           |> Array.map (js_string_of_number_hi prec)
           |> Js.array
-        val absErrorModel = js_expr_obj_of_opt_expr res.task res.abs_error_model
-        val relErrorModel = js_expr_obj_of_opt_expr res.task res.rel_error_model
-        val ulpErrorModel = js_expr_obj_of_opt_expr res.task res.ulp_error_model
-        val absErrorApprox = js_opt_array_of_interval res.abs_error_approx
-        val absErrorApproxStr = js_opt_string_of_high prec res.abs_error_approx
-        val absErrorExact = js_opt_array_of_interval res.abs_error_exact
-        val absErrorExactStr = js_opt_string_of_high prec res.abs_error_exact
-        val relErrorApprox = js_opt_array_of_interval res.rel_error_approx
-        val relErrorApproxStr = js_opt_string_of_high prec res.rel_error_approx
-        val relErrorExact = js_opt_array_of_interval res.rel_error_exact
-        val relErrorExactStr = js_opt_string_of_high prec res.rel_error_exact
-        val ulpErrorApprox = js_opt_array_of_interval res.ulp_error_approx
-        val ulpErrorApproxStr = js_opt_string_of_high prec res.ulp_error_approx
-        val ulpErrorExact = js_opt_array_of_interval res.ulp_error_exact
-        val ulpErrorExactStr = js_opt_string_of_high prec res.ulp_error_exact
+        val errors = res.errors
+          |> Array.of_list
+          |> Array.map (js_of_error_result res.task)
+          |> Js.array
       end)
     |> Array.of_list
     |> Js.array in

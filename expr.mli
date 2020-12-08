@@ -122,6 +122,7 @@ val bin_op_name : bin_op_type -> string
 val gen_op_name : gen_op_type -> string
 
 val eq_expr : expr -> expr -> bool
+val hash_expr : expr -> int
 
 module ExprHashtbl : Hashtbl.S with type key = expr
 

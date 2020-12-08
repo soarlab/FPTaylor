@@ -12,10 +12,12 @@ log = common.get_log()
 def parse_args():
     parser = argparse.ArgumentParser(
         description='Runs FPTaylor tests')
-    parser.add_argument('--config', nargs='+', default=[],
+    parser.add_argument('--config', '-c', nargs='+', default=[],
         help='override test options with options from the given configuration files and options')
     parser.add_argument('-r', action='store_true',
         help='recursively run tests in all subdirectories')
+    parser.add_argument('--rel-tol', type=float, default=0.0,
+        help='run tests with the given relative tolerance')
     parser.add_argument('path',
         help='path to a directory or a test file')
 
@@ -46,7 +48,7 @@ def main():
             # base_path = ''
             config.add(cfg)
         for f in files:
-            f_passed, f_failed = f.run_tests(config.args)
+            f_passed, f_failed = f.run_tests(config.args, rel_tol=args.rel_tol)
             passed += f_passed
             failed += f_failed
     

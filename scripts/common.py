@@ -6,6 +6,15 @@ import shutil
 import glob
 import logging
 import hashlib
+import math
+
+
+def hex_to_float(x: str) -> float:
+    x = x.lower()
+    m, e = x.split('p') if 'p' in x else (x, '0')
+    m1, m2 = m.split('.') if '.' in m else (m, '')
+    v = int(m1 + m2, 16)
+    return math.ldexp(v, int(e) - 4 * len(m2))
 
 
 def get_log():

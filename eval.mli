@@ -18,7 +18,8 @@ val eval_num_expr : (string -> Num.num) -> Expr.expr -> Num.num
 
 val eval_num_const_expr : Expr.expr -> Num.num
 
-val eval_interval_expr : (string -> Interval.interval) -> Expr.expr -> Interval.interval
+val eval_interval_expr : ?cache:Interval.interval Expr.ExprHashtbl.t -> (string -> Interval.interval) -> 
+                          Expr.expr -> Interval.interval
 
 val eval_interval_const_expr : Expr.expr -> Interval.interval
 

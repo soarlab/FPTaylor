@@ -158,6 +158,7 @@ let gen_op_name = function
 
 let rec eq_expr e1 e2 =
   match (e1, e2) with
+  | _ when e1 == e2 -> true
   | (Const c1, Const c2) -> Const.eq_c c1 c2
   | (Var v1, Var v2) -> v1 = v2
   | (Rounding (r1, a1), Rounding (r2, a2)) when r1 = r2 -> 
@@ -167,15 +168,23 @@ let rec eq_expr e1 e2 =
   | (Bin_op (t1, a1, b1), Bin_op (t2, a2, b2)) when t1 = t2 ->
     eq_expr a1 a2 && eq_expr b1 b2
   | (Gen_op (t1, as1), Gen_op (t2, as2)) when t1 = t2 ->
-    Lib.itlist (fun (a1, a2) x -> eq_expr a1 a2 && x) (Lib.zip as1 as2) true
+    List.for_all2 (fun a1 a2 -> eq_expr a1 a2) as1 as2
   | _ -> false
+
+let rec hash_expr = function
+| Const (Rat n) -> Hashtbl.hash (Num.string_of_num n)
+| Const (Interval v) -> (Hashtbl.hash v.low lxor Hashtbl.hash v.high) + 12434327
+| Var v -> Hashtbl.hash v
+| Rounding (r, a) -> 541 * hash_expr a + 1012324
+| U_op (op, a) -> (Hashtbl.hash (u_op_name op) lxor hash_expr a) + 1013435
+| Bin_op (op, a, b) -> (Hashtbl.hash (bin_op_name op) lxor hash_expr a lxor hash_expr b) + 101343561
+| Gen_op (op, a) -> Hashtbl.hash (gen_op_name op) lxor (List.fold_left (fun h x -> h lxor hash_expr x) 0 a)
 
 module ExprHashtbl = Hashtbl.Make (
   struct
     type t = expr
     let equal = eq_expr
-    (* TODO: is it possible that eq_expr e1 e2 = true but hashes are different? *)
-    let hash = Hashtbl.hash
+    let hash = hash_expr
   end)
 
 let rec vars_in_expr e =
@@ -189,7 +198,7 @@ let rec vars_in_expr e =
     Lib.union (vars_in_expr a1) (vars_in_expr a2)
   | Gen_op (_, args) ->
     let vs = List.map vars_in_expr args in
-    Lib.itlist Lib.union vs []
+    List.fold_left Lib.union [] vs
   | _ -> []
 
 let is_ref_var = function

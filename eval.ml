@@ -131,63 +131,72 @@ let eval_num_const_expr =
 (* Computes an interval value of an expression *)
 (* vars : string -> interval is a function which associates 
    inteval values with variable names *)
-let eval_interval_expr vars =
-  let rec eval = function
-    | Const c -> Const.to_interval c
-    | Var v -> vars v
-    | Rounding _ as expr -> failwith ("eval_interval_expr: Rounding is not supported: " ^
-                                      ExprOut.Info.print_str expr)
-    | U_op (op, arg) ->
-      begin
-        let x = eval arg in
-        match op with
-        | Op_neg -> ~-$ x
-        | Op_abs -> abs_I x
-        | Op_inv -> inv_I x
-        | Op_sqrt -> sqrt_I x
-        | Op_sin -> sin_I x
-        | Op_cos -> cos_I x
-        | Op_tan -> tan_I x
-        | Op_asin -> asin_I x
-        | Op_acos -> acos_I x
-        | Op_atan -> atan_I x
-        | Op_exp -> exp_I x
-        | Op_log -> log_I x
-        | Op_sinh -> sinh_I x
-        | Op_cosh -> cosh_I x
-        | Op_tanh -> tanh_I x
-        | Op_asinh -> Func.asinh_I x
-        | Op_acosh -> Func.acosh_I x
-        | Op_atanh -> Func.atanh_I x
-        | Op_floor_power2 -> Func.floor_power2_I x
+let eval_interval_expr ?cache vars =
+  let rec eval expr =
+    match cache with
+    | Some cache -> begin
+        try ExprHashtbl.find cache expr 
+        with Not_found ->
+          let r = eval' expr in
+          ExprHashtbl.add cache expr r; r
       end
-    | Bin_op (op, arg1, arg2) ->
-      begin
-        let x1 = eval arg1 in
-        match op with
-        | Op_add -> x1 +$ eval arg2
-        | Op_sub -> x1 -$ eval arg2
-        | Op_mul ->
-          (* A temporary solution to increase accuracy *)
-          if eq_expr arg1 arg2 then
-            pow_I_i x1 2
-          else
-            x1 *$ eval arg2
-        | Op_div -> x1 /$ eval arg2
-        | Op_max -> max_I_I x1 (eval arg2)
-        | Op_min -> min_I_I x1 (eval arg2)
-        | Op_nat_pow -> x1 **$. (eval_float_const_expr arg2)
-        | Op_sub2 -> Func.sub2_I (x1, eval arg2)
-        | Op_abs_err -> Func.abs_err_I (x1, eval arg2)
-      end
-    | Gen_op (op, args) ->
-      begin
-        let xs = List.map eval args in
-        match (op, xs) with
-        | (Op_fma, [a;b;c]) -> (a *$ b) +$ c
-        | _ -> failwith ("eval_interval_expr: Unsupported general operation: " 
-                         ^ gen_op_name op)
-      end
+    | None -> eval' expr
+  and eval' = function
+  | Const c -> Const.to_interval c
+  | Var v -> vars v
+  | Rounding _ as expr -> failwith ("eval_interval_expr: Rounding is not supported: " ^
+                                    ExprOut.Info.print_str expr)
+  | U_op (op, arg) ->
+    begin
+      let x = eval arg in
+      match op with
+      | Op_neg -> ~-$ x
+      | Op_abs -> abs_I x
+      | Op_inv -> inv_I x
+      | Op_sqrt -> sqrt_I x
+      | Op_sin -> sin_I x
+      | Op_cos -> cos_I x
+      | Op_tan -> tan_I x
+      | Op_asin -> asin_I x
+      | Op_acos -> acos_I x
+      | Op_atan -> atan_I x
+      | Op_exp -> exp_I x
+      | Op_log -> log_I x
+      | Op_sinh -> sinh_I x
+      | Op_cosh -> cosh_I x
+      | Op_tanh -> tanh_I x
+      | Op_asinh -> Func.asinh_I x
+      | Op_acosh -> Func.acosh_I x
+      | Op_atanh -> Func.atanh_I x
+      | Op_floor_power2 -> Func.floor_power2_I x
+    end
+  | Bin_op (op, arg1, arg2) ->
+    begin
+      let x1 = eval arg1 in
+      match op with
+      | Op_add -> x1 +$ eval arg2
+      | Op_sub -> x1 -$ eval arg2
+      | Op_mul ->
+        (* A temporary solution to increase accuracy *)
+        if eq_expr arg1 arg2 then
+          pow_I_i x1 2
+        else
+          x1 *$ eval arg2
+      | Op_div -> x1 /$ eval arg2
+      | Op_max -> max_I_I x1 (eval arg2)
+      | Op_min -> min_I_I x1 (eval arg2)
+      | Op_nat_pow -> x1 **$. (eval_float_const_expr arg2)
+      | Op_sub2 -> Func.sub2_I (x1, eval arg2)
+      | Op_abs_err -> Func.abs_err_I (x1, eval arg2)
+    end
+  | Gen_op (op, args) ->
+    begin
+      let xs = List.map eval args in
+      match (op, xs) with
+      | (Op_fma, [a;b;c]) -> (a *$ b) +$ c
+      | _ -> failwith ("eval_interval_expr: Unsupported general operation: " 
+                       ^ gen_op_name op)
+    end
   in
   eval
 

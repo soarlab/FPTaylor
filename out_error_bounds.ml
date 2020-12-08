@@ -56,7 +56,7 @@ let get_expr_name env ?(suffix = "") expr =
             env.constants <- (n, env.const_index) :: env.constants;
             env.const_index in
         sprintf "c_%d%s" index suffix, true
-      | Var v -> Lib.assoc v env.vars, true
+      | Var v -> List.assoc v env.vars, true
       | _ -> begin
           try Lib.assoc_eq eq_expr expr env.subexprs_names, false
           with Not_found ->
@@ -349,7 +349,7 @@ let generate_error_bounds fmt task =
               [{Interval.low = 1.; Interval.high = 2.}]
     | _ -> vars, bounds in
   let var_names = List.map (fun s -> "v_" ^ ExprOut.fix_name s) task_vars in
-  let env = mk_env (Lib.zip task_vars var_names) in
+  let env = mk_env (List.combine task_vars var_names) in
   let expr = remove_rnd task.expression in
   fprintf fmt "#ifdef USE_MPFI@.";
   fprintf fmt "@.#include \"search_mpfi.h\"@.";
@@ -384,11 +384,11 @@ let generate_data_functions fmt task named_exprs =
               [{Interval.low = 1.; Interval.high = 2.}]
     | _ -> vars, bounds in
   let var_names = List.map (fun s -> "v_" ^ ExprOut.fix_name s) task_vars in
-  let env = mk_env (Lib.zip task_vars var_names) in
+  let env = mk_env (List.combine task_vars var_names) in
   fprintf fmt "#include \"data_mpfi.h\"@.";
   fprintf fmt "#include \"func.h\"@.";
   pp_print_newline fmt ();
-  let expr_names, exprs = Lib.unzip named_exprs in
+  let expr_names, exprs = List.split named_exprs in
   print_init_f_and_mps env fmt ~mpfi:true exprs;
   pp_print_newline fmt ();
   let low_str = List.map (fun b -> sprintf "%.20e" b.Interval.low) var_bounds in

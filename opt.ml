@@ -13,9 +13,22 @@
 open Expr
 open Opt_common
 
+let select_opt (pars : Opt_common.opt_pars) (cs : constraints) expr =
+  let vars = vars_in_expr expr in
+  let w = 10. *. pars.x_abs_tol in
+  let active = vars 
+    |> List.map cs.var_interval
+    |> List.filter (fun v -> v.Interval.high -. v.Interval.low > w)
+    |> List.length in
+  let opt = if active > 2 then "bb" else "bb-eval" in
+  Log.report `Info "Selected optimization method: %s" opt;
+  opt
+
 let optimize_expr (pars : Opt_common.opt_pars) max_only (cs : constraints) expr =
   let rmin, rmax =
-    match Config.get_string_option "opt" with
+    let opt = Config.get_string_option "opt" in
+    let opt = if opt = "auto" then select_opt pars cs expr else opt in
+    match opt with
     | "z3" -> 
       let bounds = 
         try Eval.eval_interval_expr cs.var_interval expr

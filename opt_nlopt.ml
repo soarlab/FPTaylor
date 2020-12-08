@@ -77,7 +77,7 @@ let gen_nlopt_code (pars : nlopt_pars) fmt =
     "{" ^ String.concat "," ss ^ "}" in
 
   let options var_bounds =
-    let ls, us = Lib.unzip (List.map (fun b -> b.low, b.high) var_bounds) in
+    let ls, us = List.split (List.map (fun b -> b.low, b.high) var_bounds) in
     let ms = List.map2 (fun l u -> (l +. u) /. 2.0) ls us in
     p "  // Bounds";
     p (Format.sprintf "  nlopt_set_lower_bounds(opt, (double[])%s);" (str_of_array ls));
