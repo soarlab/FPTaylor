@@ -1,0 +1,57 @@
+Variables
+  float64 x in [-1.0, 1.0];
+
+Definitions
+S_50 rnd64 = (-7.562341364073307*( x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x )) ;
+S_49 rnd64 = (-2.9317635730081593*( x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x )) ;
+S_48 rnd64 = (0.6786381338505123*( x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x )) ;
+S_47 rnd64 = (-3.862367169567193*( x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x )) ;
+S_46 rnd64 = (1.4232977565769573*( x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x )) ;
+S_45 rnd64 = (-6.642682647964355*( x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x )) ;
+S_44 rnd64 = (2.8349858660714577*( x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x )) ;
+S_43 rnd64 = (3.852132588980705*( x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x )) ;
+S_42 rnd64 = (6.384220290117742*( x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x )) ;
+S_41 rnd64 = (-1.5494553839182839*( x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x )) ;
+S_40 rnd64 = (4.7382732486172685*( x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x )) ;
+S_39 rnd64 = (8.034225729830887*( x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x )) ;
+S_38 rnd64 = (5.00776604777432*( x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x )) ;
+S_37 rnd64 = (-0.19131942380092326*( x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x )) ;
+S_36 rnd64 = (-6.23850970237662*( x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x )) ;
+S_35 rnd64 = (4.097003512869042*( x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x )) ;
+S_34 rnd64 = (5.892175774120966*( x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x )) ;
+S_33 rnd64 = (6.834006441817074*( x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x )) ;
+S_32 rnd64 = (9.402129649950563*( x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x )) ;
+S_31 rnd64 = (3.006138751461698*( x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x )) ;
+S_30 rnd64 = (-6.122084572662578*( x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x )) ;
+S_29 rnd64 = (-4.225861961485093*( x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x )) ;
+S_28 rnd64 = (1.5729427701017134*( x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x )) ;
+S_27 rnd64 = (-3.0139372878405464*( x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x )) ;
+S_26 rnd64 = (-1.6829290476795293*( x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x )) ;
+S_25 rnd64 = (-7.3039671152090735*( x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x )) ;
+S_24 rnd64 = (-7.797892480706519*( x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x )) ;
+S_23 rnd64 = (-0.646341490644355*( x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x )) ;
+S_22 rnd64 = (-2.7675487182650134*( x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x )) ;
+S_21 rnd64 = (7.293495195228257*( x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x )) ;
+S_20 rnd64 = (-6.260886460359267*( x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x )) ;
+S_19 rnd64 = (1.5561234326500895*( x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x )) ;
+S_18 rnd64 = (-8.971217390001751*( x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x )) ;
+S_17 rnd64 = (-3.815257747566694*( x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x )) ;
+S_16 rnd64 = (-5.574773524204946*( x * x * x * x * x * x * x * x * x * x * x * x * x * x * x * x )) ;
+S_15 rnd64 = (8.825901076722815*( x * x * x * x * x * x * x * x * x * x * x * x * x * x * x )) ;
+S_14 rnd64 = (8.673618185281676*( x * x * x * x * x * x * x * x * x * x * x * x * x * x )) ;
+S_13 rnd64 = (3.6465138292787707*( x * x * x * x * x * x * x * x * x * x * x * x * x )) ;
+S_12 rnd64 = (7.78239877173932*( x * x * x * x * x * x * x * x * x * x * x * x )) ;
+S_11 rnd64 = (3.258494700722533*( x * x * x * x * x * x * x * x * x * x * x )) ;
+S_10 rnd64 = (-0.05523753938020448*( x * x * x * x * x * x * x * x * x * x )) ;
+S_9 rnd64 = (-1.7533715713320888*( x * x * x * x * x * x * x * x * x )) ;
+S_8 rnd64 = (-3.1250265542394136*( x * x * x * x * x * x * x * x )) ;
+S_7 rnd64 = (-7.310302781167706*( x * x * x * x * x * x * x )) ;
+S_6 rnd64 = (6.3103051029617845*( x * x * x * x * x * x )) ;
+S_5 rnd64 = (0.2483594552085382*( x * x * x * x * x )) ;
+S_4 rnd64 = (-3.2489486051475414*( x * x * x * x )) ;
+S_3 rnd64 = (0.1689319669581124*( x * x * x )) ;
+S_2 rnd64 = (6.851966331769773*( x * x )) ;
+S_1 rnd64 = (-6.651712771325284*( x )) ;
+
+Expressions
+poly50 rnd64 = -4.42023746986727 + S_50+S_49+S_48+S_47+S_46+S_45+S_44+S_43+S_42+S_41+S_40+S_39+S_38+S_37+S_36+S_35+S_34+S_33+S_32+S_31+S_30+S_29+S_28+S_27+S_26+S_25+S_24+S_23+S_22+S_21+S_20+S_19+S_18+S_17+S_16+S_15+S_14+S_13+S_12+S_11+S_10+S_9+S_8+S_7+S_6+S_5+S_4+S_3+S_2+S_1 ;

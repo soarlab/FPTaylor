@@ -28,6 +28,7 @@ class FPTaylorExpression:
     patterns = [
         ('abs-error', r'Absolute error [^:]*: ([-+\de.]+)'),
         ('abs-error-hex', r'Absolute error [^:]*: [^\(]* \(([-+\da-fxp.]+)\)'),
+        ('abs-total2-hex', r'Second order absolute error [^:]*: [^\(]* \(([-+\da-fxp.]+)\)'),
         ('time', r'Elapsed time: ([\d.]+)')
     ]
 
@@ -36,6 +37,7 @@ class FPTaylorExpression:
         self.upper_bound = data.get('upper-bound', None)
         self.lower_bound = data.get('lower-bound', None)
         self.exact_value = data.get('exact-value', None)
+        self.total2 = data.get('total2', None)
         self.time = data.get('time', None)
 
     def to_dict(self):
@@ -46,6 +48,8 @@ class FPTaylorExpression:
             res['lower-bound'] = self.lower_bound
         if self.exact_value is not None:
             res['exact-value'] = self.exact_value
+        if self.total2 is not None:
+            res['total2'] = self.total2
         if self.time is not None:
             res['time'] = self.time
         return res
@@ -75,8 +79,23 @@ class FPTaylorExpression:
             self.upper_bound = vals['abs-error']
         if 'abs-error-hex' in vals:
             self.exact_value = vals['abs-error-hex']
+        if 'abs-total2-hex' in vals:
+            self.total2 = vals['abs-total2-hex']
         if 'time' in vals:
             self.time = float(vals['time'])
+
+    @staticmethod
+    def check_hex(title, actual, expected, rel_tol=0.0):
+        if rel_tol > 0:
+            actual = common.hex_to_float(actual)
+            expected = common.hex_to_float(expected)
+            if not isclose(actual, expected, rel_tol=rel_tol):
+                _log.error(f'Incorrect {title} (with rel-tol={rel_tol}): actual = {actual} != expected = {expected}')
+                return False
+        elif actual != expected:
+            _log.error(f'Incorrect {title}: actual = {actual} != expected = {expected}')
+            return False
+        return True
 
     def check(self, output, rel_tol=0.0):
         print(f'  {self.name}: ', end='', flush=True)
@@ -93,16 +112,9 @@ class FPTaylorExpression:
                 _log.error(f'Incorrect lower bound: actual = {v} < expected = {self.lower_bound}')
                 passed = False
         if self.exact_value is not None:
-            v = vals['abs-error-hex']
-            if rel_tol > 0:
-                actual = common.hex_to_float(v)
-                expected = common.hex_to_float(self.exact_value)
-                if not isclose(actual, expected, rel_tol=rel_tol):
-                    _log.error(f'Incorrect exact value (with rel-tol={rel_tol}): actual = {actual} != expected = {expected}')
-                    passed = False
-            elif v != self.exact_value:
-                _log.error(f'Incorrect exact value: actual = {v} != expected = {self.exact_value}')
-                passed = False
+            passed &= self.check_hex('exact value', vals['abs-error-hex'], self.exact_value, rel_tol)
+        if self.total2 is not None:
+            passed &= self.check_hex('total2', vals['abs-total2-hex'], self.total2, rel_tol)
         print('PASSED' if passed else 'FAILED')
         return passed
 

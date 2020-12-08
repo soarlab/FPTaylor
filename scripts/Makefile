@@ -1,7 +1,7 @@
 PYTHON = /usr/bin/env python3
 
-GENERATE = $(PYTHON) generate_tests.py
-GENERATE_B = $(PYTHON) generate_tests.py --config plot/config-b.cfg --config-name _tests-b.cfg --test-file _tests-b.yml
+GENERATE = $(PYTHON) generate_tests.py --config tests.cfg --
+GENERATE_B = $(PYTHON) generate_tests.py --config tests.cfg plot/config-b.cfg --config-name _tests-b.cfg --test-file _tests-b.yml
 
 RUN = $(PYTHON) run_tests.py
 
