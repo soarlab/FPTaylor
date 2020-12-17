@@ -188,10 +188,11 @@ let print_form level f =
       Log.report level "%d: exp = %d: %s" 
         err.index err.exp (ExprOut.Info.print_str e)) f.v1;
   Log.report level "\nCorresponding original subexpressions:";
+  let all_indices = Config.get_bool_option "all-indices" in
   List.iter (fun (_, err) ->
       let i = err.index in
-      if i > 0 then
-        let expr = expr_for_index i in
+      if i > 0 || all_indices then
+        let expr = expr_for_index (abs i) in
         Log.report level "%d: %s" i (ExprOut.Info.print_str expr)) f.v1
 
 let bound_info bound =
