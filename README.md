@@ -7,8 +7,10 @@ You can run FPTaylor without installation at
 Publications
 ------------
 
+- A. Solovyev, M. Baranowski, I. Briggs, C. Jacobsen, Z. Rakamaric, G. Gopalakrishnan [*Rigorous Estimation of Floating-Point Round-off Errors with Symbolic Taylor Expansions*](https://soarlab.org/publications/2018_toplas_sbbjrg/). (ACM Transactions on Programming Languages and Systems)
+
 - A. Solovyev, C. Jacobsen, Z. Rakamaric, G. Gopalakrishnan,
-[*Rigorous Estimation of Floating-Point Round-off Errors with Symbolic Taylor Expansions*](http://soarlab.org/2015/04/fm2015-sjrg/). (FM 2015)
+[*Rigorous Estimation of Floating-Point Round-off Errors with Symbolic Taylor Expansions*](https://soarlab.org/publications/2015_fm_sjrg/). (FM 2015)
 
 - C. Jacobsen, A. Solovyev, G. Gopalakrishnan,
 [*A parametrized Floating-Point Formalization in HOL Light*](http://www.cs.utah.edu/fv/papers/nsv15-fp-hol-light.pdf). (NSV 2015)
